@@ -1,0 +1,34 @@
+/* ─────────────────────────────────────────────────────────────
+   base.css
+   Design tokens (CSS custom properties), global reset, and
+   root html/body rules. Every other stylesheet depends on this.
+   ───────────────────────────────────────────────────────────── */
+
+:root {
+  --bg-primary:    #0A1F1C;
+  --bg-surface:    #0F2D29;
+  --bg-sidebar:    #081918;
+  --bg-card:       #112C28;
+  --accent:        #00E5C0;
+  --accent-hover:  #00CCA8;
+  --text-primary:  #F0EDE4;
+  --text-muted:    #8FAAA6;
+  --border:        #1A3D38;
+
+  --sidebar-width: 220px;
+  --topbar-height: 64px;
+}
+
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html, body {
+  height: 100%;
+  overflow: hidden;
+  font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
