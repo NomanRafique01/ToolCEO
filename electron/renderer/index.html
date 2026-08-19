@@ -115,7 +115,323 @@
   </header>
 
   <main id="main-content">
-    <div id="main-content-inner"></div>
+    <div id="dashboard-panel">
+
+      <!-- ── TWO-COLUMN ROW ──────────────────────────────── -->
+      <div class="dash-columns">
+
+        <!-- LEFT COLUMN -->
+        <div class="dash-left">
+
+          <!-- Hero Drop Zone Card -->
+          <div class="hero-card">
+            <div class="hero-card-header">
+              <div>
+                <div class="hero-title">Welcome back, CEO</div>
+                <div class="hero-subtitle">The all-in-one offline file converter for Windows.</div>
+              </div>
+              <span class="hero-hint">Drag anywhere</span>
+            </div>
+
+            <div class="drop-zone" id="drop-zone">
+              <input type="file" id="file-input" multiple accept="*/*" />
+              <svg class="drop-icon" viewBox="0 0 48 48" width="48" height="48" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="8" y="4" width="26" height="34" rx="3" stroke="#00E5C0" stroke-width="1.5"/>
+                <path d="M34 4l6 6H34V4Z" stroke="#00E5C0" stroke-width="1.5" stroke-linejoin="round"/>
+                <line x1="24" y1="46" x2="24" y2="34" stroke="#00E5C0" stroke-width="1.5" stroke-linecap="round"/>
+                <line x1="18" y1="40" x2="24" y2="34" stroke="#00E5C0" stroke-width="1.5" stroke-linecap="round"/>
+                <line x1="30" y1="40" x2="24" y2="34" stroke="#00E5C0" stroke-width="1.5" stroke-linecap="round"/>
+              </svg>
+              <span class="drop-main-text">Drop files anywhere to convert</span>
+              <span class="drop-browse">or click to browse</span>
+              <span class="drop-private">Your files never leave your device.</span>
+            </div>
+          </div>
+
+          <!-- Quick Convert Tabs -->
+          <div class="quick-convert">
+            <span class="section-label">Quick Convert</span>
+            <div class="pill-row">
+              <button class="pill active" data-pill="pdf-word">PDF ↔ Word</button>
+              <button class="pill" data-pill="image">Image Convert</button>
+              <button class="pill" data-pill="audio">Audio Convert</button>
+              <button class="pill" data-pill="video">Video Convert</button>
+            </div>
+          </div>
+
+        </div><!-- /dash-left -->
+
+        <!-- RIGHT COLUMN — Recent Conversions -->
+        <div class="recent-panel">
+          <div class="recent-header">
+            <span class="recent-title">Recent Conversions</span>
+            <span class="recent-view-all">View All</span>
+          </div>
+          <ul class="recent-list">
+
+            <li class="recent-item">
+              <div class="file-type-icon" style="--icon-bg:#1A3D38;--icon-color:#00E5C0">PDF</div>
+              <div class="file-info">
+                <span class="file-name">Project_Proposal.pdf</span>
+                <span class="file-conv">PDF → DOCX</span>
+              </div>
+              <div class="file-meta">
+                <span class="file-time">2 mins ago</span>
+                <svg class="check-icon" viewBox="0 0 16 16" width="16" height="16" fill="none">
+                  <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/>
+                  <path d="M5 8l2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+            </li>
+
+            <li class="recent-item">
+              <div class="file-type-icon" style="--icon-bg:#1A3D2A;--icon-color:#00E5C0">PNG</div>
+              <div class="file-info">
+                <span class="file-name">Vacation_Photo.png</span>
+                <span class="file-conv">PNG → JPG</span>
+              </div>
+              <div class="file-meta">
+                <span class="file-time">10 mins ago</span>
+                <svg class="check-icon" viewBox="0 0 16 16" width="16" height="16" fill="none">
+                  <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/>
+                  <path d="M5 8l2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+            </li>
+
+            <li class="recent-item">
+              <div class="file-type-icon" style="--icon-bg:#1A2E3D;--icon-color:#5BB8F5">DOCX</div>
+              <div class="file-info">
+                <span class="file-name">Meeting_Notes.docx</span>
+                <span class="file-conv">DOCX → PDF</span>
+              </div>
+              <div class="file-meta">
+                <span class="file-time">1 hour ago</span>
+                <svg class="check-icon" viewBox="0 0 16 16" width="16" height="16" fill="none">
+                  <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/>
+                  <path d="M5 8l2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+            </li>
+
+            <li class="recent-item">
+              <div class="file-type-icon" style="--icon-bg:#2A1A3D;--icon-color:#A78BFA">MP3</div>
+              <div class="file-info">
+                <span class="file-name">Audio_Track.mp3</span>
+                <span class="file-conv">MP3 → WAV</span>
+              </div>
+              <div class="file-meta">
+                <span class="file-time">2 hours ago</span>
+                <svg class="check-icon" viewBox="0 0 16 16" width="16" height="16" fill="none">
+                  <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/>
+                  <path d="M5 8l2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+            </li>
+
+            <li class="recent-item">
+              <div class="file-type-icon" style="--icon-bg:#3D2A1A;--icon-color:#F5A35B">MP4</div>
+              <div class="file-info">
+                <span class="file-name">Video_Clip.mp4</span>
+                <span class="file-conv">MP4 → MKV</span>
+              </div>
+              <div class="file-meta">
+                <span class="file-time">5 hours ago</span>
+                <svg class="check-icon" viewBox="0 0 16 16" width="16" height="16" fill="none">
+                  <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/>
+                  <path d="M5 8l2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+            </li>
+
+          </ul>
+        </div><!-- /recent-panel -->
+
+      </div><!-- /dash-columns -->
+
+      <!-- ── EXPLORE TOOLS ───────────────────────────────── -->
+      <div class="explore-section">
+        <div class="explore-header">
+          <svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="explore-icon">
+            <path d="M8 1l1.8 4.1L14 6l-3 2.9.7 4.1L8 11l-3.7 2 .7-4.1L2 6l4.2-.9L8 1Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+          </svg>
+          <span class="explore-title">Explore Tools</span>
+        </div>
+
+        <div class="tools-grid">
+
+          <div class="tool-card" data-nav="Documents">
+            <div class="tool-card-top">
+              <div class="tool-icon-box">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <rect x="4" y="2" width="12" height="16" rx="2" stroke="currentColor" stroke-width="1.5"/>
+                  <path d="M7 7h6M7 10h6M7 13h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <span class="tool-arrow">›</span>
+            </div>
+            <div class="tool-name">Documents</div>
+            <div class="tool-formats">PDF, Word, Excel, PPT & more</div>
+            <div class="tool-count">12+ conversions</div>
+          </div>
+
+          <div class="tool-card" data-nav="Images">
+            <div class="tool-card-top">
+              <div class="tool-icon-box">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <rect x="2" y="4" width="16" height="12" rx="2" stroke="currentColor" stroke-width="1.5"/>
+                  <circle cx="7" cy="8" r="1.5" stroke="currentColor" stroke-width="1.5"/>
+                  <path d="M2 14l4-4 3 3 3-2 4 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <span class="tool-arrow">›</span>
+            </div>
+            <div class="tool-name">Images</div>
+            <div class="tool-formats">JPG, PNG, WEBP, SVG & more</div>
+            <div class="tool-count">20+ conversions</div>
+          </div>
+
+          <div class="tool-card" data-nav="Audio">
+            <div class="tool-card-top">
+              <div class="tool-icon-box">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path d="M8 15V5l8-2v10" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  <circle cx="6" cy="15" r="2" stroke="currentColor" stroke-width="1.5"/>
+                  <circle cx="14" cy="13" r="2" stroke="currentColor" stroke-width="1.5"/>
+                </svg>
+              </div>
+              <span class="tool-arrow">›</span>
+            </div>
+            <div class="tool-name">Audio</div>
+            <div class="tool-formats">MP3, WAV, FLAC, AAC & more</div>
+            <div class="tool-count">15+ conversions</div>
+          </div>
+
+          <div class="tool-card" data-nav="Video">
+            <div class="tool-card-top">
+              <div class="tool-icon-box">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <rect x="2" y="5" width="12" height="10" rx="2" stroke="currentColor" stroke-width="1.5"/>
+                  <path d="M14 8l4-2v8l-4-2V8Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                </svg>
+              </div>
+              <span class="tool-arrow">›</span>
+            </div>
+            <div class="tool-name">Video</div>
+            <div class="tool-formats">MP4, MKV, AVI, MOV & more</div>
+            <div class="tool-count">18+ conversions</div>
+          </div>
+
+          <div class="tool-card" data-nav="Ebooks">
+            <div class="tool-card-top">
+              <div class="tool-icon-box">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <path d="M4 3h9a3 3 0 0 1 3 3v10a3 3 0 0 1-3 3H4a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.5"/>
+                  <path d="M7 7h6M7 10h6M7 13h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <span class="tool-arrow">›</span>
+            </div>
+            <div class="tool-name">Ebooks</div>
+            <div class="tool-formats">EPUB, MOBI, AZW3, PDF & more</div>
+            <div class="tool-count">10+ conversions</div>
+          </div>
+
+          <div class="tool-card" data-nav="Archives">
+            <div class="tool-card-top">
+              <div class="tool-icon-box">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <rect x="3" y="7" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.5"/>
+                  <path d="M3 7l2-4h10l2 4" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+                  <path d="M8 11h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+                </svg>
+              </div>
+              <span class="tool-arrow">›</span>
+            </div>
+            <div class="tool-name">Archives</div>
+            <div class="tool-formats">ZIP, RAR, 7Z, TAR & more</div>
+            <div class="tool-count">8+ conversions</div>
+          </div>
+
+          <div class="tool-card" data-nav="Data">
+            <div class="tool-card-top">
+              <div class="tool-icon-box">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <ellipse cx="10" cy="5" rx="7" ry="2.5" stroke="currentColor" stroke-width="1.5"/>
+                  <path d="M3 5v4c0 1.38 3.13 2.5 7 2.5s7-1.12 7-2.5V5" stroke="currentColor" stroke-width="1.5"/>
+                  <path d="M3 9v4c0 1.38 3.13 2.5 7 2.5s7-1.12 7-2.5V9" stroke="currentColor" stroke-width="1.5"/>
+                </svg>
+              </div>
+              <span class="tool-arrow">›</span>
+            </div>
+            <div class="tool-name">Data</div>
+            <div class="tool-formats">CSV, JSON, XML, SQL & more</div>
+            <div class="tool-count">10+ conversions</div>
+          </div>
+
+          <div class="tool-card tool-card--all" data-nav="Dashboard">
+            <div class="tool-card-top">
+              <div class="tool-icon-box">
+                <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+                  <rect x="2" y="2" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+                  <rect x="11" y="2" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+                  <rect x="2" y="11" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+                  <rect x="11" y="11" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+                </svg>
+              </div>
+              <span class="tool-arrow">›</span>
+            </div>
+            <div class="tool-name">All Tools</div>
+            <div class="tool-formats">View all 100+ conversion tools</div>
+            <div class="tool-count">100+ conversions</div>
+          </div>
+
+        </div><!-- /tools-grid -->
+      </div><!-- /explore-section -->
+
+      <!-- ── FEATURES STRIP ──────────────────────────────── -->
+      <div class="features-strip">
+
+        <div class="feature-item">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" class="feature-icon">
+            <path d="M10 2L4 5v5c0 4 2.67 7.4 6 8.5 3.33-1.1 6-4.5 6-8.5V5L10 2Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+          </svg>
+          <span class="feature-label">100% Offline</span>
+          <span class="feature-desc">No internet required. Your data stays private.</span>
+        </div>
+
+        <div class="feature-item">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" class="feature-icon">
+            <rect x="5" y="9" width="10" height="8" rx="2" stroke="currentColor" stroke-width="1.5"/>
+            <path d="M7 9V6a3 3 0 0 1 6 0v3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+            <circle cx="10" cy="13" r="1" fill="currentColor"/>
+          </svg>
+          <span class="feature-label">Private & Secure</span>
+          <span class="feature-desc">All processing happens locally on your device.</span>
+        </div>
+
+        <div class="feature-item">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" class="feature-icon">
+            <path d="M11 2L4 11h6l-1 7 7-9h-6l1-7Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+          </svg>
+          <span class="feature-label">Blazing Fast</span>
+          <span class="feature-desc">Optimized engine for high performance.</span>
+        </div>
+
+        <div class="feature-item">
+          <svg width="20" height="20" viewBox="0 0 20 20" fill="none" class="feature-icon">
+            <rect x="2" y="2" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+            <rect x="11" y="2" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+            <rect x="2" y="11" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+            <rect x="11" y="11" width="7" height="7" rx="1.5" stroke="currentColor" stroke-width="1.5"/>
+          </svg>
+          <span class="feature-label">Cross-Format</span>
+          <span class="feature-desc">Supports 100+ formats across 7 categories.</span>
+        </div>
+
+      </div><!-- /features-strip -->
+
+    </div><!-- /dashboard-panel -->
   </main>
 
   <script src="app.js"></script>
