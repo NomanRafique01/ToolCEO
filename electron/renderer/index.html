@@ -1,0 +1,123 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ToolCEO</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+  <aside id="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon"></div>
+      <div class="logo-text">
+        <span class="logo-name">ToolCEO</span>
+        <span class="logo-badge">100% Offline</span>
+      </div>
+    </div>
+
+    <nav class="sidebar-nav">
+      <div class="nav-section">
+        <span class="nav-section-label">Convert</span>
+        <ul class="nav-list">
+          <li class="nav-item active" data-label="Dashboard">
+            <div class="nav-icon"></div>
+            <span>Dashboard</span>
+          </li>
+          <li class="nav-item" data-label="Documents">
+            <div class="nav-icon"></div>
+            <span>Documents</span>
+          </li>
+          <li class="nav-item" data-label="Images">
+            <div class="nav-icon"></div>
+            <span>Images</span>
+          </li>
+          <li class="nav-item" data-label="Audio">
+            <div class="nav-icon"></div>
+            <span>Audio</span>
+          </li>
+          <li class="nav-item" data-label="Video">
+            <div class="nav-icon"></div>
+            <span>Video</span>
+          </li>
+          <li class="nav-item" data-label="Ebooks">
+            <div class="nav-icon"></div>
+            <span>Ebooks</span>
+          </li>
+          <li class="nav-item" data-label="Archives">
+            <div class="nav-icon"></div>
+            <span>Archives</span>
+          </li>
+          <li class="nav-item" data-label="Data">
+            <div class="nav-icon"></div>
+            <span>Data</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="nav-section">
+        <span class="nav-section-label">Other</span>
+        <ul class="nav-list">
+          <li class="nav-item" data-label="Recent">
+            <div class="nav-icon"></div>
+            <span>Recent</span>
+          </li>
+          <li class="nav-item" data-label="Favorites">
+            <div class="nav-icon"></div>
+            <span>Favorites</span>
+          </li>
+        </ul>
+      </div>
+
+      <div class="nav-section">
+        <span class="nav-section-label">System</span>
+        <ul class="nav-list">
+          <li class="nav-item" data-label="Settings">
+            <div class="nav-icon"></div>
+            <span>Settings</span>
+          </li>
+          <li class="nav-item" data-label="Logs">
+            <div class="nav-icon"></div>
+            <span>Logs</span>
+          </li>
+          <li class="nav-item" data-label="About">
+            <div class="nav-icon"></div>
+            <span>About</span>
+          </li>
+        </ul>
+      </div>
+    </nav>
+
+    <div class="sidebar-status">
+      <div class="status-icon"></div>
+      <div class="status-body">
+        <span class="status-title">System Offline</span>
+        <span class="status-subtitle">All conversions are done locally on your device.</span>
+      </div>
+    </div>
+  </aside>
+
+  <header id="topbar">
+    <span id="page-title">Dashboard</span>
+    <div class="topbar-right">
+      <div class="search-wrapper">
+        <input
+          class="search-input"
+          type="text"
+          placeholder="Search conversions or tools…"
+          spellcheck="false"
+        />
+        <span class="search-kbd">Ctrl+K</span>
+      </div>
+      <button class="btn-add-files">＋ Add Files</button>
+    </div>
+  </header>
+
+  <main id="main-content">
+    <div id="main-content-inner"></div>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
