@@ -292,8 +292,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: var(--accent);
   flex-shrink: 0;
+  /* colour is set per-card via inline style to match sidebar icon colours */
 }
 
 .tool-arrow  { font-size: 18px; color: var(--text-muted); line-height: 1; }
