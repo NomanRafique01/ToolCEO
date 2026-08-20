@@ -15,6 +15,10 @@ import {
   handleSplitFilePicked,
   removeSplitPanel,
 } from '../tools/documents/pdf_tools/splitter/splitter.js';
+import {
+  handleMergeFilesPicked,
+  removeMergePanel,
+} from '../tools/documents/pdf_tools/merger/merger.js';
 
 const BACKEND = 'http://127.0.0.1:8000';
 
@@ -155,6 +159,7 @@ function _updateDropZone(tool) {
   if (!tool) {
     _resetZoneContent(zone);
     removeSplitPanel();
+    removeMergePanel();
     if (iconSlot) iconSlot.outerHTML = DEFAULT_ICON_SVG;
     mainEl.textContent = DEFAULT_MAIN;
     subEl.textContent  = DEFAULT_SUB;
@@ -173,6 +178,7 @@ function _updateDropZone(tool) {
 
   _resetZoneContent(zone);  // clear any previous progress/download/error state
   removeSplitPanel();       // hide previous split info panel if tool changed
+  removeMergePanel();       // hide previous merge queue panel if tool changed
 
   const currentIcon = zone.querySelector('.drop-icon');
   if (currentIcon && icon) currentIcon.outerHTML = _scaledIcon(icon, color);
@@ -698,6 +704,12 @@ async function _submitFile(files) {
     return;
   }
 
+  // Merge tool has its own multi-file queue flow — delegated to the merger module
+  if (tool.id === 'merge') {
+    handleMergeFilesPicked(files);
+    return;
+  }
+
   const endpoint = ENDPOINT_MAP[tool.id];
   if (!endpoint) {
     const zone = document.getElementById('drop-zone');
@@ -788,13 +800,25 @@ export function initDropZone() {
   // ── Click ──────────────────────────────────────────────────────────────────
   dropZone.addEventListener('click', (e) => {
     if (e.target === fileInput) return;
-    // Don't open file picker when clicking the save card, error, or remove button
-    if (e.target.closest('.dz-download-wrap, .dz-error-wrap, .dz-pdf-thumb-remove')) return;
+    // Don't open file picker when clicking interactive merge/splitter/save/error elements
+    if (e.target.closest(
+      '.dz-download-wrap, .dz-error-wrap, .dz-pdf-thumb-remove, ' +
+      '.dz-merge-card-remove, .dz-merge-add-btn, .merge-queue-panel, .split-info-panel'
+    )) return;
     if (!getActiveTool()) { showNoToolWarning(); return; }
-    // If already processing, scanning, or showing save card, ignore
+    // If already processing or scanning, ignore — but allow clicks when thumbs are shown
     if (dropZone.classList.contains('dz-state-processing')) return;
     if (dropZone.classList.contains('dz-state-scanning'))   return;
     if (dropZone.classList.contains('dz-state-done'))       return;
+    // For merge tool with existing queue, a zone click adds more files
+    const tool = getActiveTool();
+    if (tool && tool.id === 'merge') {
+      fileInput.multiple = true;
+      fileInput.accept   = '.pdf,application/pdf';
+    } else {
+      fileInput.multiple = false;
+      fileInput.accept   = '*/*';
+    }
     fileInput.click();
   });
 

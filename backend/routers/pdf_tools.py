@@ -94,10 +94,11 @@ async def pdf_thumbnail(file: UploadFile = File(...)):
     try:
         doc = fitz.open(stream=raw, filetype="pdf")
         page = doc[0]
-        # Render at 2× scale so the tiny thumbnail looks sharp on HiDPI displays
-        mat = fitz.Matrix(2.0, 2.0)
+        # Render at 3× scale — source is large enough for the browser to
+        # downsample cleanly to the tiny thumbnail frame (~72–90 px wide).
+        mat = fitz.Matrix(3.0, 3.0)
         pix = page.get_pixmap(matrix=mat, alpha=False)
-        jpeg_bytes = pix.tobytes("jpeg", jpg_quality=82)
+        jpeg_bytes = pix.tobytes("jpeg", jpg_quality=92)
         doc.close()
     except Exception as exc:
         raise HTTPException(status_code=422, detail=f"Could not render thumbnail: {exc}")

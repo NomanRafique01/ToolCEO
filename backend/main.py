@@ -6,6 +6,7 @@ from routers.pdf_conversions import router as pdf_conversions_router
 from routers.sse_progress import router as sse_router
 # Tool sub-modules — each tool owns its own router
 from tools.documents.pdf_tools.splitter.router import router as splitter_router
+from tools.documents.pdf_tools.merger.router   import router as merger_router
 
 app = FastAPI(title="ToolCEO Backend")
 
@@ -38,3 +39,6 @@ app.include_router(sse_router, prefix="/api")
 # is self-contained and testable in isolation.  Remove the duplicates
 # from pdf_tools.py when you retire that monolithic router.
 # app.include_router(splitter_router, prefix="/api")
+
+# Merger tool — owns /api/pdf/merger/info and /api/pdf/merger/merge
+app.include_router(merger_router, prefix="/api")
