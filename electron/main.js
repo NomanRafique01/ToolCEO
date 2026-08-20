@@ -43,7 +43,7 @@ function createWindow() {
     },
   });
 
-  win.loadFile(path.join(__dirname, 'ui', 'index.html'));
+  win.loadFile(path.join(__dirname, '..', 'frontend', 'index.html'));
 }
 
 app.commandLine.appendSwitch('disable-gpu-shader-disk-cache');
