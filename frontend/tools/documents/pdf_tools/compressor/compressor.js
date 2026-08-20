@@ -45,10 +45,10 @@ function _fmt(bytes) {
 // ─── PRESET DEFINITIONS ────────────────────────────────────────────────────────
 
 const PRESETS = {
-  screen:  { image_quality: 30,  dpi: 72,  grayscale: false, label: 'Screen' },
-  ebook:   { image_quality: 60,  dpi: 150, grayscale: false, label: 'eBook'  },
-  printer: { image_quality: 90,  dpi: 300, grayscale: false, label: 'Printer'},
-  custom:  { image_quality: 75,  dpi: 150, grayscale: false, label: 'Custom' },
+  screen:  { label: 'Screen'  },
+  ebook:   { label: 'eBook'   },
+  printer: { label: 'Printer' },
+  custom:  { label: 'Custom'  },
 };
 
 // ─── PUBLIC: TEARDOWN ─────────────────────────────────────────────────────────
@@ -183,51 +183,6 @@ function _showSettingsPanel(pageCount, color) {
     <!-- ── SETTINGS GRID ────────────────────────────────────────────── -->
     <div class="cmp-grid">
 
-      <!-- Image Settings -->
-      <div class="cmp-group">
-        <div class="cmp-group-label">
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-            <rect x="1" y="1" width="10" height="10" rx="1.5" stroke="currentColor" stroke-width="1.2"/>
-            <circle cx="4" cy="4" r="1.2" fill="currentColor"/>
-            <path d="M1 8l3-3 2 2 2-2 3 3" stroke="currentColor" stroke-width="1.1"
-                  stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          Image Settings
-        </div>
-
-        <!-- Quality slider -->
-        <div class="cmp-field cmp-field--slider">
-          <div class="cmp-field-label-row">
-            <label class="cmp-label" for="cmp-quality">Image Quality</label>
-            <span class="cmp-quality-value" id="cmp-quality-val">75%</span>
-          </div>
-          <input class="cmp-slider" id="cmp-quality" type="range"
-                 min="1" max="100" value="75" step="1"/>
-          <div class="cmp-slider-ticks">
-            <span>Low</span><span>Medium</span><span>High</span>
-          </div>
-        </div>
-
-        <!-- DPI reduction -->
-        <div class="cmp-field">
-          <label class="cmp-label">DPI Reduction</label>
-          <div class="cmp-seg-group" id="cmp-dpi-group">
-            <button class="cmp-seg-btn" data-dpi="72">72</button>
-            <button class="cmp-seg-btn cmp-seg-btn--active" data-dpi="150">150</button>
-            <button class="cmp-seg-btn" data-dpi="300">300</button>
-          </div>
-        </div>
-
-        <!-- Grayscale -->
-        <label class="cmp-toggle-row">
-          <span class="cmp-toggle-label">Convert to grayscale</span>
-          <span class="cmp-toggle-wrap">
-            <input type="checkbox" id="cmp-grayscale" class="cmp-toggle-input"/>
-            <span class="cmp-toggle-knob"></span>
-          </span>
-        </label>
-      </div>
-
       <!-- Content Removal -->
       <div class="cmp-group">
         <div class="cmp-group-label">
@@ -329,28 +284,6 @@ function _showSettingsPanel(pageCount, color) {
 
   // ── Wire up controls ──────────────────────────────────────────────────────
 
-  // Quality slider
-  const qualitySlider = panel.querySelector('#cmp-quality');
-  const qualityVal    = panel.querySelector('#cmp-quality-val');
-  qualitySlider.addEventListener('input', () => {
-    qualityVal.textContent = `${qualitySlider.value}%`;
-    _activatePreset(panel, 'custom');
-  });
-
-  // DPI segmented buttons
-  panel.querySelectorAll('[data-dpi]').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      panel.querySelectorAll('[data-dpi]').forEach((b) => b.classList.remove('cmp-seg-btn--active'));
-      btn.classList.add('cmp-seg-btn--active');
-      _activatePreset(panel, 'custom');
-    });
-  });
-
-  // Grayscale toggle → custom
-  panel.querySelector('#cmp-grayscale').addEventListener('change', () => {
-    _activatePreset(panel, 'custom');
-  });
-
   // Preset buttons
   panel.querySelectorAll('[data-preset]').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -391,27 +324,10 @@ function _showSettingsPanel(pageCount, color) {
 // ─── PRESET LOGIC ─────────────────────────────────────────────────────────────
 
 function _activatePreset(panel, presetName) {
-  // Update active preset button
+  // Update active preset button only — image controls removed from this panel
   panel.querySelectorAll('[data-preset]').forEach((b) => {
     b.classList.toggle('cmp-preset-btn--active', b.dataset.preset === presetName);
   });
-
-  if (presetName === 'custom') return;  // don't override controls in custom mode
-
-  const p = PRESETS[presetName];
-  if (!p) return;
-
-  // Apply preset values to controls
-  const slider = panel.querySelector('#cmp-quality');
-  const valLbl = panel.querySelector('#cmp-quality-val');
-  if (slider) { slider.value = p.image_quality; valLbl.textContent = `${p.image_quality}%`; }
-
-  panel.querySelectorAll('[data-dpi]').forEach((b) => {
-    b.classList.toggle('cmp-seg-btn--active', Number(b.dataset.dpi) === p.dpi);
-  });
-
-  const gray = panel.querySelector('#cmp-grayscale');
-  if (gray) gray.checked = p.grayscale;
 }
 
 // ─── COLLECT OPTIONS ──────────────────────────────────────────────────────────
@@ -420,18 +336,11 @@ function _collectOptions(panel) {
   const activePresetBtn = panel.querySelector('[data-preset].cmp-preset-btn--active');
   const preset          = activePresetBtn ? activePresetBtn.dataset.preset : 'custom';
 
-  const quality = parseInt(panel.querySelector('#cmp-quality').value, 10);
-  const activeDpiBtn = panel.querySelector('[data-dpi].cmp-seg-btn--active');
-  const dpi     = activeDpiBtn ? parseInt(activeDpiBtn.dataset.dpi, 10) : 150;
-
   const maxSizeKb = parseInt(panel.querySelector('#cmp-max-size').value, 10);
   const maxBytes  = isNaN(maxSizeKb) || maxSizeKb <= 0 ? null : maxSizeKb * 1024;
 
   return {
     preset,
-    image_quality:      quality,
-    dpi,
-    grayscale:          panel.querySelector('#cmp-grayscale').checked,
     remove_metadata:    panel.querySelector('#cmp-rm-metadata').checked,
     remove_annotations: panel.querySelector('#cmp-rm-annots').checked,
     remove_bookmarks:   panel.querySelector('#cmp-rm-bookmarks').checked,
@@ -506,9 +415,6 @@ async function _submitCompress(file, opts, outputFilename) {
   // Build FormData — all options as form fields
   const fd = new FormData();
   fd.append('file', file);
-  fd.append('image_quality',      String(opts.image_quality));
-  fd.append('dpi',                String(opts.dpi));
-  fd.append('grayscale',          String(opts.grayscale));
   fd.append('remove_metadata',    String(opts.remove_metadata));
   fd.append('remove_annotations', String(opts.remove_annotations));
   fd.append('remove_bookmarks',   String(opts.remove_bookmarks));
