@@ -1,0 +1,526 @@
+/* ─────────────────────────────────────────────────────────────
+   tools/documents/pdf_tools/compressor/compressor.css
+   Styles specific to the PDF Compressor tool:
+     - PDF thumbnail inside the drop zone
+     - Compression settings panel with all option groups
+     - Preset buttons, sliders, segmented DPI controls, toggles
+   ───────────────────────────────────────────────────────────── */
+
+/* ─── CSS CUSTOM PROPERTY DEFAULTS ────────────────────────────────────────── */
+
+:root {
+  --cmp-color: #34D399;   /* emerald green — matches the tool card */
+}
+
+/* ─── DROP ZONE: HAS-COMPRESS-THUMB STATE ──────────────────────────────────── */
+
+.drop-zone.dz-has-compress-thumb {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+.drop-zone.dz-has-compress-thumb .drop-icon,
+.drop-zone.dz-has-compress-thumb .drop-main-text,
+.drop-zone.dz-has-compress-thumb .drop-browse,
+.drop-zone.dz-has-compress-thumb .drop-private {
+  display: none !important;
+}
+
+/* ─── PDF THUMBNAIL (inside drop zone) ──────────────────────────────────── */
+
+.dz-compress-thumb-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.dz-compress-thumb-card {
+  position: relative;
+  display: inline-block;
+}
+
+.dz-compress-thumb-frame {
+  width: 90px;
+  height: 116px;
+  border-radius: 6px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+}
+
+.dz-compress-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 4px;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: high-quality;
+}
+
+.dz-compress-thumb-icon {
+  width: 90px;
+  height: 116px;
+  display: block;
+}
+
+.dz-compress-thumb-remove {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--bg-surface);
+  border: 1.5px solid color-mix(in srgb, var(--cmp-color, #34D399) 50%, var(--border));
+  color: var(--cmp-color, #34D399);
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 130ms ease;
+}
+
+.dz-compress-thumb-remove:hover {
+  background: color-mix(in srgb, var(--cmp-color, #34D399) 15%, var(--bg-surface));
+}
+
+.dz-compress-thumb-name {
+  font-size: 12px;
+  color: var(--text-muted);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.dz-compress-thumb-size {
+  font-size: 11px;
+  color: color-mix(in srgb, var(--cmp-color, #34D399) 90%, transparent);
+  background: color-mix(in srgb, var(--cmp-color, #34D399) 10%, transparent);
+  border-radius: 10px;
+  padding: 1px 7px;
+  line-height: 1.5;
+}
+
+/* ─── COMPRESSION SETTINGS PANEL ────────────────────────────────────────── */
+
+.cmp-panel {
+  margin-top: 14px;
+  background: var(--bg-surface);
+  border: 1px solid color-mix(in srgb, var(--cmp-color, #34D399) 28%, var(--border));
+  border-radius: 14px;
+  padding: 16px 18px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+
+  /* Slide-in animation — starts hidden */
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 220ms ease, transform 220ms ease;
+}
+
+.cmp-panel--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.cmp-panel--submitting {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+/* ── Panel header ── */
+
+.cmp-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.cmp-header-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.cmp-header-text strong {
+  color: var(--text-primary);
+}
+
+.cmp-change-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: border-color 120ms ease, color 120ms ease;
+}
+
+.cmp-change-btn:hover {
+  border-color: var(--cmp-color, #34D399);
+  color: var(--cmp-color, #34D399);
+}
+
+/* ── Section titles ── */
+
+.cmp-section {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.cmp-section-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+/* ── Preset group ── */
+
+.cmp-preset-group {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.cmp-preset-btn {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 5px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: border-color 140ms ease, color 140ms ease, background 140ms ease;
+}
+
+.cmp-preset-btn:hover {
+  border-color: color-mix(in srgb, var(--cmp-color, #34D399) 55%, transparent);
+  color: var(--text-primary);
+}
+
+.cmp-preset-btn--active {
+  background: color-mix(in srgb, var(--cmp-color, #34D399) 14%, var(--bg-card));
+  border-color: var(--cmp-color, #34D399);
+  color: var(--cmp-color, #34D399);
+  font-weight: 600;
+}
+
+/* ── Settings grid: 3 equal columns ── */
+
+.cmp-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 14px 16px;
+}
+
+@media (max-width: 680px) {
+  .cmp-grid { grid-template-columns: 1fr; }
+}
+
+/* ── Group (column) ── */
+
+.cmp-group {
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 12px 13px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cmp-group-label {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: color-mix(in srgb, var(--cmp-color, #34D399) 80%, var(--text-muted));
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.cmp-group-label--mt {
+  margin-top: 6px;
+  padding-top: 10px;
+  border-top: 1px solid var(--border);
+}
+
+/* ── Field ── */
+
+.cmp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.cmp-label {
+  font-size: 12px;
+  color: var(--text-primary);
+  cursor: default;
+}
+
+.cmp-field-hint {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+/* ── Quality slider ── */
+
+.cmp-field-label-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.cmp-quality-value {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--cmp-color, #34D399);
+  min-width: 30px;
+  text-align: right;
+}
+
+.cmp-slider {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 100%;
+  height: 4px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--cmp-color, #34D399) 25%, var(--border));
+  outline: none;
+  cursor: pointer;
+}
+
+.cmp-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--cmp-color, #34D399);
+  border: 2px solid var(--bg-surface);
+  box-shadow: 0 1px 4px rgba(0,0,0,0.4);
+  cursor: pointer;
+  transition: transform 100ms ease;
+}
+
+.cmp-slider::-webkit-slider-thumb:hover {
+  transform: scale(1.15);
+}
+
+.cmp-slider::-moz-range-thumb {
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: var(--cmp-color, #34D399);
+  border: 2px solid var(--bg-surface);
+  cursor: pointer;
+}
+
+.cmp-slider-ticks {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 1px;
+}
+
+/* ── Segmented DPI buttons ── */
+
+.cmp-seg-group {
+  display: flex;
+  gap: 5px;
+}
+
+.cmp-seg-btn {
+  flex: 1;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 4px 0;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-muted);
+  cursor: pointer;
+  text-align: center;
+  transition: border-color 130ms ease, color 130ms ease, background 130ms ease;
+}
+
+.cmp-seg-btn:hover {
+  border-color: color-mix(in srgb, var(--cmp-color, #34D399) 50%, transparent);
+  color: var(--text-primary);
+}
+
+.cmp-seg-btn--active {
+  background: color-mix(in srgb, var(--cmp-color, #34D399) 14%, var(--bg-card));
+  border-color: var(--cmp-color, #34D399);
+  color: var(--cmp-color, #34D399);
+  font-weight: 600;
+}
+
+/* ── Toggle switch row ── */
+
+.cmp-toggle-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.cmp-toggle-label {
+  font-size: 12px;
+  color: var(--text-primary);
+  line-height: 1.35;
+}
+
+.cmp-toggle-wrap {
+  position: relative;
+  flex-shrink: 0;
+  width: 32px;
+  height: 18px;
+}
+
+.cmp-toggle-input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.cmp-toggle-knob {
+  position: absolute;
+  inset: 0;
+  border-radius: 18px;
+  background: color-mix(in srgb, var(--border) 100%, transparent);
+  border: 1px solid var(--border);
+  transition: background 160ms ease, border-color 160ms ease;
+  cursor: pointer;
+}
+
+.cmp-toggle-knob::after {
+  content: '';
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--text-muted);
+  transition: transform 160ms ease, background 160ms ease;
+}
+
+.cmp-toggle-input:checked + .cmp-toggle-knob {
+  background: color-mix(in srgb, var(--cmp-color, #34D399) 22%, var(--bg-surface));
+  border-color: var(--cmp-color, #34D399);
+}
+
+.cmp-toggle-input:checked + .cmp-toggle-knob::after {
+  transform: translateX(14px);
+  background: var(--cmp-color, #34D399);
+}
+
+/* ── Max file size input ── */
+
+.cmp-max-size-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.cmp-number-input {
+  width: 80px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 5px 8px;
+  font-size: 12px;
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 130ms ease;
+  -moz-appearance: textfield;
+}
+
+.cmp-number-input::-webkit-outer-spin-button,
+.cmp-number-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+.cmp-number-input:focus {
+  border-color: var(--cmp-color, #34D399);
+}
+
+.cmp-number-unit {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* ─── ACTIONS ROW ────────────────────────────────────────────────────────── */
+
+.cmp-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.cmp-filename-input {
+  flex: 1;
+  min-width: 120px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 6px 10px;
+  font-size: 13px;
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 130ms ease;
+}
+
+.cmp-filename-input:focus {
+  border-color: var(--cmp-color, #34D399);
+}
+
+.cmp-filename-ext {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-left: -4px;
+}
+
+.cmp-submit-btn {
+  background: var(--cmp-color, #34D399);
+  color: #0A1F1C;   /* dark text on emerald */
+  border: none;
+  border-radius: 8px;
+  padding: 7px 18px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 150ms ease;
+  white-space: nowrap;
+}
+
+.cmp-submit-btn:hover {
+  filter: brightness(1.1);
+}

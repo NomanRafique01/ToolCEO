@@ -19,6 +19,10 @@ import {
   handleMergeFilesPicked,
   removeMergePanel,
 } from '../tools/documents/pdf_tools/merger/merger.js';
+import {
+  handleCompressFilePicked,
+  removeCompressPanel,
+} from '../tools/documents/pdf_tools/compressor/compressor.js';
 
 const BACKEND = 'http://127.0.0.1:8000';
 
@@ -160,6 +164,7 @@ function _updateDropZone(tool) {
     _resetZoneContent(zone);
     removeSplitPanel();
     removeMergePanel();
+    removeCompressPanel();
     if (iconSlot) iconSlot.outerHTML = DEFAULT_ICON_SVG;
     mainEl.textContent = DEFAULT_MAIN;
     subEl.textContent  = DEFAULT_SUB;
@@ -176,9 +181,10 @@ function _updateDropZone(tool) {
   // ── TOOL SELECTED ──────────────────────────────────────────────────────────
   const { label, mainText, subText, icon, color, bg, tag } = tool;
 
-  _resetZoneContent(zone);  // clear any previous progress/download/error state
-  removeSplitPanel();       // hide previous split info panel if tool changed
-  removeMergePanel();       // hide previous merge queue panel if tool changed
+  _resetZoneContent(zone);   // clear any previous progress/download/error state
+  removeSplitPanel();        // hide previous split info panel if tool changed
+  removeMergePanel();        // hide previous merge queue panel if tool changed
+  removeCompressPanel();     // hide previous compress settings panel if tool changed
 
   const currentIcon = zone.querySelector('.drop-icon');
   if (currentIcon && icon) currentIcon.outerHTML = _scaledIcon(icon, color);
@@ -710,6 +716,12 @@ async function _submitFile(files) {
     return;
   }
 
+  // Compress tool has its own settings-panel flow — delegated to the compressor module
+  if (tool.id === 'compress') {
+    handleCompressFilePicked(files[0]);
+    return;
+  }
+
   const endpoint = ENDPOINT_MAP[tool.id];
   if (!endpoint) {
     const zone = document.getElementById('drop-zone');
@@ -800,10 +812,11 @@ export function initDropZone() {
   // ── Click ──────────────────────────────────────────────────────────────────
   dropZone.addEventListener('click', (e) => {
     if (e.target === fileInput) return;
-    // Don't open file picker when clicking interactive merge/splitter/save/error elements
+    // Don't open file picker when clicking interactive elements from any tool panel
     if (e.target.closest(
       '.dz-download-wrap, .dz-error-wrap, .dz-pdf-thumb-remove, ' +
-      '.dz-merge-card-remove, .dz-merge-add-btn, .merge-queue-panel, .split-info-panel'
+      '.dz-merge-card-remove, .dz-merge-add-btn, .merge-queue-panel, .split-info-panel, ' +
+      '.compress-settings-panel, .dz-compress-thumb-remove, .cmp-panel'
     )) return;
     if (!getActiveTool()) { showNoToolWarning(); return; }
     // If already processing or scanning, ignore — but allow clicks when thumbs are shown
