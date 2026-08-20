@@ -328,6 +328,14 @@ export async function handleMergeFilesPicked(files) {
     return;
   }
 
+  // Deduplicate: skip any file already in the queue (same name + size).
+  const _key = (f) => `${f.name}::${f.size}`;
+  const existing = new Set(_queue.map((item) => _key(item.file)));
+  const newPdfs = pdfs.filter((f) => !existing.has(_key(f)));
+
+  // All picked files were already in the queue — silently ignore.
+  if (newPdfs.length === 0) return;
+
   // First batch: show full scan ring overlay over the empty zone.
   // Subsequent batches: queue already has items — skip the overlay entirely
   // so the existing thumbnail strip stays visible while new files are scanned.
@@ -336,8 +344,8 @@ export async function handleMergeFilesPicked(files) {
     showScanProgress(zone, color);
   }
 
-  // Scan each file sequentially to keep progress honest
-  for (const file of pdfs) {
+  // Scan each new (non-duplicate) file sequentially to keep progress honest
+  for (const file of newPdfs) {
     const fd1 = new FormData(); fd1.append('file', file);
     const fd2 = new FormData(); fd2.append('file', file);
 
