@@ -430,23 +430,23 @@ function _resetZoneContent(zone) {
   );
 }
 
-/** Show the progress bar overlay (replaces browse text area). */
+/** Show the progress bar — a slim glowing strip at the bottom edge of the zone. */
 function _showProgress(zone, pct, color, label) {
   _resetZoneContent(zone);
   zone.classList.add('dz-state-processing');
 
-  const displayLabel = label || 'Processing…';
+  const displayLabel = label || 'Processing';
   const wrap = document.createElement('div');
   wrap.className = 'dz-progress-wrap';
   wrap.innerHTML = `
-    <span class="dz-progress-label">${displayLabel}  <span class="dz-pct">${pct}%</span></span>
+    <span class="dz-progress-label">${displayLabel}<span class="dz-pct">${pct}%</span></span>
     <div class="dz-progress-track">
       <div class="dz-progress-bar" style="width:${pct}%;background:${color}"></div>
     </div>`;
   zone.appendChild(wrap);
 }
 
-/** Show a scan progress bar (different label, same visual). */
+/** Show a scan progress bar — indeterminate, same bottom-edge strip. */
 function _showScanProgress(zone, color) {
   _resetZoneContent(zone);
   zone.classList.add('dz-state-scanning');
@@ -454,7 +454,7 @@ function _showScanProgress(zone, color) {
   const wrap = document.createElement('div');
   wrap.className = 'dz-progress-wrap';
   wrap.innerHTML = `
-    <span class="dz-progress-label">Scanning PDF… <span class="dz-pct"></span></span>
+    <span class="dz-progress-label">Scanning<span class="dz-pct"></span></span>
     <div class="dz-progress-track">
       <div class="dz-progress-bar dz-progress-bar--indeterminate" style="background:${color}"></div>
     </div>`;
