@@ -356,7 +356,10 @@ function _removeSplitPanel() {
  * @param {string} color
  */
 function _showSplitPanel(totalPages, color) {
-  _removeSplitPanel();
+  // Only remove the DOM element — do NOT call _removeSplitPanel() here
+  // because _splitFile / _splitPageCount have just been set by the caller.
+  const existing = document.getElementById('split-info-panel');
+  if (existing) existing.remove();
 
   const heroCard = document.querySelector('.hero-card');
   if (!heroCard) return;
