@@ -5,8 +5,9 @@ from routers.pdf_tools import router as pdf_router
 from routers.pdf_conversions import router as pdf_conversions_router
 from routers.sse_progress import router as sse_router
 # Tool sub-modules — each tool owns its own router
-from tools.documents.pdf_tools.splitter.router import router as splitter_router
-from tools.documents.pdf_tools.merger.router   import router as merger_router
+from tools.documents.pdf_tools.splitter.router   import router as splitter_router
+from tools.documents.pdf_tools.merger.router      import router as merger_router
+from tools.documents.pdf_tools.compressor.router  import router as compressor_router
 
 app = FastAPI(title="ToolCEO Backend")
 
@@ -42,3 +43,5 @@ app.include_router(sse_router, prefix="/api")
 
 # Merger tool — owns /api/pdf/merger/info and /api/pdf/merger/merge
 app.include_router(merger_router, prefix="/api")
+# Compressor tool — owns /api/pdf/compressor/info and /api/pdf/compressor/compress
+app.include_router(compressor_router, prefix="/api")
