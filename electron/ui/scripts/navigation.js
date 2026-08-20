@@ -14,6 +14,7 @@
 
 import { renderDocumentFormats } from './documents.js';
 import { renderAudioFormats }    from './audio.js';
+import { setActiveTool }         from './toolstate.js';
 
 // ── Category → renderer map ──────────────────────────────────────────────────
 // Add future categories here.  Value is a function(container) that fills it.
@@ -86,9 +87,21 @@ export function initNavigation() {
       CATEGORY_RENDERERS[label](exploreSection, activateNav);
     } else {
       // Restore default Explore Tools grid (Dashboard or unmapped items)
+      // Clear any active tool so the hero card resets to its default state
+      setActiveTool(null);
       exploreSection.innerHTML = originalExploreHTML;
       bindToolCardClicks(activateNav);
     }
+
+    // ── Scroll explore section into view so the user sees the tools ──────
+    // #main-content is a fixed-position scroll container, so we must scroll it
+    // directly rather than using scrollIntoView (which doesn't cross fixed roots).
+    setTimeout(() => {
+      const mainContent = document.getElementById('main-content');
+      if (mainContent) {
+        mainContent.scrollTo({ top: exploreSection.offsetTop - 16, behavior: 'smooth' });
+      }
+    }, 60);
   }
 
   navItems.forEach((item) => {
@@ -106,7 +119,11 @@ export function bindToolCardClicks(activateNav) {
   document.querySelectorAll('.tool-card').forEach((card) => {
     card.addEventListener('click', () => {
       const label = card.dataset.nav;
-      if (label) activateNav(label);
+      if (label) {
+        // Clear any previously selected tool when jumping to a new category
+        setActiveTool(null);
+        activateNav(label);
+      }
     });
   });
 }

@@ -1,0 +1,11 @@
+/* ─────────────────────────────────────────────────────────────
+   audio.css
+   Reserved for future audio-specific overrides.
+   All shared format-card grid styles live in documents.css
+   since the .fmt-* classes are reused across every category.
+   ───────────────────────────────────────────────────────────── */
+
+/*
+  Add audio-panel-specific overrides here when needed.
+  Example: custom waveform animation, audio-only colour tokens, etc.
+*/

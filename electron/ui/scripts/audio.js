@@ -6,6 +6,13 @@
  */
 
 import { setBreadcrumb } from './navigation.js';
+import { setActiveTool } from './toolstate.js';
+
+/** Scroll #main-content so the drop-zone is visible. */
+function _scrollToDropZone() {
+  const mainContent = document.getElementById('main-content');
+  if (mainContent) mainContent.scrollTo({ top: 0, behavior: 'smooth' });
+}
 
 const AUDIO_FORMATS = [
   {
@@ -182,11 +189,26 @@ export function renderAudioFormats(container, activateNav) {
     activateNav('Dashboard');
   });
 
-  // Format card selection highlight
+  // Format card selection highlight + tool-state update
   container.querySelectorAll('.fmt-card').forEach((card) => {
     card.addEventListener('click', () => {
       container.querySelectorAll('.fmt-card').forEach((c) => c.classList.remove('selected'));
       card.classList.add('selected');
+
+      const fmt = AUDIO_FORMATS.find((f) => f.id === card.dataset.format);
+      if (fmt) {
+        setActiveTool({
+          id      : fmt.id,
+          label   : fmt.label,
+          mainText: `Drop file to Convert to ${fmt.label}`,
+          subText : `or click to select a file for ${fmt.label} conversion`,
+          icon    : fmt.icon,
+          color   : fmt.color,
+          bg      : fmt.bg,
+          tag     : null,
+        });
+        _scrollToDropZone();
+      }
     });
   });
 }

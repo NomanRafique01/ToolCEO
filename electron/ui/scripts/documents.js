@@ -5,6 +5,39 @@
  */
 
 import { setBreadcrumb } from './navigation.js';
+import { setActiveTool } from './toolstate.js';
+
+// ─── HELPERS ──────────────────────────────────────────────────────────────────
+
+/**
+ * Build drop-zone copy for a given tool/conversion card.
+ * @param {{ id: string, label: string, tag?: string }} item
+ * @returns {{ mainText: string, subText: string }}
+ */
+function _dropTextFor(item) {
+  const label = item.label;
+  const isConvert = item.tag === 'Convert' || label.includes('→');
+
+  if (isConvert) {
+    // e.g. "PDF → DOCX"  →  "Drop file to Convert PDF → DOCX"
+    return {
+      mainText: `Drop file to Convert ${label}`,
+      subText : `or click to select a file for ${label}`,
+    };
+  }
+
+  // Tool cards  e.g. "Merge PDFs"
+  return {
+    mainText: `Select File to ${label}`,
+    subText : `or click to pick your file`,
+  };
+}
+
+/** Scroll #main-content so the drop-zone is visible, smoothly. */
+function _scrollToDropZone() {
+  const mainContent = document.getElementById('main-content');
+  if (mainContent) mainContent.scrollTo({ top: 0, behavior: 'smooth' });
+}
 
 // ─── PDF TOOL CARDS ──────────────────────────────────────────────────────────
 
@@ -419,11 +452,23 @@ export function renderPdfTools(container, activateNav) {
     activateNav('Documents');
   });
 
-  // Card selection highlight (scoped to this panel)
+  // Card selection highlight + tool-state update
+  const allItems = [...PDF_TOOLS, ...PDF_CONVERSIONS];
   container.querySelectorAll('.fmt-card').forEach((card) => {
     card.addEventListener('click', () => {
       container.querySelectorAll('.fmt-card').forEach((c) => c.classList.remove('selected'));
       card.classList.add('selected');
+
+      const item = allItems.find((t) => t.id === card.dataset.id);
+      if (item) {
+        const { mainText, subText } = _dropTextFor(item);
+        setActiveTool({
+          id: item.id, label: item.label, mainText, subText,
+          icon: item.icon, color: item.color, bg: item.bg,
+          tag: item.tag,
+        });
+        _scrollToDropZone();
+      }
     });
   });
 }
@@ -473,11 +518,22 @@ export function renderDocumentFormats(container, activateNav) {
     });
   }
 
-  // Other format card selection highlight
+  // Other format card selection highlight + tool-state update
   container.querySelectorAll('.fmt-card:not(.fmt-card--pdf-entry)').forEach((card) => {
     card.addEventListener('click', () => {
       container.querySelectorAll('.fmt-card').forEach((c) => c.classList.remove('selected'));
       card.classList.add('selected');
+
+      const item = DOC_FORMATS.find((f) => f.id === card.dataset.id);
+      if (item) {
+        const { mainText, subText } = _dropTextFor(item);
+        setActiveTool({
+          id: item.id, label: item.label, mainText, subText,
+          icon: item.icon, color: item.color, bg: item.bg,
+          tag: item.tag,
+        });
+        _scrollToDropZone();
+      }
     });
   });
 }

@@ -11,38 +11,49 @@
   height: var(--topbar-height);
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 12px;
   padding: 0 16px;
   border-bottom: 1px solid var(--border);
 }
 
-.logo-icon {
-  width: 32px;
-  height: 32px;
-  border-radius: 8px;
+.logo-icon-wrap {
   flex-shrink: 0;
+  width: 53px;
+  height: 53px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.logo-icon {
+  width: 53px;
+  height: 53px;
   object-fit: contain;
+  display: block;
 }
 
 .logo-text {
   display: flex;
   flex-direction: column;
-  gap: 2px;
+  gap: 3px;
 }
 
 .logo-name {
-  font-size: 15px;
-  font-weight: 500;
+  font-size: 16px;
+  font-weight: 700;
   color: var(--text-primary);
   line-height: 1;
+  letter-spacing: 0.01em;
 }
 
 .logo-badge {
-  font-size: 10px;
+  font-size: 9.5px;
+  font-weight: 600;
   text-transform: uppercase;
-  letter-spacing: 0.08em;
+  letter-spacing: 0.1em;
   color: var(--accent);
   line-height: 1;
+  opacity: 0.9;
 }
 
 /* ─── NAV SECTIONS & ITEMS ───────────────────────────────── */

@@ -50,12 +50,14 @@
   font-weight: 500;
   color: var(--text-primary);
   line-height: 1.2;
+  transition: color 240ms ease;
 }
 
 .hero-subtitle {
   font-size: 12px;
   color: var(--text-muted);
   margin-top: 4px;
+  transition: color 240ms ease;
 }
 
 .hero-hint {
@@ -63,11 +65,50 @@
   color: var(--text-muted);
   white-space: nowrap;
   margin-top: 4px;
+  transition: color 240ms ease;
+}
+
+/* ── Hero header: tool-selected state ─────────────────────── */
+
+.hero-selected-row {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+}
+
+.hero-selected-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  animation: heroDotPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes heroDotPulse {
+  0%, 100% { opacity: 1;   transform: scale(1);   }
+  50%       { opacity: 0.5; transform: scale(0.75); }
+}
+
+.hero-tool-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 9px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.05em;
+  border: 1px solid transparent;
+  text-transform: uppercase;
+  line-height: 1.6;
 }
 
 /* ─── DROP ZONE ──────────────────────────────────────────── */
 
 .drop-zone {
+  --dz-color: #00E5C0;
+  --dz-bg:    rgba(0, 229, 192, 0.06);
+
   width: 100%;
   height: 200px;
   border: 1.5px dashed rgba(0, 229, 192, 0.4);
@@ -78,7 +119,7 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: border-color 150ms ease, background 150ms ease;
+  transition: border-color 240ms ease, background 240ms ease;
   position: relative;
 }
 
@@ -88,11 +129,42 @@
   background: radial-gradient(ellipse at center, rgba(0, 229, 192, 0.09) 0%, transparent 70%);
 }
 
+/* ── Tool-active state: border + bg driven by the selected tool's colour ── */
+.drop-zone--tool-active {
+  border-color: var(--dz-color);
+  border-style: solid;
+  background: radial-gradient(ellipse at center, var(--dz-bg) 0%, transparent 70%);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--dz-color) 15%, transparent),
+              inset 0 0 40px color-mix(in srgb, var(--dz-color) 4%, transparent);
+}
+
+.drop-zone--tool-active:hover,
+.drop-zone--tool-active.drag-active {
+  border-color: var(--dz-color);
+  background: radial-gradient(ellipse at center, var(--dz-bg) 0%, transparent 60%);
+  filter: brightness(1.08);
+}
+
+.drop-zone--tool-active .drop-main-text {
+  color: var(--dz-color);
+  font-weight: 600;
+}
+
+.drop-zone--tool-active .drop-browse {
+  color: var(--text-muted);
+}
+
 #file-input { display: none; }
 
 .drop-icon {
   display: block;
   flex-shrink: 0;
+  animation: dropIconFadeIn 280ms ease forwards;
+}
+
+@keyframes dropIconFadeIn {
+  from { opacity: 0; transform: scale(0.82); }
+  to   { opacity: 1; transform: scale(1); }
 }
 
 .drop-main-text {
