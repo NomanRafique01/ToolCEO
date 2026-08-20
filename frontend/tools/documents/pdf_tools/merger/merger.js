@@ -268,7 +268,7 @@ function _renderMergePanel() {
     <div class="mqp-actions">
       <input class="mqp-filename-input" id="mqp-filename-input"
              type="text" placeholder="Output filename (optional)"
-             value="merged" maxlength="120" spellcheck="false"/>
+             value="${_queue.length > 0 ? _queue[0].file.name.replace(/\.pdf$/i, '') + '_merged' : 'merged'}" maxlength="120" spellcheck="false"/>
       <span class="mqp-filename-ext">.pdf</span>
       <button class="mqp-merge-btn${canMerge ? '' : ' mqp-merge-btn--disabled'}"
               id="mqp-merge-btn" ${canMerge ? '' : 'disabled'}>
@@ -299,6 +299,9 @@ function _renderMergePanel() {
     if (_queue.length < 2) return;
     const nameInput = panel.querySelector('#mqp-filename-input');
     const outName   = (nameInput ? nameInput.value.trim() : '') || 'merged';
+    // Scroll the main content area back to the top before processing
+    const mainContent = document.getElementById('main-content');
+    if (mainContent) mainContent.scrollTop = 0;
     _submitMerge(outName);
   });
 }
