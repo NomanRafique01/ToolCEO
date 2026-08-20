@@ -20,6 +20,7 @@ from fastapi.responses import JSONResponse
 
 import jobs as job_store
 from converters.pdf_engine import (
+    _auto_chunk_size,
     add_watermark,
     compress_pdf,
     decrypt_pdf,
@@ -29,6 +30,7 @@ from converters.pdf_engine import (
     ocr_pdf,
     rotate_pdf,
     split_pdf,
+    split_pdf_chunked,
     split_pdf_to_zip,
 )
 
@@ -95,19 +97,26 @@ async def merge(files: List[UploadFile] = File(...)):
 # 2. Split
 # ---------------------------------------------------------------------------
 
-@router.post("/split", summary="Split a PDF: range → single PDF, no range → ZIP of all pages")
+@router.post("/split", summary="Split a PDF: range → single PDF, no range → auto-chunked ZIP")
 async def split(
     file: UploadFile = File(...),
     start_page: Optional[int] = Form(None, ge=1),
     end_page:   Optional[int] = Form(None, ge=1),
+    chunk_size:  Optional[int] = Form(None, ge=1),
 ):
     raw = await _read(file)
     job = job_store.create_job()
 
-    # No range provided → split every page into its own PDF, return a ZIP
+    # No range provided → auto-chunk split into a ZIP
     if start_page is None and end_page is None:
-        _submit(job.id, split_pdf_to_zip, raw,
-                filename="split_pages.zip", media_type="application/zip")
+        import fitz as _fitz
+        _src = _fitz.open(stream=raw, filetype="pdf")
+        total_pages = _src.page_count
+        _src.close()
+
+        effective_chunk = chunk_size if chunk_size else _auto_chunk_size(total_pages)
+        _submit(job.id, split_pdf_chunked, raw, effective_chunk,
+                filename="split_pdfs.zip", media_type="application/zip")
     else:
         s = start_page or 1
         e = end_page   or 99999

@@ -88,6 +88,48 @@ def split_pdf_to_zip(data: bytes) -> bytes:
     return buf.read()
 
 
+def _auto_chunk_size(total_pages: int) -> int:
+    """Return the default chunk size based on total page count."""
+    if total_pages <= 100:
+        return 10
+    elif total_pages <= 400:
+        return 25
+    else:
+        return 50
+
+
+def split_pdf_chunked(data: bytes, chunk_size: int) -> bytes:
+    """
+    Split a PDF into sequential chunks of *chunk_size* pages each and return
+    a ZIP archive.  The final chunk may be smaller than chunk_size.
+    E.g. 35-page PDF with chunk_size=10 → parts_001-010.pdf, parts_011-020.pdf,
+         parts_021-030.pdf, parts_031-035.pdf.
+    """
+    import zipfile
+
+    src = _open_bytes(data)
+    total = src.page_count
+    buf = io.BytesIO()
+
+    with zipfile.ZipFile(buf, mode='w', compression=zipfile.ZIP_DEFLATED) as zf:
+        start = 0  # 0-based
+        chunk_num = 1
+        while start < total:
+            end = min(start + chunk_size, total) - 1  # 0-based inclusive
+            chunk_doc = fitz.open()
+            chunk_doc.insert_pdf(src, from_page=start, to_page=end)
+            chunk_bytes = _to_bytes(chunk_doc)
+            # Name: pdf1_1-50.pdf, pdf2_51-100.pdf, ...
+            label = f"pdf{chunk_num}_{start + 1}-{end + 1}.pdf"
+            zf.writestr(label, chunk_bytes)
+            start = end + 1
+            chunk_num += 1
+
+    src.close()
+    buf.seek(0)
+    return buf.read()
+
+
 # ---------------------------------------------------------------------------
 # 3. Compress
 # ---------------------------------------------------------------------------

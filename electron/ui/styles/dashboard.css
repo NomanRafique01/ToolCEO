@@ -507,6 +507,20 @@
   margin-top: 2px;
 }
 
+.sip-auto-hint {
+  font-size: 11px;
+  color: var(--text-muted, #888);
+  margin-top: 6px;
+  padding: 5px 8px;
+  background: rgba(0,0,0,0.12);
+  border-radius: 5px;
+  line-height: 1.5;
+}
+
+.sip-auto-hint strong {
+  color: var(--split-color);
+}
+
 /* ─── PDF THUMBNAIL (Windows large-icon style) ───────────── */
 
 /* ── When a thumbnail is shown, hide the default icon + browse text ── */

@@ -469,6 +469,20 @@ function _updateProgress(zone, pct, color) {
   if (label) label.textContent = `${pct}%`;
 }
 
+/**
+ * After a successful save, wait briefly so the user sees "Saved successfully",
+ * then reset the drop zone back to its tool-selected idle state ready for a new file.
+ */
+function _resetAfterSave(zone) {
+  setTimeout(() => {
+    _resetZoneContent(zone);
+    // Also clear split-tool state so it's ready for a new file
+    _removeSplitPanel();
+    const tool = getActiveTool();
+    if (tool) _updateDropZone(tool);
+  }, 1800);
+}
+
 /** Show download-ready state — card is centred inside the drop zone. */
 function _showDownload(zone, filename, jobId, color) {
   _resetZoneContent(zone);
@@ -537,6 +551,7 @@ function _showDownload(zone, filename, jobId, color) {
         if (savedPath) {
           btn.style.display = 'none';
           wrap.querySelector('.dz-save-done').classList.add('dz-save-done--visible');
+          _resetAfterSave(zone);
         } else {
           btn.disabled = false;
           btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none"
@@ -553,6 +568,7 @@ function _showDownload(zone, filename, jobId, color) {
         URL.revokeObjectURL(url);
         btn.style.display = 'none';
         wrap.querySelector('.dz-save-done').classList.add('dz-save-done--visible');
+        _resetAfterSave(zone);
       }
     } catch (err) {
       btn.disabled = false;
@@ -611,6 +627,8 @@ async function _downloadFile(jobId, filename, color, wrap) {
       const savedPath = await window.toolceo.saveFileAs(filename, base64);
       if (savedPath) {
         if (btn) { btn.disabled = false; btn.textContent = '✓ Saved'; btn.style.opacity = '0.6'; }
+        const zone = document.getElementById('drop-zone');
+        if (zone) _resetAfterSave(zone);
       } else {
         // User cancelled the dialog — re-enable button
         if (btn) { btn.disabled = false; btn.textContent = 'Save As…'; }
@@ -621,6 +639,8 @@ async function _downloadFile(jobId, filename, color, wrap) {
       a.href = url; a.download = filename; a.click();
       URL.revokeObjectURL(url);
       if (btn) { btn.disabled = false; btn.textContent = '✓ Downloaded'; btn.style.opacity = '0.6'; }
+      const zone = document.getElementById('drop-zone');
+      if (zone) _resetAfterSave(zone);
     }
   } catch (err) {
     if (btn) { btn.disabled = false; btn.textContent = 'Save As…'; }
@@ -630,6 +650,18 @@ async function _downloadFile(jobId, filename, color, wrap) {
 }
 
 // ─── SPLIT INFO PANEL ─────────────────────────────────────────────────────────
+
+/**
+ * Return the default auto-split chunk size based on total page count.
+ * Mirrors the same logic in backend/converters/pdf_engine.py → _auto_chunk_size().
+ * @param {number} totalPages
+ * @returns {number}
+ */
+function _autoChunkSize(totalPages) {
+  if (totalPages <= 100)  return 10;
+  if (totalPages <= 400)  return 25;
+  return 50;
+}
 
 /** The file object held between scan and submit for split tool. */
 let _splitFile      = null;
@@ -671,6 +703,8 @@ function _showSplitPanel(totalPages, color) {
   panel.className = 'split-info-panel';
   panel.style.setProperty('--split-color', color);
 
+  const defaultChunk = _autoChunkSize(totalPages);
+
   panel.innerHTML = `
     <div class="sip-header">
       <span class="sip-pages-badge">
@@ -692,6 +726,10 @@ function _showSplitPanel(totalPages, color) {
         <input class="sip-input" id="sip-to"   type="number" min="1" max="${totalPages}" placeholder="To" />
       </div>
       <button class="sip-split-btn" id="sip-split-btn">Split PDF</button>
+    </div>
+    <div class="sip-auto-hint" id="sip-auto-hint">
+      Auto-split: <strong>${defaultChunk} pages</strong> per chunk
+      (${Math.ceil(totalPages / defaultChunk)} parts) — enter a range above to override
     </div>`;
 
   heroCard.appendChild(panel);
@@ -708,11 +746,19 @@ function _showSplitPanel(totalPages, color) {
     if (tool) _updateDropZone(tool);
   });
 
+  // Toggle hint visibility when range inputs change
+  const fromEl = panel.querySelector('#sip-from');
+  const toEl   = panel.querySelector('#sip-to');
+  const hint   = panel.querySelector('#sip-auto-hint');
+  const _toggleHint = () => {
+    if (hint) hint.style.display = (fromEl.value.trim() || toEl.value.trim()) ? 'none' : '';
+  };
+  fromEl.addEventListener('input', _toggleHint);
+  toEl.addEventListener('input', _toggleHint);
+
   // "Split PDF" button submits
   panel.querySelector('#sip-split-btn').addEventListener('click', () => {
     if (!_splitFile) return;
-    const fromEl = panel.querySelector('#sip-from');
-    const toEl   = panel.querySelector('#sip-to');
     const fromVal = fromEl.value.trim();
     const toVal   = toEl.value.trim();
 
@@ -844,6 +890,10 @@ async function _submitSplitFile(file, fromVal, toVal) {
   fd.append('file', file);
   if (fromVal) fd.append('start_page', parseInt(fromVal, 10));
   if (toVal)   fd.append('end_page',   parseInt(toVal,   10));
+  // No manual range → send the auto-detected chunk size so the backend uses it
+  if (!fromVal && !toVal) {
+    fd.append('chunk_size', _autoChunkSize(_splitPageCount));
+  }
 
   // Show progress inside drop zone
   _showProgress(zone, 0, color, 'Processing…');
@@ -895,7 +945,7 @@ async function _submitSplitFile(file, fromVal, toVal) {
       // Build filename: original PDF base name + "_split_pages.zip"
       const dlName = data.filename
         ? `${baseName}_${data.filename}`
-        : `${baseName}_split_pages.zip`;
+        : `${baseName}_split_pdfs.zip`;
       setTimeout(() => _showDownload(zone, dlName, jobId, color), 200);
       return;
     }
