@@ -193,7 +193,15 @@
 .dz-state-processing { cursor: default; }
 .dz-state-done       { cursor: default; }
 
-/* Hide default drop-zone text/icon while a result is displayed */
+/* Hide default drop-zone text/icon while processing or result is displayed */
+.dz-state-processing .drop-icon,
+.dz-state-processing .drop-main-text,
+.dz-state-processing .drop-browse,
+.dz-state-processing .drop-private,
+.dz-state-scanning .drop-icon,
+.dz-state-scanning .drop-main-text,
+.dz-state-scanning .drop-browse,
+.dz-state-scanning .drop-private,
 .dz-state-done .drop-icon,
 .dz-state-done .drop-main-text,
 .dz-state-done .drop-browse,
@@ -201,57 +209,105 @@
   display: none;
 }
 
-/* ── Progress wrap — slim bottom-edge strip, never covers content ── */
+/* ── Circular progress overlay — fills zone, centred ── */
 .dz-progress-wrap {
   position: absolute;
-  bottom: 0;
-  left: 0;
-  right: 0;
+  inset: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0;
+  justify-content: center;
+  gap: 16px;
   pointer-events: none;
+  animation: dzRingFadeIn 220ms ease forwards;
 }
 
-/* Pill label that floats just above the track */
-.dz-progress-label {
-  font-size: 10px;
-  font-weight: 500;
-  color: var(--text-muted);
-  letter-spacing: 0.05em;
-  text-transform: uppercase;
-  padding: 3px 10px 4px;
-  background: rgba(10, 18, 16, 0.72);
-  backdrop-filter: blur(6px);
-  -webkit-backdrop-filter: blur(6px);
-  border-radius: 6px 6px 0 0;
-  line-height: 1;
-  align-self: center;
-  margin-bottom: 0;
-  white-space: nowrap;
+@keyframes dzRingFadeIn {
+  from { opacity: 0; transform: scale(0.92); }
+  to   { opacity: 1; transform: scale(1); }
 }
+
+/* ── SVG ring container ── */
+.dz-ring-svg {
+  display: block;
+  overflow: visible;
+  filter: drop-shadow(0 0 10px var(--dz-ring-color, #00E5C0));
+}
+
+/* Background track ring */
+.dz-ring-track {
+  fill: none;
+  stroke: rgba(255, 255, 255, 0.07);
+  stroke-width: 5;
+}
+
+/* Foreground progress ring */
+.dz-ring-fill {
+  fill: none;
+  stroke-width: 5;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 320ms cubic-bezier(0.4, 0, 0.2, 1),
+              stroke 240ms ease;
+  transform-origin: center;
+  transform: rotate(-90deg);
+}
+
+/* Subtle inner pulse glow circle */
+.dz-ring-glow {
+  fill: var(--dz-ring-color, #00E5C0);
+  opacity: 0.07;
+  transform-origin: 55px 55px;
+  animation: dzGlowPulse 1.6s ease-in-out infinite;
+}
+
+@keyframes dzGlowPulse {
+  0%, 100% { opacity: 0.07; transform: scale(1);    }
+  50%       { opacity: 0.15; transform: scale(1.12); }
+}
+
+/* Orbiting dot */
+.dz-ring-orbit-dot {
+  fill: var(--dz-ring-color, #00E5C0);
+  filter: blur(0.5px);
+}
+
+/* ── Percentage / label text ── */
+.dz-ring-center {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  line-height: 1;
+}
+
 .dz-pct {
+  font-size: 28px;
   font-weight: 700;
   color: var(--text-primary);
-  margin-left: 4px;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
 }
 
-/* The track itself — full-width, razor-thin at the bottom edge */
-.dz-progress-track {
-  width: 100%;
-  height: 3px;
-  background: rgba(255, 255, 255, 0.07);
-  border-radius: 0;
-  overflow: hidden;
-  position: relative;
+.dz-progress-label {
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--text-muted);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  white-space: nowrap;
 }
-.dz-progress-bar {
-  height: 100%;
-  border-radius: 0;
-  transition: width 300ms cubic-bezier(0.4, 0, 0.2, 1);
-  /* Bright right-edge shimmer via gradient overlay */
-  background-image: linear-gradient(90deg, transparent 60%, rgba(255,255,255,0.28) 100%) !important;
+
+/* ── Indeterminate / scan state ── */
+@keyframes dzRingSpinCW {
+  from { transform: rotate(-90deg); }
+  to   { transform: rotate(270deg); }
+}
+
+.dz-ring-fill--indeterminate {
+  animation: dzRingSpinCW 1.1s linear infinite !important;
+  transition: none !important;
+  stroke-dasharray: 88 251 !important; /* ~35% arc of full circle (r=40) */
+  stroke-dashoffset: 0 !important;
 }
 
 /* ── Error overlay — anchored to bottom, no content overlap ── */
@@ -370,18 +426,6 @@
   color: #F87171;
   line-height: 1.45;
   word-break: break-word;
-}
-
-/* ─── INDETERMINATE SCAN BAR ─────────────────────────────── */
-
-@keyframes dzScanSlide {
-  0%   { transform: translateX(-100%); }
-  100% { transform: translateX(400%); }
-}
-
-.dz-progress-bar--indeterminate {
-  width: 30% !important;
-  animation: dzScanSlide 1.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
 }
 
 /* ─── SPLIT INFO PANEL ───────────────────────────────────── */

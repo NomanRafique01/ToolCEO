@@ -430,43 +430,73 @@ function _resetZoneContent(zone) {
   );
 }
 
-/** Show the progress bar — a slim glowing strip at the bottom edge of the zone. */
+// ── Ring geometry constants ──────────────────────────────────────────────────
+const _RING_R    = 40;   // circle radius
+const _RING_CIRC = 2 * Math.PI * _RING_R;  // ≈ 251.3
+
+/** Build the circular ring SVG + center text, returns {wrapEl, ringFill, pctEl} */
+function _buildRingWrap(color, pct, label, indeterminate) {
+  // dashoffset encodes progress: 0 = full, CIRC = empty
+  const offset   = indeterminate ? 0 : _RING_CIRC * (1 - pct / 100);
+  const dashArr  = indeterminate
+    ? `${_RING_CIRC * 0.35} ${_RING_CIRC * 0.65}`
+    : `${_RING_CIRC} ${_RING_CIRC}`;
+
+  const wrap = document.createElement('div');
+  wrap.className = 'dz-progress-wrap';
+  // Set ring colour as CSS var so the SVG filter + glow use it
+  wrap.style.setProperty('--dz-ring-color', color);
+
+  wrap.innerHTML = `
+    <svg class="dz-ring-svg" width="110" height="110" viewBox="0 0 110 110"
+         xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+      <!-- glow inner circle -->
+      <circle class="dz-ring-glow" cx="55" cy="55" r="28"/>
+      <!-- track -->
+      <circle class="dz-ring-track" cx="55" cy="55" r="${_RING_R}"/>
+      <!-- progress fill -->
+      <circle class="dz-ring-fill${indeterminate ? ' dz-ring-fill--indeterminate' : ''}"
+              cx="55" cy="55" r="${_RING_R}"
+              stroke="${color}"
+              stroke-dasharray="${dashArr}"
+              stroke-dashoffset="${offset}"
+              style="transform-origin:55px 55px"/>
+    </svg>
+    <div class="dz-ring-center">
+      <span class="dz-pct">${indeterminate ? '' : `${pct}%`}</span>
+      <span class="dz-progress-label">${label || 'Processing'}</span>
+    </div>`;
+
+  return wrap;
+}
+
+/** Show the circular ring progress — centred inside the drop zone. */
 function _showProgress(zone, pct, color, label) {
   _resetZoneContent(zone);
   zone.classList.add('dz-state-processing');
-
-  const displayLabel = label || 'Processing';
-  const wrap = document.createElement('div');
-  wrap.className = 'dz-progress-wrap';
-  wrap.innerHTML = `
-    <span class="dz-progress-label">${displayLabel}<span class="dz-pct">${pct}%</span></span>
-    <div class="dz-progress-track">
-      <div class="dz-progress-bar" style="width:${pct}%;background:${color}"></div>
-    </div>`;
-  zone.appendChild(wrap);
+  zone.appendChild(_buildRingWrap(color, pct, label || 'Processing', false));
 }
 
-/** Show a scan progress bar — indeterminate, same bottom-edge strip. */
+/** Show an indeterminate scanning ring — spinning arc. */
 function _showScanProgress(zone, color) {
   _resetZoneContent(zone);
   zone.classList.add('dz-state-scanning');
-
-  const wrap = document.createElement('div');
-  wrap.className = 'dz-progress-wrap';
-  wrap.innerHTML = `
-    <span class="dz-progress-label">Scanning<span class="dz-pct"></span></span>
-    <div class="dz-progress-track">
-      <div class="dz-progress-bar dz-progress-bar--indeterminate" style="background:${color}"></div>
-    </div>`;
-  zone.appendChild(wrap);
+  zone.appendChild(_buildRingWrap(color, 0, 'Scanning', true));
 }
 
-/** Update just the bar/label without re-inserting the whole overlay. */
+/** Update just the ring fill + percentage text without rebuilding the overlay. */
 function _updateProgress(zone, pct, color) {
-  const bar   = zone.querySelector('.dz-progress-bar');
+  const ring  = zone.querySelector('.dz-ring-fill');
   const label = zone.querySelector('.dz-pct');
-  if (bar)   { bar.style.width = `${pct}%`; bar.style.background = color; }
+  if (ring) {
+    const offset = _RING_CIRC * (1 - pct / 100);
+    ring.setAttribute('stroke-dashoffset', offset);
+    ring.setAttribute('stroke', color);
+  }
   if (label) label.textContent = `${pct}%`;
+  // Also sync the SVG filter colour var
+  const wrap = zone.querySelector('.dz-progress-wrap');
+  if (wrap) wrap.style.setProperty('--dz-ring-color', color);
 }
 
 /**
