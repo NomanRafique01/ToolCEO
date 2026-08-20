@@ -328,9 +328,13 @@ export async function handleMergeFilesPicked(files) {
     return;
   }
 
-  // Show scanning ring only if the queue is currently empty (first batch)
+  // First batch: show full scan ring overlay over the empty zone.
+  // Subsequent batches: queue already has items — skip the overlay entirely
+  // so the existing thumbnail strip stays visible while new files are scanned.
   const isFirstBatch = _queue.length === 0;
-  if (isFirstBatch) showScanProgress(zone, color);
+  if (isFirstBatch) {
+    showScanProgress(zone, color);
+  }
 
   // Scan each file sequentially to keep progress honest
   for (const file of pdfs) {
@@ -360,8 +364,12 @@ export async function handleMergeFilesPicked(files) {
     _queue.push({ file, pageCount, thumbnail });
   }
 
-  // Reset zone back to idle (remove scan ring)
-  resetZoneContent(zone);
+  // Only remove the scan-ring overlay if we actually showed one (first batch).
+  // For subsequent batches the zone never entered scanning state, so calling
+  // resetZoneContent would be a no-op at best and could flicker at worst.
+  if (isFirstBatch) {
+    resetZoneContent(zone);
+  }
 
   // Rebuild UI
   _renderThumbStrip();
