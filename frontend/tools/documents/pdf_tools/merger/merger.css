@@ -130,6 +130,8 @@
   display: block;
   border-radius: 3px;
   pointer-events: none;
+  image-rendering: -webkit-optimize-contrast; /* Chromium/Electron: crisp bicubic downscale */
+  image-rendering: high-quality;
 }
 
 .dz-merge-thumb-fallback {

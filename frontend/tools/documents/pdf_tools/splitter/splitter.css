@@ -207,6 +207,8 @@
   object-fit: cover;
   display: block;
   border-radius: 4px;
+  image-rendering: -webkit-optimize-contrast; /* Chromium/Electron: crisp bicubic downscale */
+  image-rendering: high-quality;
 }
 
 .dz-pdf-thumb-icon {

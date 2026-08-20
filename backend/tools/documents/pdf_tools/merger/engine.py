@@ -71,17 +71,18 @@ def get_pdf_info(data: bytes, password: Optional[str] = None) -> dict:
     -------
     {
         "page_count": int,
-        "thumbnail":  "data:image/jpeg;base64,..."  (first page, 2× JPEG)
+        "thumbnail":  "data:image/jpeg;base64,..."  (first page, 3× JPEG)
     }
     """
     doc = _open_bytes(data, password)
     page_count = doc.page_count
 
-    # Render first page at 2× scale for a crisp thumbnail
+    # Render first page at 3× scale — large enough source for the browser
+    # to downsample cleanly into the small thumbnail frame (~72 px wide).
     page = doc[0]
-    mat  = fitz.Matrix(2.0, 2.0)
+    mat  = fitz.Matrix(3.0, 3.0)
     pix  = page.get_pixmap(matrix=mat, alpha=False)
-    jpeg = pix.tobytes("jpeg", jpg_quality=80)
+    jpeg = pix.tobytes("jpeg", jpg_quality=92)
     doc.close()
 
     b64 = base64.b64encode(jpeg).decode()
