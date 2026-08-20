@@ -1,0 +1,101 @@
+/* ─────────────────────────────────────────────────────────────
+   documents.css
+   Shared format-card grid styles used when Documents (or any
+   category with the .fmt-* classes) replaces the explore-section.
+   ───────────────────────────────────────────────────────────── */
+
+/* ─── FORMAT GRID ─────────────────────────────────────────── */
+
+.fmt-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+}
+
+.fmt-card {
+  background: var(--bg-card);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 16px;
+  cursor: pointer;
+  transition: border-color 150ms ease, background 150ms ease, transform 120ms ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.fmt-card:hover {
+  border-color: var(--fmt-color);
+  background: var(--fmt-bg);
+  transform: translateY(-1px);
+}
+
+.fmt-card.selected {
+  border-color: var(--fmt-color);
+  background: var(--fmt-bg);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--fmt-color) 18%, transparent);
+}
+
+.fmt-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.fmt-icon-box {
+  color: var(--fmt-color);
+  line-height: 0;
+}
+
+.fmt-arrow { font-size: 18px; color: var(--text-muted); line-height: 1; }
+
+.fmt-label {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-top: 12px;
+}
+
+.fmt-desc {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.fmt-ext {
+  font-size: 12px;
+  color: var(--fmt-color);
+  margin-top: 8px;
+  font-weight: 500;
+}
+
+/* ─── BACK BUTTON & CATEGORY ICON IN EXPLORE HEADER ─────── */
+
+.fmt-back-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text-muted);
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: border-color 120ms ease, color 120ms ease;
+}
+
+.fmt-back-btn:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+.fmt-category-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
