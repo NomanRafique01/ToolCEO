@@ -65,6 +65,29 @@ def split_pdf(data: bytes, start_page: int, end_page: int) -> bytes:
     return _to_bytes(out)
 
 
+def split_pdf_to_zip(data: bytes) -> bytes:
+    """
+    Split every page of the PDF into its own file and return a ZIP archive.
+    E.g. a 200-page PDF → ZIP containing page_001.pdf … page_200.pdf.
+    """
+    import zipfile
+
+    src = _open_bytes(data)
+    total = src.page_count
+    buf = io.BytesIO()
+
+    with zipfile.ZipFile(buf, mode='w', compression=zipfile.ZIP_DEFLATED) as zf:
+        for i in range(total):
+            page_doc = fitz.open()
+            page_doc.insert_pdf(src, from_page=i, to_page=i)
+            page_bytes = _to_bytes(page_doc)
+            zf.writestr(f"page_{i + 1:03d}.pdf", page_bytes)
+
+    src.close()
+    buf.seek(0)
+    return buf.read()
+
+
 # ---------------------------------------------------------------------------
 # 3. Compress
 # ---------------------------------------------------------------------------

@@ -26,6 +26,7 @@ from converters.pdf_engine import (
     ocr_pdf,
     rotate_pdf,
     split_pdf,
+    split_pdf_to_zip,
 )
 
 router = APIRouter(prefix="/pdf", tags=["PDF Tools"])
@@ -74,18 +75,27 @@ async def merge(files: List[UploadFile] = File(...)):
 # 2. Split
 # ---------------------------------------------------------------------------
 
-@router.post("/split", summary="Extract a page range into a new PDF")
+@router.post("/split", summary="Split a PDF: range → single PDF, no range → ZIP of all pages")
 async def split(
     file: UploadFile = File(...),
-    start_page: int = Form(..., ge=1),
-    end_page: int = Form(..., ge=1),
+    start_page: Optional[int] = Form(None, ge=1),
+    end_page:   Optional[int] = Form(None, ge=1),
 ):
-    if end_page < start_page:
-        raise HTTPException(status_code=422, detail="end_page must be >= start_page.")
     raw = await _read(file)
     job = job_store.create_job()
-    _submit(job.id, split_pdf, raw, start_page, end_page,
-            filename=f"split_{start_page}-{end_page}.pdf")
+
+    # No range provided → split every page into its own PDF, return a ZIP
+    if start_page is None and end_page is None:
+        _submit(job.id, split_pdf_to_zip, raw,
+                filename="split_pages.zip", media_type="application/zip")
+    else:
+        s = start_page or 1
+        e = end_page   or 99999
+        if e < s:
+            raise HTTPException(status_code=422, detail="end_page must be >= start_page.")
+        _submit(job.id, split_pdf, raw, s, e,
+                filename=f"split_{s}-{e}.pdf")
+
     return JSONResponse({"job_id": job.id}, status_code=202)
 
 

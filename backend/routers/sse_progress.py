@@ -33,6 +33,9 @@ async def stream_progress(job_id: str):
                 return
 
             payload = {"state": job.state, "progress": job.progress}
+            if job.state == "done":
+                payload["filename"]   = job.filename
+                payload["media_type"] = job.media_type
             if job.state == "error":
                 payload["error"] = job.error or "Unknown error"
 

@@ -283,6 +283,63 @@
   word-break: break-word;
 }
 
+/* ─── SPLIT PAGE-RANGE ROW ───────────────────────────────── */
+
+.dz-split-range {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  pointer-events: all;
+}
+
+.dz-range-label {
+  font-size: 11px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  opacity: 0.8;
+}
+
+.dz-range-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.dz-range-input {
+  width: 72px;
+  padding: 4px 8px;
+  background: rgba(255,255,255,0.06);
+  border: 1px solid rgba(255,255,255,0.15);
+  border-radius: 6px;
+  color: #e2e8f0;
+  font-size: 13px;
+  text-align: center;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.dz-range-input:focus {
+  border-color: var(--dz-color, #E8924A);
+}
+
+.dz-range-input::placeholder {
+  color: rgba(255,255,255,0.3);
+}
+
+/* hide browser number spinners */
+.dz-range-input::-webkit-inner-spin-button,
+.dz-range-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.dz-range-input[type=number] { -moz-appearance: textfield; }
+
+.dz-range-sep {
+  font-size: 14px;
+  font-weight: 600;
+  opacity: 0.75;
+}
+
 /* ─── BREADCRUMB BAR ─────────────────────────────────────── */
 
 #breadcrumb-bar {

@@ -234,7 +234,7 @@ function _showDownload(zone, filename, jobId, color) {
       </svg>
     </div>
     <span class="dz-dl-name" title="${filename}">${filename}</span>
-    <button class="dz-dl-btn" style="--dz-color:${color}">Save to Downloads</button>`;
+    <button class="dz-dl-btn" style="--dz-color:${color}">Save As…</button>`;
 
   zone.appendChild(wrap);
 
@@ -278,20 +278,25 @@ async function _downloadFile(jobId, filename, color, wrap) {
     const res = await fetch(`${BACKEND}/api/download/${jobId}`);
     if (!res.ok) throw new Error(`Download failed (${res.status})`);
 
-    const blob       = await res.blob();
-    const arrayBuf   = await blob.arrayBuffer();
-    const uint8      = new Uint8Array(arrayBuf);
-    const chunkSize  = 8192;
-    let   binary     = '';
+    const blob     = await res.blob();
+    const arrayBuf = await blob.arrayBuffer();
+    const uint8    = new Uint8Array(arrayBuf);
+    const chunkSize = 8192;
+    let binary = '';
     for (let i = 0; i < uint8.length; i += chunkSize) {
       binary += String.fromCharCode(...uint8.subarray(i, i + chunkSize));
     }
     const base64 = btoa(binary);
 
-    // Use Electron IPC if available; fall back to browser anchor download
-    if (window.toolceo && window.toolceo.saveToDownloads) {
-      const savedPath = await window.toolceo.saveToDownloads(filename, base64);
-      if (btn) { btn.disabled = false; btn.textContent = `✓ Saved`; btn.style.opacity = '0.6'; }
+    // Use Electron "Save As" dialog if available; fall back to browser anchor download
+    if (window.toolceo && window.toolceo.saveFileAs) {
+      const savedPath = await window.toolceo.saveFileAs(filename, base64);
+      if (savedPath) {
+        if (btn) { btn.disabled = false; btn.textContent = '✓ Saved'; btn.style.opacity = '0.6'; }
+      } else {
+        // User cancelled the dialog — re-enable button
+        if (btn) { btn.disabled = false; btn.textContent = 'Save As…'; }
+      }
     } else {
       const url = URL.createObjectURL(blob);
       const a   = document.createElement('a');
@@ -300,10 +305,37 @@ async function _downloadFile(jobId, filename, color, wrap) {
       if (btn) { btn.disabled = false; btn.textContent = '✓ Downloaded'; btn.style.opacity = '0.6'; }
     }
   } catch (err) {
-    if (btn) { btn.disabled = false; btn.textContent = 'Retry'; }
+    if (btn) { btn.disabled = false; btn.textContent = 'Save As…'; }
     const zone = document.getElementById('drop-zone');
     if (zone) _showError(zone, `Download failed: ${err.message}`);
   }
+}
+
+// ─── SPLIT PAGE-RANGE INPUTS ──────────────────────────────────────────────────
+
+/** Inject (or remove) the page-range row inside the drop-zone for split tool. */
+function _syncSplitInputs(tool) {
+  const zone = document.getElementById('drop-zone');
+  if (!zone) return;
+  // Remove any existing range row
+  const existing = zone.querySelector('.dz-split-range');
+  if (existing) existing.remove();
+
+  if (!tool || tool.id !== 'split') return;
+
+  const color = tool.color || '#E8924A';
+  const row = document.createElement('div');
+  row.className = 'dz-split-range';
+  row.innerHTML = `
+    <label class="dz-range-label" style="color:${color}">Page range (optional)</label>
+    <div class="dz-range-inputs">
+      <input class="dz-range-input" id="dz-split-start" type="number" min="1" placeholder="From" />
+      <span class="dz-range-sep" style="color:${color}">–</span>
+      <input class="dz-range-input" id="dz-split-end"   type="number" min="1" placeholder="To" />
+    </div>`;
+  // Stop clicks on the inputs from opening the file picker
+  row.addEventListener('click', (e) => e.stopPropagation());
+  zone.appendChild(row);
 }
 
 // ─── SUBMIT FILE ──────────────────────────────────────────────────────────────
@@ -330,6 +362,18 @@ async function _submitFile(files) {
     fd.append('file', files[0]);
   }
 
+  // ── Extra fields for split ─────────────────────────────────────────────────
+  // Only append page numbers when the user actually typed a value.
+  // Omitting both lets the backend know to split every page → ZIP.
+  if (tool.id === 'split') {
+    const startEl  = document.getElementById('dz-split-start');
+    const endEl    = document.getElementById('dz-split-end');
+    const hasStart = startEl && startEl.value.trim() !== '';
+    const hasEnd   = endEl   && endEl.value.trim()   !== '';
+    if (hasStart) fd.append('start_page', parseInt(startEl.value, 10));
+    if (hasEnd)   fd.append('end_page',   parseInt(endEl.value,   10));
+  }
+
   // ── Show initial progress ──────────────────────────────────────────────────
   _showProgress(zone, 0, color);
 
@@ -339,7 +383,11 @@ async function _submitFile(files) {
     const res  = await fetch(endpoint.url, { method: 'POST', body: fd });
     const json = await res.json();
     if (!res.ok) {
-      throw new Error(json.detail || `Server error ${res.status}`);
+      const detail = json.detail;
+      const msg = Array.isArray(detail)
+        ? detail.map((d) => d.msg || JSON.stringify(d)).join('; ')
+        : (typeof detail === 'string' ? detail : JSON.stringify(detail));
+      throw new Error(msg || `Server error ${res.status}`);
     }
     jobId = json.job_id;
   } catch (err) {
@@ -370,17 +418,9 @@ async function _submitFile(files) {
 
     if (state === 'done') {
       _updateProgress(zone, 100, color);
-      setTimeout(() => {
-        const jobCopy = jobId;
-        fetch(`${BACKEND}/api/download/${jobCopy}`, { method: 'HEAD' })
-          .then((r) => {
-            const disp    = r.headers.get('content-disposition') || '';
-            const match   = disp.match(/filename="?([^";\n]+)"?/);
-            const dlName  = match ? match[1] : `output_${jobCopy.slice(0, 8)}`;
-            _showDownload(zone, dlName, jobCopy, color);
-          })
-          .catch(() => _showDownload(zone, `output_${jobCopy.slice(0, 8)}`, jobCopy, color));
-      }, 200);
+      // filename is sent in the SSE done payload — no HEAD request needed
+      const dlName = data.filename || `output_${jobId.slice(0, 8)}`;
+      setTimeout(() => _showDownload(zone, dlName, jobId, color), 200);
       return;
     }
 
@@ -404,6 +444,7 @@ export function initDropZone() {
   if (!dropZone || !fileInput) return;
 
   onToolChange(_updateDropZone);
+  onToolChange(_syncSplitInputs);
 
   // ── Click ──────────────────────────────────────────────────────────────────
   dropZone.addEventListener('click', (e) => {
