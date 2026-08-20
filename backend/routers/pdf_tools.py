@@ -63,7 +63,7 @@ def _submit(job_id: str, fn, *args, filename: str, media_type: str = "applicatio
 
 
 # ---------------------------------------------------------------------------
-# 0. Page count  (synchronous – no job, no SSE)
+# 0a. Page count  (synchronous – no job, no SSE)
 # ---------------------------------------------------------------------------
 
 @router.post("/page-count", summary="Return the page count of a PDF without processing it")
@@ -77,6 +77,29 @@ async def page_count(file: UploadFile = File(...)):
     except Exception as exc:
         raise HTTPException(status_code=422, detail=f"Could not read PDF: {exc}")
     return JSONResponse({"page_count": count})
+
+
+# ---------------------------------------------------------------------------
+# 0b. First-page thumbnail  (synchronous – returns base64 JPEG data URI)
+# ---------------------------------------------------------------------------
+
+@router.post("/thumbnail", summary="Render first page of a PDF as a base64 JPEG thumbnail")
+async def pdf_thumbnail(file: UploadFile = File(...)):
+    import fitz  # PyMuPDF
+    import base64
+    raw = await _read(file)
+    try:
+        doc = fitz.open(stream=raw, filetype="pdf")
+        page = doc[0]
+        # Render at 2× scale so the tiny thumbnail looks sharp on HiDPI displays
+        mat = fitz.Matrix(2.0, 2.0)
+        pix = page.get_pixmap(matrix=mat, alpha=False)
+        jpeg_bytes = pix.tobytes("jpeg", jpg_quality=82)
+        doc.close()
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=f"Could not render thumbnail: {exc}")
+    b64 = base64.b64encode(jpeg_bytes).decode()
+    return JSONResponse({"thumbnail": f"data:image/jpeg;base64,{b64}"})
 
 
 # ---------------------------------------------------------------------------

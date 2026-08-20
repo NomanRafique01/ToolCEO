@@ -832,18 +832,26 @@ async function _handleSplitFilePicked(file) {
   _removeSplitPanel();
   _showScanProgress(zone, color);
 
-  // POST to page-count endpoint
-  const fd = new FormData();
-  fd.append('file', file);
+  // Fire page-count + thumbnail renders in parallel — same file, two FormData objects
+  const fd1 = new FormData();
+  fd1.append('file', file);
+  const fd2 = new FormData();
+  fd2.append('file', file);
 
-  let pageCount;
+  let pageCount, thumbnailDataUri;
   try {
-    const res  = await fetch(`${BACKEND}/api/pdf/page-count`, { method: 'POST', body: fd });
-    const json = await res.json();
-    if (!res.ok) {
-      throw new Error(json.detail || `Server error ${res.status}`);
+    const [countRes, thumbRes] = await Promise.all([
+      fetch(`${BACKEND}/api/pdf/page-count`, { method: 'POST', body: fd1 }),
+      fetch(`${BACKEND}/api/pdf/thumbnail`,  { method: 'POST', body: fd2 }),
+    ]);
+    const countJson = await countRes.json();
+    if (!countRes.ok) throw new Error(countJson.detail || `Server error ${countRes.status}`);
+    pageCount = countJson.page_count;
+
+    if (thumbRes.ok) {
+      const thumbJson = await thumbRes.json();
+      thumbnailDataUri = thumbJson.thumbnail || null;
     }
-    pageCount = json.page_count;
   } catch (err) {
     _showError(zone, `Could not read PDF: ${err.message}`);
     return;
@@ -855,52 +863,55 @@ async function _handleSplitFilePicked(file) {
   // Store file for later submission
   _splitFile      = file;
   _splitPageCount = pageCount;
-  // Store base name (strip extension) for use in download filename
   _splitBaseName  = file.name.replace(/\.[^.]+$/, '');
 
-  // Show the PDF thumbnail preview inside the drop zone
-  _showPdfThumbnail(zone, file, color);
+  // Show the real first-page thumbnail (or fallback icon if render failed)
+  _showPdfThumbnail(zone, file, color, thumbnailDataUri);
 
   _showSplitPanel(pageCount, color);
 }
 
 /**
- * Render a PDF first-page thumbnail inside the drop zone using an <embed>
- * clipped to show only the first page — like Windows large icon view.
+ * Show the PDF thumbnail inside the drop zone.
+ * Uses the real first-page JPEG from the backend when available,
+ * falls back to a static file icon if the backend couldn't render it.
  */
-function _showPdfThumbnail(zone, file, color) {
-  // Remove any existing thumbnail
+function _showPdfThumbnail(zone, file, color, dataUri) {
   const old = zone.querySelector('.dz-pdf-thumb-wrap');
   if (old) old.remove();
 
-  const objectUrl = URL.createObjectURL(file);
+  const thumbContent = dataUri
+    ? `<img class="dz-pdf-thumb-img" src="${dataUri}" alt="PDF preview" draggable="false" />`
+    : `<svg class="dz-pdf-thumb-icon" viewBox="0 0 90 116" xmlns="http://www.w3.org/2000/svg">
+        <rect x="0" y="0" width="90" height="116" fill="#ffffff"/>
+        <polygon points="62,0 90,28 62,28" fill="#e0e0e0"/>
+        <polyline points="62,0 62,28 90,28" fill="none" stroke="#cccccc" stroke-width="1"/>
+        <rect x="0" y="42" width="90" height="26" fill="${color}"/>
+        <text x="45" y="60" font-family="Arial,sans-serif" font-size="14" font-weight="bold"
+              fill="#ffffff" text-anchor="middle" dominant-baseline="middle">PDF</text>
+        <line x1="12" y1="80" x2="78" y2="80" stroke="#dddddd" stroke-width="2" stroke-linecap="round"/>
+        <line x1="12" y1="89" x2="78" y2="89" stroke="#dddddd" stroke-width="2" stroke-linecap="round"/>
+        <line x1="12" y1="98" x2="55" y2="98" stroke="#dddddd" stroke-width="2" stroke-linecap="round"/>
+      </svg>`;
 
   const wrap = document.createElement('div');
   wrap.className = 'dz-pdf-thumb-wrap';
   wrap.innerHTML = `
     <div class="dz-pdf-thumb-card">
       <div class="dz-pdf-thumb-frame" style="border: 2px solid ${color}; box-shadow: 0 4px 18px rgba(0,0,0,0.45);">
-        <embed class="dz-pdf-thumb-embed"
-               src="${objectUrl}#toolbar=0&navpanes=0&scrollbar=0&view=FitH"
-               type="application/pdf" />
+        ${thumbContent}
       </div>
       <button class="dz-pdf-thumb-remove" title="Remove file" style="--thumb-color:${color}" aria-label="Remove file">&#x2715;</button>
     </div>
     <span class="dz-pdf-thumb-name">${_escHtml(file.name)}</span>`;
 
-  // Clear the drop-zone background content (icon + text) while thumbnail is shown
   zone.classList.add('dz-has-thumb');
-
   zone.appendChild(wrap);
 
-  // Close button resets everything
   wrap.querySelector('.dz-pdf-thumb-remove').addEventListener('click', (e) => {
     e.stopPropagation();
-    _removeSplitPanel(); // handles thumb removal, dz-has-thumb, and state reset
+    _removeSplitPanel();
   });
-
-  // Revoke the object URL after a short delay (embed needs it to stay alive briefly)
-  setTimeout(() => URL.revokeObjectURL(objectUrl), 8000);
 }
 
 // ─── SPLIT SUBMIT ─────────────────────────────────────────────────────────────
