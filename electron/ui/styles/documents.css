@@ -2,6 +2,7 @@
    documents.css
    Shared format-card grid styles used when Documents (or any
    category with the .fmt-* classes) replaces the explore-section.
+   Also contains PDF-panel zone labels and tag badges.
    ───────────────────────────────────────────────────────────── */
 
 /* ─── FORMAT GRID ─────────────────────────────────────────── */
@@ -66,6 +67,63 @@
   color: var(--fmt-color);
   margin-top: 8px;
   font-weight: 500;
+}
+
+/* ─── TAG BADGE (Tool / Convert) ────────────────────────── */
+
+.fmt-tag {
+  display: inline-flex;
+  align-items: center;
+  margin-top: 8px;
+  padding: 2px 8px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  width: fit-content;
+  border: 1px solid transparent;
+}
+
+.fmt-tag--tool {
+  background: rgba(255,107,107,0.12);
+  color: #FF6B6B;
+  border-color: rgba(255,107,107,0.3);
+}
+
+.fmt-tag--convert {
+  background: rgba(56,189,248,0.12);
+  color: #38BDF8;
+  border-color: rgba(56,189,248,0.3);
+}
+
+/* ─── PDF ZONE LABELS ────────────────────────────────────── */
+
+.pdf-zone-label {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-bottom: 10px;
+}
+
+.pdf-zone-icon {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+/* ─── PDF entry card — subtle drill-down hint ────────────── */
+
+.fmt-card--pdf-entry::after {
+  content: '8 tools + 6 conversions';
+  display: block;
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 4px;
+  opacity: 0.7;
 }
 
 /* ─── BACK BUTTON & CATEGORY ICON IN EXPLORE HEADER ─────── */
