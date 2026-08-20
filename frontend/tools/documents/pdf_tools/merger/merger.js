@@ -374,9 +374,13 @@ async function _submitMerge(outputFilename) {
   const zone  = document.getElementById('drop-zone');
   const color = tool.color || '#FF6B6B';
 
-  // Dim the panel while working
+  // Remove thumbnail strip and merge panel immediately — restore zone to original size
+  const strip = zone ? zone.querySelector('.dz-merge-thumb-strip') : null;
+  if (strip) strip.remove();
+  if (zone) zone.classList.remove('dz-has-merge-thumbs');
+
   const panel = document.getElementById('merge-queue-panel');
-  if (panel) panel.classList.add('merge-queue-panel--submitting');
+  if (panel) panel.remove();
 
   // Build multipart form data
   const fd = new FormData();
@@ -402,7 +406,6 @@ async function _submitMerge(outputFilename) {
     jobId = json.job_id;
   } catch (err) {
     showError(zone, `Upload failed: ${err.message}`);
-    if (panel) panel.classList.remove('merge-queue-panel--submitting');
     return;
   }
 
@@ -446,13 +449,11 @@ async function _submitMerge(outputFilename) {
 
     if (state === 'error') {
       showError(zone, error || 'Merge failed. Please try again.');
-      if (panel) panel.classList.remove('merge-queue-panel--submitting');
     }
   };
 
   sse.onerror = () => {
     sse.close();
     showError(zone, 'Lost connection to backend. Is the server running?');
-    if (panel) panel.classList.remove('merge-queue-panel--submitting');
   };
 }
