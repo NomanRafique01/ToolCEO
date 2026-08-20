@@ -191,10 +191,19 @@
 
 /* Pointer lock while processing */
 .dz-state-processing { cursor: default; }
+.dz-state-done       { cursor: default; }
 
-/* Shared overlay wrapper: stacks below the existing drop-zone children */
+/* Hide default drop-zone text/icon while a result is displayed */
+.dz-state-done .drop-icon,
+.dz-state-done .drop-main-text,
+.dz-state-done .drop-browse,
+.dz-state-done .drop-private {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* ── Progress & error overlays — anchored to bottom of zone ── */
 .dz-progress-wrap,
-.dz-download-wrap,
 .dz-error-wrap {
   position: absolute;
   bottom: 18px;
@@ -205,7 +214,22 @@
   flex-direction: column;
   align-items: center;
   gap: 6px;
-  pointer-events: none;   /* children override as needed */
+  pointer-events: none;
+}
+
+/* ── Download overlay — centred in zone ── */
+.dz-download-wrap {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: calc(100% - 48px);
+  max-width: 380px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  pointer-events: auto;
+  animation: dropIconFadeIn 260ms ease forwards;
 }
 
 /* ── Progress bar ── */
@@ -231,38 +255,80 @@
   transition: width 280ms ease;
 }
 
-/* ── Download ready ── */
-.dz-download-wrap { pointer-events: auto; gap: 5px; }
-
-.dz-dl-icon {
-  animation: dropIconFadeIn 260ms ease forwards;
+/* ── In-zone save card ── */
+.dz-save-card {
+  --save-color: #00E5C0;
+  background: rgba(255,255,255,0.04);
+  border: 1px solid color-mix(in srgb, var(--save-color) 35%, transparent);
+  border-radius: 10px;
+  padding: 14px 16px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  backdrop-filter: blur(4px);
 }
 
-.dz-dl-name {
-  font-size: 12px;
-  color: var(--text-muted);
-  max-width: 220px;
+.dz-save-icon {
+  color: var(--save-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 2px;
+}
+
+.dz-save-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+  text-align: center;
+}
+
+.dz-save-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  white-space: nowrap;
 }
 
-.dz-dl-btn {
-  margin-top: 2px;
-  padding: 5px 16px;
+.dz-save-ext {
+  font-size: 11px;
+  color: var(--save-color);
+  font-weight: 500;
+}
+
+.dz-save-btn {
+  width: 100%;
+  padding: 8px 0;
+  background: var(--save-color);
+  color: #0A1F1C;
+  border: none;
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: opacity 150ms ease, transform 120ms ease;
+}
+.dz-save-btn:hover    { opacity: 0.88; transform: translateY(-1px); }
+.dz-save-btn:active   { opacity: 1;    transform: translateY(0); }
+.dz-save-btn:disabled { opacity: 0.5;  cursor: default; transform: none; }
+
+.dz-save-done {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
   font-size: 12px;
   font-weight: 500;
-  color: #fff;
-  background: var(--dz-color, #00E5C0);
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: opacity 160ms ease, transform 120ms ease;
-  pointer-events: auto;
+  color: var(--save-color);
 }
-.dz-dl-btn:hover  { opacity: 0.88; transform: translateY(-1px); }
-.dz-dl-btn:active { opacity: 1;    transform: translateY(0); }
-.dz-dl-btn:disabled { opacity: 0.5; cursor: default; transform: none; }
+.dz-save-done--visible {
+  display: flex;
+}
 
 /* ── Error ── */
 .dz-error-wrap {
@@ -443,6 +509,103 @@
   margin-top: 2px;
 }
 
+/* ─── PDF THUMBNAIL (Windows large-icon style) ───────────── */
+
+/* ── When a thumbnail is shown, hide the default icon + browse text ── */
+.drop-zone.dz-has-thumb .drop-icon,
+.drop-zone.dz-has-thumb .drop-main-text,
+.drop-zone.dz-has-thumb .drop-browse,
+.drop-zone.dz-has-thumb .drop-private {
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Clear zone background so thumbnail reads cleanly */
+.drop-zone.dz-has-thumb {
+  background: transparent !important;
+  box-shadow: none !important;
+}
+
+.dz-pdf-thumb-wrap {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: auto;
+}
+
+/* Container that holds the frame + the absolute-positioned × button */
+.dz-pdf-thumb-card {
+  position: relative;
+  display: inline-block;
+  flex-shrink: 0;
+}
+
+.dz-pdf-thumb-frame {
+  width: 90px;
+  height: 116px;          /* A4-ish aspect ratio */
+  border-radius: 4px;
+  overflow: hidden;
+  background: #fff;
+  display: block;
+}
+
+.dz-pdf-thumb-embed {
+  /* Render full PDF page inside the tiny frame */
+  width: 600px;
+  height: 780px;
+  transform-origin: top left;
+  transform: scale(0.15);   /* 90/600 */
+  pointer-events: none;
+  border: none;
+  display: block;
+}
+
+.dz-pdf-thumb-name {
+  font-size: 11px;
+  color: var(--text-primary);
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+}
+
+/* ── Remove (×) button — anchored to .dz-pdf-thumb-card ── */
+.dz-pdf-thumb-remove {
+  position: absolute;
+  top: -10px;
+  right: -10px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  border: 1.5px solid var(--thumb-color, #E8924A);
+  background: #0e1a26;
+  color: var(--thumb-color, #E8924A);
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: background 160ms ease, color 160ms ease, transform 160ms ease;
+  pointer-events: auto;
+  z-index: 10;
+  box-shadow: 0 0 0 2px #0e1a26;
+}
+
+.dz-pdf-thumb-remove:hover {
+  background: var(--thumb-color, #E8924A);
+  color: #fff;
+  transform: scale(1.15);
+}
+
 /* ─── BREADCRUMB BAR ─────────────────────────────────────── */
 
 #breadcrumb-bar {
@@ -484,11 +647,19 @@
   user-select: none;
 }
 
+/* ─── RIGHT COLUMN WRAPPER ───────────────────────────────── */
+
+.dash-right {
+  width: 320px;
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
 /* ─── RECENT CONVERSIONS PANEL ───────────────────────────── */
 
 .recent-panel {
-  width: 320px;
-  flex-shrink: 0;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -570,6 +741,227 @@
 
 .file-time  { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
 .check-icon { color: var(--accent); display: block; }
+
+/* ─── DOWNLOAD PANEL ─────────────────────────────────────── */
+
+/*
+ * .dl-panel is always present in the DOM.
+ * --dl-color / --dl-bg are injected by JS when a tool is active.
+ * States:
+ *   default         → idle placeholder
+ *   .dl-panel--active    → tool selected (ready to receive output)
+ *   .dl-panel--ready     → conversion done, download available
+ *   .dl-panel--saving    → save dialog in progress
+ */
+
+.dl-panel {
+  --dl-color: #00E5C0;
+  --dl-bg:    rgba(0,229,192,0.08);
+
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+  transition: border-color 240ms ease;
+}
+
+/* ── Themed top accent bar ── */
+.dl-panel::before {
+  content: '';
+  display: block;
+  height: 3px;
+  background: var(--dl-color);
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+
+.dl-panel--active::before,
+.dl-panel--ready::before  { opacity: 1; }
+
+/* ── Inner padding wrapper ── */
+.dl-panel-inner {
+  padding: 18px 20px 20px;
+}
+
+/* ── Idle placeholder ── */
+.dl-panel-idle {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 26px 20px;
+  min-height: 110px;
+}
+
+.dl-panel-idle-icon {
+  color: var(--text-muted);
+  opacity: 0.35;
+}
+
+.dl-panel-idle-text {
+  font-size: 12px;
+  color: var(--text-muted);
+  opacity: 0.5;
+  letter-spacing: 0.02em;
+}
+
+/* When active/ready hide the idle placeholder */
+.dl-panel--active .dl-panel-idle,
+.dl-panel--ready  .dl-panel-idle  { display: none; }
+
+/* ── Header row (tool icon + tool name) ── */
+.dl-panel-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+
+.dl-panel-tool-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--dl-bg);
+  color: var(--dl-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.dl-panel-tool-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dl-panel-status-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--dl-color);
+  flex-shrink: 0;
+  opacity: 0.5;
+}
+
+.dl-panel--ready .dl-panel-status-dot {
+  opacity: 1;
+  animation: dlDotPulse 1.8s ease infinite;
+}
+
+@keyframes dlDotPulse {
+  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--dl-color) 55%, transparent); }
+  50%       { box-shadow: 0 0 0 5px transparent; }
+}
+
+/* ── Waiting state (tool active, no file yet) ── */
+.dl-panel-waiting {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--dl-bg);
+  border: 1px dashed color-mix(in srgb, var(--dl-color) 35%, transparent);
+  border-radius: 8px;
+  font-size: 12px;
+  color: color-mix(in srgb, var(--dl-color) 70%, var(--text-muted));
+}
+
+.dl-panel-waiting svg { flex-shrink: 0; opacity: 0.7; }
+
+/* Hide waiting when file is ready */
+.dl-panel--ready .dl-panel-waiting { display: none; }
+
+/* ── File info block (filename + size/ext) ── */
+.dl-file-block {
+  display: none;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  background: var(--dl-bg);
+  border: 1px solid color-mix(in srgb, var(--dl-color) 30%, transparent);
+  border-radius: 8px;
+  margin-bottom: 12px;
+}
+
+.dl-panel--ready .dl-file-block { display: flex; }
+
+.dl-file-name {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dl-file-ext {
+  font-size: 11px;
+  color: var(--dl-color);
+  font-weight: 500;
+}
+
+/* ── Save button ── */
+.dl-save-btn {
+  display: none;
+  width: 100%;
+  padding: 9px 0;
+  background: var(--dl-color);
+  color: #0A1F1C;
+  border: none;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: opacity 150ms ease, transform 120ms ease, filter 150ms ease;
+  pointer-events: auto;
+}
+
+.dl-panel--ready .dl-save-btn { display: block; }
+
+.dl-save-btn:hover  { opacity: 0.88; transform: translateY(-1px); filter: brightness(1.08); }
+.dl-save-btn:active { opacity: 1;    transform: translateY(0); }
+.dl-save-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+  transform: none;
+  filter: none;
+}
+
+/* ── Saved confirmation row ── */
+.dl-saved-row {
+  display: none;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin-top: 10px;
+  font-size: 12px;
+  color: var(--dl-color);
+  font-weight: 500;
+  opacity: 0;
+  transition: opacity 300ms ease;
+}
+
+.dl-panel--saved .dl-saved-row { display: flex; opacity: 1; }
+
+/* ── Slide-in animation for the inner content ── */
+@keyframes dlPanelIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+.dl-panel--active .dl-panel-inner,
+.dl-panel--ready  .dl-panel-inner {
+  animation: dlPanelIn 280ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
 
 /* ─── EXPLORE TOOLS ──────────────────────────────────────── */
 

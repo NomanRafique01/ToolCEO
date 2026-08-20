@@ -133,6 +133,9 @@ function _tagBadge(tag, color, bg) {
 }
 
 function _updateDropZone(tool) {
+  // Reset the download panel when the tool changes; it will only become
+  // active again after a conversion completes (_dlPanelReady is called then).
+  _dlPanelReset();
   const zone     = document.getElementById('drop-zone');
   const mainEl   = zone && zone.querySelector('.drop-main-text');
   const subEl    = zone && zone.querySelector('.drop-browse');
@@ -192,14 +195,236 @@ function _updateDropZone(tool) {
   if (heroHintEl) { heroHintEl.textContent = 'Drop or click below'; heroHintEl.style.color = color; }
 }
 
+// ─── DOWNLOAD PANEL (right-column panel) ──────────────────────────────────────
+
+/** Cached pending download so the panel Save button can trigger it. */
+let _dlPanelJob = null;  // { jobId, filename, color }
+
+/**
+ * Switch the download panel to "active" state (tool selected, waiting for file).
+ * Renders the tool name/icon inside the panel inner content.
+ */
+function _dlPanelActivate(tool) {
+  const panel = document.getElementById('download-panel');
+  if (!panel) return;
+
+  if (!tool) {
+    _dlPanelReset(panel);
+    return;
+  }
+
+  const { label, icon, color, bg } = tool;
+  const safeColor = color || '#00E5C0';
+  const safeBg    = bg    || 'rgba(0,229,192,0.08)';
+
+  panel.style.setProperty('--dl-color', safeColor);
+  panel.style.setProperty('--dl-bg',    safeBg);
+  panel.style.setProperty('border-color', `color-mix(in srgb, ${safeColor} 28%, var(--border))`);
+
+  const iconHtml = icon
+    ? icon
+        .replace(/width="26"/, 'width="18"').replace(/height="26"/, 'height="18"')
+        .replace(/class="[^"]*"/, '')
+        .replace('<svg', '<svg style="color:currentColor"')
+        .replace(/stroke="currentColor"/g, 'stroke="currentColor"')
+    : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+         <path d="M12 3v13M7 11l5 5 5-5" stroke="currentColor" stroke-width="1.7"
+               stroke-linecap="round" stroke-linejoin="round"/>
+         <path d="M5 20h14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+       </svg>`;
+
+  panel.innerHTML = `
+    <div class="dl-panel-inner">
+      <div class="dl-panel-header">
+        <div class="dl-panel-tool-icon">${iconHtml}</div>
+        <span class="dl-panel-tool-name">${label}</span>
+        <span class="dl-panel-status-dot"></span>
+      </div>
+      <div class="dl-panel-waiting">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/>
+          <path d="M12 7v5l3 3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+        </svg>
+        Drop or pick a file to begin
+      </div>
+      <div class="dl-file-block">
+        <span class="dl-file-name"></span>
+        <span class="dl-file-ext"></span>
+      </div>
+      <button class="dl-save-btn" type="button">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style="display:inline;vertical-align:middle;margin-right:6px" aria-hidden="true">
+          <path d="M12 3v13M7 11l5 5 5-5" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M5 20h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>Save As…
+      </button>
+      <div class="dl-saved-row">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/>
+          <path d="M8 12l3 3 5-5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Saved successfully
+      </div>
+    </div>`;
+
+  panel.classList.remove('dl-panel--ready', 'dl-panel--saved');
+  panel.classList.add('dl-panel--active');
+  _dlPanelJob = null;
+
+  // Wire Save button
+  panel.querySelector('.dl-save-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (_dlPanelJob) {
+      _dlPanelSave(_dlPanelJob.jobId, _dlPanelJob.filename, _dlPanelJob.color, panel);
+    }
+  });
+}
+
+/**
+ * Switch the download panel to "ready" state (conversion complete).
+ * Builds the full panel HTML here since _dlPanelActivate is no longer
+ * called eagerly on tool selection.
+ */
+function _dlPanelReady(filename, jobId, color) {
+  const panel = document.getElementById('download-panel');
+  if (!panel) return;
+
+  const tool = getActiveTool();
+  const safeColor = color || (tool && tool.color) || '#00E5C0';
+  const safeBg    = (tool && tool.bg) || 'rgba(0,229,192,0.08)';
+  const label     = (tool && tool.label) || 'Output';
+  const icon      = tool && tool.icon;
+
+  panel.style.setProperty('--dl-color', safeColor);
+  panel.style.setProperty('--dl-bg',    safeBg);
+  panel.style.setProperty('border-color', `color-mix(in srgb, ${safeColor} 28%, var(--border))`);
+
+  const iconHtml = icon
+    ? icon
+        .replace(/width="26"/, 'width="18"').replace(/height="26"/, 'height="18"')
+        .replace(/class="[^"]*"/, '')
+        .replace('<svg', '<svg style="color:currentColor"')
+        .replace(/stroke="currentColor"/g, 'stroke="currentColor"')
+    : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+         <path d="M12 3v13M7 11l5 5 5-5" stroke="currentColor" stroke-width="1.7"
+               stroke-linecap="round" stroke-linejoin="round"/>
+         <path d="M5 20h14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/>
+       </svg>`;
+
+  const ext = filename.includes('.') ? filename.split('.').pop().toUpperCase() : '';
+  const extText = ext ? `${ext} file — ready to save` : 'File ready to save';
+
+  panel.innerHTML = `
+    <div class="dl-panel-inner">
+      <div class="dl-panel-header">
+        <div class="dl-panel-tool-icon">${iconHtml}</div>
+        <span class="dl-panel-tool-name">${label}</span>
+        <span class="dl-panel-status-dot"></span>
+      </div>
+      <div class="dl-file-block">
+        <span class="dl-file-name">${filename}</span>
+        <span class="dl-file-ext">${extText}</span>
+      </div>
+      <button class="dl-save-btn" type="button">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style="display:inline;vertical-align:middle;margin-right:6px" aria-hidden="true">
+          <path d="M12 3v13M7 11l5 5 5-5" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M5 20h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>Save As…
+      </button>
+      <div class="dl-saved-row">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/>
+          <path d="M8 12l3 3 5-5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Saved successfully
+      </div>
+    </div>`;
+
+  _dlPanelJob = { jobId, filename, color: safeColor };
+  panel.classList.remove('dl-panel--saved');
+  panel.classList.add('dl-panel--active', 'dl-panel--ready');
+
+  // Wire Save button
+  panel.querySelector('.dl-save-btn').addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (_dlPanelJob) {
+      _dlPanelSave(_dlPanelJob.jobId, _dlPanelJob.filename, _dlPanelJob.color, panel);
+    }
+  });
+}
+
+/** Reset panel to idle state. */
+function _dlPanelReset(panel) {
+  const p = panel || document.getElementById('download-panel');
+  if (!p) return;
+  p.removeAttribute('style');
+  p.className = 'dl-panel';
+  p.innerHTML = `
+    <div class="dl-panel-idle">
+      <svg class="dl-panel-idle-icon" width="28" height="28" viewBox="0 0 24 24" fill="none"
+           xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <path d="M12 3v13M7 11l5 5 5-5" stroke="currentColor" stroke-width="1.6"
+              stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M5 20h14" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+      </svg>
+      <span class="dl-panel-idle-text">Output will appear here</span>
+    </div>`;
+  _dlPanelJob = null;
+}
+
+/** Trigger the actual file save from the panel's Save button. */
+async function _dlPanelSave(jobId, filename, color, panel) {
+  const btn = panel && panel.querySelector('.dl-save-btn');
+  if (btn) { btn.disabled = true; btn.textContent = 'Saving…'; }
+
+  try {
+    const res = await fetch(`${BACKEND}/api/download/${jobId}`);
+    if (!res.ok) throw new Error(`Download failed (${res.status})`);
+
+    const blob     = await res.blob();
+    const arrayBuf = await blob.arrayBuffer();
+    const uint8    = new Uint8Array(arrayBuf);
+    const chunkSize = 8192;
+    let binary = '';
+    for (let i = 0; i < uint8.length; i += chunkSize) {
+      binary += String.fromCharCode(...uint8.subarray(i, i + chunkSize));
+    }
+    const base64 = btoa(binary);
+
+    if (window.toolceo && window.toolceo.saveFileAs) {
+      const savedPath = await window.toolceo.saveFileAs(filename, base64);
+      if (savedPath) {
+        if (btn) { btn.disabled = false; btn.style.display = 'none'; }
+        panel.classList.add('dl-panel--saved');
+      } else {
+        // User cancelled
+        if (btn) { btn.disabled = false; btn.textContent = 'Save As…'; }
+      }
+    } else {
+      const url = URL.createObjectURL(blob);
+      const a   = document.createElement('a');
+      a.href = url; a.download = filename; a.click();
+      URL.revokeObjectURL(url);
+      if (btn) { btn.disabled = false; btn.style.display = 'none'; }
+      panel.classList.add('dl-panel--saved');
+    }
+  } catch (err) {
+    if (btn) { btn.disabled = false; btn.textContent = 'Save As…'; }
+  }
+}
+
 // ─── ZONE OVERLAY HELPERS ─────────────────────────────────────────────────────
 
 /** Remove any progress / download / error overlay from inside the zone. */
 function _resetZoneContent(zone) {
   zone.querySelectorAll(
-    '.dz-progress-wrap, .dz-download-wrap, .dz-error-wrap'
+    '.dz-progress-wrap, .dz-download-wrap, .dz-error-wrap, .dz-pdf-thumb-wrap'
   ).forEach((el) => el.remove());
-  zone.classList.remove('dz-state-processing', 'dz-state-done', 'dz-state-error', 'dz-state-scanning');
+  zone.classList.remove(
+    'dz-state-processing', 'dz-state-done', 'dz-state-error',
+    'dz-state-scanning',   'dz-has-thumb'
+  );
 }
 
 /** Show the progress bar overlay (replaces browse text area). */
@@ -246,26 +471,92 @@ function _showDownload(zone, filename, jobId, color) {
   _resetZoneContent(zone);
   zone.classList.add('dz-state-done');
 
+  const ext     = filename.includes('.') ? filename.split('.').pop().toUpperCase() : '';
+  const extText = ext ? `${ext} file — ready to save` : 'File ready to save';
+
   const wrap = document.createElement('div');
   wrap.className = 'dz-download-wrap';
   wrap.innerHTML = `
-    <div class="dz-dl-icon" style="color:${color}">
-      <svg width="36" height="36" viewBox="0 0 24 24" fill="none"
-           xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <path d="M12 3v13M7 11l5 5 5-5" stroke="currentColor" stroke-width="1.7"
-              stroke-linecap="round" stroke-linejoin="round"/>
-        <path d="M5 20h14" stroke="currentColor" stroke-width="1.7"
-              stroke-linecap="round"/>
-      </svg>
-    </div>
-    <span class="dz-dl-name" title="${filename}">${filename}</span>
-    <button class="dz-dl-btn" style="--dz-color:${color}">Save As…</button>`;
+    <div class="dz-save-card" style="--save-color:${color}">
+      <div class="dz-save-icon" aria-hidden="true">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+          <path d="M12 3v13M7 11l5 5 5-5" stroke="currentColor" stroke-width="1.8"
+                stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M5 20h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="dz-save-info">
+        <span class="dz-save-name" title="${_escHtml(filename)}">${_escHtml(filename)}</span>
+        <span class="dz-save-ext">${_escHtml(extText)}</span>
+      </div>
+      <button class="dz-save-btn" type="button">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+             style="display:inline;vertical-align:middle;margin-right:5px" aria-hidden="true">
+          <path d="M12 3v13M7 11l5 5 5-5" stroke="currentColor" stroke-width="2.2"
+                stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M5 20h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+        </svg>Save As…
+      </button>
+      <div class="dz-save-done">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/>
+          <path d="M8 12l3 3 5-5" stroke="currentColor" stroke-width="1.9"
+                stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Saved successfully
+      </div>
+    </div>`;
 
   zone.appendChild(wrap);
 
-  wrap.querySelector('.dz-dl-btn').addEventListener('click', (e) => {
+  // Wire save button — reuse the same download logic as the old panel
+  const btn = wrap.querySelector('.dz-save-btn');
+  btn.addEventListener('click', async (e) => {
     e.stopPropagation();
-    _downloadFile(jobId, filename, color, wrap);
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+
+    try {
+      const res = await fetch(`${BACKEND}/api/download/${jobId}`);
+      if (!res.ok) throw new Error(`Download failed (${res.status})`);
+
+      const blob      = await res.blob();
+      const arrayBuf  = await blob.arrayBuffer();
+      const uint8     = new Uint8Array(arrayBuf);
+      const chunkSize = 8192;
+      let binary = '';
+      for (let i = 0; i < uint8.length; i += chunkSize) {
+        binary += String.fromCharCode(...uint8.subarray(i, i + chunkSize));
+      }
+      const base64 = btoa(binary);
+
+      if (window.toolceo && window.toolceo.saveFileAs) {
+        const savedPath = await window.toolceo.saveFileAs(filename, base64);
+        if (savedPath) {
+          btn.style.display = 'none';
+          wrap.querySelector('.dz-save-done').classList.add('dz-save-done--visible');
+        } else {
+          btn.disabled = false;
+          btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+               style="display:inline;vertical-align:middle;margin-right:5px" aria-hidden="true">
+            <path d="M12 3v13M7 11l5 5 5-5" stroke="currentColor" stroke-width="2.2"
+                  stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M5 20h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+          </svg>Save As…`;
+        }
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a   = document.createElement('a');
+        a.href = url; a.download = filename; a.click();
+        URL.revokeObjectURL(url);
+        btn.style.display = 'none';
+        wrap.querySelector('.dz-save-done').classList.add('dz-save-done--visible');
+      }
+    } catch (err) {
+      btn.disabled = false;
+      btn.textContent = 'Save As…';
+      _showError(zone, `Download failed: ${err.message}`);
+    }
   });
 }
 
@@ -341,13 +632,22 @@ async function _downloadFile(jobId, filename, color, wrap) {
 /** The file object held between scan and submit for split tool. */
 let _splitFile      = null;
 let _splitPageCount = 0;
+let _splitBaseName  = '';   // original filename (no extension) for download naming
 
 /** Remove the post-upload split info panel if it exists. */
 function _removeSplitPanel() {
   const existing = document.getElementById('split-info-panel');
   if (existing) existing.remove();
+  // Remove thumbnail from drop zone too
+  const zone = document.getElementById('drop-zone');
+  if (zone) {
+    const thumb = zone.querySelector('.dz-pdf-thumb-wrap');
+    if (thumb) thumb.remove();
+    zone.classList.remove('dz-has-thumb');
+  }
   _splitFile      = null;
   _splitPageCount = 0;
+  _splitBaseName  = '';
 }
 
 /**
@@ -477,8 +777,52 @@ async function _handleSplitFilePicked(file) {
   // Store file for later submission
   _splitFile      = file;
   _splitPageCount = pageCount;
+  // Store base name (strip extension) for use in download filename
+  _splitBaseName  = file.name.replace(/\.[^.]+$/, '');
+
+  // Show the PDF thumbnail preview inside the drop zone
+  _showPdfThumbnail(zone, file, color);
 
   _showSplitPanel(pageCount, color);
+}
+
+/**
+ * Render a PDF first-page thumbnail inside the drop zone using an <embed>
+ * clipped to show only the first page — like Windows large icon view.
+ */
+function _showPdfThumbnail(zone, file, color) {
+  // Remove any existing thumbnail
+  const old = zone.querySelector('.dz-pdf-thumb-wrap');
+  if (old) old.remove();
+
+  const objectUrl = URL.createObjectURL(file);
+
+  const wrap = document.createElement('div');
+  wrap.className = 'dz-pdf-thumb-wrap';
+  wrap.innerHTML = `
+    <div class="dz-pdf-thumb-card">
+      <div class="dz-pdf-thumb-frame" style="border: 2px solid ${color}; box-shadow: 0 4px 18px rgba(0,0,0,0.45);">
+        <embed class="dz-pdf-thumb-embed"
+               src="${objectUrl}#toolbar=0&navpanes=0&scrollbar=0&view=FitH"
+               type="application/pdf" />
+      </div>
+      <button class="dz-pdf-thumb-remove" title="Remove file" style="--thumb-color:${color}" aria-label="Remove file">&#x2715;</button>
+    </div>
+    <span class="dz-pdf-thumb-name">${_escHtml(file.name)}</span>`;
+
+  // Clear the drop-zone background content (icon + text) while thumbnail is shown
+  zone.classList.add('dz-has-thumb');
+
+  zone.appendChild(wrap);
+
+  // Close button resets everything
+  wrap.querySelector('.dz-pdf-thumb-remove').addEventListener('click', (e) => {
+    e.stopPropagation();
+    _removeSplitPanel(); // handles thumb removal, dz-has-thumb, and state reset
+  });
+
+  // Revoke the object URL after a short delay (embed needs it to stay alive briefly)
+  setTimeout(() => URL.revokeObjectURL(objectUrl), 8000);
 }
 
 // ─── SPLIT SUBMIT ─────────────────────────────────────────────────────────────
@@ -542,9 +886,14 @@ async function _submitSplitFile(file, fromVal, toVal) {
 
     if (state === 'done') {
       _updateProgress(zone, 100, color);
+      // Capture base name before _removeSplitPanel clears it
+      const baseName = _splitBaseName || 'document';
       // Remove the split panel on success
       _removeSplitPanel();
-      const dlName = data.filename || `output_${jobId.slice(0, 8)}`;
+      // Build filename: original PDF base name + "_split_pages.zip"
+      const dlName = data.filename
+        ? `${baseName}_${data.filename}`
+        : `${baseName}_split_pages.zip`;
       setTimeout(() => _showDownload(zone, dlName, jobId, color), 200);
       return;
     }
@@ -664,12 +1013,13 @@ export function initDropZone() {
   // ── Click ──────────────────────────────────────────────────────────────────
   dropZone.addEventListener('click', (e) => {
     if (e.target === fileInput) return;
-    // Don't open file picker when clicking the download button or error
-    if (e.target.closest('.dz-download-wrap, .dz-error-wrap')) return;
+    // Don't open file picker when clicking the save card, error, or remove button
+    if (e.target.closest('.dz-download-wrap, .dz-error-wrap, .dz-pdf-thumb-remove')) return;
     if (!getActiveTool()) { showNoToolWarning(); return; }
-    // If already processing or scanning, ignore
+    // If already processing, scanning, or showing save card, ignore
     if (dropZone.classList.contains('dz-state-processing')) return;
     if (dropZone.classList.contains('dz-state-scanning'))   return;
+    if (dropZone.classList.contains('dz-state-done'))       return;
     fileInput.click();
   });
 
