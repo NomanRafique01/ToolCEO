@@ -20,7 +20,6 @@ from fastapi.responses import JSONResponse
 
 import jobs as job_store
 from converters.pdf_engine import (
-    _auto_chunk_size,
     add_watermark,
     compress_pdf,
     decrypt_pdf,
@@ -29,6 +28,10 @@ from converters.pdf_engine import (
     merge_pdfs,
     ocr_pdf,
     rotate_pdf,
+)
+# Splitter functions now live in the dedicated tool sub-module.
+from tools.documents.pdf_tools.splitter.engine import (
+    _auto_chunk_size,
     split_pdf,
     split_pdf_chunked,
     split_pdf_to_zip,

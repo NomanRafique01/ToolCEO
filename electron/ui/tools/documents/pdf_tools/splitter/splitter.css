@@ -1,0 +1,249 @@
+/* ─────────────────────────────────────────────────────────────
+   tools/documents/pdf_tools/splitter/splitter.css
+   Styles specific to the PDF Splitter tool:
+     - Split info panel (page range inputs, auto-hint)
+     - PDF thumbnail inside the drop zone
+   ───────────────────────────────────────────────────────────── */
+
+/* ─── SPLIT INFO PANEL ───────────────────────────────────────────────────── */
+
+.split-info-panel {
+  margin-top: 14px;
+  background: var(--bg-surface);
+  border: 1px solid color-mix(in srgb, var(--split-color, #FB923C) 28%, var(--border));
+  border-radius: 12px;
+  padding: 16px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+
+  /* Slide-in animation — starts hidden */
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 220ms ease, transform 220ms ease;
+}
+
+.split-info-panel--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.split-info-panel--submitting {
+  pointer-events: none;
+  opacity: 0.55;
+}
+
+/* ── Header row: pages badge + change-file button ── */
+
+.sip-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.sip-pages-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.sip-total-label strong {
+  color: var(--text-primary);
+}
+
+.sip-change-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: border-color 120ms ease, color 120ms ease;
+}
+
+.sip-change-btn:hover {
+  border-color: var(--split-color, #FB923C);
+  color: var(--split-color, #FB923C);
+}
+
+/* ── Range row: label + inputs + split button ── */
+
+.sip-range-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.sip-range-label {
+  font-size: 13px;
+  color: var(--text-primary);
+  white-space: nowrap;
+}
+
+.sip-optional {
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.sip-inputs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sip-input {
+  width: 72px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 5px 8px;
+  font-size: 13px;
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 130ms ease;
+  -moz-appearance: textfield;
+}
+
+.sip-input::-webkit-outer-spin-button,
+.sip-input::-webkit-inner-spin-button { -webkit-appearance: none; }
+
+.sip-input:focus {
+  border-color: var(--split-color, #FB923C);
+}
+
+.sip-sep {
+  color: var(--text-muted);
+  font-size: 15px;
+}
+
+.sip-split-btn {
+  background: var(--split-color, #FB923C);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 7px 16px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: filter 150ms ease;
+  white-space: nowrap;
+}
+
+.sip-split-btn:hover {
+  filter: brightness(1.12);
+}
+
+.sip-range-error {
+  font-size: 12px;
+  color: #F87171;
+  margin-top: 4px;
+  display: block;
+  width: 100%;
+}
+
+/* ── Auto-split hint ── */
+
+.sip-auto-hint {
+  font-size: 12px;
+  color: var(--text-muted);
+  padding: 8px 12px;
+  background: color-mix(in srgb, var(--split-color, #FB923C) 9%, transparent);
+  border-radius: 7px;
+  border: 1px solid color-mix(in srgb, var(--split-color, #FB923C) 18%, transparent);
+}
+
+.sip-auto-hint strong {
+  color: var(--split-color, #FB923C);
+}
+
+/* ─── PDF THUMBNAIL (inside drop zone) ──────────────────────────────────── */
+
+/* Container sits at the top of the drop zone, other zone content hides */
+.drop-zone.dz-has-thumb {
+  padding-top: 10px;
+  padding-bottom: 10px;
+}
+
+/* Hide default text/icon when thumbnail is shown */
+.drop-zone.dz-has-thumb .drop-icon,
+.drop-zone.dz-has-thumb .drop-main-text,
+.drop-zone.dz-has-thumb .drop-browse,
+.drop-zone.dz-has-thumb .drop-private {
+  display: none !important;
+}
+
+.dz-pdf-thumb-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.dz-pdf-thumb-card {
+  position: relative;
+  display: inline-block;
+}
+
+.dz-pdf-thumb-frame {
+  width: 90px;
+  height: 116px;
+  border-radius: 6px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+}
+
+.dz-pdf-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 4px;
+}
+
+.dz-pdf-thumb-icon {
+  width: 90px;
+  height: 116px;
+  display: block;
+}
+
+.dz-pdf-thumb-remove {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--bg-surface);
+  border: 1.5px solid color-mix(in srgb, var(--thumb-color, #FB923C) 50%, var(--border));
+  color: var(--thumb-color, #FB923C);
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 130ms ease;
+}
+
+.dz-pdf-thumb-remove:hover {
+  background: color-mix(in srgb, var(--thumb-color, #FB923C) 15%, var(--bg-surface));
+}
+
+.dz-pdf-thumb-name {
+  font-size: 12px;
+  color: var(--text-muted);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+}
