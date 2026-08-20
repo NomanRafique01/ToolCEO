@@ -1,7 +1,8 @@
 """
 PDF Compressor engine.
 
-All compression logic lives here, fully offline using PyMuPDF (fitz).
+All compression logic lives here, fully offline using PyMuPDF (fitz) and
+fontTools (for proper font subsetting).
 
 Public API
 ----------
@@ -31,7 +32,12 @@ CompressOptions
 
     Font
     ~~~~
-    subset_fonts : bool  – subset embedded fonts to only the used glyphs
+    subset_fonts : bool  – subset embedded fonts to only the used glyphs.
+        Implemented with fontTools: each embedded TTF/OTF/CFF font stream is
+        extracted, subsetted to the exact Unicode codepoints present in the
+        document, and the stream is replaced in-place.  The font name is
+        updated with the mandatory 6-character uppercase prefix
+        (e.g. ABCDEF+Helvetica) that signals subsetting has been applied.
 
     Compression Preset
     ~~~~~~~~~~~~~~~~~~
@@ -50,15 +56,20 @@ CompressOptions
 
 Design notes
 ------------
-* Pure PyMuPDF – no Ghostscript or other binary dependency.
+* Pure Python – no Ghostscript or other external binary dependency.
 * All functions work entirely in memory (bytes in, bytes out).
 * Image resampling: for each page we iterate embedded XObjects of subtype Image,
   decode them with Pixmap, optionally convert to grayscale, scale down if over
   the DPI cap, and re-encode as JPEG at the requested quality.  The new stream
-  replaces the old one in-place using doc.xref_set_key / replace_image so the
-  PDF structure (cross-references, annotation targets, etc.) stays intact.
-* Font subsetting is delegated to PyMuPDF's own subset_fonts() method which was
-  added in PyMuPDF ≥ 1.18.1 and is available in the project's installed version.
+  replaces the old one in-place using doc.replace_image so the PDF structure
+  (cross-references, annotation targets, etc.) stays intact.
+* Font subsetting: fontTools is used instead of PyMuPDF's subset_fonts(), which
+  only subsets fonts it has embedded itself and cannot touch pre-existing fonts.
+  For each embedded font we:
+    1. Collect every Unicode codepoint used across all document pages.
+    2. Load the raw font stream with TTFont and run fontTools.subset.Subsetter.
+    3. Replace the FontFile stream in the PDF with the subsetted bytes.
+    4. Rename the font (FontName, BaseFont) with XXXXXX+ prefix per PDF spec.
 * Form flattening: we iterate all Widget annotations and stamp their appearance
   streams onto the page canvas before removing them.
 """
@@ -67,7 +78,11 @@ from __future__ import annotations
 
 import base64
 import io
-from dataclasses import dataclass, field
+import logging
+import random
+import re
+import string
+from dataclasses import dataclass
 from typing import Optional
 
 import fitz  # PyMuPDF
@@ -279,6 +294,248 @@ def _remove_thumbnails(doc: fitz.Document) -> None:
 
 
 # ---------------------------------------------------------------------------
+# Font subsetting helper (fontTools)
+# ---------------------------------------------------------------------------
+
+_log = logging.getLogger(__name__)
+
+
+def _pdf_name_decode(raw: str) -> str:
+    """Decode a PDF name token (e.g. /Arial#20Regular → Arial Regular)."""
+    return re.sub(r"#([0-9A-Fa-f]{2})", lambda m: chr(int(m.group(1), 16)), raw.lstrip("/"))
+
+
+def _pdf_name_encode(name: str) -> str:
+    """Encode a Python string as a PDF name token, escaping non-ASCII and spaces."""
+    return "/" + re.sub(r"([ #\x00-\x1f\x7f-\xff])", lambda m: f"#{ord(m.group(1)):02X}", name)
+
+
+def _indirect_xref(raw_value: str) -> Optional[int]:
+    """Parse an indirect reference string like '10 0 R' → 10, or None."""
+    m = re.search(r"(\d+)\s+0\s+R", raw_value)
+    return int(m.group(1)) if m else None
+
+
+def _collect_unicodes_per_xref(doc: fitz.Document) -> dict[int, set[int]]:
+    """
+    Return a mapping of font-object xref → set of Unicode codepoints used in
+    the document.  Only codepoints > 0x1F (printable) are included.
+
+    Strategy
+    --------
+    * ``page.get_text("rawdict")`` yields spans with a ``font`` field whose
+      value can be either:
+        - the PDF resource alias (``refname`` from ``get_page_fonts``), OR
+        - the CIDFont's ``/BaseFont`` name (for Type0/CID fonts PyMuPDF
+          sometimes reports the CIDFont name rather than the resource alias).
+    * We build both mappings so either naming convention is handled.
+    * Characters are collected per xref across all pages so fonts shared
+      across pages accumulate their full glyph set.
+    """
+    # Build name → xref for both resource alias and CIDFont BaseFont names.
+    name_to_xref: dict[str, int] = {}
+    for pno in range(doc.page_count):
+        for entry in doc.get_page_fonts(pno, full=True):
+            xref, _, ftype, basefont, refname, _, _ = entry
+            # Resource alias (e.g. /TimesFont)
+            if refname:
+                name_to_xref.setdefault(refname, xref)
+            # For Type0 fonts the CIDFont BaseFont is what MuPDF reports in spans
+            if ftype == "Type0" and "DescendantFonts" in doc.xref_get_keys(xref):
+                cid_raw = doc.xref_get_key(xref, "DescendantFonts")
+                cid_xref = _indirect_xref(cid_raw[1])
+                if cid_xref is not None:
+                    cid_bf_raw = doc.xref_get_key(cid_xref, "BaseFont")
+                    if cid_bf_raw and cid_bf_raw[1]:
+                        cid_name = _pdf_name_decode(cid_bf_raw[1])
+                        name_to_xref.setdefault(cid_name, xref)
+
+    xref_unicodes: dict[int, set[int]] = {}
+    for pno in range(doc.page_count):
+        page = doc[pno]
+        raw = page.get_text("rawdict")
+        for block in raw.get("blocks", []):
+            if block.get("type") != 0:
+                continue
+            for line in block.get("lines", []):
+                for span in line.get("spans", []):
+                    font_name = span.get("font", "")
+                    xref = name_to_xref.get(font_name)
+                    if xref is None:
+                        continue
+                    for ch in span.get("chars", []):
+                        c = ch.get("c", "")
+                        if c and ord(c) > 0x1F:
+                            xref_unicodes.setdefault(xref, set()).add(ord(c))
+
+    return xref_unicodes
+
+
+def _find_fontfile_xref(doc: fitz.Document, type0_xref: int) -> tuple[Optional[int], Optional[int], Optional[int]]:
+    """
+    Walk the font object hierarchy starting from *type0_xref* to locate:
+      - the CIDFont (or None for simple fonts)
+      - the FontDescriptor xref
+      - the FontFile stream xref (FontFile, FontFile2, or FontFile3)
+
+    Returns (cidfont_xref, descriptor_xref, fontfile_xref).
+    Any element may be None if not found.
+    """
+    cidfont_xref: Optional[int] = None
+    descriptor_xref: Optional[int] = None
+
+    # Type0 fonts have DescendantFonts; simple fonts have FontDescriptor directly
+    keys = doc.xref_get_keys(type0_xref)
+
+    if "DescendantFonts" in keys:
+        raw = doc.xref_get_key(type0_xref, "DescendantFonts")
+        cidfont_xref = _indirect_xref(raw[1])
+
+    # FontDescriptor lives on the CIDFont (or directly on a simple font)
+    search_xref = cidfont_xref if cidfont_xref is not None else type0_xref
+    desc_keys = doc.xref_get_keys(search_xref) if search_xref is not None else []
+    if "FontDescriptor" in desc_keys:
+        raw = doc.xref_get_key(search_xref, "FontDescriptor")
+        descriptor_xref = _indirect_xref(raw[1])
+
+    if descriptor_xref is None:
+        return cidfont_xref, None, None
+
+    # FontFile / FontFile2 (TTF) / FontFile3 (CFF/OTF)
+    for ff_key in ("FontFile2", "FontFile3", "FontFile"):
+        if ff_key in doc.xref_get_keys(descriptor_xref):
+            raw = doc.xref_get_key(descriptor_xref, ff_key)
+            ff_xref = _indirect_xref(raw[1])
+            if ff_xref is not None:
+                return cidfont_xref, descriptor_xref, ff_xref
+
+    return cidfont_xref, descriptor_xref, None
+
+
+def _make_subset_prefix() -> str:
+    """Generate a random 6-character uppercase prefix (PDF spec §9.6.4)."""
+    return "".join(random.choices(string.ascii_uppercase, k=6))
+
+
+def _subset_fonts_fonttools(doc: fitz.Document) -> None:
+    """
+    Subset every embedded font in *doc* to only the glyphs actually used,
+    using fontTools.  The font stream is replaced in-place and the font name
+    is updated with a 6-character uppercase prefix (e.g. ABCDEF+Helvetica)
+    as required by the PDF specification.
+
+    Fonts with no extractable binary data (Type1 name references, non-embedded
+    fonts) are silently skipped.
+    """
+    try:
+        from fontTools import subset as ft_subset
+        from fontTools.ttLib import TTFont, TTLibFileIsCollectionError
+    except ImportError:
+        _log.warning("fontTools not installed – font subsetting skipped.")
+        return
+
+    # Silence the noisy "meta NOT subset; don't know how to subset; dropped" message
+    logging.getLogger("fontTools.subset").setLevel(logging.ERROR)
+
+    unicodes_per_xref = _collect_unicodes_per_xref(doc)
+
+    # Deduplicate: one font xref may appear on multiple pages
+    processed: set[int] = set()
+
+    for pno in range(doc.page_count):
+        for entry in doc.get_page_fonts(pno, full=True):
+            type0_xref, ext, ftype, basefont, refname, _, _ = entry
+
+            if type0_xref in processed:
+                continue
+            processed.add(type0_xref)
+
+            # Only fonts with an actual embedded stream can be subsetted
+            font_info = doc.extract_font(type0_xref)
+            if not font_info or not font_info[3] or len(font_info[3]) < 64:
+                continue  # no embedded data
+
+            unicodes = unicodes_per_xref.get(type0_xref, set())
+            if not unicodes:
+                continue  # font is embedded but never renders visible text
+
+            # Locate the FontFile stream xref
+            cidfont_xref, descriptor_xref, fontfile_xref = _find_fontfile_xref(doc, type0_xref)
+            if fontfile_xref is None or descriptor_xref is None:
+                continue
+
+            # Read current font stream
+            try:
+                font_bytes = doc.xref_stream(fontfile_xref)
+            except Exception:
+                continue
+
+            if not font_bytes or len(font_bytes) < 64:
+                continue
+
+            # Load font with fontTools
+            try:
+                tt = TTFont(io.BytesIO(font_bytes))
+            except (TTLibFileIsCollectionError, Exception):
+                continue  # TTC or unrecognised format – skip
+
+            # Run subsetter
+            try:
+                opts = ft_subset.Options()
+                opts.layout_features = ["*"]   # keep all OpenType features
+                opts.notdef_outline = True      # keep .notdef glyph outline
+
+                subsetter = ft_subset.Subsetter(options=opts)
+                subsetter.populate(unicodes=unicodes)
+                subsetter.subset(tt)
+            except Exception as exc:
+                _log.debug("fontTools subsetting failed for xref %d: %s", type0_xref, exc)
+                continue
+
+            # Serialise subsetted font
+            out_buf = io.BytesIO()
+            try:
+                tt.save(out_buf)
+            except Exception as exc:
+                _log.debug("fontTools save failed for xref %d: %s", type0_xref, exc)
+                continue
+
+            new_font_bytes = out_buf.getvalue()
+            if not new_font_bytes:
+                continue
+
+            # Build the new prefixed font name: XXXXXX+OriginalName
+            prefix = _make_subset_prefix()
+            old_name_raw = doc.xref_get_key(descriptor_xref, "FontName")
+            old_name = _pdf_name_decode(old_name_raw[1]) if old_name_raw[1] else (basefont or "Font")
+            # Strip any existing subset prefix before prepending a new one
+            old_name = re.sub(r"^[A-Z]{6}\+", "", old_name)
+            new_name = f"{prefix}+{old_name}"
+
+            # Replace the FontFile stream
+            try:
+                doc.update_stream(fontfile_xref, new_font_bytes, compress=True)
+            except Exception as exc:
+                _log.debug("stream update failed for xref %d: %s", fontfile_xref, exc)
+                continue
+
+            # Update FontName in FontDescriptor
+            doc.xref_set_key(descriptor_xref, "FontName", _pdf_name_encode(new_name))
+
+            # Update BaseFont on CIDFont (if present)
+            if cidfont_xref is not None:
+                doc.xref_set_key(cidfont_xref, "BaseFont", _pdf_name_encode(new_name))
+
+            # Update BaseFont on the Type0 (or simple font) dict
+            doc.xref_set_key(type0_xref, "BaseFont", _pdf_name_encode(new_name))
+
+            _log.debug(
+                "Subsetted font %r → %r (%d → %d bytes)",
+                old_name, new_name, len(font_bytes), len(new_font_bytes),
+            )
+
+
+# ---------------------------------------------------------------------------
 # Core compress function
 # ---------------------------------------------------------------------------
 
@@ -318,10 +575,7 @@ def _compress_once(doc: fitz.Document, opts: CompressOptions) -> None:
 
     # ── 7. Font subsetting ─────────────────────────────────────────────────
     if opts.subset_fonts:
-        try:
-            doc.subset_fonts()
-        except Exception:
-            pass  # Older build or no subsettable fonts — silently skip
+        _subset_fonts_fonttools(doc)
 
 
 def compress_pdf(
