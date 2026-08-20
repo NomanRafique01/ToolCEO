@@ -198,8 +198,7 @@
 .dz-state-done .drop-main-text,
 .dz-state-done .drop-browse,
 .dz-state-done .drop-private {
-  opacity: 0;
-  pointer-events: none;
+  display: none;
 }
 
 /* ── Progress & error overlays — anchored to bottom of zone ── */
@@ -217,17 +216,14 @@
   pointer-events: none;
 }
 
-/* ── Download overlay — centred in zone ── */
+/* ── Download overlay — fills the zone, card centred inside ── */
 .dz-download-wrap {
   position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: calc(100% - 48px);
-  max-width: 380px;
+  inset: 0;
   display: flex;
-  flex-direction: column;
-  align-items: stretch;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 24px;
   pointer-events: auto;
   animation: dropIconFadeIn 260ms ease forwards;
 }
@@ -258,6 +254,8 @@
 /* ── In-zone save card ── */
 .dz-save-card {
   --save-color: #00E5C0;
+  width: 100%;
+  max-width: 340px;
   background: rgba(255,255,255,0.04);
   border: 1px solid color-mix(in srgb, var(--save-color) 35%, transparent);
   border-radius: 10px;
@@ -758,11 +756,16 @@
   --dl-color: #00E5C0;
   --dl-bg:    rgba(0,229,192,0.08);
 
+  display: none;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 12px;
   overflow: hidden;
   transition: border-color 240ms ease;
+}
+
+.dl-panel--active {
+  display: block;
 }
 
 /* ── Themed top accent bar ── */

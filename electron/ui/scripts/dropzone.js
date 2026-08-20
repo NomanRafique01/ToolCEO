@@ -213,6 +213,8 @@ function _dlPanelActivate(tool) {
     return;
   }
 
+  panel.style.display = '';
+
   const { label, icon, color, bg } = tool;
   const safeColor = color || '#00E5C0';
   const safeBg    = bg    || 'rgba(0,229,192,0.08)';
@@ -295,6 +297,7 @@ function _dlPanelReady(filename, jobId, color) {
   const label     = (tool && tool.label) || 'Output';
   const icon      = tool && tool.icon;
 
+  panel.style.display = '';
   panel.style.setProperty('--dl-color', safeColor);
   panel.style.setProperty('--dl-bg',    safeBg);
   panel.style.setProperty('border-color', `color-mix(in srgb, ${safeColor} 28%, var(--border))`);
@@ -354,11 +357,11 @@ function _dlPanelReady(filename, jobId, color) {
   });
 }
 
-/** Reset panel to idle state. */
+/** Reset panel to idle state — hidden until a tool is active. */
 function _dlPanelReset(panel) {
   const p = panel || document.getElementById('download-panel');
   if (!p) return;
-  p.removeAttribute('style');
+  p.style.display = 'none';
   p.className = 'dl-panel';
   p.innerHTML = `
     <div class="dl-panel-idle">
@@ -466,7 +469,7 @@ function _updateProgress(zone, pct, color) {
   if (label) label.textContent = `${pct}%`;
 }
 
-/** Show download-ready state. */
+/** Show download-ready state — card is centred inside the drop zone. */
 function _showDownload(zone, filename, jobId, color) {
   _resetZoneContent(zone);
   zone.classList.add('dz-state-done');
@@ -509,7 +512,6 @@ function _showDownload(zone, filename, jobId, color) {
 
   zone.appendChild(wrap);
 
-  // Wire save button — reuse the same download logic as the old panel
   const btn = wrap.querySelector('.dz-save-btn');
   btn.addEventListener('click', async (e) => {
     e.stopPropagation();
