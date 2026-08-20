@@ -1,5 +1,6 @@
-const { app, BrowserWindow } = require('electron');
+const { app, BrowserWindow, ipcMain } = require('electron');
 const path = require('path');
+const fs   = require('fs');
 
 function createWindow() {
   const win = new BrowserWindow({
@@ -18,6 +19,15 @@ function createWindow() {
 }
 
 app.whenReady().then(() => {
+  // ── Save file to Downloads folder ──────────────────────────────────────────
+  ipcMain.handle('save-to-downloads', (_event, filename, base64Data) => {
+    const downloadsDir = app.getPath('downloads');
+    const filePath = path.join(downloadsDir, filename);
+    const buffer = Buffer.from(base64Data, 'base64');
+    fs.writeFileSync(filePath, buffer);
+    return filePath;
+  });
+
   createWindow();
 
   app.on('activate', () => {

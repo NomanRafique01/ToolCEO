@@ -3,6 +3,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from routers.pdf_tools import router as pdf_router
 from routers.pdf_conversions import router as pdf_conversions_router
+from routers.sse_progress import router as sse_router
 
 app = FastAPI(title="ToolCEO Backend")
 
@@ -27,3 +28,4 @@ def health():
 
 app.include_router(pdf_router, prefix="/api")
 app.include_router(pdf_conversions_router, prefix="/api")
+app.include_router(sse_router, prefix="/api")
