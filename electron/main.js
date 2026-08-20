@@ -46,6 +46,8 @@ function createWindow() {
   win.loadFile(path.join(__dirname, 'ui', 'index.html'));
 }
 
+app.commandLine.appendSwitch('disable-gpu-shader-disk-cache');
+
 app.whenReady().then(() => {
   // ── Save file to Downloads folder ──────────────────────────────────────────
   ipcMain.handle('save-to-downloads', (_event, filename, base64Data) => {

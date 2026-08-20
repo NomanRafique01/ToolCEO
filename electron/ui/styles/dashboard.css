@@ -283,61 +283,164 @@
   word-break: break-word;
 }
 
-/* ─── SPLIT PAGE-RANGE ROW ───────────────────────────────── */
+/* ─── INDETERMINATE SCAN BAR ─────────────────────────────── */
 
-.dz-split-range {
+@keyframes dzScanSlide {
+  0%   { transform: translateX(-100%); }
+  100% { transform: translateX(400%); }
+}
+
+.dz-progress-bar--indeterminate {
+  width: 30% !important;
+  animation: dzScanSlide 1.2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+}
+
+/* ─── SPLIT INFO PANEL ───────────────────────────────────── */
+
+/* Panel sits below the drop-zone, inside .hero-card */
+.split-info-panel {
+  --split-color: #E8924A;
+
+  margin-top: 14px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 14px 18px;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 6px;
-  margin-top: 8px;
-  pointer-events: all;
+  gap: 12px;
+
+  /* Slide-in animation */
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 240ms ease, transform 240ms ease;
 }
 
-.dz-range-label {
-  font-size: 11px;
-  font-weight: 500;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-  opacity: 0.8;
+.split-info-panel--visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 
-.dz-range-inputs {
+/* Dim the panel while submitting */
+.split-info-panel--submitting {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
+/* ── Header row: pages badge + change-file button ── */
+.sip-header {
   display: flex;
   align-items: center;
-  gap: 8px;
+  justify-content: space-between;
 }
 
-.dz-range-input {
-  width: 72px;
-  padding: 4px 8px;
-  background: rgba(255,255,255,0.06);
-  border: 1px solid rgba(255,255,255,0.15);
+.sip-pages-badge {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.sip-total-label strong {
+  color: var(--split-color);
+  font-weight: 600;
+}
+
+.sip-change-btn {
+  font-size: 11px;
+  font-weight: 500;
+  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid var(--border);
   border-radius: 6px;
-  color: #e2e8f0;
+  padding: 3px 10px;
+  cursor: pointer;
+  font-family: inherit;
+  transition: border-color 120ms ease, color 120ms ease;
+}
+.sip-change-btn:hover {
+  border-color: var(--split-color);
+  color: var(--split-color);
+}
+
+/* ── Range row: label + inputs + submit ── */
+.sip-range-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.sip-range-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-primary);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.sip-optional {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 400;
+}
+
+.sip-inputs {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.sip-input {
+  width: 76px;
+  padding: 5px 8px;
+  background: rgba(255,255,255,0.05);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text-primary);
   font-size: 13px;
   text-align: center;
   outline: none;
-  transition: border-color 0.15s;
+  font-family: inherit;
+  transition: border-color 140ms ease;
 }
+.sip-input:focus { border-color: var(--split-color); }
+.sip-input::placeholder { color: var(--text-muted); }
 
-.dz-range-input:focus {
-  border-color: var(--dz-color, #E8924A);
-}
+/* hide number spinners */
+.sip-input::-webkit-inner-spin-button,
+.sip-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+.sip-input[type=number] { -moz-appearance: textfield; }
 
-.dz-range-input::placeholder {
-  color: rgba(255,255,255,0.3);
-}
-
-/* hide browser number spinners */
-.dz-range-input::-webkit-inner-spin-button,
-.dz-range-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-.dz-range-input[type=number] { -moz-appearance: textfield; }
-
-.dz-range-sep {
+.sip-sep {
   font-size: 14px;
   font-weight: 600;
-  opacity: 0.75;
+  color: var(--text-muted);
+}
+
+.sip-split-btn {
+  margin-left: auto;
+  padding: 6px 18px;
+  font-size: 13px;
+  font-weight: 500;
+  font-family: inherit;
+  color: #fff;
+  background: var(--split-color);
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: opacity 150ms ease, transform 120ms ease;
+}
+.sip-split-btn:hover  { opacity: 0.88; transform: translateY(-1px); }
+.sip-split-btn:active { opacity: 1;    transform: translateY(0); }
+
+.sip-range-error {
+  display: block;
+  width: 100%;
+  font-size: 11px;
+  color: #F87171;
+  margin-top: 2px;
 }
 
 /* ─── BREADCRUMB BAR ─────────────────────────────────────── */

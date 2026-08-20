@@ -5,6 +5,14 @@
  * full hero-card + drop-zone morphing when a tool is selected,
  * the "no tool" warning banner, SSE progress tracking, and
  * download-on-complete / error display — all inside the existing zone.
+ *
+ * Split PDF special flow:
+ *   1. User drops / picks a PDF while Split tool is active.
+ *   2. Drop zone shows a "Scanning PDF…" progress bar.
+ *   3. Backend /api/pdf/page-count responds with the total page count.
+ *   4. A panel slides in BELOW the drop zone (inside the hero card) showing
+ *      total pages + From/To range inputs + a Split button.
+ *   5. Clicking Split submits to /api/pdf/split with the chosen range.
  */
 
 import { getActiveTool, onToolChange } from './toolstate.js';
@@ -12,7 +20,6 @@ import { getActiveTool, onToolChange } from './toolstate.js';
 const BACKEND = 'http://127.0.0.1:8000';
 
 // ─── ENDPOINT MAP ─────────────────────────────────────────────────────────────
-// Maps tool id → { url, buildForm(files) }
 const ENDPOINT_MAP = {
   // PDF Tools
   merge        : { url: `${BACKEND}/api/pdf/merge`,         multi: true  },
@@ -142,6 +149,7 @@ function _updateDropZone(tool) {
   // ── RESET ──────────────────────────────────────────────────────────────────
   if (!tool) {
     _resetZoneContent(zone);
+    _removeSplitPanel();
     if (iconSlot) iconSlot.outerHTML = DEFAULT_ICON_SVG;
     mainEl.textContent = DEFAULT_MAIN;
     subEl.textContent  = DEFAULT_SUB;
@@ -159,6 +167,7 @@ function _updateDropZone(tool) {
   const { label, mainText, subText, icon, color, bg, tag } = tool;
 
   _resetZoneContent(zone);  // clear any previous progress/download/error state
+  _removeSplitPanel();      // hide previous split info panel if tool changed
 
   const currentIcon = zone.querySelector('.drop-icon');
   if (currentIcon && icon) currentIcon.outerHTML = _scaledIcon(icon, color);
@@ -190,20 +199,36 @@ function _resetZoneContent(zone) {
   zone.querySelectorAll(
     '.dz-progress-wrap, .dz-download-wrap, .dz-error-wrap'
   ).forEach((el) => el.remove());
-  zone.classList.remove('dz-state-processing', 'dz-state-done', 'dz-state-error');
+  zone.classList.remove('dz-state-processing', 'dz-state-done', 'dz-state-error', 'dz-state-scanning');
 }
 
 /** Show the progress bar overlay (replaces browse text area). */
-function _showProgress(zone, pct, color) {
+function _showProgress(zone, pct, color, label) {
   _resetZoneContent(zone);
   zone.classList.add('dz-state-processing');
+
+  const displayLabel = label || 'Processing…';
+  const wrap = document.createElement('div');
+  wrap.className = 'dz-progress-wrap';
+  wrap.innerHTML = `
+    <span class="dz-progress-label">${displayLabel}  <span class="dz-pct">${pct}%</span></span>
+    <div class="dz-progress-track">
+      <div class="dz-progress-bar" style="width:${pct}%;background:${color}"></div>
+    </div>`;
+  zone.appendChild(wrap);
+}
+
+/** Show a scan progress bar (different label, same visual). */
+function _showScanProgress(zone, color) {
+  _resetZoneContent(zone);
+  zone.classList.add('dz-state-scanning');
 
   const wrap = document.createElement('div');
   wrap.className = 'dz-progress-wrap';
   wrap.innerHTML = `
-    <span class="dz-progress-label">Processing…  <span class="dz-pct">${pct}%</span></span>
+    <span class="dz-progress-label">Scanning PDF… <span class="dz-pct"></span></span>
     <div class="dz-progress-track">
-      <div class="dz-progress-bar" style="width:${pct}%;background:${color}"></div>
+      <div class="dz-progress-bar dz-progress-bar--indeterminate" style="background:${color}"></div>
     </div>`;
   zone.appendChild(wrap);
 }
@@ -311,38 +336,240 @@ async function _downloadFile(jobId, filename, color, wrap) {
   }
 }
 
-// ─── SPLIT PAGE-RANGE INPUTS ──────────────────────────────────────────────────
+// ─── SPLIT INFO PANEL ─────────────────────────────────────────────────────────
 
-/** Inject (or remove) the page-range row inside the drop-zone for split tool. */
-function _syncSplitInputs(tool) {
-  const zone = document.getElementById('drop-zone');
-  if (!zone) return;
-  // Remove any existing range row
-  const existing = zone.querySelector('.dz-split-range');
+/** The file object held between scan and submit for split tool. */
+let _splitFile      = null;
+let _splitPageCount = 0;
+
+/** Remove the post-upload split info panel if it exists. */
+function _removeSplitPanel() {
+  const existing = document.getElementById('split-info-panel');
   if (existing) existing.remove();
-
-  if (!tool || tool.id !== 'split') return;
-
-  const color = tool.color || '#E8924A';
-  const row = document.createElement('div');
-  row.className = 'dz-split-range';
-  row.innerHTML = `
-    <label class="dz-range-label" style="color:${color}">Page range (optional)</label>
-    <div class="dz-range-inputs">
-      <input class="dz-range-input" id="dz-split-start" type="number" min="1" placeholder="From" />
-      <span class="dz-range-sep" style="color:${color}">–</span>
-      <input class="dz-range-input" id="dz-split-end"   type="number" min="1" placeholder="To" />
-    </div>`;
-  // Stop clicks on the inputs from opening the file picker
-  row.addEventListener('click', (e) => e.stopPropagation());
-  zone.appendChild(row);
+  _splitFile      = null;
+  _splitPageCount = 0;
 }
 
-// ─── SUBMIT FILE ──────────────────────────────────────────────────────────────
+/**
+ * Show the split info panel below the drop zone inside the hero card.
+ * @param {number} totalPages
+ * @param {string} color
+ */
+function _showSplitPanel(totalPages, color) {
+  _removeSplitPanel();
+
+  const heroCard = document.querySelector('.hero-card');
+  if (!heroCard) return;
+
+  const panel = document.createElement('div');
+  panel.id = 'split-info-panel';
+  panel.className = 'split-info-panel';
+  panel.style.setProperty('--split-color', color);
+
+  panel.innerHTML = `
+    <div class="sip-header">
+      <span class="sip-pages-badge">
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <rect x="3" y="1" width="10" height="14" rx="2" stroke="${color}" stroke-width="1.3"/>
+          <line x1="5" y1="5"  x2="11" y2="5"  stroke="${color}" stroke-width="1.1" stroke-linecap="round"/>
+          <line x1="5" y1="8"  x2="11" y2="8"  stroke="${color}" stroke-width="1.1" stroke-linecap="round"/>
+          <line x1="5" y1="11" x2="9"  y2="11" stroke="${color}" stroke-width="1.1" stroke-linecap="round"/>
+        </svg>
+        <span class="sip-total-label">Total pages: <strong>${totalPages}</strong></span>
+      </span>
+      <button class="sip-change-btn" id="sip-change-btn" title="Pick a different file">Change file</button>
+    </div>
+    <div class="sip-range-row">
+      <span class="sip-range-label">Page range <span class="sip-optional">(optional)</span></span>
+      <div class="sip-inputs">
+        <input class="sip-input" id="sip-from" type="number" min="1" max="${totalPages}" placeholder="From" />
+        <span class="sip-sep">–</span>
+        <input class="sip-input" id="sip-to"   type="number" min="1" max="${totalPages}" placeholder="To" />
+      </div>
+      <button class="sip-split-btn" id="sip-split-btn">Split PDF</button>
+    </div>`;
+
+  heroCard.appendChild(panel);
+
+  // Animate in
+  requestAnimationFrame(() => panel.classList.add('split-info-panel--visible'));
+
+  // "Change file" resets to drop zone state
+  panel.querySelector('#sip-change-btn').addEventListener('click', () => {
+    const tool = getActiveTool();
+    _removeSplitPanel();
+    _resetZoneContent(document.getElementById('drop-zone'));
+    // Re-trigger the tool state so the drop zone shows the tool-selected state
+    if (tool) _updateDropZone(tool);
+  });
+
+  // "Split PDF" button submits
+  panel.querySelector('#sip-split-btn').addEventListener('click', () => {
+    if (!_splitFile) return;
+    const fromEl = panel.querySelector('#sip-from');
+    const toEl   = panel.querySelector('#sip-to');
+    const fromVal = fromEl.value.trim();
+    const toVal   = toEl.value.trim();
+
+    // Validate range if provided
+    if (fromVal || toVal) {
+      const s = parseInt(fromVal || '1', 10);
+      const e = parseInt(toVal   || String(_splitPageCount), 10);
+      if (s < 1 || e > _splitPageCount || s > e) {
+        _flashRangeError(panel, `Enter a valid range between 1 and ${_splitPageCount}.`);
+        return;
+      }
+    }
+
+    _submitSplitFile(_splitFile, fromVal, toVal);
+  });
+}
+
+function _flashRangeError(panel, msg) {
+  let errEl = panel.querySelector('.sip-range-error');
+  if (!errEl) {
+    errEl = document.createElement('span');
+    errEl.className = 'sip-range-error';
+    panel.querySelector('.sip-range-row').appendChild(errEl);
+  }
+  errEl.textContent = msg;
+  clearTimeout(errEl._t);
+  errEl._t = setTimeout(() => errEl.remove(), 3000);
+}
+
+// ─── SPLIT SCAN FLOW ──────────────────────────────────────────────────────────
+
+/**
+ * Called when a file is picked while Split tool is active.
+ * Scans the PDF for page count then reveals the info panel.
+ */
+async function _handleSplitFilePicked(file) {
+  const tool  = getActiveTool();
+  const color = tool ? (tool.color || '#E8924A') : '#E8924A';
+  const zone  = document.getElementById('drop-zone');
+
+  _removeSplitPanel();
+  _showScanProgress(zone, color);
+
+  // POST to page-count endpoint
+  const fd = new FormData();
+  fd.append('file', file);
+
+  let pageCount;
+  try {
+    const res  = await fetch(`${BACKEND}/api/pdf/page-count`, { method: 'POST', body: fd });
+    const json = await res.json();
+    if (!res.ok) {
+      throw new Error(json.detail || `Server error ${res.status}`);
+    }
+    pageCount = json.page_count;
+  } catch (err) {
+    _showError(zone, `Could not read PDF: ${err.message}`);
+    return;
+  }
+
+  // Reset zone to tool-selected idle state (remove scan bar)
+  _resetZoneContent(zone);
+
+  // Store file for later submission
+  _splitFile      = file;
+  _splitPageCount = pageCount;
+
+  _showSplitPanel(pageCount, color);
+}
+
+// ─── SPLIT SUBMIT ─────────────────────────────────────────────────────────────
+
+async function _submitSplitFile(file, fromVal, toVal) {
+  const tool = getActiveTool();
+  if (!tool) return;
+
+  const zone  = document.getElementById('drop-zone');
+  const color = tool.color || '#E8924A';
+
+  // Hide the panel while processing
+  const panel = document.getElementById('split-info-panel');
+  if (panel) panel.classList.add('split-info-panel--submitting');
+
+  const fd = new FormData();
+  fd.append('file', file);
+  if (fromVal) fd.append('start_page', parseInt(fromVal, 10));
+  if (toVal)   fd.append('end_page',   parseInt(toVal,   10));
+
+  // Show progress inside drop zone
+  _showProgress(zone, 0, color, 'Processing…');
+
+  let jobId;
+  try {
+    const res  = await fetch(`${BACKEND}/api/pdf/split`, { method: 'POST', body: fd });
+    const json = await res.json();
+    if (!res.ok) {
+      const detail = json.detail;
+      const msg = Array.isArray(detail)
+        ? detail.map((d) => d.msg || JSON.stringify(d)).join('; ')
+        : (typeof detail === 'string' ? detail : JSON.stringify(detail));
+      throw new Error(msg || `Server error ${res.status}`);
+    }
+    jobId = json.job_id;
+  } catch (err) {
+    _showError(zone, `Upload failed: ${err.message}`);
+    if (panel) panel.classList.remove('split-info-panel--submitting');
+    return;
+  }
+
+  // ── Subscribe to SSE progress ──────────────────────────────────────────────
+  const sse = new EventSource(`${BACKEND}/api/progress/${jobId}`);
+  let  lastPct = 0;
+
+  sse.onmessage = (event) => {
+    let data;
+    try { data = JSON.parse(event.data); } catch { return; }
+
+    const { state, progress, error } = data;
+    const pct = typeof progress === 'number' ? progress : lastPct;
+    lastPct   = pct;
+
+    if (state === 'running' || state === 'pending') {
+      const displayPct = Math.max(10, Math.min(90, pct));
+      _updateProgress(zone, displayPct, color);
+      return;
+    }
+
+    sse.close();
+
+    if (state === 'done') {
+      _updateProgress(zone, 100, color);
+      // Remove the split panel on success
+      _removeSplitPanel();
+      const dlName = data.filename || `output_${jobId.slice(0, 8)}`;
+      setTimeout(() => _showDownload(zone, dlName, jobId, color), 200);
+      return;
+    }
+
+    if (state === 'error') {
+      _showError(zone, error || 'Processing failed. Please try again.');
+      if (panel) panel.classList.remove('split-info-panel--submitting');
+    }
+  };
+
+  sse.onerror = () => {
+    sse.close();
+    _showError(zone, 'Lost connection to backend. Is the server running?');
+    if (panel) panel.classList.remove('split-info-panel--submitting');
+  };
+}
+
+// ─── GENERIC SUBMIT FILE ──────────────────────────────────────────────────────
 
 async function _submitFile(files) {
   const tool = getActiveTool();
   if (!tool) { showNoToolWarning(); return; }
+
+  // Split tool has its own two-step flow
+  if (tool.id === 'split') {
+    _handleSplitFilePicked(files[0]);
+    return;
+  }
 
   const endpoint = ENDPOINT_MAP[tool.id];
   if (!endpoint) {
@@ -360,18 +587,6 @@ async function _submitFile(files) {
     Array.from(files).forEach((f) => fd.append('files', f));
   } else {
     fd.append('file', files[0]);
-  }
-
-  // ── Extra fields for split ─────────────────────────────────────────────────
-  // Only append page numbers when the user actually typed a value.
-  // Omitting both lets the backend know to split every page → ZIP.
-  if (tool.id === 'split') {
-    const startEl  = document.getElementById('dz-split-start');
-    const endEl    = document.getElementById('dz-split-end');
-    const hasStart = startEl && startEl.value.trim() !== '';
-    const hasEnd   = endEl   && endEl.value.trim()   !== '';
-    if (hasStart) fd.append('start_page', parseInt(startEl.value, 10));
-    if (hasEnd)   fd.append('end_page',   parseInt(endEl.value,   10));
   }
 
   // ── Show initial progress ──────────────────────────────────────────────────
@@ -408,7 +623,6 @@ async function _submitFile(files) {
     lastPct   = pct;
 
     if (state === 'running' || state === 'pending') {
-      // Animate smoothly between 10 and 90 while the server works
       const displayPct = Math.max(10, Math.min(90, pct));
       _updateProgress(zone, displayPct, color);
       return;
@@ -418,7 +632,6 @@ async function _submitFile(files) {
 
     if (state === 'done') {
       _updateProgress(zone, 100, color);
-      // filename is sent in the SSE done payload — no HEAD request needed
       const dlName = data.filename || `output_${jobId.slice(0, 8)}`;
       setTimeout(() => _showDownload(zone, dlName, jobId, color), 200);
       return;
@@ -444,7 +657,6 @@ export function initDropZone() {
   if (!dropZone || !fileInput) return;
 
   onToolChange(_updateDropZone);
-  onToolChange(_syncSplitInputs);
 
   // ── Click ──────────────────────────────────────────────────────────────────
   dropZone.addEventListener('click', (e) => {
@@ -452,8 +664,9 @@ export function initDropZone() {
     // Don't open file picker when clicking the download button or error
     if (e.target.closest('.dz-download-wrap, .dz-error-wrap')) return;
     if (!getActiveTool()) { showNoToolWarning(); return; }
-    // If already processing, ignore
+    // If already processing or scanning, ignore
     if (dropZone.classList.contains('dz-state-processing')) return;
+    if (dropZone.classList.contains('dz-state-scanning'))   return;
     fileInput.click();
   });
 
@@ -482,6 +695,7 @@ export function initDropZone() {
     dropZone.classList.remove('drag-active');
     if (!getActiveTool()) { showNoToolWarning(); return; }
     if (dropZone.classList.contains('dz-state-processing')) return;
+    if (dropZone.classList.contains('dz-state-scanning'))   return;
     if (e.dataTransfer.files.length > 0) {
       _submitFile(e.dataTransfer.files);
     }

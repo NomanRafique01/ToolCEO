@@ -4,6 +4,9 @@ Each endpoint:
   1. Creates a job and returns its ID immediately (202 Accepted).
   2. Runs the engine function in a thread, emitting progress via the job store.
   3. Frontend polls /api/progress/{job_id} via SSE then fetches /api/download/{job_id}.
+
+Also provides a synchronous helper:
+  POST /api/pdf/page-count  – returns {"page_count": N} immediately (no job).
 """
 
 from __future__ import annotations
@@ -55,6 +58,23 @@ def _run_job(job_id: str, fn, *args, filename: str, media_type: str = "applicati
 
 def _submit(job_id: str, fn, *args, filename: str, media_type: str = "application/pdf"):
     _pool.submit(_run_job, job_id, fn, *args, filename=filename, media_type=media_type)
+
+
+# ---------------------------------------------------------------------------
+# 0. Page count  (synchronous – no job, no SSE)
+# ---------------------------------------------------------------------------
+
+@router.post("/page-count", summary="Return the page count of a PDF without processing it")
+async def page_count(file: UploadFile = File(...)):
+    import fitz  # PyMuPDF
+    raw = await _read(file)
+    try:
+        doc = fitz.open(stream=raw, filetype="pdf")
+        count = doc.page_count
+        doc.close()
+    except Exception as exc:
+        raise HTTPException(status_code=422, detail=f"Could not read PDF: {exc}")
+    return JSONResponse({"page_count": count})
 
 
 # ---------------------------------------------------------------------------
