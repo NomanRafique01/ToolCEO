@@ -7,15 +7,19 @@
 
   <!--
     Stylesheet load order is intentional:
-      1. base     – CSS custom properties + global reset
-      2. layout   – fixed structural shells (sidebar, topbar, main)
-      3. sidebar  – logo, nav items, status card
-      4. dashboard – all dashboard panel components
+      1. base       – CSS custom properties + global reset
+      2. layout     – fixed structural shells (sidebar, topbar, main)
+      3. sidebar    – logo, nav items, status card
+      4. dashboard  – dashboard panel components
+      5. documents  – documents conversion panel
+      6. audio      – audio conversion panel
   -->
   <link rel="stylesheet" href="styles/base.css" />
   <link rel="stylesheet" href="styles/layout.css" />
   <link rel="stylesheet" href="styles/sidebar.css" />
   <link rel="stylesheet" href="styles/dashboard.css" />
+  <link rel="stylesheet" href="styles/documents.css" />
+  <link rel="stylesheet" href="styles/audio.css" />
 </head>
 <body>
 
@@ -26,7 +30,9 @@
 
     <!-- Logo -->
     <div class="sidebar-logo">
-      <img src="../../assets/icon.png" class="logo-icon" alt="ToolCEO" />
+      <div class="logo-icon-wrap">
+        <img src="../../assets/icon.png" class="logo-icon" alt="ToolCEO" />
+      </div>
       <div class="logo-text">
         <span class="logo-name">ToolCEO</span>
         <span class="logo-badge">100% Offline</span>
@@ -255,15 +261,7 @@
           </div>
 
           <!-- Quick Convert -->
-          <div class="quick-convert">
-            <span class="section-label">Quick Convert</span>
-            <div class="pill-row">
-              <button class="pill active" data-pill="pdf-word">PDF ↔ Word</button>
-              <button class="pill" data-pill="image">Image Convert</button>
-              <button class="pill" data-pill="audio">Audio Convert</button>
-              <button class="pill" data-pill="video">Video Convert</button>
-            </div>
-          </div>
+          <nav id="breadcrumb-bar" aria-label="Breadcrumb"></nav>
 
         </div><!-- /dash-left -->
 
@@ -356,7 +354,7 @@
       </div><!-- /dash-columns -->
 
       <!-- ── EXPLORE TOOLS ──────────────────────────────── -->
-      <div class="explore-section">
+      <div class="explore-section" id="explore-section">
         <div class="explore-header">
           <svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="explore-icon">
             <path d="M8 1l1.8 4.1L14 6l-3 2.9.7 4.1L8 11l-3.7 2 .7-4.1L2 6l4.2-.9L8 1Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
@@ -556,6 +554,7 @@
       </div><!-- /features-strip -->
 
     </div><!-- /dashboard-panel -->
+
   </main>
 
   <!--

@@ -115,42 +115,46 @@
   margin-top: 8px;
 }
 
-/* ─── QUICK CONVERT ──────────────────────────────────────── */
+/* ─── BREADCRUMB BAR ─────────────────────────────────────── */
 
-.quick-convert {
+#breadcrumb-bar {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 0;
+  height: 28px;
+  padding: 0 2px;
 }
 
-.section-label {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--text-muted);
-  margin-bottom: 8px;
-}
-
-.pill-row {
+.bc-segment {
   display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
+  align-items: center;
+  gap: 0;
+  font-size: 12px;
+  line-height: 1;
 }
 
-.pill {
-  background: var(--bg-surface);
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  height: 32px;
-  padding: 0 16px;
-  font-size: 13px;
+.bc-label {
   color: var(--text-muted);
-  font-family: inherit;
-  cursor: pointer;
-  transition: border-color 120ms ease, color 120ms ease;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  transition: color 120ms ease;
+  white-space: nowrap;
 }
 
-.pill:hover  { border-color: var(--accent); color: var(--accent); }
-.pill.active { border-color: var(--accent); color: var(--accent); }
+.bc-label--active {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.bc-sep {
+  display: inline-flex;
+  align-items: center;
+  margin: 0 5px;
+  color: rgba(143, 170, 166, 0.4);
+  font-size: 11px;
+  line-height: 1;
+  user-select: none;
+}
 
 /* ─── RECENT CONVERSIONS PANEL ───────────────────────────── */
 

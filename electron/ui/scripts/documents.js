@@ -4,6 +4,8 @@
  * tools/conversions panel into the explore-section container.
  */
 
+import { setBreadcrumb } from './navigation.js';
+
 // ─── PDF TOOL CARDS ──────────────────────────────────────────────────────────
 
 const PDF_TOOLS = [
@@ -368,6 +370,7 @@ function cardHTML(item, extraClass = '') {
 // ─── PDF TOOLS PANEL ─────────────────────────────────────────────────────────
 
 export function renderPdfTools(container, activateNav) {
+  setBreadcrumb(['Dashboard', 'Documents', 'PDF']);
   container.innerHTML = `
     <div class="explore-header">
       <button class="fmt-back-btn" title="Back to Documents">
@@ -428,6 +431,7 @@ export function renderPdfTools(container, activateNav) {
 // ─── DOCUMENTS PANEL (main) ───────────────────────────────────────────────────
 
 export function renderDocumentFormats(container, activateNav) {
+  setBreadcrumb(['Dashboard', 'Documents']);
   container.innerHTML = `
     <div class="explore-header">
       <button class="fmt-back-btn" title="Back to all tools">
