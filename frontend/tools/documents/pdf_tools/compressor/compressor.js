@@ -311,6 +311,8 @@ function _showSettingsPanel(pageCount, color) {
     const opts = _collectOptions(panel);
     const nameInput = panel.querySelector('#cmp-filename-input');
     const outName   = (nameInput ? nameInput.value.trim() : '') || (_compressBaseName + '_compressed');
+    const mainContent = document.getElementById('main-content');
+    if (mainContent) mainContent.scrollTop = 0;
     _submitCompress(_compressFile, opts, outName);
   });
 
