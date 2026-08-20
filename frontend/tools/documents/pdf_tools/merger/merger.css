@@ -16,13 +16,16 @@
 /* ─── DROP ZONE: HAS-MERGE-THUMBS STATE ────────────────────────────────────── */
 
 /*
-  When the merge strip is present we shrink the zone's default
-  text content so only the strip is visible. Mirrors dz-has-thumb from splitter.
+  When the merge strip is present, let the zone expand vertically to fit
+  as many rows of cards as needed. No fixed or max height.
 */
 .drop-zone.dz-has-merge-thumbs {
   padding-top: 12px;
   padding-bottom: 12px;
+  height: auto;
   min-height: 178px;
+  max-height: none;
+  overflow: visible;
 }
 
 .drop-zone.dz-has-merge-thumbs .drop-icon,
@@ -37,23 +40,16 @@
 .dz-merge-thumb-strip {
   display: flex;
   flex-direction: row;
-  align-items: flex-end;
-  gap: 10px;
+  /* Wrap onto new rows when cards don't fit — zone grows vertically */
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 14px 10px;
   width: 100%;
-  overflow-x: auto;
-  overflow-y: visible;
-  padding: 10px 4px 6px;
-  /* Custom thin scrollbar */
-  scrollbar-width: thin;
-  scrollbar-color: color-mix(in srgb, var(--merge-color) 40%, transparent) transparent;
+  overflow: visible;
+  padding: 10px 8px 6px;
+  box-sizing: border-box;
 }
 
-.dz-merge-thumb-strip::-webkit-scrollbar        { height: 4px; }
-.dz-merge-thumb-strip::-webkit-scrollbar-track  { background: transparent; }
-.dz-merge-thumb-strip::-webkit-scrollbar-thumb  {
-  background: color-mix(in srgb, var(--merge-color) 40%, transparent);
-  border-radius: 2px;
-}
 
 /* ─── INDIVIDUAL CARD ───────────────────────────────────────────────────────── */
 
@@ -228,7 +224,7 @@
   font-weight: 500;
   cursor: pointer;
   transition: border-color 130ms ease, background 130ms ease, color 130ms ease;
-  margin-bottom: 38px; /* align baseline with cards (name + pages labels) */
+  margin-bottom: 0;
 }
 
 .dz-merge-add-btn:hover {

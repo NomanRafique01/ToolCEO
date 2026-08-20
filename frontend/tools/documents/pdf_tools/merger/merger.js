@@ -261,7 +261,7 @@ function _renderMergePanel() {
 
     <div class="mqp-hint" id="mqp-hint">
       ${canMerge
-        ? `Drag the thumbnails above to change the merge order.`
+        ? `Drag the PDFs above to change the merge order.`
         : `<span style="color:#F87171">Add at least one more PDF to merge.</span>`}
     </div>
 
