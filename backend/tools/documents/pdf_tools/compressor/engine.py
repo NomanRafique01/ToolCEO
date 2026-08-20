@@ -71,6 +71,7 @@ from dataclasses import dataclass, field
 from typing import Optional
 
 import fitz  # PyMuPDF
+from PIL import Image
 
 
 # ---------------------------------------------------------------------------
@@ -162,15 +163,16 @@ def _serialize(doc: fitz.Document, *, garbage: int = 4, deflate: bool = True, cl
 
 def _process_images(doc: fitz.Document, quality: int, max_dpi: int, grayscale: bool) -> None:
     """
-    Re-encode every raster image in the document.
+    Re-encode every raster image in the document using PIL for resize + encode.
 
     For each unique image XObject we:
-      1. Decode it into a Pixmap.
+      1. Decode it into a fitz.Pixmap then hand off to PIL.
       2. Optionally convert to grayscale.
-      3. Scale it down if its effective DPI exceeds *max_dpi*.
+      3. Scale it down if either dimension exceeds max_dpi * 11 (A4/Letter cap).
       4. Re-encode as JPEG at *quality* and replace the XObject stream.
     """
     seen_xrefs: set[int] = set()
+    max_dim = max_dpi * 11  # A4/Letter worst-case pixel cap per dimension
 
     for page in doc:
         image_list = page.get_images(full=True)
@@ -185,36 +187,54 @@ def _process_images(doc: fitz.Document, quality: int, max_dpi: int, grayscale: b
             except Exception:
                 continue  # skip images we cannot decode (e.g. JBIG2, CCITT)
 
-            # Drop alpha channel – JPEG does not support transparency
-            if pix.alpha:
-                pix = fitz.Pixmap(fitz.csRGB, pix)
-
-            # Convert to grayscale if requested
-            if grayscale and pix.colorspace and pix.colorspace.n > 1:
-                pix = fitz.Pixmap(fitz.csGRAY, pix)
-
-            # Scale down to DPI cap
-            # PyMuPDF Pixmap has no DPI metadata, so we approximate:
-            # the image is rendered at 72 DPI by default in PDF user-space.
-            # If the pixmap is wider than the page's pointwidth * (max_dpi/72)
-            # we scale it down so it would render at exactly max_dpi.
-            # In practice we just limit total pixels to avoid inflating files:
-            # cap each dimension so that neither exceeds max_dpi * 11 (letter).
-            max_dim = max_dpi * 11  # A4/Letter worst-case
-            if pix.width > max_dim or pix.height > max_dim:
-                scale = min(max_dim / pix.width, max_dim / pix.height)
-                new_w = max(1, int(pix.width * scale))
-                new_h = max(1, int(pix.height * scale))
-                pix = pix.scale_pixmap(new_w, new_h)
-
-            # Re-encode as JPEG
-            jpeg_bytes = pix.tobytes("jpeg", jpg_quality=quality)
-
-            # Replace the image stream in the PDF
             try:
+                # Flatten alpha channel before conversion — JPEG has no alpha
+                if pix.alpha:
+                    pix = fitz.Pixmap(fitz.csRGB, pix)
+
+                # Determine PIL mode from colorspace
+                cs = pix.colorspace
+                if cs is None:
+                    continue  # mask/stencil — skip
+                n = cs.n
+                if n == 1:
+                    mode = "L"
+                elif n == 3:
+                    mode = "RGB"
+                elif n == 4:
+                    mode = "CMYK"
+                else:
+                    continue  # unsupported colorspace
+
+                # Build PIL Image from raw pixmap samples
+                img = Image.frombytes(mode, (pix.width, pix.height), pix.samples)
+
+                # Convert CMYK → RGB (JPEG encoder prefers RGB over CMYK)
+                if mode == "CMYK":
+                    img = img.convert("RGB")
+
+                # Convert to grayscale if requested
+                if grayscale:
+                    img = img.convert("L")
+
+                # Scale down if over the DPI cap
+                w, h = img.size
+                if w > max_dim or h > max_dim:
+                    scale = min(max_dim / w, max_dim / h)
+                    new_w = max(1, int(w * scale))
+                    new_h = max(1, int(h * scale))
+                    img = img.resize((new_w, new_h), Image.LANCZOS)
+
+                # Re-encode as JPEG
+                buf = io.BytesIO()
+                img.save(buf, format="JPEG", quality=quality, optimize=True)
+                jpeg_bytes = buf.getvalue()
+
+                # Replace the image stream in the PDF
                 doc.replace_image(xref, stream=jpeg_bytes)
+
             except Exception:
-                # replace_image may fail for mask images or corrupted entries; skip
+                # Silently skip any image that cannot be processed
                 continue
 
 
