@@ -1,7 +1,7 @@
 ﻿/* ─────────────────────────────────────────────────────────────
    notification-banner.css
-   Flat persistent strip below #topbar, full-width of the
-   main content column (excludes sidebar).
+   Frosted glass persistent HUD strip below #topbar,
+   spanning full-width of the main content column.
    ───────────────────────────────────────────────────────────── */
 
 /* ─── NOTIFICATION BANNER STRIP ──────────────────────────── */
@@ -12,10 +12,13 @@
   left: var(--sidebar-width);
   right: 0;
   height: 36px;
-  z-index: 9;
+  z-index: 900;
 
-  background: #0f2d29;
-  border-bottom: 0.5px solid var(--border);
+  /* Frosted Glass HUD aesthetics */
+  background: rgba(15, 45, 36, 0.55);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 0.5px solid rgba(74, 223, 154, 0.15);
 
   display: flex;
   align-items: center;
@@ -69,12 +72,12 @@
 .nb-divider {
   width: 0.5px;
   height: 18px;
-  background: var(--border);
+  background: rgba(74, 223, 154, 0.15);
   flex-shrink: 0;
 }
 
 .nb-sep {
-  color: var(--border);
+  color: rgba(74, 223, 154, 0.2);
   font-size: 11px;
   padding: 0 2px;
   user-select: none;
@@ -94,7 +97,7 @@
 
 .nb-middle.nb-empty-state {
   font-size: 11px;
-  color: #3d6860;
+  color: #4a7a72;
   font-style: italic;
 }
 
@@ -118,20 +121,26 @@
 .nb-pill {
   display: inline-flex;
   align-items: center;
-  gap: 5px;
-  background: rgba(0, 229, 192, 0.06);
-  border: 0.5px solid var(--border);
+  gap: 6px;
+  background: color-mix(in srgb, var(--pill-color, #00E5C0) 10%, transparent);
+  border: 0.5px solid color-mix(in srgb, var(--pill-color, #00E5C0) 25%, transparent);
   border-radius: 6px;
-  padding: 3px 10px;
+  padding: 3px 8px 3px 9px;
   white-space: nowrap;
   flex-shrink: 0;
   cursor: default;
-  transition: background 120ms ease;
+  transition: all 150ms ease;
+  animation: nbPillIn 200ms ease forwards;
+}
+
+@keyframes nbPillIn {
+  from { opacity: 0; transform: scale(0.95) translateY(-2px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
 }
 
 .nb-pill:hover {
-  background: rgba(0, 229, 192, 0.10);
-  border-color: color-mix(in srgb, var(--pill-color, #00E5C0) 30%, var(--border));
+  background: color-mix(in srgb, var(--pill-color, #00E5C0) 18%, transparent);
+  border-color: color-mix(in srgb, var(--pill-color, #00E5C0) 40%, transparent);
 }
 
 .nb-pill--progress .nb-pill-icon svg {
@@ -150,17 +159,39 @@
 
 .nb-pill-msg {
   font-size: 11.5px;
-  color: var(--text-muted);
-  max-width: 200px;
+  color: var(--text-primary);
+  max-width: 240px;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  font-weight: 450;
 }
 
 .nb-pill-time {
   font-size: 10px;
-  color: #3d6860;
+  color: #4a7a72;
   flex-shrink: 0;
+}
+
+.nb-pill-x {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #4a7a72;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1px 3px;
+  border-radius: 3px;
+  margin-left: 2px;
+  font-size: 12px;
+  line-height: 1;
+  transition: all 120ms ease;
+}
+
+.nb-pill-x:hover {
+  color: var(--pill-color, #F87171);
+  background: color-mix(in srgb, var(--pill-color, #F87171) 20%, transparent);
 }
 
 /* ─── RIGHT SECTION ──────────────────────────────────────── */
@@ -194,13 +225,12 @@
 .nb-viewall:hover { color: #00CCA8; }
 
 .nb-dismiss {
-  color: #3d6860;
+  color: #4a7a72;
 }
 
 .nb-dismiss:hover { color: var(--text-muted); }
 
 /* ─── MAIN CONTENT OFFSET ────────────────────────────────── */
-/* Push #main-content down by the banner height so content doesn't hide behind it */
 
 #main-content {
   top: calc(var(--topbar-height) + 36px) !important;
@@ -212,7 +242,8 @@
   position: fixed;
   inset: 0;
   z-index: 9999;
-  background: rgba(8, 25, 24, 0.7);
+  background: rgba(8, 25, 24, 0.75);
+  backdrop-filter: blur(4px);
   display: flex;
   align-items: flex-start;
   justify-content: flex-end;
@@ -221,15 +252,15 @@
 }
 
 .notif-modal {
-  width: 380px;
+  width: 390px;
   max-height: 480px;
   background: #0f2d29;
-  border: 0.5px solid var(--border);
+  border: 0.5px solid rgba(74, 223, 154, 0.2);
   border-radius: 10px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
 }
 
 .notif-modal-header {
@@ -237,7 +268,7 @@
   align-items: center;
   justify-content: space-between;
   padding: 12px 16px 10px;
-  border-bottom: 0.5px solid var(--border);
+  border-bottom: 0.5px solid rgba(74, 223, 154, 0.15);
   flex-shrink: 0;
 }
 
@@ -275,7 +306,7 @@
 
 .notif-modal-empty {
   font-size: 12px;
-  color: #3d6860;
+  color: #4a7a72;
   text-align: center;
   padding: 28px 16px;
   font-style: italic;
@@ -324,7 +355,7 @@
 
 .notif-modal-row-time {
   font-size: 10px;
-  color: #3d6860;
+  color: #4a7a72;
   flex-shrink: 0;
   white-space: nowrap;
   margin-top: 2px;
@@ -334,7 +365,7 @@
   background: none;
   border: none;
   cursor: pointer;
-  color: #3d6860;
+  color: #4a7a72;
   display: flex;
   align-items: center;
   padding: 2px;
@@ -349,7 +380,7 @@
 }
 
 .notif-modal-footer {
-  border-top: 0.5px solid var(--border);
+  border-top: 0.5px solid rgba(74, 223, 154, 0.15);
   padding: 10px 16px;
   display: flex;
   justify-content: flex-end;

@@ -11,6 +11,7 @@
  */
 
 import { getActiveTool, setActiveTool, onToolChange, setBgJob, getBgJob, syncBgJobBar, clearBgJob } from './toolstate.js';
+import { pushNotification } from './notificationStore.js';
 import {
   handleSplitFilePicked,
   removeSplitPanel,
@@ -46,54 +47,13 @@ const ENDPOINT_MAP = {
   'images-pdf' : { url: `${BACKEND}/api/convert/images-to-pdf`, multi: true  },
 };
 
-// ─── WARNING BANNER ───────────────────────────────────────────────────────────
-
-let _bannerEl    = null;
-let _bannerTimer = null;
-
-function _ensureBanner() {
-  if (_bannerEl) return;
-
-  _bannerEl = document.createElement('div');
-  _bannerEl.className = 'tool-warning-banner';
-  _bannerEl.innerHTML = `
-    <div class="tool-warning-inner">
-      <svg class="tool-warning-icon" width="20" height="20" viewBox="0 0 20 20" fill="none"
-           xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <path d="M10 2.5L1.5 17.5h17L10 2.5Z"
-              stroke="#FBBF24" stroke-width="1.6"
-              stroke-linejoin="round" stroke-linecap="round"/>
-        <line x1="10" y1="8.5" x2="10" y2="12"
-              stroke="#FBBF24" stroke-width="1.7" stroke-linecap="round"/>
-        <circle cx="10" cy="14.5" r="0.9" fill="#FBBF24"/>
-      </svg>
-      <span class="tool-warning-text">Please Select a Tool First</span>
-    </div>
-  `;
-
-  const root = document.getElementById('main-content') || document.body;
-  root.appendChild(_bannerEl);
-}
+// ─── WARNING NOTIFICATION ───────────────────────────────────────────────────────
 
 export function showNoToolWarning() {
-  _ensureBanner();
-
-  if (_bannerTimer) {
-    clearTimeout(_bannerTimer);
-    clearTimeout(_bannerEl._fadeTimer);
-    _bannerEl.classList.remove('tool-warning-banner--fade');
-    void _bannerEl.offsetWidth;
-  }
-
-  _bannerEl.classList.add('tool-warning-banner--visible');
-
-  _bannerTimer = setTimeout(() => {
-    _bannerEl.classList.add('tool-warning-banner--fade');
-    _bannerEl._fadeTimer = setTimeout(() => {
-      _bannerEl.classList.remove('tool-warning-banner--visible', 'tool-warning-banner--fade');
-      _bannerTimer = null;
-    }, 500);
-  }, 3000);
+  pushNotification({
+    type: 'warning',
+    message: 'Please Select a Tool First'
+  });
 }
 
 // ─── DEFAULT STATE ────────────────────────────────────────────────────────────
@@ -654,6 +614,11 @@ function _showDownload(zone, filename, jobId, color) {
 function _showError(zone, message) {
   _resetZoneContent(zone);
   zone.classList.add('dz-state-error');
+
+  pushNotification({
+    type: 'error',
+    message: message
+  });
 
   const wrap = document.createElement('div');
   wrap.className = 'dz-error-wrap';
