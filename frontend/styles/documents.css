@@ -18,12 +18,10 @@
   border: 1.5px solid var(--border);
   border-radius: 12px;
   padding: 16px;
-  min-height: 130px;
   cursor: pointer;
   transition: border-color 150ms ease, background 150ms ease, transform 120ms ease;
   display: flex;
   flex-direction: column;
-  justify-content: space-between;
 }
 
 .fmt-card:hover {
@@ -45,15 +43,13 @@
 }
 
 .fmt-icon-box {
-  width: 38px;
-  height: 38px;
-  border-radius: 10px;
-  background: color-mix(in srgb, var(--fmt-color) 15%, transparent);
   color: var(--fmt-color);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
+  line-height: 0;
+}
+
+.fmt-icon-box svg {
+  width: 26px;
+  height: 26px;
 }
 
 .fmt-arrow { font-size: 18px; color: var(--text-muted); line-height: 1; }
