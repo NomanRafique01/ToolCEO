@@ -1,5 +1,17 @@
 <div align="center">
 
+<!-- ── Gradient SVG ASCII Art Header ─────────────────────────────────────── -->
+<picture>
+  <source media="(prefers-color-scheme: dark)" srcset="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=30&pause=99999&color=00E5C0&center=true&vCenter=true&width=600&lines=T+O+O+L++C+E+O">
+  <img alt="ToolCEO" src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=30&pause=99999&color=00E5C0&center=true&vCenter=true&width=600&lines=T+O+O+L++C+E+O">
+</picture>
+
+<br>
+
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:00E5C0,50:7209b7,100:ff6b00&height=120&section=header&text=&fontSize=0" width="100%"/>
+
+<br>
+
 ```
  ████████╗ ██████╗  ██████╗ ██╗      ██████╗███████╗ ██████╗
     ██╔══╝██╔═══██╗██╔═══██╗██║     ██╔════╝██╔════╝██╔═══██╗
@@ -9,35 +21,40 @@
     ╚═╝    ╚═════╝  ╚═════╝ ╚══════╝ ╚═════╝╚══════╝ ╚═════╝
 ```
 
+<br>
+
 **A privacy-first, 100% offline desktop toolkit for documents, audio, video & images.**
+<br>
 *No cloud. No uploads. No limits. Everything runs on your machine.*
 
-<!-- ── Row 1 · Identity & Platform ───────────────────────────────────────── -->
-![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20macOS%20%7C%20Linux-00E5C0?style=for-the-badge&logo=windows&logoColor=white&labelColor=0F172A)
-![Electron](https://img.shields.io/badge/Electron-Framework-47848F?style=for-the-badge&logo=electron&logoColor=9FEF00&labelColor=0F172A)
-![Version](https://img.shields.io/badge/Version-1.0.0-F97316?style=for-the-badge&logo=git&logoColor=white&labelColor=0F172A)
-![Privacy](https://img.shields.io/badge/Privacy-100%25%20Offline-00F5D4?style=for-the-badge&logo=protonvpn&logoColor=white&labelColor=0F172A)
-![License](https://img.shields.io/badge/License-MIT-7B2CBF?style=for-the-badge&logo=opensourceinitiative&logoColor=white&labelColor=0F172A)
-![Status](https://img.shields.io/badge/Status-Active%20Dev-70E000?style=for-the-badge&logo=statuspage&logoColor=white&labelColor=0F172A)
-
 <br>
+
+<!-- ── Row 1 · Identity & Platform ───────────────────────────────────────── -->
+<p align="center">
+  <img src="https://img.shields.io/badge/Platform-Windows%20│%20macOS%20│%20Linux-00b4d8?style=for-the-badge&logo=windows&logoColor=white&labelColor=0A1F1C" alt="Platform"/>
+  <img src="https://img.shields.io/badge/Framework-Electron-47848F?style=for-the-badge&logo=electron&logoColor=9FEF00&labelColor=0A1F1C" alt="Electron"/>
+  <img src="https://img.shields.io/badge/Version-1.0.0-ff6b00?style=for-the-badge&logo=semver&logoColor=white&labelColor=0A1F1C" alt="Version"/>
+  <img src="https://img.shields.io/badge/Privacy-100%25%20Offline-06d6a0?style=for-the-badge&logo=shield&logoColor=white&labelColor=0A1F1C" alt="Privacy"/>
+  <img src="https://img.shields.io/badge/License-MIT-f72585?style=for-the-badge&logo=opensourceinitiative&logoColor=white&labelColor=0A1F1C" alt="License"/>
+  <img src="https://img.shields.io/badge/Status-Active%20Dev-7209b7?style=for-the-badge&logo=statuspage&logoColor=white&labelColor=0A1F1C" alt="Status"/>
+</p>
 
 <!-- ── Row 2 · Core Tech Stack ───────────────────────────────────────────── -->
-![Python](https://img.shields.io/badge/Python-3.x-FFD166?style=for-the-badge&logo=python&logoColor=3776AB&labelColor=0F172A)
-![FastAPI](https://img.shields.io/badge/FastAPI-Backend-009688?style=for-the-badge&logo=fastapi&logoColor=white&labelColor=0F172A)
-![PyMuPDF](https://img.shields.io/badge/PyMuPDF-PDF%20Engine-FF0054?style=for-the-badge&logo=adobeacrobatreader&logoColor=white&labelColor=0F172A)
-![JavaScript](https://img.shields.io/badge/JavaScript-Frontend-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black&labelColor=0F172A)
-![HTML5/CSS3](https://img.shields.io/badge/UI-Vanilla%20CSS%20%26%20HTML-FF5722?style=for-the-badge&logo=html5&logoColor=white&labelColor=0F172A)
-![SSE Streaming](https://img.shields.io/badge/Streaming-SSE%20Real--Time-7209B7?style=for-the-badge&logo=htmx&logoColor=white&labelColor=0F172A)
-
-<br>
+<p align="center">
+  <img src="https://img.shields.io/badge/Backend-Python%203.x%20+%20FastAPI-3a86ff?style=for-the-badge&logo=fastapi&logoColor=white&labelColor=0A1F1C" alt="Backend"/>
+  <img src="https://img.shields.io/badge/PDF%20Engine-PyMuPDF-e63946?style=for-the-badge&logo=adobeacrobatreader&logoColor=white&labelColor=0A1F1C" alt="PyMuPDF"/>
+  <img src="https://img.shields.io/badge/Frontend-Vanilla%20JS%20+%20HTML%2FCSS-f8961e?style=for-the-badge&logo=javascript&logoColor=black&labelColor=0A1F1C" alt="Frontend"/>
+  <img src="https://img.shields.io/badge/Streaming-SSE%20Real--Time-560bad?style=for-the-badge&logo=htmx&logoColor=white&labelColor=0A1F1C" alt="SSE Streaming"/>
+</p>
 
 <!-- ── Row 3 · Tool Suite Modules ────────────────────────────────────────── -->
-![PDF Tools](https://img.shields.io/badge/Suite-PDF%20Tools-FF477E?style=for-the-badge&logo=adobe&logoColor=white&labelColor=0F172A)
-![Doc Conversions](https://img.shields.io/badge/Suite-Doc%20Conversions-F72585?style=for-the-badge&logo=googledocs&logoColor=white&labelColor=0F172A)
-![Audio Suite](https://img.shields.io/badge/Suite-Audio%20Suite-4895EF?style=for-the-badge&logo=applepodcasts&logoColor=white&labelColor=0F172A)
-![Image Studio](https://img.shields.io/badge/Suite-Image%20Studio-3A0CA3?style=for-the-badge&logo=googlephotos&logoColor=white&labelColor=0F172A)
-![Video Lab](https://img.shields.io/badge/Suite-Video%20Lab-4361EE?style=for-the-badge&logo=youtube&logoColor=white&labelColor=0F172A)
+<p align="center">
+  <img src="https://img.shields.io/badge/Suite-PDF%20Tools-ff477e?style=for-the-badge&logo=adobe&logoColor=white&labelColor=0A1F1C" alt="PDF Tools"/>
+  <img src="https://img.shields.io/badge/Suite-Doc%20Conversions-fb5607?style=for-the-badge&logo=googledocs&logoColor=white&labelColor=0A1F1C" alt="Doc Conversions"/>
+  <img src="https://img.shields.io/badge/Suite-Audio%20Studio-4cc9f0?style=for-the-badge&logo=audioboom&logoColor=white&labelColor=0A1F1C" alt="Audio Suite"/>
+  <img src="https://img.shields.io/badge/Suite-Image%20Studio-8338ec?style=for-the-badge&logo=googlephotos&logoColor=white&labelColor=0A1F1C" alt="Image Studio"/>
+  <img src="https://img.shields.io/badge/Suite-Video%20Lab-4361ee?style=for-the-badge&logo=youtube&logoColor=white&labelColor=0A1F1C" alt="Video Lab"/>
+</p>
 
 </div>
 
@@ -46,10 +63,10 @@
 <div align="center">
   <table>
     <tr>
-      <td align="center" width="25%"><b>100% Offline</b><br/><sub>Zero internet required — your files never leave your machine</sub></td>
-      <td align="center" width="25%"><b>Real-Time Progress</b><br/><sub>SSE-powered live progress bars for every background job</sub></td>
-      <td align="center" width="25%"><b>Multi-Format</b><br/><sub>Documents · Audio · Images · Video — all in one app</sub></td>
-      <td align="center" width="25%"><b>Drag & Drop</b><br/><sub>Drop files directly into any tool — zero friction workflow</sub></td>
+      <td align="center" width="25%"><b>🔒 100% Offline</b><br/><sub>Zero internet required — your files never leave your machine</sub></td>
+      <td align="center" width="25%"><b>⚡ Real-Time Progress</b><br/><sub>SSE-powered live progress bars for every background job</sub></td>
+      <td align="center" width="25%"><b>🎯 Multi-Format</b><br/><sub>Documents · Audio · Images · Video — all in one app</sub></td>
+      <td align="center" width="25%"><b>📂 Drag & Drop</b><br/><sub>Drop files directly into any tool — zero friction workflow</sub></td>
     </tr>
   </table>
   <br/>
@@ -530,11 +547,17 @@ GET /api/download/{job_id}
 
 <div align="center">
 
+<img src="https://capsule-render.vercel.app/api?type=waving&color=0:00E5C0,50:7209b7,100:ff6b00&height=100&section=footer&text=&fontSize=0" width="100%"/>
+
 **Built with 🔥 — Privacy first, always offline, zero compromise.**
 
-![Engine Python](https://img.shields.io/badge/Engine-Python%203.11-FFD166?style=for-the-badge&logo=python&logoColor=3776AB&labelColor=0F172A)
-![Shell Electron](https://img.shields.io/badge/Shell-Electron-47848F?style=for-the-badge&logo=electron&logoColor=9FEF00&labelColor=0F172A)
-![Privacy Guarantee](https://img.shields.io/badge/Security-100%25%20Local%20%26%20Private-00F5D4?style=for-the-badge&logo=shield&logoColor=white&labelColor=0F172A)
-![Zero Cloud](https://img.shields.io/badge/Cloud-Zero%20External%20Calls-FF0054?style=for-the-badge&logo=icloud&logoColor=white&labelColor=0F172A)
+<br>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Engine-Python%203.x-3a86ff?style=for-the-badge&logo=python&logoColor=white&labelColor=0A1F1C" alt="Python"/>
+  <img src="https://img.shields.io/badge/Shell-Electron-47848F?style=for-the-badge&logo=electron&logoColor=9FEF00&labelColor=0A1F1C" alt="Electron"/>
+  <img src="https://img.shields.io/badge/Security-100%25%20Local%20%26%20Private-06d6a0?style=for-the-badge&logo=shield&logoColor=white&labelColor=0A1F1C" alt="Privacy"/>
+  <img src="https://img.shields.io/badge/Cloud-Zero%20External%20Calls-e63946?style=for-the-badge&logo=icloud&logoColor=white&labelColor=0A1F1C" alt="Zero Cloud"/>
+</p>
 
 </div>
