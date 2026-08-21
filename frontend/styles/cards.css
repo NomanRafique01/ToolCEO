@@ -20,9 +20,10 @@
 .fmt-card {
   box-sizing: border-box !important;
   width: 100% !important;
-  min-height: 136px !important;
-  height: 100% !important;
-  padding: 16px !important;
+  height: 140px !important;
+  min-height: 140px !important;
+  max-height: 140px !important;
+  padding: 14px 16px !important;
   border-radius: 12px !important;
   background: var(--bg-card) !important;
   border: 1.5px solid var(--border) !important;
@@ -30,6 +31,7 @@
   display: flex !important;
   flex-direction: column !important;
   justify-content: space-between !important;
+  overflow: hidden !important;
   transition: border-color 150ms ease, background 150ms ease, transform 120ms ease, box-shadow 150ms ease !important;
 }
 
@@ -90,16 +92,22 @@
   font-size: 14px !important;
   font-weight: 600 !important;
   color: var(--text-primary) !important;
-  margin-top: 10px !important;
-  line-height: 1.3 !important;
+  margin-top: 8px !important;
+  line-height: 1.2 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 .tool-formats,
 .fmt-desc {
   font-size: 12px !important;
   color: var(--text-muted) !important;
-  margin-top: 3px !important;
-  line-height: 1.35 !important;
+  margin-top: 2px !important;
+  line-height: 1.3 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }
 
 .tool-count,
@@ -107,6 +115,9 @@
 .fmt-tag {
   font-size: 12px !important;
   color: var(--fmt-color, #00E5C0) !important;
-  margin-top: 8px !important;
+  margin-top: 6px !important;
   font-weight: 600 !important;
+  white-space: nowrap !important;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
 }

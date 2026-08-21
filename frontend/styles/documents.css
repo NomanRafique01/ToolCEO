@@ -125,12 +125,7 @@
 /* ─── PDF entry card — subtle drill-down hint ────────────── */
 
 .fmt-card--pdf-entry::after {
-  content: '8 tools + 6 conversions';
-  display: block;
-  font-size: 10px;
-  color: var(--text-muted);
-  margin-top: 4px;
-  opacity: 0.7;
+  display: none !important;
 }
 
 /* ─── BACK BUTTON & CATEGORY ICON IN EXPLORE HEADER ─────── */
