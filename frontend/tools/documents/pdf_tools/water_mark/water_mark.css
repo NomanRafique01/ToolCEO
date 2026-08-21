@@ -1,27 +1,21 @@
 /* ─────────────────────────────────────────────────────────────
    tools/documents/pdf_tools/water_mark/water_mark.css
-   Full-area PDF Watermark Editor — ToolCEO
-   Deep Blue Glassmorphism Theme — Matching App #0D1B2A palette
+   Watermark Editor — sky-blue tool theme (#38BDF8)
+   Semi-transparent glass · HD page drag preview + controls
    ───────────────────────────────────────────────────────────── */
 
-:root {
-  --wm-blue-900:    #0A1628;
-  --wm-blue-800:    #0D1F3C;
-  --wm-blue-700:    #112240;
-  --wm-blue-600:    #163355;
-  --wm-blue-500:    #1E4A7A;
-  --wm-accent:      #38BDF8;
-  --wm-accent-2:    #0EA5E9;
-  --wm-accent-3:    #0284C7;
-  --wm-accent-dim:  rgba(56, 189, 248, 0.18);
-  --wm-accent-glow: rgba(56, 189, 248, 0.35);
-  --wm-glass-bg:    rgba(13, 31, 60, 0.72);
-  --wm-glass-border:rgba(56, 189, 248, 0.22);
-  --wm-glass-hover: rgba(56, 189, 248, 0.12);
-  --wm-text-bright: #E0F2FE;
-  --wm-text-muted:  rgba(148, 198, 230, 0.75);
-  --wm-surface:     rgba(10, 22, 40, 0.65);
-  --wm-border:      rgba(56, 189, 248, 0.22);
+.wm-viewer,
+.pdf-tools-swap:has(.wm-viewer--visible) {
+  --wm-color:       #38BDF8;
+  --wm-color-2:     #0EA5E9;
+  --wm-color-3:     #7DD3FC;
+  --wm-bg:          rgba(56, 189, 248, 0.12);
+  --wm-bg-strong:   rgba(56, 189, 248, 0.20);
+  --wm-card:        rgba(56, 189, 248, 0.07);
+  --wm-border:      rgba(56, 189, 248, 0.28);
+  --wm-border-soft: rgba(56, 189, 248, 0.16);
+  --wm-text:        #E8F6FE;
+  --wm-text-dim:    rgba(186, 230, 253, 0.72);
 }
 
 /* ─── HIDE CARDS & FEATURES STRIP WHEN VIEWER IS OPEN ─── */
@@ -43,17 +37,23 @@ body.has-wm-viewer .features-strip {
   flex-direction: column;
   width: 100%;
   min-height: calc(100vh - 160px);
-  background: linear-gradient(160deg, #0A1628 0%, #0D1F3C 45%, #112240 100%);
-  border: 1px solid rgba(56, 189, 248, 0.18);
+  background:
+    linear-gradient(165deg,
+      rgba(56, 189, 248, 0.18) 0%,
+      rgba(56, 189, 248, 0.12) 45%,
+      rgba(14, 165, 233, 0.14) 100%);
+  border: 1px solid var(--wm-border-soft);
   border-radius: 16px;
   overflow: hidden;
   opacity: 0;
   transform: translateY(10px);
   transition: opacity 320ms cubic-bezier(.4,0,.2,1), transform 320ms cubic-bezier(.4,0,.2,1);
+  backdrop-filter: blur(18px) saturate(1.15);
+  -webkit-backdrop-filter: blur(18px) saturate(1.15);
   box-shadow:
     0 0 0 1px rgba(56, 189, 248, 0.08),
-    0 8px 32px rgba(0, 0, 0, 0.5),
-    0 24px 64px rgba(0, 0, 0, 0.35);
+    0 12px 40px rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 rgba(125, 211, 252, 0.12);
 }
 
 .wm-viewer.wm-viewer--visible {
@@ -74,11 +74,11 @@ body.has-wm-viewer .features-strip {
   justify-content: space-between;
   gap: 16px;
   padding: 14px 24px;
-  background: rgba(10, 22, 40, 0.85);
-  border-bottom: 1px solid rgba(56, 189, 248, 0.18);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  box-shadow: 0 1px 24px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(56, 189, 248, 0.06) inset;
+  background: rgba(56, 189, 248, 0.16);
+  border-bottom: 1px solid var(--wm-border-soft);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: 0 1px 18px rgba(0, 0, 0, 0.18);
 }
 
 .wm-topbar-left {
@@ -93,10 +93,10 @@ body.has-wm-viewer .features-strip {
   align-items: center;
   gap: 6px;
   padding: 7px 15px;
-  background: rgba(56, 189, 248, 0.08);
-  border: 1px solid rgba(56, 189, 248, 0.28);
+  background: rgba(56, 189, 248, 0.10);
+  border: 1px solid var(--wm-border);
   border-radius: 8px;
-  color: #7DD3FC;
+  color: var(--wm-color-3);
   font-size: 12.5px;
   font-weight: 600;
   cursor: pointer;
@@ -106,10 +106,10 @@ body.has-wm-viewer .features-strip {
 }
 
 .wm-back-btn:hover {
-  background: rgba(56, 189, 248, 0.18);
-  border-color: #38BDF8;
-  color: #E0F2FE;
-  box-shadow: 0 0 12px rgba(56, 189, 248, 0.2);
+  background: var(--wm-bg-strong);
+  border-color: var(--wm-color);
+  color: var(--wm-text);
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.22);
 }
 
 .wm-file-meta {
@@ -122,7 +122,7 @@ body.has-wm-viewer .features-strip {
 .wm-file-name {
   font-size: 14px;
   font-weight: 700;
-  color: #E0F2FE;
+  color: var(--wm-text);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -131,7 +131,7 @@ body.has-wm-viewer .features-strip {
 
 .wm-file-info {
   font-size: 11.5px;
-  color: rgba(148, 198, 230, 0.65);
+  color: var(--wm-text-dim);
 }
 
 .wm-topbar-actions {
@@ -152,7 +152,7 @@ body.has-wm-viewer .features-strip {
   font-size: 13.5px;
   font-weight: 700;
   cursor: pointer;
-  box-shadow: 0 4px 14px rgba(56, 189, 248, 0.4);
+  box-shadow: 0 4px 16px rgba(56, 189, 248, 0.38);
   transition: all 0.2s ease;
   letter-spacing: 0.02em;
   white-space: nowrap;
@@ -160,7 +160,7 @@ body.has-wm-viewer .features-strip {
 
 .wm-apply-btn:hover {
   transform: translateY(-1px);
-  box-shadow: 0 6px 20px rgba(56, 189, 248, 0.55);
+  box-shadow: 0 6px 22px rgba(56, 189, 248, 0.5);
   background: linear-gradient(135deg, #7DD3FC 0%, #38BDF8 50%, #0EA5E9 100%);
 }
 
@@ -171,16 +171,16 @@ body.has-wm-viewer .features-strip {
 .wm-filename-wrap {
   display: flex;
   align-items: center;
-  background: rgba(10, 22, 40, 0.6);
-  border: 1px solid rgba(56, 189, 248, 0.22);
+  background: rgba(56, 189, 248, 0.12);
+  border: 1px solid var(--wm-border);
   border-radius: 8px;
   overflow: hidden;
-  transition: border-color 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s;
 }
 
 .wm-filename-wrap:focus-within {
-  border-color: rgba(56, 189, 248, 0.5);
-  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.08);
+  border-color: rgba(56, 189, 248, 0.55);
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.1);
 }
 
 .wm-filename-input {
@@ -200,11 +200,11 @@ body.has-wm-viewer .features-strip {
 .wm-filename-ext {
   padding: 0 12px 0 0;
   font-size: 13px;
-  color: rgba(56, 189, 248, 0.6);
+  color: rgba(56, 189, 248, 0.65);
   font-weight: 600;
 }
 
-/* ─── EDITOR BODY (2-column layout) ─── */
+/* ─── EDITOR BODY (2-column) ─── */
 
 .wm-editor-body {
   display: grid;
@@ -222,9 +222,9 @@ body.has-wm-viewer .features-strip {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 32px 28px;
-  background: linear-gradient(145deg, #0A1628 0%, #0D1F3C 100%);
-  border-right: 1px solid rgba(56, 189, 248, 0.12);
+  padding: 28px 24px;
+  background: rgba(56, 189, 248, 0.06);
+  border-right: 1px solid var(--wm-border-soft);
   overflow: auto;
 }
 
@@ -235,7 +235,7 @@ body.has-wm-viewer .features-strip {
   margin-bottom: 18px;
   font-size: 11px;
   font-weight: 700;
-  color: #38BDF8;
+  color: var(--wm-color);
   text-transform: uppercase;
   letter-spacing: 0.1em;
   align-self: flex-start;
@@ -245,7 +245,6 @@ body.has-wm-viewer .features-strip {
   opacity: 0.7;
 }
 
-/* The outer decorative glow ring */
 .wm-frame-glow {
   position: relative;
   border-radius: 12px;
@@ -253,7 +252,7 @@ body.has-wm-viewer .features-strip {
   background: linear-gradient(135deg, rgba(56,189,248,0.5) 0%, rgba(14,165,233,0.25) 50%, rgba(56,189,248,0.4) 100%);
   box-shadow:
     0 0 0 1px rgba(56,189,248,0.2),
-    0 8px 32px rgba(56,189,248,0.2),
+    0 8px 32px rgba(56,189,248,0.18),
     0 20px 60px rgba(0,0,0,0.12);
 }
 
@@ -281,7 +280,6 @@ body.has-wm-viewer .features-strip {
   border-radius: 10px;
 }
 
-/* Draggable Watermark Overlay */
 .wm-draggable-label {
   position: absolute;
   cursor: grab;
@@ -326,7 +324,7 @@ body.has-wm-viewer .features-strip {
   position: absolute;
   bottom: 10px;
   right: 10px;
-  background: rgba(10, 22, 40, 0.82);
+  background: rgba(56, 189, 248, 0.22);
   border: 1px solid rgba(56, 189, 248, 0.3);
   border-radius: 6px;
   padding: 3px 9px;
@@ -340,7 +338,7 @@ body.has-wm-viewer .features-strip {
 .wm-drag-hint {
   margin-top: 14px;
   font-size: 11.5px;
-  color: rgba(148, 198, 230, 0.5);
+  color: rgba(148, 198, 230, 0.55);
   font-style: italic;
   display: flex;
   align-items: center;
@@ -352,14 +350,13 @@ body.has-wm-viewer .features-strip {
 .wm-controls-col {
   display: flex;
   flex-direction: column;
-  background: rgba(10, 22, 40, 0.78);
-  border-left: 1px solid rgba(56, 189, 248, 0.14);
+  background: rgba(56, 189, 248, 0.10);
+  border-left: 1px solid var(--wm-border-soft);
   overflow-y: auto;
-  backdrop-filter: blur(24px);
-  -webkit-backdrop-filter: blur(24px);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 
-/* Custom scrollbar */
 .wm-controls-col::-webkit-scrollbar {
   width: 4px;
 }
@@ -367,36 +364,38 @@ body.has-wm-viewer .features-strip {
   background: transparent;
 }
 .wm-controls-col::-webkit-scrollbar-thumb {
-  background: rgba(56, 189, 248, 0.25);
+  background: rgba(56, 189, 248, 0.28);
   border-radius: 99px;
 }
 .wm-controls-col::-webkit-scrollbar-thumb:hover {
-  background: rgba(56, 189, 248, 0.45);
+  background: rgba(56, 189, 248, 0.48);
 }
 
 .wm-controls-inner {
-  padding: 20px 18px;
+  padding: 18px 16px 24px;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 6px;
 }
 
-/* Section — card style */
 .wm-section {
   display: flex;
   flex-direction: column;
   gap: 10px;
   padding: 14px 14px 16px;
-  background: rgba(56, 189, 248, 0.04);
-  border: 1px solid rgba(56, 189, 248, 0.1);
+  background: var(--wm-card);
+  border: 1px solid var(--wm-border-soft);
   border-radius: 12px;
-  transition: background 0.2s, border-color 0.2s;
-  margin-bottom: 6px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: background 0.2s, border-color 0.2s, box-shadow 0.2s;
+  margin-bottom: 2px;
 }
 
 .wm-section:hover {
-  background: rgba(56, 189, 248, 0.065);
-  border-color: rgba(56, 189, 248, 0.18);
+  background: rgba(56, 189, 248, 0.10);
+  border-color: rgba(56, 189, 248, 0.26);
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.12);
 }
 
 .wm-section-title {
@@ -404,12 +403,12 @@ body.has-wm-viewer .features-strip {
   font-weight: 800;
   text-transform: uppercase;
   letter-spacing: 0.12em;
-  color: #38BDF8;
+  color: var(--wm-color);
   display: flex;
   align-items: center;
   gap: 7px;
   padding-bottom: 8px;
-  border-bottom: 1px solid rgba(56, 189, 248, 0.14);
+  border-bottom: 1px solid var(--wm-border-soft);
   margin-bottom: 2px;
 }
 
@@ -417,11 +416,10 @@ body.has-wm-viewer .features-strip {
   flex-shrink: 0;
 }
 
-/* Labels */
 .wm-label {
   font-size: 11.5px;
   font-weight: 600;
-  color: var(--wm-text-muted);
+  color: var(--wm-text-dim);
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -433,41 +431,39 @@ body.has-wm-viewer .features-strip {
   font-family: 'Courier New', monospace;
   font-size: 10.5px;
   font-weight: 700;
-  color: #38BDF8;
+  color: var(--wm-color);
   background: rgba(56, 189, 248, 0.14);
   padding: 2px 7px;
   border-radius: 5px;
   border: 1px solid rgba(56, 189, 248, 0.22);
 }
 
-/* Text Input */
 .wm-text-input {
   width: 100%;
   padding: 10px 14px;
-  background: rgba(10, 22, 40, 0.55);
-  border: 1px solid rgba(56, 189, 248, 0.22);
+  background: rgba(56, 189, 248, 0.10);
+  border: 1px solid var(--wm-border);
   border-radius: 9px;
   color: #BAE6FD;
   font-size: 13.5px;
   font-weight: 600;
   outline: none;
-  transition: border-color 0.2s, box-shadow 0.2s;
+  transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
   box-sizing: border-box;
   letter-spacing: 0.02em;
 }
 
 .wm-text-input::placeholder {
-  color: rgba(148, 198, 230, 0.3);
+  color: rgba(148, 198, 230, 0.35);
   font-weight: 400;
 }
 
 .wm-text-input:focus {
   border-color: rgba(56, 189, 248, 0.55);
   box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.1), 0 0 16px rgba(56, 189, 248, 0.08);
-  background: rgba(10, 22, 40, 0.75);
+  background: rgba(56, 189, 248, 0.16);
 }
 
-/* Preset Badges */
 .wm-presets-row {
   display: flex;
   flex-wrap: wrap;
@@ -475,9 +471,9 @@ body.has-wm-viewer .features-strip {
 }
 
 .wm-preset-badge {
-  background: rgba(56, 189, 248, 0.07);
-  border: 1px solid rgba(56, 189, 248, 0.2);
-  color: #7DD3FC;
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.22);
+  color: var(--wm-color-3);
   font-size: 10px;
   font-weight: 700;
   padding: 4px 10px;
@@ -492,11 +488,10 @@ body.has-wm-viewer .features-strip {
 .wm-preset-badge:hover {
   background: rgba(56, 189, 248, 0.2);
   border-color: rgba(56, 189, 248, 0.5);
-  color: #E0F2FE;
+  color: var(--wm-text);
   box-shadow: 0 0 10px rgba(56, 189, 248, 0.15);
 }
 
-/* Grid 2-col */
 .wm-grid-2 {
   display: grid;
   grid-template-columns: 1fr 1fr;
@@ -509,12 +504,11 @@ body.has-wm-viewer .features-strip {
   gap: 4px;
 }
 
-/* Select */
 .wm-select {
   width: 100%;
   padding: 9px 12px;
-  background: rgba(10, 22, 40, 0.6);
-  border: 1px solid rgba(56, 189, 248, 0.22);
+  background: rgba(56, 189, 248, 0.10);
+  border: 1px solid var(--wm-border);
   border-radius: 8px;
   color: #BAE6FD;
   font-size: 12px;
@@ -534,11 +528,10 @@ body.has-wm-viewer .features-strip {
 }
 
 .wm-select option {
-  background: #0D1F3C;
+  background: #0E2840;
   color: #BAE6FD;
 }
 
-/* Sliders */
 .wm-slider {
   width: 100%;
   height: 4px;
@@ -546,7 +539,7 @@ body.has-wm-viewer .features-strip {
   appearance: none;
   background: linear-gradient(to right,
     #38BDF8 var(--pct, 50%),
-    rgba(56, 189, 248, 0.15) var(--pct, 50%)
+    rgba(56, 189, 248, 0.18) var(--pct, 50%)
   );
   border-radius: 99px;
   cursor: pointer;
@@ -558,7 +551,7 @@ body.has-wm-viewer .features-strip {
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: #0D1F3C;
+  background: #0E2840;
   border: 2.5px solid #38BDF8;
   box-shadow: 0 2px 8px rgba(56, 189, 248, 0.45), 0 0 0 3px rgba(56, 189, 248, 0.1);
   cursor: grab;
@@ -575,7 +568,6 @@ body.has-wm-viewer .features-strip {
   transform: scale(1.22);
 }
 
-/* Color Row */
 .wm-color-row {
   display: flex;
   align-items: center;
@@ -592,7 +584,7 @@ body.has-wm-viewer .features-strip {
   flex-shrink: 0;
   cursor: pointer;
   transition: border-color 0.2s, box-shadow 0.2s;
-  box-shadow: 0 0 10px rgba(0,0,0,0.3);
+  box-shadow: 0 0 10px rgba(0,0,0,0.2);
 }
 
 .wm-color-swatch-wrap:hover {
@@ -628,15 +620,15 @@ body.has-wm-viewer .features-strip {
   width: 22px;
   height: 22px;
   border-radius: 50%;
-  border: 2px solid rgba(255,255,255,0.1);
+  border: 2px solid rgba(255,255,255,0.12);
   cursor: pointer;
   transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s;
-  box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+  box-shadow: 0 1px 5px rgba(0,0,0,0.3);
 }
 
 .wm-swatch:hover {
   transform: scale(1.28);
-  box-shadow: 0 2px 12px rgba(0,0,0,0.45);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.35);
   border-color: rgba(255,255,255,0.5);
 }
 
@@ -646,7 +638,6 @@ body.has-wm-viewer .features-strip {
   box-shadow: 0 0 0 2.5px rgba(56,189,248,0.55);
 }
 
-/* Angle Presets */
 .wm-angle-presets {
   display: flex;
   gap: 5px;
@@ -655,9 +646,9 @@ body.has-wm-viewer .features-strip {
 
 .wm-angle-btn {
   padding: 5px 11px;
-  background: rgba(56, 189, 248, 0.06);
-  border: 1px solid rgba(56, 189, 248, 0.18);
-  color: #7DD3FC;
+  background: rgba(56, 189, 248, 0.07);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  color: var(--wm-color-3);
   font-size: 11px;
   font-weight: 700;
   border-radius: 7px;
@@ -669,53 +660,17 @@ body.has-wm-viewer .features-strip {
 .wm-angle-btn:hover {
   background: rgba(56, 189, 248, 0.18);
   border-color: rgba(56, 189, 248, 0.45);
-  color: #E0F2FE;
+  color: var(--wm-text);
   box-shadow: 0 0 8px rgba(56, 189, 248, 0.15);
 }
 
 .wm-angle-btn.active {
   background: rgba(56, 189, 248, 0.25);
   border-color: #38BDF8;
-  color: #E0F2FE;
+  color: var(--wm-text);
   box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
 }
 
-/* Live Preview Strip */
-.wm-live-strip {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  padding: 16px 14px;
-  background: linear-gradient(135deg,
-    rgba(56, 189, 248, 0.07) 0%,
-    rgba(10, 22, 40, 0.4) 50%,
-    rgba(56, 189, 248, 0.05) 100%
-  );
-  border: 1px solid rgba(56, 189, 248, 0.16);
-  border-radius: 10px;
-  min-height: 56px;
-  overflow: hidden;
-  position: relative;
-}
-
-.wm-live-strip::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: radial-gradient(circle at 50% 50%, rgba(56,189,248,0.06) 0%, transparent 70%);
-  pointer-events: none;
-}
-
-.wm-live-text {
-  pointer-events: none;
-  user-select: none;
-  line-height: 1.2;
-  text-shadow: 0 0 20px currentColor;
-  position: relative;
-  z-index: 1;
-}
-
-/* Divider — hidden, sections are now cards */
 .wm-divider {
   height: 1px;
   background: rgba(56, 189, 248, 0.08);
@@ -723,8 +678,37 @@ body.has-wm-viewer .features-strip {
   display: none;
 }
 
-/* ─── THUMBNAIL in drop-zone ─── */
-
 .dz-wm-thumb-wrap {
-  /* inherits from .dz-compress-thumb-wrap in compressor.css */
+  /* inherits from compressor / rotate thumb styles */
+}
+
+@media (max-width: 960px) {
+  .wm-editor-body {
+    grid-template-columns: 1fr;
+  }
+
+  .wm-preview-col {
+    border-right: none;
+    border-bottom: 1px solid var(--wm-border-soft);
+  }
+
+  .wm-controls-col {
+    border-left: none;
+    max-height: 50vh;
+  }
+}
+
+@media (max-width: 640px) {
+  .wm-topbar {
+    flex-wrap: wrap;
+    padding: 12px 14px;
+  }
+
+  .wm-filename-input {
+    width: 120px;
+  }
+
+  .wm-grid-2 {
+    grid-template-columns: 1fr;
+  }
 }

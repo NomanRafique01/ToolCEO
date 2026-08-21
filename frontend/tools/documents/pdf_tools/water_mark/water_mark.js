@@ -5,7 +5,7 @@
  *
  * Uses the same "swap" pattern as the Rotate Pages tool:
  *   - When a PDF is loaded, #pdf-tools-card-view hides and #wm-viewer swaps in.
- *   - The editor shows an HD first-page preview with a draggable watermark label.
+ *   - HD first-page preview with a draggable watermark label.
  *   - Controls: text, presets, font, size, color, opacity, angle, spacing.
  *   - Apply → async background job → SSE progress → Download panel.
  *
@@ -41,17 +41,19 @@ let _pageHeight  = 842;  // PDF page height in points
 
 let _activeContainer = null;
 
-let _opts = {
+const WM_DEFAULTS = {
   text:        'CONFIDENTIAL',
   font_family: 'helv',
   font_size:   46,
   color:       '#CC0000',
-  opacity:     0.45,
+  opacity:     0.73,
   angle:       -45,
   spacing:     0,
   x_pct:       50,
   y_pct:       50,
 };
+
+let _opts = { ...WM_DEFAULTS };
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 
@@ -83,6 +85,12 @@ function _getSwapParts(container) {
   const swap     = container.querySelector('#pdf-tools-swap');
   const cardView = container.querySelector('#pdf-tools-card-view');
   let   viewer   = container.querySelector('#wm-viewer');
+
+  // Rebuild if missing the page preview or still has the removed style-preview strip
+  if (viewer && (!viewer.querySelector('.wm-preview-col') || viewer.querySelector('#wm-live-preview'))) {
+    viewer.remove();
+    viewer = null;
+  }
 
   if (swap && !viewer) {
     viewer = document.createElement('div');
@@ -163,7 +171,6 @@ function _buildViewerHTML() {
       <div class="wm-controls-col">
         <div class="wm-controls-inner">
 
-          <!-- Watermark Text -->
           <div class="wm-section">
             <div class="wm-section-title">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 7h16M4 12h10M4 17h6"/></svg>
@@ -183,7 +190,6 @@ function _buildViewerHTML() {
 
           <div class="wm-divider"></div>
 
-          <!-- Font & Size -->
           <div class="wm-section">
             <div class="wm-section-title">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 20h4M12 4v16M4 4h16M16 20h4M9 12h6"/></svg>
@@ -210,7 +216,6 @@ function _buildViewerHTML() {
 
           <div class="wm-divider"></div>
 
-          <!-- Color -->
           <div class="wm-section">
             <div class="wm-section-title">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20"/><path d="M2 12h20"/></svg>
@@ -222,7 +227,7 @@ function _buildViewerHTML() {
                 <input type="color" class="wm-color-picker" id="wm-color" value="#CC0000" />
               </div>
               <div class="wm-swatches" id="wm-swatches">
-                <span class="wm-swatch" data-color="#CC0000" style="background:#CC0000" title="Red"></span>
+                <span class="wm-swatch active" data-color="#CC0000" style="background:#CC0000" title="Red"></span>
                 <span class="wm-swatch" data-color="#1D4ED8" style="background:#1D4ED8" title="Blue"></span>
                 <span class="wm-swatch" data-color="#15803D" style="background:#15803D" title="Green"></span>
                 <span class="wm-swatch" data-color="#000000" style="background:#000000" title="Black"></span>
@@ -236,7 +241,6 @@ function _buildViewerHTML() {
 
           <div class="wm-divider"></div>
 
-          <!-- Opacity & Spacing -->
           <div class="wm-section">
             <div class="wm-section-title">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2l3 9H3l3-9h6z"/><path d="M12 22v-6M12 22c-3 0-5-1-5-4M12 22c3 0 5-1 5-4"/></svg>
@@ -245,10 +249,10 @@ function _buildViewerHTML() {
             <div class="wm-grid-2">
               <div class="wm-control-group">
                 <label class="wm-label">Opacity
-                  <span class="wm-label-val" id="wm-opacity-val">45%</span>
+                  <span class="wm-label-val" id="wm-opacity-val">73%</span>
                 </label>
                 <input type="range" class="wm-slider" id="wm-opacity"
-                       min="5" max="100" value="45" />
+                       min="5" max="100" value="73" />
               </div>
               <div class="wm-control-group">
                 <label class="wm-label">Letter Spacing
@@ -262,7 +266,6 @@ function _buildViewerHTML() {
 
           <div class="wm-divider"></div>
 
-          <!-- Angle -->
           <div class="wm-section">
             <div class="wm-section-title">
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 21H3v-4l14-14"/></svg>
@@ -283,23 +286,10 @@ function _buildViewerHTML() {
             </div>
           </div>
 
-          <div class="wm-divider"></div>
+        </div>
+      </div>
 
-          <!-- Live Text Preview Strip -->
-          <div class="wm-section">
-            <div class="wm-section-title">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
-              Live Style Preview
-            </div>
-            <div class="wm-live-strip">
-              <span class="wm-live-text" id="wm-live-preview">CONFIDENTIAL</span>
-            </div>
-          </div>
-
-        </div><!-- /controls-inner -->
-      </div><!-- /controls-col -->
-
-    </div><!-- /editor-body -->
+    </div>
   `;
 }
 
@@ -317,7 +307,6 @@ function _wireViewerEvents(viewer) {
     _submitWatermark(_wmFile, { ..._opts }, outName);
   });
 
-  // Drag events
   const container = viewer.querySelector('#wm-frame-container');
   const labelEl   = viewer.querySelector('#wm-draggable-label');
   const posBadge  = viewer.querySelector('#wm-pos-badge');
@@ -375,8 +364,6 @@ function _wireViewerEvents(viewer) {
     }
   });
 
-  // ── Control Listeners ──
-
   const textInput   = viewer.querySelector('#wm-text');
   const fontSelect  = viewer.querySelector('#wm-font');
   const sizeSlider  = viewer.querySelector('#wm-size');
@@ -389,56 +376,33 @@ function _wireViewerEvents(viewer) {
   const spaceVal    = viewer.querySelector('#wm-space-val');
   const angleSlider = viewer.querySelector('#wm-angle');
   const angleVal    = viewer.querySelector('#wm-angle-val');
-  const livePreview = viewer.querySelector('#wm-live-preview');
 
   function _refreshLabel() {
     if (!labelEl) return;
 
-    // Update text
     labelEl.textContent = _opts.text || 'WATERMARK';
-
-    // Font
     labelEl.style.fontFamily = _fontFamilyCss(_opts.font_family);
 
-    // Size — scale proportionally inside the container
     const frame = viewer.querySelector('#wm-frame-container');
     const scaleFactor = frame ? (frame.clientWidth / 600) : 0.7;
     const displaySize = Math.max(8, Math.round(_opts.font_size * scaleFactor));
     labelEl.style.fontSize      = `${displaySize}px`;
     labelEl.style.fontWeight    = '700';
-
-    // Color & opacity
     labelEl.style.color         = _opts.color;
     labelEl.style.opacity       = String(_opts.opacity);
     labelEl.style.letterSpacing = `${_opts.spacing}px`;
-
-    // Position & rotation
-    labelEl.style.left      = `${_opts.x_pct}%`;
-    labelEl.style.top       = `${_opts.y_pct}%`;
-    labelEl.style.transform = `translate(-50%, -50%) rotate(${_opts.angle}deg)`;
-
-    // Live preview strip
-    if (livePreview) {
-      livePreview.textContent      = _opts.text || 'WATERMARK';
-      livePreview.style.fontFamily = _fontFamilyCss(_opts.font_family);
-      livePreview.style.fontSize   = `${Math.min(36, Math.max(12, _opts.font_size * 0.55))}px`;
-      livePreview.style.fontWeight = '700';
-      livePreview.style.color      = _opts.color;
-      livePreview.style.opacity    = String(Math.min(1, _opts.opacity * 1.4));
-      livePreview.style.letterSpacing = `${_opts.spacing}px`;
-      livePreview.style.transform  = `rotate(${_opts.angle * 0.25}deg)`;
-    }
+    labelEl.style.left          = `${_opts.x_pct}%`;
+    labelEl.style.top           = `${_opts.y_pct}%`;
+    labelEl.style.transform     = `translate(-50%, -50%) rotate(${_opts.angle}deg)`;
   }
 
   _refreshLabel();
 
-  // Text
   textInput.addEventListener('input', (e) => {
     _opts.text = e.target.value;
     _refreshLabel();
   });
 
-  // Presets
   viewer.querySelectorAll('.wm-preset-badge').forEach((btn) => {
     btn.addEventListener('click', () => {
       _opts.text = btn.dataset.text;
@@ -447,13 +411,11 @@ function _wireViewerEvents(viewer) {
     });
   });
 
-  // Font
   fontSelect.addEventListener('change', (e) => {
     _opts.font_family = e.target.value;
     _refreshLabel();
   });
 
-  // Size
   sizeSlider.addEventListener('input', (e) => {
     _opts.font_size = parseFloat(e.target.value);
     sizeVal.textContent = `${_opts.font_size}px`;
@@ -461,7 +423,6 @@ function _wireViewerEvents(viewer) {
     _refreshLabel();
   });
 
-  // Color picker
   colorInput.addEventListener('input', (e) => {
     _opts.color = e.target.value;
     if (colorPrev) colorPrev.style.background = _opts.color;
@@ -469,7 +430,6 @@ function _wireViewerEvents(viewer) {
     _refreshLabel();
   });
 
-  // Color swatches
   viewer.querySelectorAll('.wm-swatch').forEach((sw) => {
     sw.addEventListener('click', () => {
       _opts.color = sw.dataset.color;
@@ -481,7 +441,6 @@ function _wireViewerEvents(viewer) {
     });
   });
 
-  // Opacity
   opacSlider.addEventListener('input', (e) => {
     const pct = parseInt(e.target.value, 10);
     _opts.opacity = pct / 100.0;
@@ -490,7 +449,6 @@ function _wireViewerEvents(viewer) {
     _refreshLabel();
   });
 
-  // Spacing
   spaceSlider.addEventListener('input', (e) => {
     _opts.spacing = parseFloat(e.target.value);
     spaceVal.textContent = `${_opts.spacing}px`;
@@ -498,7 +456,6 @@ function _wireViewerEvents(viewer) {
     _refreshLabel();
   });
 
-  // Angle slider
   angleSlider.addEventListener('input', (e) => {
     _opts.angle = parseFloat(e.target.value);
     angleVal.textContent = `${_opts.angle}°`;
@@ -507,7 +464,6 @@ function _wireViewerEvents(viewer) {
     _refreshLabel();
   });
 
-  // Angle preset buttons
   viewer.querySelectorAll('.wm-angle-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
       const angle = parseFloat(btn.dataset.angle);
@@ -520,7 +476,6 @@ function _wireViewerEvents(viewer) {
     });
   });
 
-  // Init all sliders fill
   _updateSliderFill(sizeSlider, 10, 120);
   _updateSliderFill(opacSlider, 5, 100);
   _updateSliderFill(spaceSlider, -2, 24);
@@ -590,61 +545,88 @@ function _closeViewer(container) {
 // ─── POPULATE VIEWER DATA ─────────────────────────────────────────────────────
 
 function _populateViewer(viewer) {
-  // File meta
+  // Reset to defaults on every PDF load
+  _opts = { ...WM_DEFAULTS };
+
   const nameEl = viewer.querySelector('.wm-file-name');
   const infoEl = viewer.querySelector('.wm-file-info');
   if (nameEl) nameEl.textContent = _wmFile ? _wmFile.name : 'No PDF selected';
   if (infoEl) infoEl.textContent = `${_wmPageCount} page${_wmPageCount !== 1 ? 's' : ''} · ${_fmt(_wmFileSize)}`;
 
-  // HD image
   const imgEl = viewer.querySelector('#wm-hd-img');
   if (imgEl && _wmHdUri) imgEl.src = _wmHdUri;
 
-  // Default output filename
   const filenameInput = viewer.querySelector('#wm-filename-input');
   if (filenameInput && _wmBaseName) {
     filenameInput.value = `${_wmBaseName}_watermarked`;
   }
 
-  // Reset watermark label position to center
-  const labelEl = viewer.querySelector('#wm-draggable-label');
+  // Sync control UI to defaults
+  const textInput   = viewer.querySelector('#wm-text');
+  const fontSelect  = viewer.querySelector('#wm-font');
+  const sizeSlider  = viewer.querySelector('#wm-size');
+  const sizeVal     = viewer.querySelector('#wm-size-val');
+  const colorInput  = viewer.querySelector('#wm-color');
+  const colorPrev   = viewer.querySelector('#wm-color-preview');
+  const opacSlider  = viewer.querySelector('#wm-opacity');
+  const opacVal     = viewer.querySelector('#wm-opacity-val');
+  const spaceSlider = viewer.querySelector('#wm-space');
+  const spaceVal    = viewer.querySelector('#wm-space-val');
+  const angleSlider = viewer.querySelector('#wm-angle');
+  const angleVal    = viewer.querySelector('#wm-angle-val');
+  const labelEl     = viewer.querySelector('#wm-draggable-label');
+  const posBadge    = viewer.querySelector('#wm-pos-badge');
+
+  if (textInput)  textInput.value = _opts.text;
+  if (fontSelect) fontSelect.value = _opts.font_family;
+  if (sizeSlider) {
+    sizeSlider.value = _opts.font_size;
+    _updateSliderFill(sizeSlider, 10, 120);
+  }
+  if (sizeVal) sizeVal.textContent = `${_opts.font_size}px`;
+  if (colorInput) colorInput.value = _opts.color;
+  if (colorPrev) colorPrev.style.background = _opts.color;
+  viewer.querySelectorAll('.wm-swatch').forEach((s) => {
+    s.classList.toggle('active', s.dataset.color.toLowerCase() === _opts.color.toLowerCase());
+  });
+  if (opacSlider) {
+    opacSlider.value = Math.round(_opts.opacity * 100);
+    _updateSliderFill(opacSlider, 5, 100);
+  }
+  if (opacVal) opacVal.textContent = `${Math.round(_opts.opacity * 100)}%`;
+  if (spaceSlider) {
+    spaceSlider.value = _opts.spacing;
+    _updateSliderFill(spaceSlider, -2, 24);
+  }
+  if (spaceVal) spaceVal.textContent = `${_opts.spacing}px`;
+  if (angleSlider) {
+    angleSlider.value = _opts.angle;
+    _updateSliderFill(angleSlider, -180, 180);
+  }
+  if (angleVal) angleVal.textContent = `${_opts.angle}°`;
+  _syncAngleBtns(viewer);
+  if (posBadge) posBadge.textContent = `${Math.round(_opts.x_pct)}% · ${Math.round(_opts.y_pct)}%`;
+
   if (labelEl) {
-    _opts.x_pct = 50;
-    _opts.y_pct = 50;
-    labelEl.style.left = '50%';
-    labelEl.style.top  = '50%';
+    labelEl.style.left = `${_opts.x_pct}%`;
+    labelEl.style.top  = `${_opts.y_pct}%`;
   }
 
-  // Re-run refresh so label visuals match opts
-  const livePreview = viewer.querySelector('#wm-live-preview');
-  const textInput   = viewer.querySelector('#wm-text');
-  if (textInput) textInput.value = _opts.text;
-
-  // Trigger a full refresh of the label
   setTimeout(() => {
-    if (labelEl) {
-      const frame = viewer.querySelector('#wm-frame-container');
-      const scaleFactor = frame ? (frame.clientWidth / 600) : 0.7;
-      const displaySize = Math.max(8, Math.round(_opts.font_size * scaleFactor));
-      labelEl.textContent          = _opts.text;
-      labelEl.style.fontFamily     = _fontFamilyCss(_opts.font_family);
-      labelEl.style.fontSize       = `${displaySize}px`;
-      labelEl.style.fontWeight     = '700';
-      labelEl.style.color          = _opts.color;
-      labelEl.style.opacity        = String(_opts.opacity);
-      labelEl.style.letterSpacing  = `${_opts.spacing}px`;
-      labelEl.style.left           = '50%';
-      labelEl.style.top            = '50%';
-      labelEl.style.transform      = `translate(-50%, -50%) rotate(${_opts.angle}deg)`;
-
-      if (livePreview) {
-        livePreview.textContent      = _opts.text;
-        livePreview.style.color      = _opts.color;
-        livePreview.style.fontFamily = _fontFamilyCss(_opts.font_family);
-        livePreview.style.fontSize   = `${Math.min(36, Math.max(12, _opts.font_size * 0.55))}px`;
-        livePreview.style.transform  = `rotate(${_opts.angle * 0.25}deg)`;
-      }
-    }
+    if (!labelEl) return;
+    const frame = viewer.querySelector('#wm-frame-container');
+    const scaleFactor = frame ? (frame.clientWidth / 600) : 0.7;
+    const displaySize = Math.max(8, Math.round(_opts.font_size * scaleFactor));
+    labelEl.textContent         = _opts.text;
+    labelEl.style.fontFamily    = _fontFamilyCss(_opts.font_family);
+    labelEl.style.fontSize      = `${displaySize}px`;
+    labelEl.style.fontWeight    = '700';
+    labelEl.style.color         = _opts.color;
+    labelEl.style.opacity       = String(_opts.opacity);
+    labelEl.style.letterSpacing = `${_opts.spacing}px`;
+    labelEl.style.left          = `${_opts.x_pct}%`;
+    labelEl.style.top           = `${_opts.y_pct}%`;
+    labelEl.style.transform     = `translate(-50%, -50%) rotate(${_opts.angle}deg)`;
   }, 50);
 }
 
