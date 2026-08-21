@@ -44,7 +44,7 @@ let _activeContainer = null;
 const WM_DEFAULTS = {
   text:        'CONFIDENTIAL',
   font_family: 'helv',
-  font_size:   46,
+  font_size:   87,
   color:       '#CC0000',
   opacity:     0.73,
   angle:       -45,
@@ -79,6 +79,47 @@ function _fontFamilyCss(val) {
   return 'Arial, Helvetica, sans-serif';
 }
 
+/** Preview width for scaling PDF pt → screen px (viewer may still be display:none). */
+function _previewWidthPx(viewer) {
+  const frame = viewer.querySelector('#wm-frame-container');
+  const img   = viewer.querySelector('#wm-hd-img');
+
+  let w = frame ? frame.clientWidth : 0;
+  if (!w && img) w = img.clientWidth || 0;
+  if (!w && img && img.naturalWidth && img.naturalHeight) {
+    // Estimate laid-out width from CSS max bounds before the viewer is visible
+    const maxW = 600;
+    const maxH = 770;
+    const byW = maxW;
+    const byH = (img.naturalWidth / img.naturalHeight) * maxH;
+    w = Math.min(byW, byH);
+  }
+  if (!w) w = 600; // CSS .wm-frame-container max-width fallback
+  return w;
+}
+
+/** Apply watermark label styles to the HD preview overlay. */
+function _syncDraggableLabel(viewer) {
+  if (!viewer) return;
+  const labelEl = viewer.querySelector('#wm-draggable-label');
+  if (!labelEl) return;
+
+  const pageW = _pageWidth > 0 ? _pageWidth : 595;
+  const scale = _previewWidthPx(viewer) / pageW;
+  const displaySize = Math.max(8, Math.round(_opts.font_size * scale));
+
+  labelEl.textContent         = _opts.text || 'WATERMARK';
+  labelEl.style.fontFamily    = _fontFamilyCss(_opts.font_family);
+  labelEl.style.fontSize      = `${displaySize}px`;
+  labelEl.style.fontWeight    = '700';
+  labelEl.style.color         = _opts.color;
+  labelEl.style.opacity       = String(_opts.opacity);
+  labelEl.style.letterSpacing = `${_opts.spacing}px`;
+  labelEl.style.left          = `${_opts.x_pct}%`;
+  labelEl.style.top           = `${_opts.y_pct}%`;
+  labelEl.style.transform     = `translate(-50%, -50%) rotate(${_opts.angle}deg)`;
+}
+
 // ─── SWAP PARTS (mirrors rotate.js _getSwapParts) ─────────────────────────────
 
 function _getSwapParts(container) {
@@ -86,8 +127,8 @@ function _getSwapParts(container) {
   const cardView = container.querySelector('#pdf-tools-card-view');
   let   viewer   = container.querySelector('#wm-viewer');
 
-  // Rebuild if missing the page preview or still has the removed style-preview strip
-  if (viewer && (!viewer.querySelector('.wm-preview-col') || viewer.querySelector('#wm-live-preview'))) {
+  // Rebuild if missing the page preview or the Custom Color section
+  if (viewer && (!viewer.querySelector('.wm-preview-col') || !viewer.querySelector('#wm-color-hex'))) {
     viewer.remove();
     viewer = null;
   }
@@ -119,7 +160,6 @@ function _buildViewerHTML() {
         </button>
         <div class="wm-file-meta">
           <span class="wm-file-name">No PDF selected</span>
-          <span class="wm-file-info">0 pages</span>
         </div>
       </div>
       <div class="wm-topbar-actions">
@@ -147,7 +187,7 @@ function _buildViewerHTML() {
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
             <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
           </svg>
-          Page 1 — HD Preview &nbsp;·&nbsp; Drag Watermark to Position
+          Preview &nbsp;·&nbsp; Drag Watermark to Position
         </div>
 
         <div class="wm-frame-glow">
@@ -206,10 +246,10 @@ function _buildViewerHTML() {
               </div>
               <div class="wm-control-group">
                 <label class="wm-label">Font Size
-                  <span class="wm-label-val" id="wm-size-val">46px</span>
+                  <span class="wm-label-val" id="wm-size-val">87px</span>
                 </label>
                 <input type="range" class="wm-slider" id="wm-size"
-                       min="10" max="120" value="46" />
+                       min="10" max="120" value="87" />
               </div>
             </div>
           </div>
@@ -221,20 +261,34 @@ function _buildViewerHTML() {
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20"/><path d="M2 12h20"/></svg>
               Color
             </div>
-            <div class="wm-color-row">
-              <div class="wm-color-swatch-wrap" title="Pick custom color">
+            <div class="wm-swatches" id="wm-swatches">
+              <span class="wm-swatch active" data-color="#CC0000" style="background:#CC0000" title="Red"></span>
+              <span class="wm-swatch" data-color="#1D4ED8" style="background:#1D4ED8" title="Blue"></span>
+              <span class="wm-swatch" data-color="#15803D" style="background:#15803D" title="Green"></span>
+              <span class="wm-swatch" data-color="#000000" style="background:#000000" title="Black"></span>
+              <span class="wm-swatch" data-color="#6B7280" style="background:#6B7280" title="Grey"></span>
+              <span class="wm-swatch" data-color="#9333EA" style="background:#9333EA" title="Purple"></span>
+              <span class="wm-swatch" data-color="#EA580C" style="background:#EA580C" title="Orange"></span>
+              <span class="wm-swatch" data-color="#FFFFFF" style="background:#FFFFFF;box-shadow:0 0 0 1.5px #CBD5E1 inset" title="White"></span>
+            </div>
+          </div>
+
+          <div class="wm-divider"></div>
+
+          <div class="wm-section">
+            <div class="wm-section-title">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/><circle cx="12" cy="12" r="4"/></svg>
+              Custom Color
+            </div>
+            <div class="wm-custom-color-row">
+              <div class="wm-color-swatch-wrap wm-color-swatch-wrap--lg" title="Pick any color">
                 <div class="wm-color-preview" id="wm-color-preview" style="background:#CC0000"></div>
                 <input type="color" class="wm-color-picker" id="wm-color" value="#CC0000" />
               </div>
-              <div class="wm-swatches" id="wm-swatches">
-                <span class="wm-swatch active" data-color="#CC0000" style="background:#CC0000" title="Red"></span>
-                <span class="wm-swatch" data-color="#1D4ED8" style="background:#1D4ED8" title="Blue"></span>
-                <span class="wm-swatch" data-color="#15803D" style="background:#15803D" title="Green"></span>
-                <span class="wm-swatch" data-color="#000000" style="background:#000000" title="Black"></span>
-                <span class="wm-swatch" data-color="#6B7280" style="background:#6B7280" title="Grey"></span>
-                <span class="wm-swatch" data-color="#9333EA" style="background:#9333EA" title="Purple"></span>
-                <span class="wm-swatch" data-color="#EA580C" style="background:#EA580C" title="Orange"></span>
-                <span class="wm-swatch" data-color="#FFFFFF" style="background:#FFFFFF;box-shadow:0 0 0 1.5px #CBD5E1 inset" title="White"></span>
+              <div class="wm-custom-color-meta">
+                <label class="wm-label" for="wm-color-hex">Hex Color</label>
+                <input type="text" class="wm-text-input wm-color-hex" id="wm-color-hex"
+                       value="#CC0000" maxlength="7" spellcheck="false" placeholder="#RRGGBB" />
               </div>
             </div>
           </div>
@@ -311,6 +365,24 @@ function _wireViewerEvents(viewer) {
   const labelEl   = viewer.querySelector('#wm-draggable-label');
   const posBadge  = viewer.querySelector('#wm-pos-badge');
 
+  /** Map pointer to page % using the actual page image box (1:1 with PDF page). */
+  function _setPosFromClient(clientX, clientY) {
+    if (!container) return;
+    const img = container.querySelector('#wm-hd-img');
+    const rect = (img && img.clientWidth > 0)
+      ? img.getBoundingClientRect()
+      : container.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+
+    let x = Math.max(0, Math.min(rect.width,  clientX - rect.left));
+    let y = Math.max(0, Math.min(rect.height, clientY - rect.top));
+    _opts.x_pct = parseFloat(((x / rect.width)  * 100).toFixed(1));
+    _opts.y_pct = parseFloat(((y / rect.height) * 100).toFixed(1));
+    labelEl.style.left = `${_opts.x_pct}%`;
+    labelEl.style.top  = `${_opts.y_pct}%`;
+    if (posBadge) posBadge.textContent = `${Math.round(_opts.x_pct)}% · ${Math.round(_opts.y_pct)}%`;
+  }
+
   let dragging = false;
 
   labelEl.addEventListener('mousedown', (e) => {
@@ -320,15 +392,8 @@ function _wireViewerEvents(viewer) {
   });
 
   window.addEventListener('mousemove', (e) => {
-    if (!dragging || !container) return;
-    const rect = container.getBoundingClientRect();
-    let x = Math.max(0, Math.min(rect.width,  e.clientX - rect.left));
-    let y = Math.max(0, Math.min(rect.height, e.clientY - rect.top));
-    _opts.x_pct = parseFloat(((x / rect.width)  * 100).toFixed(1));
-    _opts.y_pct = parseFloat(((y / rect.height) * 100).toFixed(1));
-    labelEl.style.left = `${_opts.x_pct}%`;
-    labelEl.style.top  = `${_opts.y_pct}%`;
-    if (posBadge) posBadge.textContent = `${Math.round(_opts.x_pct)}% · ${Math.round(_opts.y_pct)}%`;
+    if (!dragging) return;
+    _setPosFromClient(e.clientX, e.clientY);
   });
 
   window.addEventListener('mouseup', () => {
@@ -345,16 +410,9 @@ function _wireViewerEvents(viewer) {
   }, { passive: false });
 
   window.addEventListener('touchmove', (e) => {
-    if (!dragging || !container) return;
+    if (!dragging) return;
     const t = e.touches[0];
-    const rect = container.getBoundingClientRect();
-    let x = Math.max(0, Math.min(rect.width,  t.clientX - rect.left));
-    let y = Math.max(0, Math.min(rect.height, t.clientY - rect.top));
-    _opts.x_pct = parseFloat(((x / rect.width)  * 100).toFixed(1));
-    _opts.y_pct = parseFloat(((y / rect.height) * 100).toFixed(1));
-    labelEl.style.left = `${_opts.x_pct}%`;
-    labelEl.style.top  = `${_opts.y_pct}%`;
-    if (posBadge) posBadge.textContent = `${Math.round(_opts.x_pct)}% · ${Math.round(_opts.y_pct)}%`;
+    _setPosFromClient(t.clientX, t.clientY);
   }, { passive: false });
 
   window.addEventListener('touchend', () => {
@@ -370,6 +428,7 @@ function _wireViewerEvents(viewer) {
   const sizeVal     = viewer.querySelector('#wm-size-val');
   const colorInput  = viewer.querySelector('#wm-color');
   const colorPrev   = viewer.querySelector('#wm-color-preview');
+  const colorHex    = viewer.querySelector('#wm-color-hex');
   const opacSlider  = viewer.querySelector('#wm-opacity');
   const opacVal     = viewer.querySelector('#wm-opacity-val');
   const spaceSlider = viewer.querySelector('#wm-space');
@@ -377,27 +436,31 @@ function _wireViewerEvents(viewer) {
   const angleSlider = viewer.querySelector('#wm-angle');
   const angleVal    = viewer.querySelector('#wm-angle-val');
 
+  function _setColor(hex, fromPicker = false) {
+    const cleaned = String(hex || '').trim();
+    const valid = /^#[0-9A-Fa-f]{6}$/.test(cleaned);
+    if (!valid && !fromPicker) return;
+    const value = valid ? cleaned.toUpperCase() : cleaned;
+    _opts.color = value;
+    if (colorInput) colorInput.value = value;
+    if (colorPrev) colorPrev.style.background = value;
+    if (colorHex && document.activeElement !== colorHex) colorHex.value = value;
+    _refreshLabel();
+  }
+
   function _refreshLabel() {
-    if (!labelEl) return;
-
-    labelEl.textContent = _opts.text || 'WATERMARK';
-    labelEl.style.fontFamily = _fontFamilyCss(_opts.font_family);
-
-    const frame = viewer.querySelector('#wm-frame-container');
-    const scaleFactor = frame ? (frame.clientWidth / 600) : 0.7;
-    const displaySize = Math.max(8, Math.round(_opts.font_size * scaleFactor));
-    labelEl.style.fontSize      = `${displaySize}px`;
-    labelEl.style.fontWeight    = '700';
-    labelEl.style.color         = _opts.color;
-    labelEl.style.opacity       = String(_opts.opacity);
-    labelEl.style.letterSpacing = `${_opts.spacing}px`;
-    labelEl.style.left          = `${_opts.x_pct}%`;
-    labelEl.style.top           = `${_opts.y_pct}%`;
-    labelEl.style.transform     = `translate(-50%, -50%) rotate(${_opts.angle}deg)`;
+    _syncDraggableLabel(viewer);
   }
 
   _refreshLabel();
 
+  // Re-scale once the HD page image finishes loading / layout settles
+  const hdImg = viewer.querySelector('#wm-hd-img');
+  if (hdImg) {
+    hdImg.addEventListener('load', () => {
+      requestAnimationFrame(() => _syncDraggableLabel(viewer));
+    });
+  }
   textInput.addEventListener('input', (e) => {
     _opts.text = e.target.value;
     _refreshLabel();
@@ -424,20 +487,37 @@ function _wireViewerEvents(viewer) {
   });
 
   colorInput.addEventListener('input', (e) => {
-    _opts.color = e.target.value;
-    if (colorPrev) colorPrev.style.background = _opts.color;
+    _setColor(e.target.value, true);
     _clearSwatchActive(viewer);
-    _refreshLabel();
   });
+
+  if (colorHex) {
+    colorHex.addEventListener('input', (e) => {
+      let v = e.target.value.trim();
+      if (v && !v.startsWith('#')) v = `#${v}`;
+      e.target.value = v.toUpperCase();
+      if (/^#[0-9A-Fa-f]{6}$/.test(v)) {
+        _setColor(v);
+        _clearSwatchActive(viewer);
+      }
+    });
+    colorHex.addEventListener('change', (e) => {
+      let v = e.target.value.trim();
+      if (v && !v.startsWith('#')) v = `#${v}`;
+      if (/^#[0-9A-Fa-f]{6}$/.test(v)) {
+        _setColor(v);
+        _clearSwatchActive(viewer);
+      } else {
+        e.target.value = _opts.color;
+      }
+    });
+  }
 
   viewer.querySelectorAll('.wm-swatch').forEach((sw) => {
     sw.addEventListener('click', () => {
-      _opts.color = sw.dataset.color;
-      colorInput.value = _opts.color;
-      if (colorPrev) colorPrev.style.background = _opts.color;
       viewer.querySelectorAll('.wm-swatch').forEach((s) => s.classList.remove('active'));
       sw.classList.add('active');
-      _refreshLabel();
+      _setColor(sw.dataset.color);
     });
   });
 
@@ -511,6 +591,12 @@ function _showViewer(container) {
     cardView.classList.add('wm-hidden');
     viewer.classList.add('wm-viewer--visible');
 
+    // Layout is ready only after display:flex — re-apply real preview font size
+    requestAnimationFrame(() => {
+      _syncDraggableLabel(viewer);
+      requestAnimationFrame(() => _syncDraggableLabel(viewer));
+    });
+
     const mainContent = document.getElementById('main-content');
     if (mainContent && viewer) {
       const top = viewer.getBoundingClientRect().top + mainContent.scrollTop - 70;
@@ -549,9 +635,7 @@ function _populateViewer(viewer) {
   _opts = { ...WM_DEFAULTS };
 
   const nameEl = viewer.querySelector('.wm-file-name');
-  const infoEl = viewer.querySelector('.wm-file-info');
   if (nameEl) nameEl.textContent = _wmFile ? _wmFile.name : 'No PDF selected';
-  if (infoEl) infoEl.textContent = `${_wmPageCount} page${_wmPageCount !== 1 ? 's' : ''} · ${_fmt(_wmFileSize)}`;
 
   const imgEl = viewer.querySelector('#wm-hd-img');
   if (imgEl && _wmHdUri) imgEl.src = _wmHdUri;
@@ -568,6 +652,7 @@ function _populateViewer(viewer) {
   const sizeVal     = viewer.querySelector('#wm-size-val');
   const colorInput  = viewer.querySelector('#wm-color');
   const colorPrev   = viewer.querySelector('#wm-color-preview');
+  const colorHex    = viewer.querySelector('#wm-color-hex');
   const opacSlider  = viewer.querySelector('#wm-opacity');
   const opacVal     = viewer.querySelector('#wm-opacity-val');
   const spaceSlider = viewer.querySelector('#wm-space');
@@ -586,6 +671,7 @@ function _populateViewer(viewer) {
   if (sizeVal) sizeVal.textContent = `${_opts.font_size}px`;
   if (colorInput) colorInput.value = _opts.color;
   if (colorPrev) colorPrev.style.background = _opts.color;
+  if (colorHex) colorHex.value = _opts.color;
   viewer.querySelectorAll('.wm-swatch').forEach((s) => {
     s.classList.toggle('active', s.dataset.color.toLowerCase() === _opts.color.toLowerCase());
   });
@@ -612,22 +698,10 @@ function _populateViewer(viewer) {
     labelEl.style.top  = `${_opts.y_pct}%`;
   }
 
-  setTimeout(() => {
-    if (!labelEl) return;
-    const frame = viewer.querySelector('#wm-frame-container');
-    const scaleFactor = frame ? (frame.clientWidth / 600) : 0.7;
-    const displaySize = Math.max(8, Math.round(_opts.font_size * scaleFactor));
-    labelEl.textContent         = _opts.text;
-    labelEl.style.fontFamily    = _fontFamilyCss(_opts.font_family);
-    labelEl.style.fontSize      = `${displaySize}px`;
-    labelEl.style.fontWeight    = '700';
-    labelEl.style.color         = _opts.color;
-    labelEl.style.opacity       = String(_opts.opacity);
-    labelEl.style.letterSpacing = `${_opts.spacing}px`;
-    labelEl.style.left          = `${_opts.x_pct}%`;
-    labelEl.style.top           = `${_opts.y_pct}%`;
-    labelEl.style.transform     = `translate(-50%, -50%) rotate(${_opts.angle}deg)`;
-  }, 50);
+  // Apply immediately (uses fallback width if still hidden), then again after layout
+  _syncDraggableLabel(viewer);
+  setTimeout(() => _syncDraggableLabel(viewer), 50);
+  setTimeout(() => _syncDraggableLabel(viewer), 350);
 }
 
 // ─── THUMBNAIL (drop zone mini) ───────────────────────────────────────────────

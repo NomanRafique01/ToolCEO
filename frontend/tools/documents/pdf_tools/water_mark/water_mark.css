@@ -262,20 +262,18 @@ body.has-wm-viewer .features-strip {
   border-radius: 10px;
   overflow: hidden;
   user-select: none;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  max-width: 600px;
-  max-height: 780px;
-  width: 100%;
+  display: inline-block;
+  width: fit-content;
+  max-width: min(600px, 100%);
+  line-height: 0;
 }
 
 .wm-hd-img {
-  width: 100%;
-  height: auto;
-  max-height: 770px;
-  object-fit: contain;
   display: block;
+  width: auto;
+  height: auto;
+  max-width: min(600px, 100%);
+  max-height: 770px;
   pointer-events: none;
   border-radius: 10px;
 }
@@ -574,6 +572,26 @@ body.has-wm-viewer .features-strip {
   gap: 10px;
 }
 
+.wm-custom-color-row {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.wm-custom-color-meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.wm-color-hex {
+  font-family: 'Courier New', monospace;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
 .wm-color-swatch-wrap {
   position: relative;
   width: 36px;
@@ -585,6 +603,12 @@ body.has-wm-viewer .features-strip {
   cursor: pointer;
   transition: border-color 0.2s, box-shadow 0.2s;
   box-shadow: 0 0 10px rgba(0,0,0,0.2);
+}
+
+.wm-color-swatch-wrap--lg {
+  width: 48px;
+  height: 48px;
+  border-radius: 12px;
 }
 
 .wm-color-swatch-wrap:hover {

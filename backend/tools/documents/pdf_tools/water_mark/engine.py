@@ -4,6 +4,9 @@ PDF Watermark Engine — ToolCEO
 Applies custom text watermarks to all pages of a PDF document using PyMuPDF.
 Supports font selection, color, opacity (alpha), rotation angle, spacing,
 and precise (x, y) percentage positioning.
+
+Positioning matches the frontend preview: (x_pct, y_pct) is the CENTER of the
+watermark text (same as CSS left/top % + translate(-50%, -50%)).
 """
 
 from __future__ import annotations
@@ -20,12 +23,14 @@ FONT_MAP = {
     "helvetica": "helv",
     "arial": "helv",
     "sans-serif": "helv",
+    "helv": "helv",
     "times": "times",
     "times new roman": "times",
     "serif": "times",
     "courier": "cour",
     "courier new": "cour",
     "monospace": "cour",
+    "cour": "cour",
     "helvetica-bold": "hebo",
     "times-bold": "tibo",
     "courier-bold": "cobo",
@@ -61,6 +66,87 @@ def _parse_color(hex_str: str) -> tuple[float, float, float]:
         return (0.0, 0.0, 0.0)
 
 
+def _resolve_font(font_family: str) -> str:
+    norm = (font_family or "helv").lower().strip()
+    return FONT_MAP.get(norm, "helv")
+
+
+def _text_width(text: str, font_name: str, font_size: float, spacing: float) -> float:
+    """Width of text in PDF points, including letter-spacing between characters."""
+    if not text:
+        return 0.0
+    try:
+        base = fitz.get_text_length(text, fontname=font_name, fontsize=font_size)
+    except Exception:
+        base = font_size * 0.5 * len(text)
+    extra = max(0.0, float(spacing)) * max(0, len(text) - 1)
+    return base + extra
+
+
+def _insert_centered_watermark(
+    page: fitz.Page,
+    text: str,
+    font_name: str,
+    font_size: float,
+    rgb: tuple[float, float, float],
+    opacity: float,
+    angle: float,
+    spacing: float,
+    x_pct: float,
+    y_pct: float,
+) -> None:
+    """
+    Draw watermark centered on (x_pct, y_pct) of the page, matching the editor preview.
+
+    Frontend places the label with left/top = % and transform: translate(-50%, -50%)
+    rotate(angle), so the visual center of the text sits on that point.
+    PyMuPDF insert_text uses baseline-left, so we offset before rotating around center.
+    """
+    rect = page.rect
+    cx = (max(0.0, min(100.0, x_pct)) / 100.0) * rect.width
+    cy = (max(0.0, min(100.0, y_pct)) / 100.0) * rect.height
+
+    tw = _text_width(text, font_name, font_size, spacing)
+    # Vertical: CSS centers the line box (~font_size tall); PDF baseline ≈ mid + 0.35*size
+    baseline_y = cy + font_size * 0.35
+    insert_x = cx - (tw / 2.0)
+
+    pivot = fitz.Point(cx, cy)
+    # CSS positive rotate is clockwise; PyMuPDF Matrix(deg) is counter-clockwise → negate
+    morph = (pivot, fitz.Matrix(-angle)) if abs(angle) > 0.01 else None
+
+    common = dict(
+        fontname=font_name,
+        fontsize=font_size,
+        color=rgb,
+        fill_opacity=opacity,
+    )
+
+    # Letter-spacing: draw glyph-by-glyph so output matches the preview
+    if abs(spacing) > 0.01 and len(text) > 1:
+        x_cursor = insert_x
+        for ch in text:
+            try:
+                ch_w = fitz.get_text_length(ch, fontname=font_name, fontsize=font_size)
+            except Exception:
+                ch_w = font_size * 0.5
+            page.insert_text(
+                fitz.Point(x_cursor, baseline_y),
+                ch,
+                morph=morph,
+                **common,
+            )
+            x_cursor += ch_w + spacing
+        return
+
+    page.insert_text(
+        fitz.Point(insert_x, baseline_y),
+        text,
+        morph=morph,
+        **common,
+    )
+
+
 def get_pdf_info(raw_bytes: bytes, password: Optional[str] = None) -> dict:
     """
     Synchronous preview helper. Returns page count, original file size,
@@ -82,7 +168,6 @@ def get_pdf_info(raw_bytes: bytes, password: Optional[str] = None) -> dict:
     if page_count == 0:
         raise ValueError("PDF contains no pages.")
 
-    # High definition 1st page preview rendering (2.0 scale)
     page0 = doc[0]
     rect = page0.rect
     matrix = fitz.Matrix(2.0, 2.0)
@@ -107,8 +192,8 @@ def apply_watermark(
     job_id: Optional[str] = None,
 ) -> bytes:
     """
-    Overlays text watermark onto all pages of the PDF.
-    Updates job progress if job_id is supplied.
+    Overlays text watermark onto all pages of the PDF at the same relative
+    (x_pct, y_pct) center position shown in the page-1 drag preview.
     """
     if not raw_bytes:
         raise ValueError("Empty PDF file.")
@@ -122,43 +207,42 @@ def apply_watermark(
     if total_pages == 0:
         raise ValueError("PDF contains no pages.")
 
-    # Font lookup
-    norm_font = (opts.font_family or "helv").lower().strip()
-    font_name = FONT_MAP.get(norm_font, "helv")
-
-    # Color parsing
+    font_name = _resolve_font(opts.font_family)
     rgb = _parse_color(opts.color or "#FF0000")
     opacity = max(0.01, min(1.0, float(opts.opacity)))
     font_size = max(6.0, min(200.0, float(opts.font_size)))
     angle = float(opts.angle)
+    spacing = float(opts.spacing or 0.0)
+    text = (opts.text or "WATERMARK").strip() or "WATERMARK"
+    x_pct = float(opts.x_pct)
+    y_pct = float(opts.y_pct)
 
     if job_id:
         job_store.set_progress(job_id, 15)
 
     for idx, page in enumerate(doc):
-        rect = page.rect
-        x_pt = (opts.x_pct / 100.0) * rect.width
-        y_pt = (opts.y_pct / 100.0) * rect.height
-        point = fitz.Point(x_pt, y_pt)
-
-        # Apply rotation transform matrix matching frontend CSS rotation
-        morph_matrix = fitz.Matrix(-angle)
-
         try:
-            page.insert_text(
-                point,
-                opts.text,
-                fontname=font_name,
-                fontsize=font_size,
-                color=rgb,
-                fill_opacity=opacity,
-                morph=(point, morph_matrix),
+            _insert_centered_watermark(
+                page,
+                text=text,
+                font_name=font_name,
+                font_size=font_size,
+                rgb=rgb,
+                opacity=opacity,
+                angle=angle,
+                spacing=spacing,
+                x_pct=x_pct,
+                y_pct=y_pct,
             )
-        except Exception as exc:
-            # Fallback without morph matrix if transformation fails
+        except Exception:
+            # Last-resort: plain centered insert without morph / spacing
+            rect = page.rect
+            cx = (x_pct / 100.0) * rect.width
+            cy = (y_pct / 100.0) * rect.height
+            tw = _text_width(text, font_name, font_size, 0.0)
             page.insert_text(
-                point,
-                opts.text,
+                fitz.Point(cx - tw / 2.0, cy + font_size * 0.35),
+                text,
                 fontname=font_name,
                 fontsize=font_size,
                 color=rgb,
