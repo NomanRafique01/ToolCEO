@@ -1,0 +1,730 @@
+/* ─────────────────────────────────────────────────────────────
+   tools/documents/pdf_tools/water_mark/water_mark.css
+   Full-area PDF Watermark Editor — ToolCEO
+   Deep Blue Glassmorphism Theme — Matching App #0D1B2A palette
+   ───────────────────────────────────────────────────────────── */
+
+:root {
+  --wm-blue-900:    #0A1628;
+  --wm-blue-800:    #0D1F3C;
+  --wm-blue-700:    #112240;
+  --wm-blue-600:    #163355;
+  --wm-blue-500:    #1E4A7A;
+  --wm-accent:      #38BDF8;
+  --wm-accent-2:    #0EA5E9;
+  --wm-accent-3:    #0284C7;
+  --wm-accent-dim:  rgba(56, 189, 248, 0.18);
+  --wm-accent-glow: rgba(56, 189, 248, 0.35);
+  --wm-glass-bg:    rgba(13, 31, 60, 0.72);
+  --wm-glass-border:rgba(56, 189, 248, 0.22);
+  --wm-glass-hover: rgba(56, 189, 248, 0.12);
+  --wm-text-bright: #E0F2FE;
+  --wm-text-muted:  rgba(148, 198, 230, 0.75);
+  --wm-surface:     rgba(10, 22, 40, 0.65);
+  --wm-border:      rgba(56, 189, 248, 0.22);
+}
+
+/* ─── HIDE CARDS & FEATURES STRIP WHEN VIEWER IS OPEN ─── */
+
+.pdf-tools-card-view.wm-hidden {
+  display: none !important;
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+body.has-wm-viewer .features-strip {
+  display: none !important;
+}
+
+/* ─── WATERMARK VIEWER CONTAINER ─── */
+
+.wm-viewer {
+  display: none;
+  flex-direction: column;
+  width: 100%;
+  min-height: calc(100vh - 160px);
+  background: linear-gradient(160deg, #0A1628 0%, #0D1F3C 45%, #112240 100%);
+  border: 1px solid rgba(56, 189, 248, 0.18);
+  border-radius: 16px;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 320ms cubic-bezier(.4,0,.2,1), transform 320ms cubic-bezier(.4,0,.2,1);
+  box-shadow:
+    0 0 0 1px rgba(56, 189, 248, 0.08),
+    0 8px 32px rgba(0, 0, 0, 0.5),
+    0 24px 64px rgba(0, 0, 0, 0.35);
+}
+
+.wm-viewer.wm-viewer--visible {
+  display: flex;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ─── TOP BAR ─── */
+
+.wm-topbar {
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 24px;
+  background: rgba(10, 22, 40, 0.85);
+  border-bottom: 1px solid rgba(56, 189, 248, 0.18);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  box-shadow: 0 1px 24px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(56, 189, 248, 0.06) inset;
+}
+
+.wm-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
+.wm-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 15px;
+  background: rgba(56, 189, 248, 0.08);
+  border: 1px solid rgba(56, 189, 248, 0.28);
+  border-radius: 8px;
+  color: #7DD3FC;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+  letter-spacing: 0.01em;
+}
+
+.wm-back-btn:hover {
+  background: rgba(56, 189, 248, 0.18);
+  border-color: #38BDF8;
+  color: #E0F2FE;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.2);
+}
+
+.wm-file-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.wm-file-name {
+  font-size: 14px;
+  font-weight: 700;
+  color: #E0F2FE;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 260px;
+}
+
+.wm-file-info {
+  font-size: 11.5px;
+  color: rgba(148, 198, 230, 0.65);
+}
+
+.wm-topbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.wm-apply-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 22px;
+  background: linear-gradient(135deg, #38BDF8 0%, #0EA5E9 60%, #0284C7 100%);
+  border: none;
+  border-radius: 9px;
+  color: #FFFFFF;
+  font-size: 13.5px;
+  font-weight: 700;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(56, 189, 248, 0.4);
+  transition: all 0.2s ease;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
+}
+
+.wm-apply-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 20px rgba(56, 189, 248, 0.55);
+  background: linear-gradient(135deg, #7DD3FC 0%, #38BDF8 50%, #0EA5E9 100%);
+}
+
+.wm-apply-btn:active {
+  transform: translateY(0);
+}
+
+.wm-filename-wrap {
+  display: flex;
+  align-items: center;
+  background: rgba(10, 22, 40, 0.6);
+  border: 1px solid rgba(56, 189, 248, 0.22);
+  border-radius: 8px;
+  overflow: hidden;
+  transition: border-color 0.2s;
+}
+
+.wm-filename-wrap:focus-within {
+  border-color: rgba(56, 189, 248, 0.5);
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.08);
+}
+
+.wm-filename-input {
+  padding: 8px 12px;
+  background: transparent;
+  border: none;
+  color: #BAE6FD;
+  font-size: 13px;
+  outline: none;
+  width: 180px;
+}
+
+.wm-filename-input::placeholder {
+  color: rgba(148, 198, 230, 0.4);
+}
+
+.wm-filename-ext {
+  padding: 0 12px 0 0;
+  font-size: 13px;
+  color: rgba(56, 189, 248, 0.6);
+  font-weight: 600;
+}
+
+/* ─── EDITOR BODY (2-column layout) ─── */
+
+.wm-editor-body {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 0;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+}
+
+/* ─── LEFT — HD PAGE PREVIEW ─── */
+
+.wm-preview-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 32px 28px;
+  background: linear-gradient(145deg, #0A1628 0%, #0D1F3C 100%);
+  border-right: 1px solid rgba(56, 189, 248, 0.12);
+  overflow: auto;
+}
+
+.wm-preview-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 18px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #38BDF8;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  align-self: flex-start;
+}
+
+.wm-preview-header svg {
+  opacity: 0.7;
+}
+
+/* The outer decorative glow ring */
+.wm-frame-glow {
+  position: relative;
+  border-radius: 12px;
+  padding: 3px;
+  background: linear-gradient(135deg, rgba(56,189,248,0.5) 0%, rgba(14,165,233,0.25) 50%, rgba(56,189,248,0.4) 100%);
+  box-shadow:
+    0 0 0 1px rgba(56,189,248,0.2),
+    0 8px 32px rgba(56,189,248,0.2),
+    0 20px 60px rgba(0,0,0,0.12);
+}
+
+.wm-frame-container {
+  position: relative;
+  background: #FFFFFF;
+  border-radius: 10px;
+  overflow: hidden;
+  user-select: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  max-width: 600px;
+  max-height: 780px;
+  width: 100%;
+}
+
+.wm-hd-img {
+  width: 100%;
+  height: auto;
+  max-height: 770px;
+  object-fit: contain;
+  display: block;
+  pointer-events: none;
+  border-radius: 10px;
+}
+
+/* Draggable Watermark Overlay */
+.wm-draggable-label {
+  position: absolute;
+  cursor: grab;
+  padding: 4px 10px;
+  white-space: nowrap;
+  line-height: 1.2;
+  user-select: none;
+  touch-action: none;
+  transform: translate(-50%, -50%);
+  border-radius: 3px;
+  transition: box-shadow 0.15s ease;
+  text-shadow: 0 1px 4px rgba(0,0,0,0.25);
+}
+
+.wm-draggable-label::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border: 1.5px dashed rgba(56,189,248,0.7);
+  border-radius: 5px;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  pointer-events: none;
+}
+
+.wm-draggable-label:hover::after,
+.wm-draggable-label.dragging::after {
+  opacity: 1;
+}
+
+.wm-draggable-label:hover {
+  cursor: grab;
+  filter: drop-shadow(0 0 6px rgba(56,189,248,0.6));
+}
+
+.wm-draggable-label.dragging {
+  cursor: grabbing;
+  filter: drop-shadow(0 0 12px rgba(56,189,248,0.9));
+}
+
+.wm-position-badge {
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  background: rgba(10, 22, 40, 0.82);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  border-radius: 6px;
+  padding: 3px 9px;
+  font-size: 10.5px;
+  font-family: 'Courier New', monospace;
+  color: #38BDF8;
+  pointer-events: none;
+  backdrop-filter: blur(6px);
+}
+
+.wm-drag-hint {
+  margin-top: 14px;
+  font-size: 11.5px;
+  color: rgba(148, 198, 230, 0.5);
+  font-style: italic;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+/* ─── RIGHT — CONTROLS PANEL ─── */
+
+.wm-controls-col {
+  display: flex;
+  flex-direction: column;
+  background: rgba(10, 22, 40, 0.78);
+  border-left: 1px solid rgba(56, 189, 248, 0.14);
+  overflow-y: auto;
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+}
+
+/* Custom scrollbar */
+.wm-controls-col::-webkit-scrollbar {
+  width: 4px;
+}
+.wm-controls-col::-webkit-scrollbar-track {
+  background: transparent;
+}
+.wm-controls-col::-webkit-scrollbar-thumb {
+  background: rgba(56, 189, 248, 0.25);
+  border-radius: 99px;
+}
+.wm-controls-col::-webkit-scrollbar-thumb:hover {
+  background: rgba(56, 189, 248, 0.45);
+}
+
+.wm-controls-inner {
+  padding: 20px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Section — card style */
+.wm-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 14px 16px;
+  background: rgba(56, 189, 248, 0.04);
+  border: 1px solid rgba(56, 189, 248, 0.1);
+  border-radius: 12px;
+  transition: background 0.2s, border-color 0.2s;
+  margin-bottom: 6px;
+}
+
+.wm-section:hover {
+  background: rgba(56, 189, 248, 0.065);
+  border-color: rgba(56, 189, 248, 0.18);
+}
+
+.wm-section-title {
+  font-size: 10.5px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: #38BDF8;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(56, 189, 248, 0.14);
+  margin-bottom: 2px;
+}
+
+.wm-section-title svg {
+  flex-shrink: 0;
+}
+
+/* Labels */
+.wm-label {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--wm-text-muted);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 5px;
+  letter-spacing: 0.01em;
+}
+
+.wm-label-val {
+  font-family: 'Courier New', monospace;
+  font-size: 10.5px;
+  font-weight: 700;
+  color: #38BDF8;
+  background: rgba(56, 189, 248, 0.14);
+  padding: 2px 7px;
+  border-radius: 5px;
+  border: 1px solid rgba(56, 189, 248, 0.22);
+}
+
+/* Text Input */
+.wm-text-input {
+  width: 100%;
+  padding: 10px 14px;
+  background: rgba(10, 22, 40, 0.55);
+  border: 1px solid rgba(56, 189, 248, 0.22);
+  border-radius: 9px;
+  color: #BAE6FD;
+  font-size: 13.5px;
+  font-weight: 600;
+  outline: none;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-sizing: border-box;
+  letter-spacing: 0.02em;
+}
+
+.wm-text-input::placeholder {
+  color: rgba(148, 198, 230, 0.3);
+  font-weight: 400;
+}
+
+.wm-text-input:focus {
+  border-color: rgba(56, 189, 248, 0.55);
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.1), 0 0 16px rgba(56, 189, 248, 0.08);
+  background: rgba(10, 22, 40, 0.75);
+}
+
+/* Preset Badges */
+.wm-presets-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
+.wm-preset-badge {
+  background: rgba(56, 189, 248, 0.07);
+  border: 1px solid rgba(56, 189, 248, 0.2);
+  color: #7DD3FC;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.wm-preset-badge:hover {
+  background: rgba(56, 189, 248, 0.2);
+  border-color: rgba(56, 189, 248, 0.5);
+  color: #E0F2FE;
+  box-shadow: 0 0 10px rgba(56, 189, 248, 0.15);
+}
+
+/* Grid 2-col */
+.wm-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.wm-control-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+/* Select */
+.wm-select {
+  width: 100%;
+  padding: 9px 12px;
+  background: rgba(10, 22, 40, 0.6);
+  border: 1px solid rgba(56, 189, 248, 0.22);
+  border-radius: 8px;
+  color: #BAE6FD;
+  font-size: 12px;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M6 9l6 6 6-6' stroke='%2338BDF8' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 32px;
+  transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.wm-select:focus {
+  border-color: rgba(56, 189, 248, 0.5);
+  box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.1);
+}
+
+.wm-select option {
+  background: #0D1F3C;
+  color: #BAE6FD;
+}
+
+/* Sliders */
+.wm-slider {
+  width: 100%;
+  height: 4px;
+  -webkit-appearance: none;
+  appearance: none;
+  background: linear-gradient(to right,
+    #38BDF8 var(--pct, 50%),
+    rgba(56, 189, 248, 0.15) var(--pct, 50%)
+  );
+  border-radius: 99px;
+  cursor: pointer;
+  outline: none;
+}
+
+.wm-slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  background: #0D1F3C;
+  border: 2.5px solid #38BDF8;
+  box-shadow: 0 2px 8px rgba(56, 189, 248, 0.45), 0 0 0 3px rgba(56, 189, 248, 0.1);
+  cursor: grab;
+  transition: box-shadow 0.15s ease, transform 0.15s ease;
+}
+
+.wm-slider::-webkit-slider-thumb:hover {
+  box-shadow: 0 2px 14px rgba(56, 189, 248, 0.7), 0 0 0 4px rgba(56, 189, 248, 0.18);
+  transform: scale(1.18);
+}
+
+.wm-slider:active::-webkit-slider-thumb {
+  cursor: grabbing;
+  transform: scale(1.22);
+}
+
+/* Color Row */
+.wm-color-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.wm-color-swatch-wrap {
+  position: relative;
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  overflow: hidden;
+  border: 2px solid rgba(56, 189, 248, 0.35);
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: border-color 0.2s, box-shadow 0.2s;
+  box-shadow: 0 0 10px rgba(0,0,0,0.3);
+}
+
+.wm-color-swatch-wrap:hover {
+  border-color: rgba(56, 189, 248, 0.7);
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.25);
+}
+
+.wm-color-picker {
+  position: absolute;
+  inset: -6px;
+  width: calc(100% + 12px);
+  height: calc(100% + 12px);
+  border: none;
+  border-radius: 0;
+  cursor: pointer;
+  opacity: 0;
+}
+
+.wm-color-preview {
+  width: 100%;
+  height: 100%;
+  border-radius: 7px;
+  pointer-events: none;
+}
+
+.wm-swatches {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.wm-swatch {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  border: 2px solid rgba(255,255,255,0.1);
+  cursor: pointer;
+  transition: transform 0.15s ease, box-shadow 0.15s ease, border-color 0.15s;
+  box-shadow: 0 1px 5px rgba(0,0,0,0.4);
+}
+
+.wm-swatch:hover {
+  transform: scale(1.28);
+  box-shadow: 0 2px 12px rgba(0,0,0,0.45);
+  border-color: rgba(255,255,255,0.5);
+}
+
+.wm-swatch.active {
+  border-color: #38BDF8;
+  transform: scale(1.22);
+  box-shadow: 0 0 0 2.5px rgba(56,189,248,0.55);
+}
+
+/* Angle Presets */
+.wm-angle-presets {
+  display: flex;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.wm-angle-btn {
+  padding: 5px 11px;
+  background: rgba(56, 189, 248, 0.06);
+  border: 1px solid rgba(56, 189, 248, 0.18);
+  color: #7DD3FC;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 7px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  letter-spacing: 0.03em;
+}
+
+.wm-angle-btn:hover {
+  background: rgba(56, 189, 248, 0.18);
+  border-color: rgba(56, 189, 248, 0.45);
+  color: #E0F2FE;
+  box-shadow: 0 0 8px rgba(56, 189, 248, 0.15);
+}
+
+.wm-angle-btn.active {
+  background: rgba(56, 189, 248, 0.25);
+  border-color: #38BDF8;
+  color: #E0F2FE;
+  box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
+}
+
+/* Live Preview Strip */
+.wm-live-strip {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 16px 14px;
+  background: linear-gradient(135deg,
+    rgba(56, 189, 248, 0.07) 0%,
+    rgba(10, 22, 40, 0.4) 50%,
+    rgba(56, 189, 248, 0.05) 100%
+  );
+  border: 1px solid rgba(56, 189, 248, 0.16);
+  border-radius: 10px;
+  min-height: 56px;
+  overflow: hidden;
+  position: relative;
+}
+
+.wm-live-strip::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(circle at 50% 50%, rgba(56,189,248,0.06) 0%, transparent 70%);
+  pointer-events: none;
+}
+
+.wm-live-text {
+  pointer-events: none;
+  user-select: none;
+  line-height: 1.2;
+  text-shadow: 0 0 20px currentColor;
+  position: relative;
+  z-index: 1;
+}
+
+/* Divider — hidden, sections are now cards */
+.wm-divider {
+  height: 1px;
+  background: rgba(56, 189, 248, 0.08);
+  margin: 2px 0;
+  display: none;
+}
+
+/* ─── THUMBNAIL in drop-zone ─── */
+
+.dz-wm-thumb-wrap {
+  /* inherits from .dz-compress-thumb-wrap in compressor.css */
+}

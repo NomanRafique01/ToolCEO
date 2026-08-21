@@ -32,6 +32,10 @@ import {
   handleRotateFilePicked,
   removeRotatePanel,
 } from '../tools/documents/pdf_tools/rotate/rotate.js';
+import {
+  handleWatermarkFilePicked,
+  removeWatermarkPanel,
+} from '../tools/documents/pdf_tools/water_mark/water_mark.js';
 
 const BACKEND = 'http://127.0.0.1:8000';
 
@@ -148,6 +152,7 @@ function _updateDropZone(tool) {
     removeCompressPanel();
     removeEncryptPanel();
     removeRotatePanel();
+    removeWatermarkPanel();
 
     const mainEl   = zone.querySelector('.drop-main-text');
     const subEl    = zone.querySelector('.drop-browse');
@@ -176,6 +181,7 @@ function _updateDropZone(tool) {
   removeCompressPanel();     // hide previous compress settings panel if tool changed
   removeEncryptPanel();      // hide previous encrypt settings panel if tool changed
   removeRotatePanel();       // hide previous rotate thumbnail if tool changed
+  removeWatermarkPanel();    // hide previous watermark editor panel if tool changed
 
   zone.style.setProperty('--dz-color', color);
   zone.style.setProperty('--dz-bg', bg);
@@ -562,6 +568,8 @@ function _resetAfterSave(zone) {
     removeMergePanel();
     removeCompressPanel();
     removeEncryptPanel();
+    removeRotatePanel();
+    removeWatermarkPanel();
     const tool = getActiveTool();
     if (tool) _updateDropZone(tool);
   }, 1800);
@@ -627,6 +635,7 @@ function _showDownload(zone, filename, jobId, color) {
       removeCompressPanel();
       removeEncryptPanel();
       removeRotatePanel();
+      removeWatermarkPanel();
       const tool = getActiveTool();
       if (tool) _updateDropZone(tool);
     });
@@ -812,6 +821,12 @@ async function _submitFile(files) {
   // Rotate tool has its own visual page grid flow — delegated to the rotate module
   if (tool.id === 'rotate') {
     handleRotateFilePicked(files[0]);
+    return;
+  }
+
+  // Watermark tool has its own HD editor frame flow — delegated to the watermark module
+  if (tool.id === 'watermark') {
+    handleWatermarkFilePicked(files[0]);
     return;
   }
 
