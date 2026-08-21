@@ -1,4 +1,4 @@
-﻿/**
+/**
  * notificationStore.js
  *
  * Central in-memory notification store for ToolCEO.
@@ -70,12 +70,14 @@ export function pushNotification({ type = 'success', message = '', detail = '', 
   }
 
   // ── Auto-dismiss scheduling ────────────────────────────────────────────────
+  // Success & Info pills auto-dismiss after 6s via CSS countdown animation.
+  // Warning & Error pills stay until manually dismissed by user.
   const shouldAutoDismiss = autoDismiss !== undefined 
     ? autoDismiss 
-    : (type === 'warning' || type === 'success' || type === 'info');
+    : (type === 'success' || type === 'info');
 
   if (shouldAutoDismiss) {
-    const ttl = type === 'warning' ? 4000 : (type === 'info' ? 5000 : 8000);
+    const ttl = 7000; // JS fallback buffer (CSS animationend fires at 6000ms)
     const tid = setTimeout(() => {
       dismissOne(item.id);
     }, ttl);
