@@ -98,36 +98,36 @@ def _serialize(doc: fitz.Document) -> bytes:
     return buf.read()
 
 
-def _quality_for_ratio(ratio: float) -> int:
+def _params_for_ratio(ratio: float) -> tuple[int, float]:
     """
-    Map target-size / original-size ratio to a JPEG quality level.
+    Map target-size / original-size ratio to (quality, scale_factor).
 
-    ratio ≥ 0.85  →  no JPEG pass needed (structural already sufficient)
-    0.65 – 0.85   →  quality 72  (~20 % reduction)
-    0.45 – 0.65   →  quality 52  (~50 % reduction)
-    0.25 – 0.45   →  quality 32  (~80 % reduction)
-    < 0.25        →  quality 18  (maximum squeeze)
+    ratio >= 0.65  →  quality 75, scale 1.00  (~20% reduction)
+    ratio >= 0.45  →  quality 50, scale 0.80  (~50% reduction)
+    ratio >= 0.25  →  quality 32, scale 0.52  (~80% reduction)
+    < 0.25        →  quality 20, scale 0.35  (~90% max reduction)
     """
     if ratio >= 0.65:
-        return 72
+        return 75, 1.00
     if ratio >= 0.45:
-        return 52
+        return 50, 0.80
     if ratio >= 0.25:
-        return 32
-    return 18
+        return 32, 0.52
+    return 20, 0.35
 
 
 def _reencode_images(
     doc: fitz.Document,
     quality: int,
+    scale_factor: float = 1.0,
     job_id: Optional[str] = None,
     progress_start: int = 20,
     progress_end: int = 82,
 ) -> None:
     """
-    Single-pass JPEG re-encode of all raster images in *doc*.
+    Single-pass JPEG re-encode of raster images in *doc*.
 
-    - Image dimensions are NEVER changed (no downscaling).
+    - Scales image dimensions by scale_factor when aggressive reduction is requested.
     - Colour mode is preserved (RGB stays RGB, L stays L).
     - CMYK is converted to RGB for maximum PDF viewer compatibility.
     - An image is skipped if its pixel area is tiny (not worth encoding).
@@ -173,16 +173,21 @@ def _reencode_images(
                 else:
                     continue  # unsupported colorspace — leave untouched
 
-                # Skip tiny images (icons, decorations) — not worth encoding
-                if pix.width * pix.height < 64 * 64:
+                w, h = pix.width, pix.height
+                if w * h < 32 * 32:
                     continue
 
-                img = Image.frombytes(mode, (pix.width, pix.height), pix.samples)
+                img = Image.frombytes(mode, (w, h), pix.samples)
 
                 if mode == "CMYK":
-                    # Convert CMYK → RGB for maximum PDF viewer compatibility
                     img = img.convert("RGB")
                     mode = "RGB"
+
+                new_w = max(1, int(w * scale_factor))
+                new_h = max(1, int(h * scale_factor))
+
+                if new_w < w or new_h < h:
+                    img = img.resize((new_w, new_h), Image.LANCZOS)
 
                 # Encode to JPEG (raw bytes, no zlib wrapping)
                 enc_buf = io.BytesIO()
@@ -190,15 +195,12 @@ def _reencode_images(
                 jpeg_bytes = enc_buf.getvalue()
 
                 # ── CRITICAL: compress=False prevents PyMuPDF from zlib-wrapping
-                # the JPEG bytes.  Without this the stream is double-compressed
-                # (deflate over JPEG) but Filter is set to /DCTDecode, causing
-                # PDF viewers to fail to decode the image.
                 doc.update_stream(xref, jpeg_bytes, compress=False)
 
                 # Update the image dictionary to declare JPEG encoding
                 doc.xref_set_key(xref, "Filter",           "/DCTDecode")
-                doc.xref_set_key(xref, "Width",            str(pix.width))
-                doc.xref_set_key(xref, "Height",           str(pix.height))
+                doc.xref_set_key(xref, "Width",            str(new_w))
+                doc.xref_set_key(xref, "Height",           str(new_h))
                 doc.xref_set_key(xref, "ColorSpace",
                                  "/DeviceGray" if mode == "L" else "/DeviceRGB")
                 doc.xref_set_key(xref, "DecodeParms",      "null")
@@ -245,17 +247,16 @@ def compress_pdf(
     if not options.max_file_size or len(struct_bytes) <= options.max_file_size:
         return struct_bytes
 
-    # ── Phase 2: single-pass JPEG re-encode ───────────────────────────────────
-    # Calculate quality directly from target ratio — no iterative passes
+    # ── Phase 2: single-pass JPEG re-encode + scaling ────────────────────────
     target = options.max_file_size
     ratio  = target / orig_size
-    quality = _quality_for_ratio(ratio)
+    quality, scale_factor = _params_for_ratio(ratio)
 
     _report(job_id, 20)
     doc = _open_bytes(data, password)
 
     # Re-encode images with per-page progress 20 → 82 %
-    _reencode_images(doc, quality=quality, job_id=job_id,
+    _reencode_images(doc, quality=quality, scale_factor=scale_factor, job_id=job_id,
                      progress_start=20, progress_end=82)
 
     _report(job_id, 82)
@@ -263,7 +264,7 @@ def compress_pdf(
     doc.close()
     _report(job_id, 92)
 
-    # If JPEG pass somehow made it bigger (unusual), return structural result
+    # Return the compressed result
     return result if len(result) < len(struct_bytes) else struct_bytes
 
 
