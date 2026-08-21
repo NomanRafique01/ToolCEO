@@ -212,11 +212,11 @@ function _getSwapParts(container) {
     viewer.querySelector('[data-rotate-all="right"]').addEventListener('click', () => _rotateAll(90, viewer));
     viewer.querySelector('.rotate-save-btn').addEventListener('click', () => _applyAndSave(viewer));
 
-    // Page search functionality (instant calculation & scroll to top row)
+    // Page search functionality (instant calculation & scroll target card to top of pages window)
     const searchInput = viewer.querySelector('.rotate-search-input');
     const searchBtn   = viewer.querySelector('.rotate-search-btn');
 
-    const performSearch = () => {
+    const performSearch = (doScroll = true) => {
       const grid = viewer.querySelector('.rotate-grid');
       if (!searchInput || !grid) return;
 
@@ -248,28 +248,50 @@ function _getSwapParts(container) {
         }
       });
 
-      if (targetCard && grid) {
-        const gridRect = grid.getBoundingClientRect();
-        const cardRect = targetCard.getBoundingClientRect();
-        const targetScrollTop = grid.scrollTop + (cardRect.top - gridRect.top) - 16;
-        grid.scrollTop = Math.max(0, targetScrollTop);
+      if (targetCard) {
+        if (doScroll) {
+          const cardRect = targetCard.getBoundingClientRect();
+          const topbar = viewer.querySelector('.rotate-topbar');
+          const topbarHeight = topbar ? topbar.offsetHeight : 80;
+
+          // 1. Internal grid scroll fallback if grid container is scrollable
+          if (grid.scrollHeight > grid.clientHeight + 10) {
+            const gridRect = grid.getBoundingClientRect();
+            const gridTargetScroll = grid.scrollTop + (cardRect.top - gridRect.top) - 16;
+            grid.scrollTo({ top: Math.max(0, gridTargetScroll), behavior: 'smooth' });
+          }
+
+          // 2. Main page scroll (#main-content): position target card right below sticky topbar
+          const mainContent = document.getElementById('main-content') || document.documentElement;
+          if (mainContent) {
+            const mainRect = mainContent.getBoundingClientRect();
+            const mainTargetScroll = mainContent.scrollTop + (cardRect.top - mainRect.top) - topbarHeight - 16;
+            mainContent.scrollTo({ top: Math.max(0, mainTargetScroll), behavior: 'smooth' });
+          }
+        }
+      } else if (doScroll && cards.length > 0) {
+        pushNotification({
+          type: 'warning',
+          message: 'Page Not Found',
+          detail: `Page ${targetPageNum} is out of range (Total: ${cards.length} page${cards.length === 1 ? '' : 's'}).`,
+        });
       }
     };
 
     if (searchInput) {
-      searchInput.addEventListener('input', performSearch);
-      searchInput.addEventListener('change', performSearch);
+      searchInput.addEventListener('input', () => performSearch(true));
+      searchInput.addEventListener('change', () => performSearch(true));
       searchInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
           e.preventDefault();
-          performSearch();
+          performSearch(true);
         }
       });
     }
     if (searchBtn) {
       searchBtn.addEventListener('click', (e) => {
         e.preventDefault();
-        performSearch();
+        performSearch(true);
       });
     }
   }
@@ -431,6 +453,11 @@ async function _loadPdfIntoViewer(container, file) {
     _showRotateDropzoneThumbnail(file, '#00E5C0');
     viewer.querySelector('.rotate-file-name').textContent = file.name;
     viewer.querySelector('.rotate-page-count').textContent = `${pdfDoc.numPages} page${pdfDoc.numPages === 1 ? '' : 's'}`;
+    
+    // Clear search input on new PDF load
+    const searchInput = viewer.querySelector('.rotate-search-input');
+    if (searchInput) searchInput.value = '';
+
     _buildPageCards(viewer, pdfDoc.numPages);
 
     for (let pageNumber = 1; pageNumber <= pdfDoc.numPages; pageNumber += 1) {
