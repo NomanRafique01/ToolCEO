@@ -43,13 +43,15 @@ export function getBgJob() {
   return _activeBgJob;
 }
 
-export function clearBgJob() {
+export function clearBgJob(silent = false) {
   if (_activeBgJob && _activeBgJob.sse) {
     try { _activeBgJob.sse.close(); } catch (_) {}
   }
   _activeBgJob = null;
   syncBgJobBar();
-  document.dispatchEvent(new CustomEvent('bg-job-cleared'));
+  if (!silent) {
+    document.dispatchEvent(new CustomEvent('bg-job-cleared'));
+  }
 }
 
 export function syncBgJobBar() {

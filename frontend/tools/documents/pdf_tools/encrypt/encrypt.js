@@ -1044,7 +1044,7 @@ async function _submitDecrypt(opts) {
       const json = await res.json().catch(() => ({}));
       const errMsg = json.message || 'Incorrect password or file is invalid.';
 
-      clearBgJob();
+      clearBgJob(true);
 
       if (submitBtn) {
         submitBtn.disabled = false;
@@ -1101,7 +1101,7 @@ async function _submitDecrypt(opts) {
     });
 
   } catch (err) {
-    clearBgJob();
+    clearBgJob(true);
     if (submitBtn) {
       submitBtn.disabled = false;
       submitBtn.innerHTML = origBtnText;
@@ -1250,7 +1250,7 @@ async function _submitVaultUnlock(opts) {
       const json = await res.json().catch(() => ({}));
       const errMsg = json.message || 'Incorrect password or invalid vault file.';
 
-      clearBgJob();
+      clearBgJob(true);
 
       if (submitBtn) {
         submitBtn.disabled = false;
@@ -1307,7 +1307,7 @@ async function _submitVaultUnlock(opts) {
     });
 
   } catch (err) {
-    clearBgJob();
+    clearBgJob(true);
     if (submitBtn) {
       submitBtn.disabled = false;
       submitBtn.innerHTML = origBtnText;
