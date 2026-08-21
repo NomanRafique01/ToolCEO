@@ -873,10 +873,17 @@ export function initDropZone() {
       '.compress-settings-panel, .dz-compress-thumb-remove, .cmp-panel'
     )) return;
     if (!getActiveTool()) { showNoToolWarning(); return; }
-    // If already processing or scanning, ignore — but allow clicks when thumbs are shown
+    // If already processing, scanning, done, or a file thumbnail is currently loaded, do not open file window
     if (dropZone.classList.contains('dz-state-processing')) return;
     if (dropZone.classList.contains('dz-state-scanning'))   return;
     if (dropZone.classList.contains('dz-state-done'))       return;
+    if (
+      dropZone.classList.contains('dz-has-thumb') ||
+      dropZone.classList.contains('dz-has-compress-thumb') ||
+      dropZone.querySelector('.dz-pdf-thumb-wrap, .dz-compress-thumb-wrap')
+    ) {
+      return;
+    }
     // For merge tool with existing queue, a zone click adds more files
     const tool = getActiveTool();
     if (tool && tool.id === 'merge') {
@@ -915,6 +922,13 @@ export function initDropZone() {
     if (!getActiveTool()) { showNoToolWarning(); return; }
     if (dropZone.classList.contains('dz-state-processing')) return;
     if (dropZone.classList.contains('dz-state-scanning'))   return;
+    if (
+      dropZone.classList.contains('dz-has-thumb') ||
+      dropZone.classList.contains('dz-has-compress-thumb') ||
+      dropZone.querySelector('.dz-pdf-thumb-wrap, .dz-compress-thumb-wrap')
+    ) {
+      return;
+    }
     if (e.dataTransfer.files.length > 0) {
       _submitFile(e.dataTransfer.files);
     }

@@ -655,15 +655,21 @@
 .drop-zone.dz-has-thumb .drop-icon,
 .drop-zone.dz-has-thumb .drop-main-text,
 .drop-zone.dz-has-thumb .drop-browse,
-.drop-zone.dz-has-thumb .drop-private {
+.drop-zone.dz-has-thumb .drop-private,
+.drop-zone.dz-has-compress-thumb .drop-icon,
+.drop-zone.dz-has-compress-thumb .drop-main-text,
+.drop-zone.dz-has-compress-thumb .drop-browse,
+.drop-zone.dz-has-compress-thumb .drop-private {
   opacity: 0;
   pointer-events: none;
 }
 
 /* Clear zone background so thumbnail reads cleanly */
-.drop-zone.dz-has-thumb {
+.drop-zone.dz-has-thumb,
+.drop-zone.dz-has-compress-thumb {
   background: transparent !important;
   box-shadow: none !important;
+  cursor: default !important;
 }
 
 .dz-pdf-thumb-wrap {
