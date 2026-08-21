@@ -197,16 +197,63 @@
 .dz-state-processing .drop-icon,
 .dz-state-processing .drop-main-text,
 .dz-state-processing .drop-browse,
+.dz-state-processing .dz-paste-btn,
 .dz-state-processing .drop-private,
 .dz-state-scanning .drop-icon,
 .dz-state-scanning .drop-main-text,
 .dz-state-scanning .drop-browse,
+.dz-state-scanning .dz-paste-btn,
 .dz-state-scanning .drop-private,
 .dz-state-done .drop-icon,
 .dz-state-done .drop-main-text,
 .dz-state-done .drop-browse,
-.dz-state-done .drop-private {
-  display: none;
+.dz-state-done .dz-paste-btn,
+.dz-state-done .drop-private,
+.dz-state-error .dz-paste-btn {
+  display: none !important;
+}
+
+/* ─── PASTE BUTTON IN DROP ZONE ─────────────────────────── */
+
+.dz-paste-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: color-mix(in srgb, var(--dz-color, #00E5C0) 12%, var(--bg-card, #141E1C));
+  border: 1px solid color-mix(in srgb, var(--dz-color, #00E5C0) 35%, transparent);
+  border-radius: 8px;
+  padding: 5px 12px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--dz-color, #00E5C0);
+  cursor: pointer;
+  transition: all 180ms ease;
+  margin-top: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  z-index: 2;
+}
+
+.dz-paste-btn:hover {
+  background: color-mix(in srgb, var(--dz-color, #00E5C0) 22%, var(--bg-card, #141E1C));
+  border-color: var(--dz-color, #00E5C0);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--dz-color, #00E5C0) 25%, transparent);
+}
+
+.dz-paste-btn:active {
+  transform: translateY(0);
+}
+
+.dz-paste-kbd {
+  font-family: inherit;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 5px;
+  border-radius: 4px;
+  background: color-mix(in srgb, var(--dz-color, #00E5C0) 18%, transparent);
+  border: 1px solid color-mix(in srgb, var(--dz-color, #00E5C0) 30%, transparent);
+  color: var(--dz-color, #00E5C0);
+  margin-left: 2px;
 }
 
 /* ── Circular progress overlay — fills zone, centred ── */

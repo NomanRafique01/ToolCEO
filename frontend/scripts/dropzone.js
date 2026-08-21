@@ -875,6 +875,108 @@ async function _submitFile(files) {
   };
 }
 
+// ─── CLIPBOARD PASTE HANDLER ──────────────────────────────────────────────────
+
+async function _handlePasteFromClipboard() {
+  const tool = getActiveTool();
+  if (!tool) {
+    showNoToolWarning();
+    return;
+  }
+
+  const dropZone = document.getElementById('drop-zone');
+  if (dropZone) {
+    if (
+      dropZone.classList.contains('dz-state-processing') ||
+      dropZone.classList.contains('dz-state-scanning') ||
+      dropZone.classList.contains('dz-state-done') ||
+      dropZone.classList.contains('dz-has-thumb') ||
+      dropZone.classList.contains('dz-has-compress-thumb') ||
+      dropZone.classList.contains('dz-has-encrypt-thumb') ||
+      dropZone.classList.contains('dz-has-merge-thumbs') ||
+      dropZone.querySelector('.dz-pdf-thumb-wrap, .dz-compress-thumb-wrap, .dz-encrypt-thumb-wrap, .dz-merge-thumb-strip')
+    ) {
+      return;
+    }
+  }
+
+  try {
+    const files = [];
+
+    // Method 1: Electron IPC (Reads Windows Explorer copied files or clipboard image directly)
+    if (window.toolceo && window.toolceo.readClipboardFile) {
+      const result = await window.toolceo.readClipboardFile();
+      if (result.ok && result.buffer) {
+        const blob = new Blob([result.buffer], { type: result.type || 'application/octet-stream' });
+        const file = new File([blob], result.name || 'clipboard_file', {
+          type: result.type || 'application/octet-stream',
+          lastModified: Date.now(),
+        });
+        files.push(file);
+      }
+    }
+
+    // Method 2: Web Navigator Clipboard API fallback
+    if (files.length === 0 && navigator.clipboard && navigator.clipboard.read) {
+      try {
+        const items = await navigator.clipboard.read();
+        for (const item of items) {
+          for (const type of item.types) {
+            if (type.startsWith('image/') || type === 'application/pdf' || type.startsWith('video/') || type.startsWith('audio/')) {
+              const blob = await item.getType(type);
+              const ext = type.split('/')[1] || 'bin';
+              const fname = `clipboard_file_${Date.now()}.${ext === 'jpeg' ? 'jpg' : ext}`;
+              const file = new File([blob], fname, { type: blob.type, lastModified: Date.now() });
+              files.push(file);
+              break;
+            }
+          }
+        }
+      } catch (_) {}
+    }
+
+    // Method 3: Text file path fallback
+    if (files.length === 0 && navigator.clipboard && navigator.clipboard.readText) {
+      try {
+        const text = await navigator.clipboard.readText();
+        if (text && (text.includes(':\\') || text.startsWith('/') || text.startsWith('file://'))) {
+          const cleanPath = text.trim().replace(/^file:\/\/\/?/, '');
+          if (window.toolceo && window.toolceo.readLocalFile) {
+            const res = await window.toolceo.readLocalFile(cleanPath);
+            if (res.ok) {
+              const blob = new Blob([res.buffer], { type: 'application/octet-stream' });
+              const file = new File([blob], res.name, { type: 'application/octet-stream', lastModified: Date.now() });
+              files.push(file);
+            }
+          }
+        }
+      } catch (_) {}
+    }
+
+    if (files.length > 0) {
+      pushNotification({
+        type: 'info',
+        message: 'File Pasted from Clipboard',
+        detail: files[0].name,
+      });
+      _submitFile(files);
+    } else {
+      pushNotification({
+        type: 'warning',
+        message: 'No File Found in Clipboard',
+        detail: 'Copy a file, screenshot, or document first, then click Paste.',
+      });
+    }
+  } catch (err) {
+    console.error('Clipboard paste failed:', err);
+    pushNotification({
+      type: 'warning',
+      message: 'Paste Failed',
+      detail: err.message || 'Unable to access clipboard data.',
+    });
+  }
+}
+
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 
 export function initDropZone() {
@@ -906,6 +1008,60 @@ export function initDropZone() {
     }
   });
 
+  // ── Paste Button Click ────────────────────────────────────────────────────
+  const pasteBtn = document.getElementById('dz-paste-btn');
+  if (pasteBtn) {
+    pasteBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      _handlePasteFromClipboard();
+    });
+  }
+
+  // ── Global Keyboard Paste Event (Ctrl+V / Cmd+V) ──────────────────────────
+  window.addEventListener('paste', async (e) => {
+    const activeEl = document.activeElement;
+    if (activeEl && (activeEl.tagName === 'INPUT' || activeEl.tagName === 'TEXTAREA' || activeEl.isContentEditable)) {
+      return;
+    }
+
+    const tool = getActiveTool();
+    if (!tool) return;
+
+    if (e.clipboardData && e.clipboardData.files && e.clipboardData.files.length > 0) {
+      e.preventDefault();
+      const files = Array.from(e.clipboardData.files);
+      pushNotification({
+        type: 'info',
+        message: 'File Pasted from Clipboard',
+        detail: files[0].name,
+      });
+      _submitFile(files);
+      return;
+    }
+
+    if (e.clipboardData && e.clipboardData.items) {
+      const files = [];
+      for (const item of e.clipboardData.items) {
+        if (item.kind === 'file') {
+          const file = item.getAsFile();
+          if (file) files.push(file);
+        }
+      }
+      if (files.length > 0) {
+        e.preventDefault();
+        pushNotification({
+          type: 'info',
+          message: 'File Pasted from Clipboard',
+          detail: files[0].name,
+        });
+        _submitFile(files);
+        return;
+      }
+    }
+
+    _handlePasteFromClipboard();
+  });
+
   // ── Click ──────────────────────────────────────────────────────────────────
   dropZone.addEventListener('click', (e) => {
     if (e.target === fileInput) return;
@@ -914,7 +1070,7 @@ export function initDropZone() {
       '.dz-download-wrap, .dz-error-wrap, .dz-pdf-thumb-remove, ' +
       '.dz-merge-card-remove, .dz-merge-add-btn, .merge-queue-panel, .split-info-panel, ' +
       '.compress-settings-panel, .dz-compress-thumb-remove, .cmp-panel, ' +
-      '.encrypt-settings-panel, .dz-encrypt-thumb-remove, .enc-panel'
+      '.encrypt-settings-panel, .dz-encrypt-thumb-remove, .enc-panel, .dz-paste-btn'
     )) return;
     if (!getActiveTool()) { showNoToolWarning(); return; }
     // If already processing, scanning, done, or a file thumbnail is currently loaded, do not open file window

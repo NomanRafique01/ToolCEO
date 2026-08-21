@@ -512,6 +512,70 @@ app.whenReady().then(async () => {
     }
   });
 
+  // ── IPC: Read clipboard file / image and return bytes to renderer ──────────
+  ipcMain.handle('read-clipboard-file', () => {
+    try {
+      const { clipboard } = require('electron');
+
+      // 1. Check if an image is in clipboard (screenshot or copied image)
+      const image = clipboard.readImage();
+      if (image && !image.isEmpty()) {
+        const pngBuf = image.toPNG();
+        return {
+          ok: true,
+          name: `clipboard_image_${Date.now()}.png`,
+          type: 'image/png',
+          buffer: pngBuf.buffer.slice(pngBuf.byteOffset, pngBuf.byteOffset + pngBuf.byteLength),
+        };
+      }
+
+      // 2. Check Windows Explorer copied file (FileNameW)
+      if (process.platform === 'win32') {
+        const rawBuf = clipboard.readBuffer('FileNameW');
+        if (rawBuf && rawBuf.length > 0) {
+          const filePath = rawBuf.toString('utf16le').replace(/\0+$/, '').trim();
+          if (filePath && fs.existsSync(filePath)) {
+            const stats = fs.statSync(filePath);
+            if (stats.isFile()) {
+              const buf = fs.readFileSync(filePath);
+              return {
+                ok: true,
+                name: path.basename(filePath),
+                type: 'application/octet-stream',
+                buffer: buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength),
+              };
+            }
+          }
+        }
+      }
+
+      // 3. Check plain text (copied file path string or file:// URL)
+      const text = clipboard.readText();
+      if (text) {
+        let cleanPath = text.trim().replace(/^file:\/\/\/?/, '');
+        if (cleanPath.startsWith('"') && cleanPath.endsWith('"')) {
+          cleanPath = cleanPath.slice(1, -1);
+        }
+        if (cleanPath && fs.existsSync(cleanPath)) {
+          const stats = fs.statSync(cleanPath);
+          if (stats.isFile()) {
+            const buf = fs.readFileSync(cleanPath);
+            return {
+              ok: true,
+              name: path.basename(cleanPath),
+              type: 'application/octet-stream',
+              buffer: buf.buffer.slice(buf.byteOffset, buf.byteOffset + buf.byteLength),
+            };
+          }
+        }
+      }
+
+      return { ok: false, error: 'No file or image found in clipboard' };
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
+  });
+
   // ── Generate icons + register file association (all platforms) ────────────
   await ensureVaultIcons();
   registerFileAssociation();   // fire-and-forget — non-blocking for window open

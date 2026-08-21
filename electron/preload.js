@@ -24,6 +24,9 @@ contextBridge.exposeInMainWorld('toolceo', {
   readLocalFile: (filePath) =>
     ipcRenderer.invoke('read-local-file', filePath),
 
+  readClipboardFile: () =>
+    ipcRenderer.invoke('read-clipboard-file'),
+
   // ── Vault file: subscribe to vault-file-open events from main process ────────
   // callback: (filePath: string) => void
   // Returns an unsubscribe function.
