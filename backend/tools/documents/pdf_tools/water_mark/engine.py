@@ -19,14 +19,18 @@ import fitz  # PyMuPDF
 import jobs as job_store
 
 
+# Values MUST be PyMuPDF Base-14 short names (see fitz.Base14_fontdict).
+# Times-Roman is "tiro", not "times" — "times" raises: need font file or buffer.
 FONT_MAP = {
     "helvetica": "helv",
     "arial": "helv",
     "sans-serif": "helv",
     "helv": "helv",
-    "times": "times",
-    "times new roman": "times",
-    "serif": "times",
+    "times": "tiro",
+    "times-roman": "tiro",
+    "times new roman": "tiro",
+    "serif": "tiro",
+    "tiro": "tiro",
     "courier": "cour",
     "courier new": "cour",
     "monospace": "cour",
@@ -67,8 +71,16 @@ def _parse_color(hex_str: str) -> tuple[float, float, float]:
 
 
 def _resolve_font(font_family: str) -> str:
+    """Map UI / CSS family names to a PyMuPDF Base-14 short name."""
     norm = (font_family or "helv").lower().strip()
-    return FONT_MAP.get(norm, "helv")
+    resolved = FONT_MAP.get(norm, "helv")
+    # Guard against unknown aliases that are not in Base-14
+    try:
+        if hasattr(fitz, "Base14_fontdict") and resolved.lower() not in fitz.Base14_fontdict:
+            return "helv"
+    except Exception:
+        pass
+    return resolved
 
 
 def _text_width(text: str, font_name: str, font_size: float, spacing: float) -> float:
@@ -235,15 +247,16 @@ def apply_watermark(
                 y_pct=y_pct,
             )
         except Exception:
-            # Last-resort: plain centered insert without morph / spacing
+            # Last-resort: plain centered insert with Base-14 Helvetica
+            safe_font = "helv"
             rect = page.rect
             cx = (x_pct / 100.0) * rect.width
             cy = (y_pct / 100.0) * rect.height
-            tw = _text_width(text, font_name, font_size, 0.0)
+            tw = _text_width(text, safe_font, font_size, 0.0)
             page.insert_text(
                 fitz.Point(cx - tw / 2.0, cy + font_size * 0.35),
                 text,
-                fontname=font_name,
+                fontname=safe_font,
                 fontsize=font_size,
                 color=rgb,
                 fill_opacity=opacity,

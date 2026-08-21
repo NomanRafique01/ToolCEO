@@ -127,8 +127,15 @@ function _getSwapParts(container) {
   const cardView = container.querySelector('#pdf-tools-card-view');
   let   viewer   = container.querySelector('#wm-viewer');
 
-  // Rebuild if missing the page preview or the Custom Color section
-  if (viewer && (!viewer.querySelector('.wm-preview-col') || !viewer.querySelector('#wm-color-hex'))) {
+  // Rebuild if missing preview / custom color, or outdated event wiring
+  if (
+    viewer &&
+    (
+      !viewer.querySelector('.wm-preview-col') ||
+      !viewer.querySelector('#wm-color-hex') ||
+      viewer.dataset.wmVer !== '4'
+    )
+  ) {
     viewer.remove();
     viewer = null;
   }
@@ -137,6 +144,7 @@ function _getSwapParts(container) {
     viewer = document.createElement('div');
     viewer.id        = 'wm-viewer';
     viewer.className = 'wm-viewer';
+    viewer.dataset.wmVer = '4';
     viewer.innerHTML = _buildViewerHTML();
     swap.appendChild(viewer);
 
@@ -358,7 +366,10 @@ function _wireViewerEvents(viewer) {
     if (!_wmFile) return;
     const nameEl  = viewer.querySelector('#wm-filename-input');
     const outName = (nameEl ? nameEl.value.trim() : '') || `${_wmBaseName}_watermarked`;
-    _submitWatermark(_wmFile, { ..._opts }, outName);
+    // Snapshot live control values so output matches the preview exactly
+    const opts = _collectOptsFromViewer(viewer);
+    _scrollMainToTool();
+    _submitWatermark(_wmFile, opts, outName);
   });
 
   const container = viewer.querySelector('#wm-frame-container');
@@ -798,31 +809,89 @@ export async function handleWatermarkFilePicked(file) {
 
 // ─── SUBMIT ───────────────────────────────────────────────────────────────────
 
+/** Read watermark options from the editor UI + drag position (preview truth). */
+function _collectOptsFromViewer(viewer) {
+  const textInput   = viewer?.querySelector('#wm-text');
+  const fontSelect  = viewer?.querySelector('#wm-font');
+  const sizeSlider  = viewer?.querySelector('#wm-size');
+  const colorInput  = viewer?.querySelector('#wm-color');
+  const colorHex    = viewer?.querySelector('#wm-color-hex');
+  const opacSlider  = viewer?.querySelector('#wm-opacity');
+  const spaceSlider = viewer?.querySelector('#wm-space');
+  const angleSlider = viewer?.querySelector('#wm-angle');
+
+  let color = (colorInput?.value || colorHex?.value || _opts.color || '#CC0000').trim();
+  if (color && !color.startsWith('#')) color = `#${color}`;
+
+  const opacityPct = opacSlider ? parseFloat(opacSlider.value) : Math.round((_opts.opacity ?? 0.73) * 100);
+
+  return {
+    text:        (textInput?.value ?? _opts.text ?? 'CONFIDENTIAL').trim() || 'CONFIDENTIAL',
+    font_family: fontSelect?.value || _opts.font_family || 'helv',
+    font_size:   parseFloat(sizeSlider?.value ?? _opts.font_size ?? 87),
+    color:       /^#[0-9A-Fa-f]{6}$/i.test(color) ? color.toUpperCase() : (_opts.color || '#CC0000'),
+    opacity:     Math.max(0.05, Math.min(1, opacityPct / 100)),
+    angle:       parseFloat(angleSlider?.value ?? _opts.angle ?? -45),
+    spacing:     parseFloat(spaceSlider?.value ?? _opts.spacing ?? 0),
+    x_pct:       Number.isFinite(_opts.x_pct) ? _opts.x_pct : 50,
+    y_pct:       Number.isFinite(_opts.y_pct) ? _opts.y_pct : 50,
+  };
+}
+
+function _scrollMainToTool() {
+  const mainContent = document.getElementById('main-content');
+  if (!mainContent) return;
+  // Instant jump — smooth scroll gets cancelled when the tall editor unmounts
+  mainContent.scrollTop = 0;
+}
+
+function _formNum(value, fallback) {
+  const n = Number(value);
+  return Number.isFinite(n) ? n : fallback;
+}
+
 async function _submitWatermark(file, opts, outputFilename) {
   const tool = getActiveTool();
   if (!tool) return;
+
+  // Normalize once — never use || for numeric fields (0° / 0% must stay 0)
+  const payload = {
+    text:        (opts.text || 'CONFIDENTIAL').trim() || 'CONFIDENTIAL',
+    font_family: opts.font_family || 'helv',
+    font_size:   _formNum(opts.font_size, 87),
+    color:       opts.color || '#CC0000',
+    opacity:     _formNum(opts.opacity, 0.73),
+    angle:       _formNum(opts.angle, -45),
+    spacing:     _formNum(opts.spacing, 0),
+    x_pct:       _formNum(opts.x_pct, 50),
+    y_pct:       _formNum(opts.y_pct, 50),
+  };
 
   // Close the editor view first — shows drop zone progress
   _closeViewer(_activeContainer);
 
   // Scroll back up to the tool / drop zone (same as Merge PDFs)
-  const mainContent = document.getElementById('main-content');
-  if (mainContent) mainContent.scrollTo({ top: 0, behavior: 'smooth' });
+  _scrollMainToTool();
+  requestAnimationFrame(() => {
+    _scrollMainToTool();
+    requestAnimationFrame(_scrollMainToTool);
+  });
+  setTimeout(_scrollMainToTool, 80);
 
   const zone  = document.getElementById('drop-zone');
   const color = tool.color || '#38BDF8';
 
   const fd = new FormData();
   fd.append('file', file);
-  fd.append('text',            opts.text        || 'CONFIDENTIAL');
-  fd.append('font_family',     opts.font_family || 'helv');
-  fd.append('font_size',       String(opts.font_size  || 36));
-  fd.append('color',           opts.color       || '#FF0000');
-  fd.append('opacity',         String(opts.opacity     || 0.5));
-  fd.append('angle',           String(opts.angle       || -45));
-  fd.append('spacing',         String(opts.spacing     || 0));
-  fd.append('x_pct',           String(opts.x_pct       || 50));
-  fd.append('y_pct',           String(opts.y_pct       || 50));
+  fd.append('text',            payload.text);
+  fd.append('font_family',     payload.font_family);
+  fd.append('font_size',       String(payload.font_size));
+  fd.append('color',           payload.color);
+  fd.append('opacity',         String(payload.opacity));
+  fd.append('angle',           String(payload.angle));
+  fd.append('spacing',         String(payload.spacing));
+  fd.append('x_pct',           String(payload.x_pct));
+  fd.append('y_pct',           String(payload.y_pct));
   fd.append('output_filename', outputFilename);
 
   showProgress(zone, 10, color, 'Applying Watermark…');
@@ -890,7 +959,7 @@ async function _submitWatermark(file, opts, outputFilename) {
         }
       };
       setTimeout(() => showDownload(zone, dlName, jobId, color, onReset), 200);
-      document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'smooth' });
+      _scrollMainToTool();
       return;
     }
 
