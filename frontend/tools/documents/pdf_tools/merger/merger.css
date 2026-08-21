@@ -31,6 +31,7 @@
 .drop-zone.dz-has-merge-thumbs .drop-icon,
 .drop-zone.dz-has-merge-thumbs .drop-main-text,
 .drop-zone.dz-has-merge-thumbs .drop-browse,
+.drop-zone.dz-has-merge-thumbs .dz-paste-btn,
 .drop-zone.dz-has-merge-thumbs .drop-private {
   display: none !important;
 }

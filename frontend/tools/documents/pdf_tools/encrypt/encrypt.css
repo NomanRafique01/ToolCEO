@@ -24,6 +24,7 @@
 .drop-zone.dz-has-encrypt-thumb .drop-icon,
 .drop-zone.dz-has-encrypt-thumb .drop-main-text,
 .drop-zone.dz-has-encrypt-thumb .drop-browse,
+.drop-zone.dz-has-encrypt-thumb .dz-paste-btn,
 .drop-zone.dz-has-encrypt-thumb .drop-private {
   display: none !important;
 }

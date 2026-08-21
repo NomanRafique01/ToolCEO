@@ -698,22 +698,36 @@
 
 /* ─── PDF THUMBNAIL (Windows large-icon style) ───────────── */
 
-/* ── When a thumbnail is shown, hide the default icon + browse text ── */
+/* ── When a thumbnail is shown, hide the default icon + browse text + paste button ── */
 .drop-zone.dz-has-thumb .drop-icon,
 .drop-zone.dz-has-thumb .drop-main-text,
 .drop-zone.dz-has-thumb .drop-browse,
+.drop-zone.dz-has-thumb .dz-paste-btn,
 .drop-zone.dz-has-thumb .drop-private,
 .drop-zone.dz-has-compress-thumb .drop-icon,
 .drop-zone.dz-has-compress-thumb .drop-main-text,
 .drop-zone.dz-has-compress-thumb .drop-browse,
-.drop-zone.dz-has-compress-thumb .drop-private {
-  opacity: 0;
-  pointer-events: none;
+.drop-zone.dz-has-compress-thumb .dz-paste-btn,
+.drop-zone.dz-has-compress-thumb .drop-private,
+.drop-zone.dz-has-encrypt-thumb .drop-icon,
+.drop-zone.dz-has-encrypt-thumb .drop-main-text,
+.drop-zone.dz-has-encrypt-thumb .drop-browse,
+.drop-zone.dz-has-encrypt-thumb .dz-paste-btn,
+.drop-zone.dz-has-encrypt-thumb .drop-private,
+.drop-zone.dz-has-merge-thumbs .drop-icon,
+.drop-zone.dz-has-merge-thumbs .drop-main-text,
+.drop-zone.dz-has-merge-thumbs .drop-browse,
+.drop-zone.dz-has-merge-thumbs .dz-paste-btn,
+.drop-zone.dz-has-merge-thumbs .drop-private {
+  display: none !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
 }
 
 /* Clear zone background so thumbnail reads cleanly */
 .drop-zone.dz-has-thumb,
 .drop-zone.dz-has-compress-thumb,
+.drop-zone.dz-has-encrypt-thumb,
 .drop-zone.dz-has-merge-thumbs {
   background: transparent !important;
   box-shadow: none !important;

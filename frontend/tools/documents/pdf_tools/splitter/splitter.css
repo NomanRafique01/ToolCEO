@@ -173,6 +173,7 @@
 .drop-zone.dz-has-thumb .drop-icon,
 .drop-zone.dz-has-thumb .drop-main-text,
 .drop-zone.dz-has-thumb .drop-browse,
+.drop-zone.dz-has-thumb .dz-paste-btn,
 .drop-zone.dz-has-thumb .drop-private {
   display: none !important;
 }

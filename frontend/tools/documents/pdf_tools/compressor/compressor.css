@@ -22,6 +22,7 @@
 .drop-zone.dz-has-compress-thumb .drop-icon,
 .drop-zone.dz-has-compress-thumb .drop-main-text,
 .drop-zone.dz-has-compress-thumb .drop-browse,
+.drop-zone.dz-has-compress-thumb .dz-paste-btn,
 .drop-zone.dz-has-compress-thumb .drop-private {
   display: none !important;
 }
