@@ -160,7 +160,7 @@ function _showSettingsPanel(pageCount, encInfo, color) {
 
   const tabsHtml = _isTceo
     ? `<div class="enc-tabs">
-        <button type="button" class="enc-tab-btn enc-tab-btn--active" data-tab="vault">
+        <button type="button" class="enc-tab-btn enc-tab-btn--active enc-tab-btn--single" data-tab="vault" style="cursor:default">
           ${svgShield} ToolCEO Vault Unlock
         </button>
        </div>`
@@ -578,9 +578,18 @@ function _wireDecryptEvents(panel, color) {
     const pass = decPassInput ? decPassInput.value : '';
     if (submitBtn) submitBtn.disabled = pass.length === 0;
     if (decFieldError) decFieldError.style.display = 'none';
+    if (decPassInput) decPassInput.classList.remove('enc-input--error');
   };
 
-  if (decPassInput) decPassInput.addEventListener('input', _validate);
+  if (decPassInput) {
+    decPassInput.addEventListener('input', _validate);
+    decPassInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && submitBtn && !submitBtn.disabled) {
+        e.preventDefault();
+        submitBtn.click();
+      }
+    });
+  }
 
   if (submitBtn) {
     submitBtn.addEventListener('click', () => {
@@ -664,13 +673,24 @@ function _wireVaultLockEvents(panel, color) {
 function _wireVaultUnlockEvents(panel, color) {
   const passInput = panel.querySelector('#vlt-pass');
   const submitBtn = panel.querySelector('#enc-submit-btn');
+  const vltFieldError = panel.querySelector('#vlt-field-error');
 
   const _validate = () => {
     const pass = passInput ? passInput.value : '';
     if (submitBtn) submitBtn.disabled = pass.length === 0;
+    if (vltFieldError) vltFieldError.style.display = 'none';
+    if (passInput) passInput.classList.remove('enc-input--error');
   };
 
-  if (passInput) passInput.addEventListener('input', _validate);
+  if (passInput) {
+    passInput.addEventListener('input', _validate);
+    passInput.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && submitBtn && !submitBtn.disabled) {
+        e.preventDefault();
+        submitBtn.click();
+      }
+    });
+  }
 
   if (submitBtn) {
     submitBtn.addEventListener('click', () => {
@@ -763,12 +783,24 @@ export async function handleEncryptFilePicked(file) {
 
   const fname  = file.name.toLowerCase();
   const isPdf  = fname.endsWith('.pdf')  || file.type === 'application/pdf';
-  const isTceo = fname.endsWith('.tceo') || fname.endsWith('.tceo.pdf');
+  let isTceo   = fname.endsWith('.tceo') || fname.endsWith('.tceo.pdf');
+
+  if (!isTceo && file.size >= 107) {
+    try {
+      const headerBlob = file.slice(0, 8);
+      const buffer = await headerBlob.arrayBuffer();
+      const headerStr = new TextDecoder().decode(buffer);
+      if (headerStr.startsWith('TCEOVLT')) {
+        isTceo = true;
+      }
+    } catch (_) {}
+  }
 
   if (!isPdf && !isTceo) {
     pushNotification({
       type: 'warning',
-      message: 'Invalid File Format. Please select a valid PDF or .tceo Vault file.'
+      message: 'Invalid File Format',
+      detail: 'Please select a valid PDF or .tceo Vault file.',
     });
     return;
   }
@@ -807,6 +839,11 @@ export async function handleEncryptFilePicked(file) {
     resetZoneContent(zone);
     _showEncryptThumb(zone, file, color, null);
     _showSettingsPanel(1, null, color);
+
+    setTimeout(() => {
+      const passInp = document.querySelector('#vlt-pass');
+      if (passInp) passInp.focus();
+    }, 150);
     return;
   }
 
@@ -964,10 +1001,19 @@ async function _submitDecrypt(opts) {
   const zone = document.getElementById('drop-zone');
   if (!zone) return;
 
-  const panel = document.getElementById('encrypt-settings-panel');
-  if (panel) panel.remove();
-  resetZoneContent(zone);
-  showProgress(zone, 15, color, 'Unlocking PDF…');
+  const panel     = document.getElementById('encrypt-settings-panel');
+  const passInput = panel ? panel.querySelector('#dec-pass') : null;
+  const errEl     = panel ? panel.querySelector('#dec-field-error') : null;
+  const submitBtn = panel ? panel.querySelector('#enc-submit-btn') : null;
+
+  if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+  if (passInput) { passInput.classList.remove('enc-input--error'); }
+
+  const origBtnText = submitBtn ? submitBtn.innerHTML : '';
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `<span class="enc-btn-spinner"></span> Unlocking…`;
+  }
 
   let outName = (output_filename || 'unlocked').trim();
   if (!outName.toLowerCase().endsWith('.pdf')) outName += '.pdf';
@@ -980,7 +1026,6 @@ async function _submitDecrypt(opts) {
   fd.append('password', password);
 
   try {
-    updateProgress(zone, 50, color);
     const bgMid = getBgJob();
     if (bgMid) { bgMid.progress = 50; syncBgJobBar(); }
 
@@ -989,41 +1034,38 @@ async function _submitDecrypt(opts) {
       body: fd,
     });
 
-    if (res.status === 400) {
-      const json = await res.json().catch(() => ({}));
-      const errCode = json.error || '';
-      const errMsg  = json.message || '';
-      if (
-        errCode === 'wrong_password' ||
-        errCode === 'incorrect_password' ||
-        errMsg.toLowerCase().includes('password')
-      ) {
-        clearBgJob();
-        resetZoneContent(zone);
-        if (_encryptFile) _showEncryptThumb(zone, _encryptFile, color, _thumbDataUri);
-        _showSettingsPanel(_encryptPageCount, _encInfo, color);
-
-        const restoredPanel = document.getElementById('encrypt-settings-panel');
-        if (restoredPanel) {
-          const errEl = restoredPanel.querySelector('#dec-field-error');
-          if (errEl) {
-            errEl.style.display = 'block';
-            errEl.textContent = errMsg || 'Incorrect password. Try again.';
-          }
-        }
-        return;
-      }
-      throw new Error(errMsg || 'Decryption failed (400)');
-    }
-
     if (!res.ok) {
       const json = await res.json().catch(() => ({}));
-      throw new Error(json.message || `Decryption failed (${res.status})`);
+      const errMsg = json.message || 'Incorrect password or file is invalid.';
+
+      clearBgJob();
+
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = origBtnText;
+      }
+
+      if (passInput) {
+        passInput.classList.add('enc-input--error');
+        passInput.focus();
+        passInput.select();
+      }
+      if (errEl) {
+        errEl.style.display = 'block';
+        errEl.textContent = errMsg;
+      }
+
+      pushNotification({
+        type: 'error',
+        message: 'Incorrect Password',
+        detail: errMsg,
+      });
+
+      return;
     }
 
     const blob = await res.blob();
 
-    updateProgress(zone, 100, color);
     const bgDone = getBgJob();
     if (bgDone) {
       bgDone.progress = 100;
@@ -1043,18 +1085,29 @@ async function _submitDecrypt(opts) {
       }
     };
 
-    setTimeout(() => {
-      showDownloadBlobCard(zone, blob, outName, color, resetCb);
-      pushNotification({
-        type: 'success',
-        message: 'PDF Unlocked Successfully',
-        detail: outName,
-      });
-    }, 200);
+    removeEncryptPanel();
+    resetZoneContent(zone);
+    showDownloadBlobCard(zone, blob, outName, color, resetCb);
+    pushNotification({
+      type: 'success',
+      message: 'PDF Unlocked Successfully',
+      detail: outName,
+    });
 
   } catch (err) {
     clearBgJob();
-    showError(zone, err.message || 'Decryption failed.');
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = origBtnText;
+    }
+    if (passInput) {
+      passInput.classList.add('enc-input--error');
+      passInput.focus();
+    }
+    if (errEl) {
+      errEl.style.display = 'block';
+      errEl.textContent = err.message || 'Decryption failed.';
+    }
     pushNotification({
       type: 'error',
       message: 'Decryption Failed',
@@ -1148,10 +1201,19 @@ async function _submitVaultUnlock(opts) {
   const zone = document.getElementById('drop-zone');
   if (!zone) return;
 
-  const panel = document.getElementById('encrypt-settings-panel');
-  if (panel) panel.remove();
-  resetZoneContent(zone);
-  showProgress(zone, 15, color, 'Unlocking ToolCEO Vault…');
+  const panel     = document.getElementById('encrypt-settings-panel');
+  const passInput = panel ? panel.querySelector('#vlt-pass') : null;
+  const errEl     = panel ? panel.querySelector('#vlt-field-error') : null;
+  const submitBtn = panel ? panel.querySelector('#enc-submit-btn') : null;
+
+  if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
+  if (passInput) { passInput.classList.remove('enc-input--error'); }
+
+  const origBtnText = submitBtn ? submitBtn.innerHTML : '';
+  if (submitBtn) {
+    submitBtn.disabled = true;
+    submitBtn.innerHTML = `<span class="enc-btn-spinner"></span> Unlocking Vault…`;
+  }
 
   let outName = (output_filename || 'unlocked').trim();
   if (!outName.toLowerCase().endsWith('.pdf')) outName += '.pdf';
@@ -1164,7 +1226,6 @@ async function _submitVaultUnlock(opts) {
   fd.append('password', password);
 
   try {
-    updateProgress(zone, 50, color);
     const bgMid = getBgJob();
     if (bgMid) { bgMid.progress = 50; syncBgJobBar(); }
 
@@ -1173,41 +1234,38 @@ async function _submitVaultUnlock(opts) {
       body: fd,
     });
 
-    if (res.status === 400) {
-      const json = await res.json().catch(() => ({}));
-      const errCode = json.error || '';
-      const errMsg  = json.message || '';
-      if (
-        errCode === 'wrong_password' ||
-        errCode === 'incorrect_password' ||
-        errMsg.toLowerCase().includes('password')
-      ) {
-        clearBgJob();
-        resetZoneContent(zone);
-        if (_encryptFile) _showEncryptThumb(zone, _encryptFile, color, null);
-        _showSettingsPanel(1, null, color);
-
-        const restoredPanel = document.getElementById('encrypt-settings-panel');
-        if (restoredPanel) {
-          const errEl = restoredPanel.querySelector('#vlt-field-error');
-          if (errEl) {
-            errEl.style.display = 'block';
-            errEl.textContent = errMsg || 'Incorrect password or invalid vault file.';
-          }
-        }
-        return;
-      }
-      throw new Error(errMsg || 'Vault Unlock failed (400)');
-    }
-
     if (!res.ok) {
       const json = await res.json().catch(() => ({}));
-      throw new Error(json.message || `Vault Unlock failed (${res.status})`);
+      const errMsg = json.message || 'Incorrect password or invalid vault file.';
+
+      clearBgJob();
+
+      if (submitBtn) {
+        submitBtn.disabled = false;
+        submitBtn.innerHTML = origBtnText;
+      }
+
+      if (passInput) {
+        passInput.classList.add('enc-input--error');
+        passInput.focus();
+        passInput.select();
+      }
+      if (errEl) {
+        errEl.style.display = 'block';
+        errEl.textContent = errMsg;
+      }
+
+      pushNotification({
+        type: 'error',
+        message: 'Incorrect Password',
+        detail: errMsg,
+      });
+
+      return;
     }
 
     const blob = await res.blob();
 
-    updateProgress(zone, 100, color);
     const bgDone = getBgJob();
     if (bgDone) {
       bgDone.progress = 100;
@@ -1227,18 +1285,29 @@ async function _submitVaultUnlock(opts) {
       }
     };
 
-    setTimeout(() => {
-      showDownloadBlobCard(zone, blob, outName, color, resetCb);
-      pushNotification({
-        type: 'success',
-        message: 'PDF Recovered & Unlocked Successfully',
-        detail: outName,
-      });
-    }, 200);
+    removeEncryptPanel();
+    resetZoneContent(zone);
+    showDownloadBlobCard(zone, blob, outName, color, resetCb);
+    pushNotification({
+      type: 'success',
+      message: 'PDF Recovered & Unlocked Successfully',
+      detail: outName,
+    });
 
   } catch (err) {
     clearBgJob();
-    showError(zone, err.message || 'Vault Unlock failed.');
+    if (submitBtn) {
+      submitBtn.disabled = false;
+      submitBtn.innerHTML = origBtnText;
+    }
+    if (passInput) {
+      passInput.classList.add('enc-input--error');
+      passInput.focus();
+    }
+    if (errEl) {
+      errEl.style.display = 'block';
+      errEl.textContent = err.message || 'Vault Unlock failed.';
+    }
     pushNotification({
       type: 'error',
       message: 'Vault Unlock Failed',

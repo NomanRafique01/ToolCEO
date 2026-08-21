@@ -728,3 +728,38 @@
   color: var(--text-muted);
   font-weight: 400;
 }
+
+/* ── Loading Spinner & Error Styling ── */
+
+.enc-btn-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(0, 0, 0, 0.25);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: enc-spin 600ms linear infinite;
+}
+
+@keyframes enc-spin {
+  to { transform: rotate(360deg); }
+}
+
+.enc-input.enc-input--error {
+  border-color: #F87171 !important;
+  box-shadow: 0 0 0 2px rgba(248, 113, 113, 0.25) !important;
+  animation: enc-shake 300ms ease;
+}
+
+@keyframes enc-shake {
+  0%, 100% { transform: translateX(0); }
+  20%, 60% { transform: translateX(-4px); }
+  40%, 80% { transform: translateX(4px); }
+}
+
+.enc-tab-btn--single {
+  justify-content: center;
+  font-weight: 700;
+  cursor: default !important;
+}
+
