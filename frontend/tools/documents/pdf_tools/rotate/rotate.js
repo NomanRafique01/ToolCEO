@@ -10,7 +10,7 @@ import { pushNotification } from '../../../../scripts/notificationStore.js';
 const BACKEND = 'http://127.0.0.1:8000';
 const PDFJS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
 const PDFJS_WORKER_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
-const THUMBNAIL_SCALE = 0.4;
+const THUMBNAIL_SCALE = 1.5; // High definition scale for crisp page previews
 
 let _fileInput = null;
 let _selectedFile = null;
@@ -184,6 +184,13 @@ function _getSwapParts(container) {
           <span class="rotate-file-name">No PDF selected</span>
           <span class="rotate-page-count">0 pages</span>
         </div>
+        <div class="rotate-search-wrap">
+          <svg class="rotate-search-icon" width="14" height="14" viewBox="0 0 16 16" fill="none">
+            <circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.3"/>
+            <path d="M11 11L14 14" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+          </svg>
+          <input class="rotate-search-input" type="text" placeholder="Go to page (e.g. 5)..." aria-label="Go to page" />
+        </div>
         <div class="rotate-actions">
           <button class="rotate-action-btn" type="button" data-rotate-all="left">Rotate All Left &#8634;</button>
           <button class="rotate-action-btn" type="button" data-rotate-all="right">Rotate All Right &#8635;</button>
@@ -197,6 +204,33 @@ function _getSwapParts(container) {
     viewer.querySelector('[data-rotate-all="left"]').addEventListener('click', () => _rotateAll(-90, viewer));
     viewer.querySelector('[data-rotate-all="right"]').addEventListener('click', () => _rotateAll(90, viewer));
     viewer.querySelector('.rotate-save-btn').addEventListener('click', () => _applyAndSave(viewer));
+
+    // Page search functionality
+    const searchInput = viewer.querySelector('.rotate-search-input');
+    if (searchInput) {
+      searchInput.addEventListener('input', (e) => {
+        const val = e.target.value.trim();
+        const cards = viewer.querySelectorAll('.rotate-page-card');
+        if (!val) {
+          cards.forEach((c) => c.classList.remove('rotate-card-highlight'));
+          return;
+        }
+
+        const matchNum = val.match(/\d+/);
+        const targetPageNum = matchNum ? parseInt(matchNum[0], 10) : null;
+
+        cards.forEach((card) => {
+          const pIdx = parseInt(card.dataset.pageIndex, 10);
+          const pNum = pIdx + 1;
+          if (targetPageNum !== null && pNum === targetPageNum) {
+            card.classList.add('rotate-card-highlight');
+            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          } else {
+            card.classList.remove('rotate-card-highlight');
+          }
+        });
+      });
+    }
   }
 
   return { swap, cardView, viewer };
@@ -206,11 +240,19 @@ function _showViewer(container) {
   const { cardView, viewer } = _getSwapParts(container);
   if (!cardView || !viewer) return;
 
+  document.body.classList.add('has-rotate-viewer');
   cardView.style.opacity = '0';
   cardView.style.transform = 'translateY(8px)';
   setTimeout(() => {
     cardView.classList.add('rotate-hidden');
     viewer.classList.add('rotate-viewer--visible');
+
+    // Auto scroll `#main-content` to position the viewer at top
+    const mainContent = document.getElementById('main-content');
+    if (mainContent && viewer) {
+      const viewerTop = viewer.getBoundingClientRect().top + mainContent.scrollTop - 70;
+      mainContent.scrollTo({ top: Math.max(0, viewerTop), behavior: 'smooth' });
+    }
   }, 300);
 }
 
@@ -218,6 +260,7 @@ function _closeViewer(container) {
   const { cardView, viewer } = _getSwapParts(container);
   if (!cardView || !viewer) return;
 
+  document.body.classList.remove('has-rotate-viewer');
   _renderToken += 1;
   _selectedFile = null;
   _pdfDoc = null;
@@ -317,7 +360,7 @@ async function _renderPage(pdfDoc, pageNumber, viewer, token) {
 
   if (pageNumber === 1 && !_firstPageThumbShown && _selectedFile) {
     _firstPageThumbShown = true;
-    _showRotateDropzoneThumbnail(_selectedFile, '#A78BFA', canvas.toDataURL('image/jpeg', 0.9));
+    _showRotateDropzoneThumbnail(_selectedFile, '#00E5C0', canvas.toDataURL('image/jpeg', 0.95));
   }
 }
 
@@ -344,7 +387,7 @@ async function _loadPdfIntoViewer(container, file) {
 
     _pdfDoc = pdfDoc;
     _rotations = Array(pdfDoc.numPages).fill(0);
-    _showRotateDropzoneThumbnail(file, '#A78BFA');
+    _showRotateDropzoneThumbnail(file, '#00E5C0');
     viewer.querySelector('.rotate-file-name').textContent = file.name;
     viewer.querySelector('.rotate-page-count').textContent = `${pdfDoc.numPages} page${pdfDoc.numPages === 1 ? '' : 's'}`;
     _buildPageCards(viewer, pdfDoc.numPages);
@@ -412,6 +455,24 @@ async function _applyAndSave(viewer) {
   }
 }
 
+/**
+ * Called when a PDF file is dropped or picked via the main drop zone
+ * while the Rotate Pages tool is active.
+ * @param {File} file
+ */
+export function handleRotateFilePicked(file) {
+  if (!file || !_isPdfFile(file)) {
+    pushNotification({
+      type: 'warning',
+      message: 'Invalid File Format. Please select a valid PDF file.',
+    });
+    return;
+  }
+
+  const container = document.getElementById('explore-tools-content') || document.body;
+  _loadPdfIntoViewer(container, file);
+}
+
 export function openRotateFilePicker(container, tool) {
   const input = _ensureFileInput();
   input.value = '';
@@ -433,3 +494,4 @@ export function openRotateFilePicker(container, tool) {
 
   input.click();
 }
+

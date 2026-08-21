@@ -6,9 +6,9 @@
 .pdf-tools-swap {
   position: relative;
   min-height: 620px;
-  --rotate-color: #A78BFA;
-  --rotate-bg: rgba(167, 139, 250, 0.12);
-  --rotate-bg-strong: rgba(167, 139, 250, 0.2);
+  --rotate-color: #00E5C0;
+  --rotate-bg: rgba(0, 229, 192, 0.12);
+  --rotate-bg-strong: rgba(0, 229, 192, 0.22);
 }
 
 .pdf-tools-card-view {
@@ -27,15 +27,16 @@
   display: none;
   flex-direction: column;
   width: 100%;
-  min-height: 620px;
-  max-height: min(80vh, 960px);
-  background: #120f1f;
-  border: 1px solid color-mix(in srgb, var(--rotate-color) 34%, var(--border));
+  min-height: calc(100vh - 160px);
+  max-height: none;
+  background: linear-gradient(180deg, var(--bg-surface, #0F2D29) 0%, var(--bg-primary, #0A1F1C) 100%);
+  border: 1px solid color-mix(in srgb, var(--rotate-color) 30%, var(--border, #1A3D38));
   border-radius: 12px;
   overflow: hidden;
   opacity: 0;
   transform: translateY(8px);
   transition: opacity 300ms ease, transform 300ms ease;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
 }
 
 .rotate-viewer.rotate-viewer--visible {
@@ -44,18 +45,22 @@
   transform: translateY(0);
 }
 
+body.has-rotate-viewer .features-strip {
+  display: none !important;
+}
+
 .rotate-topbar {
   position: sticky;
   top: 0;
   z-index: 4;
-  display: grid;
-  grid-template-columns: minmax(90px, 1fr) minmax(160px, 1.4fr) minmax(280px, 1fr);
+  display: flex;
   align-items: center;
-  gap: 12px;
-  padding: 12px 14px;
-  background: rgba(18, 15, 31, 0.96);
-  border-bottom: 1px solid color-mix(in srgb, var(--rotate-color) 22%, transparent);
+  gap: 16px;
+  padding: 12px 18px;
+  background: rgba(15, 45, 41, 0.96);
+  border-bottom: 1px solid color-mix(in srgb, var(--rotate-color) 25%, var(--border, #1A3D38));
   backdrop-filter: blur(12px);
+  flex-wrap: wrap;
 }
 
 .rotate-back-btn,
@@ -69,59 +74,103 @@
 }
 
 .rotate-back-btn {
-  justify-self: start;
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  height: 32px;
-  padding: 0 10px;
+  height: 34px;
+  padding: 0 12px;
   border-radius: 8px;
   color: var(--text-muted);
   font-size: 13px;
+  font-weight: 500;
+  border: 1px solid var(--border, #1A3D38);
+  background: var(--bg-card, #112C28);
 }
 
 .rotate-back-btn:hover {
   color: var(--rotate-color);
-  border-color: color-mix(in srgb, var(--rotate-color) 34%, transparent);
+  border-color: color-mix(in srgb, var(--rotate-color) 40%, transparent);
   background: var(--rotate-bg);
 }
 
 .rotate-file-meta {
   min-width: 0;
-  text-align: center;
+  display: flex;
+  flex-direction: column;
 }
 
 .rotate-file-name {
   display: block;
   color: var(--text-primary);
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  max-width: 220px;
 }
 
 .rotate-page-count {
   display: block;
-  margin-top: 2px;
+  margin-top: 1px;
   color: var(--text-muted);
   font-size: 11px;
 }
 
+/* ── Search in topbar ── */
+.rotate-search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  flex: 1;
+  max-width: 260px;
+  margin: 0 auto;
+}
+
+.rotate-search-icon {
+  position: absolute;
+  left: 10px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.rotate-search-input {
+  width: 100%;
+  height: 34px;
+  padding: 0 10px 0 32px;
+  background: var(--bg-card, #112C28);
+  border: 1px solid var(--border, #1A3D38);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 12px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.rotate-search-input:focus {
+  border-color: var(--rotate-color);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--rotate-color) 20%, transparent);
+}
+
+.rotate-search-input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.75;
+}
+
 .rotate-actions {
-  justify-self: end;
+  margin-left: auto;
   display: flex;
   align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-  justify-content: flex-end;
 }
 
 .rotate-action-btn {
-  height: 32px;
-  padding: 0 11px;
+  height: 34px;
+  padding: 0 13px;
   border-radius: 8px;
-  border-color: color-mix(in srgb, var(--rotate-color) 34%, transparent);
+  border-color: color-mix(in srgb, var(--rotate-color) 35%, transparent);
   color: var(--rotate-color);
   background: var(--rotate-bg);
   font-size: 12px;
@@ -134,13 +183,15 @@
 }
 
 .rotate-save-btn {
-  color: #120f1f;
+  color: #0A1F1C;
   background: var(--rotate-color);
   border-color: var(--rotate-color);
+  font-weight: 700;
 }
 
 .rotate-save-btn:hover {
-  filter: brightness(1.05);
+  filter: brightness(1.1);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--rotate-color) 40%, transparent);
 }
 
 .rotate-action-btn:disabled {
@@ -152,62 +203,75 @@
   flex: 1;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
-  grid-auto-rows: minmax(390px, auto);
+  grid-auto-rows: minmax(400px, auto);
   gap: 22px;
-  padding: 22px 24px 28px;
+  padding: 24px;
   overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: color-mix(in srgb, var(--rotate-color) 72%, transparent) rgba(255, 255, 255, 0.05);
+  scrollbar-color: color-mix(in srgb, var(--rotate-color) 50%, transparent) rgba(0, 0, 0, 0.2);
 }
 
 .rotate-page-card {
   min-width: 0;
-  background: rgba(22, 18, 36, 0.92);
-  border: 1px solid color-mix(in srgb, var(--rotate-color) 12%, rgba(255, 255, 255, 0.1));
-  border-radius: 8px;
+  background: var(--bg-card, #112C28);
+  border: 1px solid color-mix(in srgb, var(--rotate-color) 16%, var(--border, #1A3D38));
+  border-radius: 10px;
   padding: 16px;
   display: grid;
-  grid-template-rows: minmax(300px, 1fr) auto auto;
+  grid-template-rows: minmax(310px, 1fr) auto auto;
   gap: 12px;
   transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
 }
 
 .rotate-page-card:hover {
   border-color: var(--rotate-color);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--rotate-color) 18%, transparent), 0 10px 30px color-mix(in srgb, var(--rotate-color) 14%, transparent);
-  transform: translateY(-1px);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--rotate-color) 25%, transparent), 0 12px 32px rgba(0, 0, 0, 0.4);
+  transform: translateY(-2px);
+}
+
+.rotate-page-card.rotate-card-highlight {
+  border-color: var(--rotate-color) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--rotate-color) 40%, transparent), 0 12px 32px rgba(0, 0, 0, 0.5) !important;
+  animation: cardPulse 1.2s ease infinite alternate;
+}
+
+@keyframes cardPulse {
+  from { box-shadow: 0 0 0 2px color-mix(in srgb, var(--rotate-color) 30%, transparent); }
+  to   { box-shadow: 0 0 0 5px color-mix(in srgb, var(--rotate-color) 60%, transparent); }
 }
 
 .rotate-thumb-stage {
   position: relative;
-  min-height: 300px;
+  min-height: 310px;
   display: flex;
   align-items: center;
   justify-content: center;
   overflow: hidden;
-  border-radius: 7px;
-  background: rgba(255, 255, 255, 0.035);
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .rotate-thumb-stage canvas {
-  max-width: 90%;
-  max-height: 286px;
+  max-width: 92%;
+  max-height: 330px;
   width: auto;
   height: auto;
   display: block;
-  border-radius: 3px;
-  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+  border-radius: 4px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5);
   transform-origin: center center;
   transition: transform 220ms ease;
+  image-rendering: -webkit-optimize-contrast;
 }
 
 .rotate-thumb-skeleton {
-  width: 78px;
-  height: 108px;
-  border-radius: 5px;
+  width: 90px;
+  height: 120px;
+  border-radius: 6px;
   background:
-    linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent),
-    rgba(255, 255, 255, 0.06);
+    linear-gradient(90deg, transparent, rgba(0, 229, 192, 0.12), transparent),
+    rgba(255, 255, 255, 0.04);
   background-size: 180% 100%, 100% 100%;
   animation: rotateSkeleton 1.15s ease-in-out infinite;
 }
@@ -217,14 +281,15 @@
   top: 8px;
   right: 8px;
   display: none;
-  min-width: 36px;
-  padding: 3px 7px;
+  min-width: 38px;
+  padding: 3px 8px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--rotate-color) 92%, white);
-  color: #120f1f;
+  background: var(--rotate-color);
+  color: #0A1F1C;
   font-size: 11px;
   font-weight: 700;
   text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
 .rotate-badge.rotate-badge--visible {
@@ -235,6 +300,7 @@
 .rotate-page-number {
   color: var(--text-muted);
   font-size: 12px;
+  font-weight: 500;
   text-align: center;
 }
 
@@ -245,10 +311,10 @@
 }
 
 .rotate-page-btn {
-  width: 30px;
-  height: 30px;
+  width: 32px;
+  height: 32px;
   border-radius: 8px;
-  border-color: color-mix(in srgb, var(--rotate-color) 34%, transparent);
+  border-color: color-mix(in srgb, var(--rotate-color) 35%, transparent);
   color: var(--rotate-color);
   background: var(--rotate-bg);
   font-size: 17px;
@@ -265,7 +331,7 @@
   align-self: center;
   justify-self: center;
   color: var(--text-muted);
-  font-size: 13px;
+  font-size: 14px;
 }
 
 @keyframes rotateSkeleton {
@@ -281,7 +347,7 @@
 
 @media (max-width: 860px) {
   .rotate-topbar {
-    grid-template-columns: 1fr;
+    flex-direction: column;
     align-items: stretch;
   }
 
@@ -290,12 +356,10 @@
   }
 
   .rotate-actions,
-  .rotate-back-btn {
-    justify-self: stretch;
-  }
-
-  .rotate-actions {
-    justify-content: flex-start;
+  .rotate-back-btn,
+  .rotate-search-wrap {
+    max-width: 100%;
+    margin: 0;
   }
 
   .rotate-grid {
@@ -308,3 +372,4 @@
     grid-template-columns: 1fr;
   }
 }
+

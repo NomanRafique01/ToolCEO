@@ -29,6 +29,7 @@ import {
   removeEncryptPanel,
 } from '../tools/documents/pdf_tools/encrypt/encrypt.js';
 import {
+  handleRotateFilePicked,
   removeRotatePanel,
 } from '../tools/documents/pdf_tools/rotate/rotate.js';
 
@@ -805,6 +806,12 @@ async function _submitFile(files) {
   // Encrypt / Decrypt tool has its own settings-panel flow — delegated to the encrypt module
   if (tool.id === 'encrypt') {
     handleEncryptFilePicked(files[0]);
+    return;
+  }
+
+  // Rotate tool has its own visual page grid flow — delegated to the rotate module
+  if (tool.id === 'rotate') {
+    handleRotateFilePicked(files[0]);
     return;
   }
 
