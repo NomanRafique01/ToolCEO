@@ -239,6 +239,12 @@ function _dlPanelActivate(tool) {
         <div class="dl-panel-tool-icon">${iconHtml}</div>
         <span class="dl-panel-tool-name">${label}</span>
         <span class="dl-panel-status-dot"></span>
+        <button class="dl-panel-close" type="button" title="Close download panel" aria-label="Close download panel">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
       </div>
       <div class="dl-panel-waiting">
         <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -270,6 +276,12 @@ function _dlPanelActivate(tool) {
   panel.classList.remove('dl-panel--ready', 'dl-panel--saved');
   panel.classList.add('dl-panel--active');
   _dlPanelJob = null;
+
+  // Wire Close button
+  panel.querySelector('.dl-panel-close')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    _dlPanelReset(panel);
+  });
 
   // Wire Save button
   panel.querySelector('.dl-save-btn').addEventListener('click', (e) => {
@@ -321,6 +333,12 @@ function _dlPanelReady(filename, jobId, color) {
         <div class="dl-panel-tool-icon">${iconHtml}</div>
         <span class="dl-panel-tool-name">${label}</span>
         <span class="dl-panel-status-dot"></span>
+        <button class="dl-panel-close" type="button" title="Close download panel" aria-label="Close download panel">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+        </button>
       </div>
       <div class="dl-file-block">
         <span class="dl-file-name">${filename}</span>
@@ -345,6 +363,12 @@ function _dlPanelReady(filename, jobId, color) {
   _dlPanelJob = { jobId, filename, color: safeColor };
   panel.classList.remove('dl-panel--saved');
   panel.classList.add('dl-panel--active', 'dl-panel--ready');
+
+  // Wire Close button
+  panel.querySelector('.dl-panel-close')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    _dlPanelReset(panel);
+  });
 
   // Wire Save button
   panel.querySelector('.dl-save-btn').addEventListener('click', (e) => {

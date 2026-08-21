@@ -335,6 +335,7 @@
 /* ── In-zone save card ── */
 .dz-save-card {
   --save-color: #00E5C0;
+  position: relative;
   width: 100%;
   max-width: 340px;
   background: rgba(255,255,255,0.04);
@@ -345,6 +346,64 @@
   flex-direction: column;
   gap: 10px;
   backdrop-filter: blur(4px);
+}
+
+.dz-save-close {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-muted, #8FAAA6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: background 150ms ease, color 150ms ease, border-color 150ms ease, transform 120ms ease;
+  pointer-events: auto;
+  z-index: 5;
+}
+
+.dz-save-close:hover {
+  background: color-mix(in srgb, var(--save-color, #00E5C0) 22%, transparent);
+  border-color: var(--save-color, #00E5C0);
+  color: var(--save-color, #00E5C0);
+  transform: scale(1.1);
+}
+
+.dz-save-close:active {
+  transform: scale(0.95);
+}
+
+.dl-panel-close {
+  margin-left: auto;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--text-muted, #8FAAA6);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: background 150ms ease, color 150ms ease, border-color 150ms ease, transform 120ms ease;
+}
+
+.dl-panel-close:hover {
+  background: color-mix(in srgb, var(--dl-color, #00E5C0) 22%, transparent);
+  border-color: var(--dl-color, #00E5C0);
+  color: var(--dl-color, #00E5C0);
+  transform: scale(1.1);
+}
+
+.dl-panel-close:active {
+  transform: scale(0.95);
 }
 
 .dz-save-icon {
