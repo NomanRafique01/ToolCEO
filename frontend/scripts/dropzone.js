@@ -24,6 +24,10 @@ import {
   handleCompressFilePicked,
   removeCompressPanel,
 } from '../tools/documents/pdf_tools/compressor/compressor.js';
+import {
+  handleEncryptFilePicked,
+  removeEncryptPanel,
+} from '../tools/documents/pdf_tools/encrypt/encrypt.js';
 
 const BACKEND = 'http://127.0.0.1:8000';
 
@@ -137,6 +141,7 @@ function _updateDropZone(tool) {
     removeSplitPanel();
     removeMergePanel();
     removeCompressPanel();
+    removeEncryptPanel();
 
     const mainEl   = zone.querySelector('.drop-main-text');
     const subEl    = zone.querySelector('.drop-browse');
@@ -163,6 +168,7 @@ function _updateDropZone(tool) {
   removeSplitPanel();        // hide previous split info panel if tool changed
   removeMergePanel();        // hide previous merge queue panel if tool changed
   removeCompressPanel();     // hide previous compress settings panel if tool changed
+  removeEncryptPanel();      // hide previous encrypt settings panel if tool changed
 
   zone.style.setProperty('--dz-color', color);
   zone.style.setProperty('--dz-bg', bg);
@@ -548,6 +554,7 @@ function _resetAfterSave(zone) {
     removeSplitPanel();
     removeMergePanel();
     removeCompressPanel();
+    removeEncryptPanel();
     const tool = getActiveTool();
     if (tool) _updateDropZone(tool);
   }, 1800);
@@ -767,6 +774,12 @@ async function _submitFile(files) {
     return;
   }
 
+  // Encrypt / Decrypt tool has its own settings-panel flow — delegated to the encrypt module
+  if (tool.id === 'encrypt') {
+    handleEncryptFilePicked(files[0]);
+    return;
+  }
+
   const endpoint = ENDPOINT_MAP[tool.id];
   if (!endpoint) {
     const zone = document.getElementById('drop-zone');
@@ -886,6 +899,7 @@ export function initDropZone() {
       removeSplitPanel();
       removeMergePanel();
       removeCompressPanel();
+      removeEncryptPanel();
       const tool = getActiveTool();
       if (tool) _updateDropZone(tool);
     }
@@ -898,7 +912,8 @@ export function initDropZone() {
     if (e.target.closest(
       '.dz-download-wrap, .dz-error-wrap, .dz-pdf-thumb-remove, ' +
       '.dz-merge-card-remove, .dz-merge-add-btn, .merge-queue-panel, .split-info-panel, ' +
-      '.compress-settings-panel, .dz-compress-thumb-remove, .cmp-panel'
+      '.compress-settings-panel, .dz-compress-thumb-remove, .cmp-panel, ' +
+      '.encrypt-settings-panel, .dz-encrypt-thumb-remove, .enc-panel'
     )) return;
     if (!getActiveTool()) { showNoToolWarning(); return; }
     // If already processing, scanning, done, or a file thumbnail is currently loaded, do not open file window
@@ -908,8 +923,9 @@ export function initDropZone() {
     if (
       dropZone.classList.contains('dz-has-thumb') ||
       dropZone.classList.contains('dz-has-compress-thumb') ||
+      dropZone.classList.contains('dz-has-encrypt-thumb') ||
       dropZone.classList.contains('dz-has-merge-thumbs') ||
-      dropZone.querySelector('.dz-pdf-thumb-wrap, .dz-compress-thumb-wrap, .dz-merge-thumb-strip')
+      dropZone.querySelector('.dz-pdf-thumb-wrap, .dz-compress-thumb-wrap, .dz-encrypt-thumb-wrap, .dz-merge-thumb-strip')
     ) {
       return;
     }

@@ -271,3 +271,122 @@ export function showError(zone, message) {
     <span class="dz-error-msg">${escHtml(message)}</span>`;
   zone.appendChild(wrap);
 }
+
+// ─── DOWNLOAD BLOB DIRECT ──────────────────────────────────────────────────────
+
+/**
+ * Show download-ready state for direct in-memory blobs (e.g. from /api/pdf/encrypt).
+ * @param {HTMLElement} zone
+ * @param {Blob}        blob
+ * @param {string}      filename
+ * @param {string}      color
+ * @param {Function}    [onReset]
+ */
+export function showDownloadBlobCard(zone, blob, filename, color, onReset) {
+  resetZoneContent(zone);
+  zone.classList.add('dz-state-done');
+
+  const ext     = filename.includes('.') ? filename.split('.').pop().toUpperCase() : '';
+  const extText = ext ? `${ext} file — ready to save` : 'File ready to save';
+
+  const wrap = document.createElement('div');
+  wrap.className = 'dz-download-wrap';
+  wrap.innerHTML = `
+    <div class="dz-save-card" style="--save-color:${color}">
+      <button class="dz-save-close" type="button" title="Close download window" aria-label="Close download window">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
+      <div class="dz-save-icon" aria-hidden="true">
+        <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+          <path d="M12 3v13M7 11l5 5 5-5" stroke="currentColor" stroke-width="1.8"
+                stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M5 20h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="dz-save-info">
+        <span class="dz-save-name" title="${escHtml(filename)}">${escHtml(filename)}</span>
+        <span class="dz-save-ext">${escHtml(extText)}</span>
+      </div>
+      <button class="dz-save-btn" type="button">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+             style="display:inline;vertical-align:middle;margin-right:5px" aria-hidden="true">
+          <path d="M12 3v13M7 11l5 5 5-5" stroke="currentColor" stroke-width="2.2"
+                stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M5 20h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+        </svg>Save As…
+      </button>
+      <div class="dz-save-done">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+          <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/>
+          <path d="M8 12l3 3 5-5" stroke="currentColor" stroke-width="1.9"
+                stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Saved successfully
+      </div>
+    </div>`;
+
+  zone.appendChild(wrap);
+
+  const closeBtn = wrap.querySelector('.dz-save-close');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      resetZoneContent(zone);
+      clearBgJob();
+      if (typeof onReset === 'function') onReset();
+    });
+  }
+
+  const btn = wrap.querySelector('.dz-save-btn');
+  btn.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    btn.disabled = true;
+    btn.textContent = 'Saving…';
+
+    try {
+      const arrayBuf  = await blob.arrayBuffer();
+      const uint8     = new Uint8Array(arrayBuf);
+      const chunkSize = 8192;
+      let binary = '';
+      for (let i = 0; i < uint8.length; i += chunkSize) {
+        binary += String.fromCharCode(...uint8.subarray(i, i + chunkSize));
+      }
+      const base64 = btoa(binary);
+
+      if (window.toolceo && window.toolceo.saveFileAs) {
+        const savedPath = await window.toolceo.saveFileAs(filename, base64);
+        if (savedPath) {
+          btn.style.display = 'none';
+          wrap.querySelector('.dz-save-done').classList.add('dz-save-done--visible');
+          clearBgJob();
+          resetAfterSave(zone, onReset);
+        } else {
+          btn.disabled = false;
+          btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+               style="display:inline;vertical-align:middle;margin-right:5px" aria-hidden="true">
+            <path d="M12 3v13M7 11l5 5 5-5" stroke="currentColor" stroke-width="2.2"
+                  stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M5 20h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+          </svg>Save As…`;
+        }
+      } else {
+        const url = URL.createObjectURL(blob);
+        const a   = document.createElement('a');
+        a.href = url; a.download = filename; a.click();
+        URL.revokeObjectURL(url);
+        btn.style.display = 'none';
+        wrap.querySelector('.dz-save-done').classList.add('dz-save-done--visible');
+        clearBgJob();
+        resetAfterSave(zone, onReset);
+      }
+    } catch (err) {
+      btn.disabled = false;
+      btn.textContent = 'Save As…';
+      showError(zone, `Save failed: ${err.message}`);
+    }
+  });
+}
+
