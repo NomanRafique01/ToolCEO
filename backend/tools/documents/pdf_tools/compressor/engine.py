@@ -31,6 +31,7 @@ from __future__ import annotations
 import base64
 import io
 import logging
+import math
 from dataclasses import dataclass
 from typing import Optional
 
@@ -100,20 +101,14 @@ def _serialize(doc: fitz.Document) -> bytes:
 
 def _params_for_ratio(ratio: float) -> tuple[int, float]:
     """
-    Map target-size / original-size ratio to (quality, scale_factor).
-
-    ratio >= 0.65  →  quality 75, scale 1.00  (~20% reduction)
-    ratio >= 0.45  →  quality 50, scale 0.80  (~50% reduction)
-    ratio >= 0.25  →  quality 32, scale 0.52  (~80% reduction)
-    < 0.25        →  quality 20, scale 0.35  (~90% max reduction)
+    Calculate quality and scale_factor continuously based on target ratio.
+    Since image area scales with scale_factor^2, setting scale_factor = sqrt(ratio)
+    aligns the compressed file size with the UI estimated target size.
     """
-    if ratio >= 0.65:
-        return 75, 1.00
-    if ratio >= 0.45:
-        return 50, 0.80
-    if ratio >= 0.25:
-        return 32, 0.52
-    return 20, 0.35
+    ratio = max(0.05, min(0.95, ratio))
+    scale_factor = math.sqrt(ratio)
+    quality = max(18, min(85, int(15 + 70 * ratio)))
+    return quality, scale_factor
 
 
 def _reencode_images(
