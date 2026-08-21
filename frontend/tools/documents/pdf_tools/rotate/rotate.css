@@ -243,6 +243,7 @@ body.has-rotate-viewer .features-strip {
 }
 
 .rotate-grid {
+  position: relative;
   flex: 1;
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -274,8 +275,8 @@ body.has-rotate-viewer .features-strip {
 
 .rotate-page-card.rotate-card-highlight {
   border-color: var(--rotate-color) !important;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--rotate-color) 40%, transparent), 0 12px 32px rgba(0, 0, 0, 0.5) !important;
-  animation: cardPulse 1.2s ease infinite alternate;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--rotate-color) 45%, transparent), 0 12px 36px rgba(0, 0, 0, 0.55) !important;
+  animation: cardPulse 1s ease infinite alternate;
 }
 
 @keyframes cardPulse {

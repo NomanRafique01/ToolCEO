@@ -212,7 +212,7 @@ function _getSwapParts(container) {
     viewer.querySelector('[data-rotate-all="right"]').addEventListener('click', () => _rotateAll(90, viewer));
     viewer.querySelector('.rotate-save-btn').addEventListener('click', () => _applyAndSave(viewer));
 
-    // Page search functionality (instant calculation & scroll)
+    // Page search functionality (instant calculation & scroll to top row)
     const searchInput = viewer.querySelector('.rotate-search-input');
     const searchBtn   = viewer.querySelector('.rotate-search-btn');
 
@@ -229,13 +229,18 @@ function _getSwapParts(container) {
       }
 
       const matchNum = val.match(/\d+/);
-      const targetPageNum = matchNum ? parseInt(matchNum[0], 10) : null;
+      if (!matchNum) {
+        cards.forEach((c) => c.classList.remove('rotate-card-highlight'));
+        return;
+      }
+
+      const targetPageNum = parseInt(matchNum[0], 10);
+      const targetIndex = targetPageNum - 1;
 
       let targetCard = null;
       cards.forEach((card) => {
         const pIdx = parseInt(card.dataset.pageIndex, 10);
-        const pNum = pIdx + 1;
-        if (targetPageNum !== null && pNum === targetPageNum) {
+        if (pIdx === targetIndex) {
           card.classList.add('rotate-card-highlight');
           targetCard = card;
         } else {
@@ -244,13 +249,16 @@ function _getSwapParts(container) {
       });
 
       if (targetCard && grid) {
-        const targetTop = targetCard.offsetTop - grid.offsetTop;
-        grid.scrollTo({ top: Math.max(0, targetTop - 16), behavior: 'smooth' });
+        const gridRect = grid.getBoundingClientRect();
+        const cardRect = targetCard.getBoundingClientRect();
+        const targetScrollTop = grid.scrollTop + (cardRect.top - gridRect.top) - 16;
+        grid.scrollTop = Math.max(0, targetScrollTop);
       }
     };
 
     if (searchInput) {
       searchInput.addEventListener('input', performSearch);
+      searchInput.addEventListener('change', performSearch);
       searchInput.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') {
           e.preventDefault();
