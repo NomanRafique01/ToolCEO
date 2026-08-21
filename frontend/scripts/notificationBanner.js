@@ -158,21 +158,16 @@ function _render(banner, notifications) {
     _prevNotifCount = currentCount;
   } else {
     if (_prevNotifCount > 0) {
+      banner.classList.remove('nb-slide-down');
+      banner.classList.add('nb-slide-up');
+      document.body.classList.remove('has-active-banner');
       _closeTimer = setTimeout(() => {
-        const checkCount = getAll().length;
-        if (checkCount === 0) {
-          banner.classList.remove('nb-slide-down');
-          banner.classList.add('nb-slide-up');
-          document.body.classList.remove('has-active-banner');
-          setTimeout(() => {
-            if (getAll().length === 0) {
-              banner.classList.add('nb-hidden');
-              banner.classList.remove('nb-slide-up');
-              banner.innerHTML = '';
-            }
-          }, 250);
+        if (getAll().length === 0) {
+          banner.classList.add('nb-hidden');
+          banner.classList.remove('nb-slide-up');
+          banner.innerHTML = '';
         }
-      }, 400);
+      }, 250);
     } else {
       banner.classList.add('nb-hidden');
       banner.classList.remove('nb-slide-down', 'nb-slide-up');

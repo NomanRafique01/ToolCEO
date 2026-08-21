@@ -70,16 +70,12 @@ export function pushNotification({ type = 'success', message = '', detail = '', 
   }
 
   // ── Auto-dismiss scheduling ────────────────────────────────────────────────
-  // Success & Info pills auto-dismiss after 4s via CSS countdown animation.
+  // Auto-dismiss for success & info pills is driven by UI animation in notificationBanner.js.
   // Warning & Error pills stay until manually dismissed by user.
-  const shouldAutoDismiss = autoDismiss !== undefined 
-    ? autoDismiss 
-    : (type === 'success' || type === 'info');
-
-  if (shouldAutoDismiss) {
+  if (autoDismiss === true) {
     const tid = setTimeout(() => {
       dismissOne(item.id);
-    }, 4000);
+    }, 15000);
     _timers.set(item.id, tid);
   }
 
