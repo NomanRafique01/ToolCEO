@@ -93,6 +93,10 @@ export function initNavigation() {
       bindToolCardClicks(activateNav);
     }
 
+    exploreSection.classList.remove('explore-swap-fade');
+    void exploreSection.offsetWidth;
+    exploreSection.classList.add('explore-swap-fade');
+
     // ── Scroll explore section into view so the user sees the tools ──────
     // #main-content is a fixed-position scroll container, so we must scroll it
     // directly rather than using scrollIntoView (which doesn't cross fixed roots).

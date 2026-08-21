@@ -13,6 +13,7 @@
       4. dashboard  – dashboard panel components
       5. documents  – documents conversion panel
       6. audio      – audio conversion panel
+      7. cards      – universal master card design system
   -->
   <link rel="stylesheet" href="styles/base.css" />
   <link rel="stylesheet" href="styles/layout.css" />
@@ -20,6 +21,7 @@
   <link rel="stylesheet" href="styles/dashboard.css" />
   <link rel="stylesheet" href="styles/documents.css" />
   <link rel="stylesheet" href="styles/audio.css" />
+  <link rel="stylesheet" href="styles/cards.css" />
   <!-- Tool-specific stylesheets -->
   <link rel="stylesheet" href="tools/documents/pdf_tools/splitter/splitter.css" />
   <link rel="stylesheet" href="tools/documents/pdf_tools/merger/merger.css" />
@@ -404,8 +406,8 @@
           <!-- Documents — red #FF6B6B, matches sidebar -->
           <div class="tool-card" data-nav="Documents">
             <div class="tool-card-top">
-              <div class="tool-icon-box" style="background:rgba(255,107,107,0.15);color:#FF6B6B">
-                <svg width="20" height="20" viewBox="0 0 16 16" fill="none">
+              <div class="tool-icon-box" style="color:#FF6B6B">
+                <svg width="26" height="26" viewBox="0 0 16 16" fill="none">
                   <path d="M3 4h8a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.3"/>
                   <path d="M5 2h6a1 1 0 0 1 1 1v1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
                   <line x1="4" y1="8"  x2="10" y2="8"  stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
@@ -422,8 +424,8 @@
           <!-- Images — violet #A78BFA, matches sidebar -->
           <div class="tool-card" data-nav="Images">
             <div class="tool-card-top">
-              <div class="tool-icon-box" style="background:rgba(167,139,250,0.15);color:#A78BFA">
-                <svg width="20" height="20" viewBox="0 0 16 16" fill="none">
+              <div class="tool-icon-box" style="color:#A78BFA">
+                <svg width="26" height="26" viewBox="0 0 16 16" fill="none">
                   <rect x="1" y="2" width="14" height="12" rx="2" stroke="currentColor" stroke-width="1.3"/>
                   <circle cx="5.5" cy="6" r="1.5" stroke="currentColor" stroke-width="1.1"/>
                   <path d="M1 12l4-4 3 3 2-2 5 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
@@ -439,8 +441,8 @@
           <!-- Audio — orange #FB923C, matches sidebar -->
           <div class="tool-card" data-nav="Audio">
             <div class="tool-card-top">
-              <div class="tool-icon-box" style="background:rgba(251,146,60,0.15);color:#FB923C">
-                <svg width="20" height="20" viewBox="0 0 16 16" fill="none">
+              <div class="tool-icon-box" style="color:#FB923C">
+                <svg width="26" height="26" viewBox="0 0 16 16" fill="none">
                   <line x1="8"  y1="2"  x2="8"  y2="14" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
                   <line x1="5"  y1="4"  x2="5"  y2="12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
                   <line x1="11" y1="4"  x2="11" y2="12" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
@@ -458,8 +460,8 @@
           <!-- Video — sky #38BDF8, matches sidebar -->
           <div class="tool-card" data-nav="Video">
             <div class="tool-card-top">
-              <div class="tool-icon-box" style="background:rgba(56,189,248,0.15);color:#38BDF8">
-                <svg width="20" height="20" viewBox="0 0 16 16" fill="none">
+              <div class="tool-icon-box" style="color:#38BDF8">
+                <svg width="26" height="26" viewBox="0 0 16 16" fill="none">
                   <rect x="1" y="3" width="10" height="10" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
                   <path d="M11 6.5l4-2v7l-4-2V6.5Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
                   <line x1="1" y1="6" x2="11" y2="6" stroke="currentColor" stroke-width="1.1"/>
@@ -477,8 +479,8 @@
           <!-- Ebooks — amber #FBBF24, matches sidebar -->
           <div class="tool-card" data-nav="Ebooks">
             <div class="tool-card-top">
-              <div class="tool-icon-box" style="background:rgba(251,191,36,0.15);color:#FBBF24">
-                <svg width="20" height="20" viewBox="0 0 16 16" fill="none">
+              <div class="tool-icon-box" style="color:#FBBF24">
+                <svg width="26" height="26" viewBox="0 0 16 16" fill="none">
                   <path d="M8 13s-4-2-7-2V3c3 0 7 2 7 2s4-2 7-2v8c-3 0-7 2-7 2Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
                   <line x1="8" y1="5" x2="8" y2="13" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
                 </svg>
@@ -493,8 +495,8 @@
           <!-- Archives — lime #84CC16, matches sidebar -->
           <div class="tool-card" data-nav="Archives">
             <div class="tool-card-top">
-              <div class="tool-icon-box" style="background:rgba(132,204,22,0.15);color:#84CC16">
-                <svg width="20" height="20" viewBox="0 0 16 16" fill="none">
+              <div class="tool-icon-box" style="color:#84CC16">
+                <svg width="26" height="26" viewBox="0 0 16 16" fill="none">
                   <rect x="2" y="5" width="12" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
                   <path d="M1 5h14v2H1V5Z" stroke="currentColor" stroke-width="1.1"/>
                   <line x1="8" y1="2"  x2="8"  y2="5"  stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
@@ -513,8 +515,8 @@
           <!-- Data — teal #2DD4BF, matches sidebar -->
           <div class="tool-card" data-nav="Data">
             <div class="tool-card-top">
-              <div class="tool-icon-box" style="background:rgba(45,212,191,0.15);color:#2DD4BF">
-                <svg width="20" height="20" viewBox="0 0 16 16" fill="none">
+              <div class="tool-icon-box" style="color:#2DD4BF">
+                <svg width="26" height="26" viewBox="0 0 16 16" fill="none">
                   <ellipse cx="8" cy="4" rx="5" ry="2" stroke="currentColor" stroke-width="1.3"/>
                   <path d="M3 4v4c0 1.1 2.24 2 5 2s5-.9 5-2V4" stroke="currentColor" stroke-width="1.3"/>
                   <path d="M3 8v4c0 1.1 2.24 2 5 2s5-.9 5-2V8" stroke="currentColor" stroke-width="1.3"/>
@@ -530,8 +532,8 @@
           <!-- All Tools — accent green #00E5C0, matches dashboard/sidebar active -->
           <div class="tool-card tool-card--all" data-nav="Dashboard">
             <div class="tool-card-top">
-              <div class="tool-icon-box" style="background:rgba(0,229,192,0.15);color:#00E5C0">
-                <svg width="20" height="20" viewBox="0 0 16 16" fill="none">
+              <div class="tool-icon-box" style="color:#00E5C0">
+                <svg width="26" height="26" viewBox="0 0 16 16" fill="none">
                   <rect x="1" y="1" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
                   <rect x="9" y="1" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
                   <rect x="1" y="9" width="6" height="6" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
