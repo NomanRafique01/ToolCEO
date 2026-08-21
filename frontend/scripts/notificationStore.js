@@ -2,7 +2,7 @@
  * notificationStore.js
  *
  * Central in-memory notification store for ToolCEO.
- * Unified notification state across the entire application.
+ * Unified notification state with deduplication and auto-dismiss.
  *
  * API:
  *   pushNotification({ type, message, detail?, autoDismiss? }) -> id (string)
@@ -10,7 +10,7 @@
  *   dismissAll()                                               - clear all
  *   dismissOne(id)                                             - remove single entry
  *   getAll()                                                   -> Notification[]
- *   getUnreadCount()                                           -> number (success/warning/error)
+ *   getUnreadCount()                                           -> number (warning/error/success)
  *   subscribe(fn)                                              - change listener
  *   unsubscribe(fn)
  *
@@ -18,16 +18,18 @@
  *   { id, type, message, detail, timestamp, read }
  *   type: 'success' | 'warning' | 'error' | 'info' | 'progress'
  *
- * Auto-dismiss rules:
- *   - success : auto-remove after 8 seconds
- *   - info    : auto-remove after 5 seconds
- *   - warning : stays until manually dismissed
- *   - error   : stays until manually dismissed
+ * Deduplication & Auto-dismiss rules:
+ *   - Duplicate messages of same type refresh timestamp & timer instead of creating new pills
+ *   - warning : auto-dismiss after 4 seconds (4000ms)
+ *   - success : auto-dismiss after 8 seconds (8000ms)
+ *   - info    : auto-dismiss after 5 seconds (5000ms)
+ *   - error   : persistent until manually dismissed (or 10s if autoDismiss is true)
  */
 
 let _store   = [];
 let _counter = 0;
 const _listeners = new Set();
+const _timers   = new Map();
 
 function _emit() {
   _listeners.forEach((fn) => {
@@ -35,27 +37,53 @@ function _emit() {
   });
 }
 
-export function pushNotification({ type = 'success', message = '', detail = '', autoDismiss } = {}) {
-  const id = `notif-${++_counter}-${Date.now()}`;
-  const item = { id, type, message, detail, timestamp: Date.now(), read: false };
-  
-  _store.unshift(item);
-  if (_store.length > 50) _store.length = 50;
+function _clearTimer(id) {
+  if (_timers.has(id)) {
+    clearTimeout(_timers.get(id));
+    _timers.delete(id);
+  }
+}
 
-  // Determine auto-dismiss behavior
+export function pushNotification({ type = 'success', message = '', detail = '', autoDismiss } = {}) {
+  // ── Deduplication: Check if an identical notification already exists ──────
+  const existingIndex = _store.findIndex((n) => n.type === type && n.message === message);
+
+  let item;
+  if (existingIndex !== -1) {
+    // Re-use existing item, update timestamp, move to front
+    item = _store.splice(existingIndex, 1)[0];
+    _clearTimer(item.id);
+    item.timestamp = Date.now();
+    item.read = false;
+    if (detail) item.detail = detail;
+    _store.unshift(item);
+  } else {
+    // Create new notification item
+    const id = `notif-${++_counter}-${Date.now()}`;
+    item = { id, type, message, detail, timestamp: Date.now(), read: false };
+    _store.unshift(item);
+  }
+
+  if (_store.length > 50) {
+    const removed = _store.splice(50);
+    removed.forEach((r) => _clearTimer(r.id));
+  }
+
+  // ── Auto-dismiss scheduling ────────────────────────────────────────────────
   const shouldAutoDismiss = autoDismiss !== undefined 
     ? autoDismiss 
-    : (type === 'success' || type === 'info');
+    : (type === 'warning' || type === 'success' || type === 'info');
 
   if (shouldAutoDismiss) {
-    const ttl = type === 'info' ? 5000 : 8000;
-    setTimeout(() => {
-      dismissOne(id);
+    const ttl = type === 'warning' ? 4000 : (type === 'info' ? 5000 : 8000);
+    const tid = setTimeout(() => {
+      dismissOne(item.id);
     }, ttl);
+    _timers.set(item.id, tid);
   }
 
   _emit();
-  return id;
+  return item.id;
 }
 
 export function updateNotification(id, patch = {}) {
@@ -66,11 +94,14 @@ export function updateNotification(id, patch = {}) {
 }
 
 export function dismissAll() {
+  _timers.forEach((tid) => clearTimeout(tid));
+  _timers.clear();
   _store = [];
   _emit();
 }
 
 export function dismissOne(id) {
+  _clearTimer(id);
   _store = _store.filter((n) => n.id !== id);
   _emit();
 }
@@ -85,7 +116,6 @@ export function getAll() {
 }
 
 export function getUnreadCount() {
-  // Only increment badge for warning, error, and success notifications
   return _store.filter((n) => !n.read && (n.type === 'warning' || n.type === 'error' || n.type === 'success')).length;
 }
 
