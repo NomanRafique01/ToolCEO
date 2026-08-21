@@ -55,13 +55,34 @@ body.has-rotate-viewer .features-strip {
   top: 0;
   z-index: 4;
   display: flex;
-  align-items: center;
-  gap: 16px;
-  padding: 12px 18px;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 18px;
   background: rgba(15, 45, 41, 0.96);
   border-bottom: 1px solid color-mix(in srgb, var(--rotate-color) 25%, var(--border, #1A3D38));
   backdrop-filter: blur(12px);
-  flex-wrap: wrap;
+}
+
+.rotate-topbar-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+}
+
+.rotate-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.rotate-search-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  width: 100%;
 }
 
 .rotate-back-btn,
@@ -109,7 +130,7 @@ body.has-rotate-viewer .features-strip {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  max-width: 220px;
+  max-width: 260px;
 }
 
 .rotate-page-count {
@@ -119,14 +140,13 @@ body.has-rotate-viewer .features-strip {
   font-size: 11px;
 }
 
-/* ── Search in topbar ── */
+/* ── Search in topbar (under toggles) ── */
 .rotate-search-wrap {
   position: relative;
   display: flex;
   align-items: center;
-  flex: 1;
-  max-width: 280px;
-  margin: 0 auto;
+  width: 100%;
+  max-width: 360px;
   gap: 6px;
 }
 

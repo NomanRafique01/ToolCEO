@@ -98,20 +98,6 @@ const PDF_TOOLS = [
     </svg>`,
   },
   {
-    id: 'rotate',
-    label: 'Rotate Pages',
-    desc: 'Rotate individual or all pages',
-    tag: 'Tool',
-    color: '#00E5C0',
-    bg: 'rgba(0, 229, 192, 0.15)',
-    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
-      <path d="M13 8a5 5 0 1 1-1.46-3.54" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
-      <path d="M11 1v4h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
-      <line x1="8" y1="6" x2="8" y2="10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-      <line x1="6" y1="8" x2="10" y2="8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-    </svg>`,
-  },
-  {
     id: 'encrypt',
     label: 'Encrypt / Decrypt',
     desc: 'Password-protect or unlock PDFs',
@@ -123,6 +109,20 @@ const PDF_TOOLS = [
       <path d="M5 7V5a3 3 0 0 1 6 0v2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
       <circle cx="8" cy="11" r="1.2" fill="currentColor"/>
       <line x1="8" y1="12.2" x2="8" y2="13.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+    </svg>`,
+  },
+  {
+    id: 'rotate',
+    label: 'Rotate Pages',
+    desc: 'Rotate individual or all pages',
+    tag: 'Tool',
+    color: '#00E5C0',
+    bg: 'rgba(0, 229, 192, 0.15)',
+    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+      <path d="M13 8a5 5 0 1 1-1.46-3.54" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+      <path d="M11 1v4h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <line x1="8" y1="6" x2="8" y2="10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+      <line x1="6" y1="8" x2="10" y2="8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
     </svg>`,
   },
   {

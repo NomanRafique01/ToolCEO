@@ -176,26 +176,32 @@ function _getSwapParts(container) {
     viewer.className = 'rotate-viewer';
     viewer.innerHTML = `
       <div class="rotate-topbar">
-        <button class="rotate-back-btn" type="button" title="Back to PDF tools">
-          <span aria-hidden="true">&larr;</span>
-          <span>Back</span>
-        </button>
-        <div class="rotate-file-meta">
-          <span class="rotate-file-name">No PDF selected</span>
-          <span class="rotate-page-count">0 pages</span>
+        <div class="rotate-topbar-row">
+          <div class="rotate-topbar-left">
+            <button class="rotate-back-btn" type="button" title="Back to PDF tools">
+              <span aria-hidden="true">&larr;</span>
+              <span>Back</span>
+            </button>
+            <div class="rotate-file-meta">
+              <span class="rotate-file-name">No PDF selected</span>
+              <span class="rotate-page-count">0 pages</span>
+            </div>
+          </div>
+          <div class="rotate-actions">
+            <button class="rotate-action-btn" type="button" data-rotate-all="left">Rotate All Left &#8634;</button>
+            <button class="rotate-action-btn" type="button" data-rotate-all="right">Rotate All Right &#8635;</button>
+            <button class="rotate-action-btn rotate-save-btn" type="button">Apply &amp; Save</button>
+          </div>
         </div>
-        <div class="rotate-search-wrap">
-          <svg class="rotate-search-icon" width="14" height="14" viewBox="0 0 16 16" fill="none">
-            <circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.3"/>
-            <path d="M11 11L14 14" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
-          </svg>
-          <input class="rotate-search-input" type="text" placeholder="Go to page (e.g. 5)..." aria-label="Go to page" />
-          <button class="rotate-search-btn" type="button" title="Find page">Find</button>
-        </div>
-        <div class="rotate-actions">
-          <button class="rotate-action-btn" type="button" data-rotate-all="left">Rotate All Left &#8634;</button>
-          <button class="rotate-action-btn" type="button" data-rotate-all="right">Rotate All Right &#8635;</button>
-          <button class="rotate-action-btn rotate-save-btn" type="button">Apply &amp; Save</button>
+        <div class="rotate-search-row">
+          <div class="rotate-search-wrap">
+            <svg class="rotate-search-icon" width="14" height="14" viewBox="0 0 16 16" fill="none">
+              <circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.3"/>
+              <path d="M11 11L14 14" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+            </svg>
+            <input class="rotate-search-input" type="text" placeholder="Go to page (e.g. 5)..." aria-label="Go to page" />
+            <button class="rotate-search-btn" type="button" title="Find page">Find</button>
+          </div>
         </div>
       </div>
       <div class="rotate-grid" role="list"></div>`;
