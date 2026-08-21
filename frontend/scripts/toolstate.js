@@ -178,7 +178,7 @@ export function syncBgJobBar() {
       try {
         await _downloadJobFile(jobId, filename);
         saveBtn.textContent = '\u2713 Saved';
-        setTimeout(() => clearBgJob(), 1800);
+        clearBgJob();
       } catch (err) {
         saveBtn.disabled = false;
         saveBtn.textContent = 'Save As\u2026';

@@ -621,6 +621,7 @@ function _showDownload(zone, filename, jobId, color) {
         if (savedPath) {
           btn.style.display = 'none';
           wrap.querySelector('.dz-save-done').classList.add('dz-save-done--visible');
+          clearBgJob();
           _resetAfterSave(zone);
         } else {
           btn.disabled = false;
@@ -638,6 +639,7 @@ function _showDownload(zone, filename, jobId, color) {
         URL.revokeObjectURL(url);
         btn.style.display = 'none';
         wrap.querySelector('.dz-save-done').classList.add('dz-save-done--visible');
+        clearBgJob();
         _resetAfterSave(zone);
       }
     } catch (err) {
