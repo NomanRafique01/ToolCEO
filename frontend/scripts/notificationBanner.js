@@ -189,7 +189,7 @@ function _render(banner, notifications) {
         <span class="nb-pill-msg">${_escHtml(n.message)}</span>
         ${!isProgress ? `<span class="nb-pill-time">${relTime(n.timestamp)}</span>` : ''}
         <button class="nb-pill-x" data-pill-x="${_escHtml(n.id)}" title="Dismiss">&times;</button>
-        ${isAutoDismiss ? `<span class="nb-pill-progress" data-progress-id="${_escHtml(n.id)}"></span>` : ''}
+
       </span>`;
   }).join('');
 
@@ -248,21 +248,18 @@ function _render(banner, notifications) {
     });
   });
 
-  // Attach CSS countdown animationend listeners for 5s auto-dismissable pills
-  banner.querySelectorAll('.nb-pill-progress').forEach((bar) => {
-    bar.addEventListener('animationend', (e) => {
-      if (e.animationName !== 'pillCountdown') return;
-      const id = bar.dataset.progressId;
-      const pill = banner.querySelector(`.nb-pill[data-id="${id}"]`);
-      if (pill) {
+  // Auto-dismiss all non-progress pills after 4 seconds with smooth slide-out
+  banner.querySelectorAll('.nb-pill:not(.nb-pill--progress)').forEach((pill) => {
+    const id = pill.dataset.id;
+    setTimeout(() => {
+      // Check pill still exists in DOM before dismissing
+      if (banner.querySelector(`.nb-pill[data-id="${id}"]`)) {
         pill.classList.add('nb-pill--dismissing');
         pill.addEventListener('animationend', () => {
           dismissOne(id);
         }, { once: true });
-      } else {
-        dismissOne(id);
       }
-    });
+    }, 4000);
   });
 }
 
