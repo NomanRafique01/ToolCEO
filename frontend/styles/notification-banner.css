@@ -11,8 +11,9 @@
   top: var(--topbar-height);
   left: var(--sidebar-width);
   right: 0;
-  min-height: 42px;
-  max-height: 60px;
+  height: 42px;
+  max-height: 42px;
+  min-height: 0;
   z-index: 900;
 
   /* Frosted Glass HUD aesthetics */
@@ -29,11 +30,17 @@
   color: var(--text-muted);
   padding: 0 20px;
   opacity: 1;
+  box-sizing: border-box;
 }
 
 /* Hidden state when 0 active notifications */
 .notification-banner.nb-hidden {
   display: none !important;
+  height: 0 !important;
+  max-height: 0 !important;
+  opacity: 0 !important;
+  border-bottom: none !important;
+  padding: 0 !important;
 }
 
 /* ── Banner Slide Down & Slide Up Animations ── */
@@ -51,11 +58,13 @@
 @keyframes bannerSlideDown {
   from {
     max-height: 0;
+    height: 0;
     opacity: 0;
     transform: translateY(-10px);
   }
   to {
-    max-height: 60px;
+    max-height: 42px;
+    height: 42px;
     opacity: 1;
     transform: translateY(0);
   }
@@ -63,12 +72,14 @@
 
 @keyframes bannerSlideUp {
   from {
-    max-height: 60px;
+    max-height: 42px;
+    height: 42px;
     opacity: 1;
     transform: translateY(0);
   }
   to {
     max-height: 0;
+    height: 0;
     opacity: 0;
     transform: translateY(-10px);
   }

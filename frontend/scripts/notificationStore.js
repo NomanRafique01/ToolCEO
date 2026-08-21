@@ -77,10 +77,9 @@ export function pushNotification({ type = 'success', message = '', detail = '', 
     : (type === 'success' || type === 'info');
 
   if (shouldAutoDismiss) {
-    const ttl = 4800; // JS fallback buffer (CSS animationend fires at 4000ms)
     const tid = setTimeout(() => {
       dismissOne(item.id);
-    }, ttl);
+    }, 4000);
     _timers.set(item.id, tid);
   }
 
