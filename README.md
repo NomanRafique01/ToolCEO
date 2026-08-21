@@ -10,35 +10,6 @@
 
 <br>
 
-<!-- ── Row 1 · Identity & Platform ───────────────────────────────────────── -->
-<p align="center">
-  <img src="https://img.shields.io/badge/Platform-Windows%20│%20macOS%20│%20Linux-00b4d8?style=for-the-badge&logo=windows&logoColor=white&labelColor=0A1F1C" alt="Platform"/>
-  <img src="https://img.shields.io/badge/Framework-Electron-47848F?style=for-the-badge&logo=electron&logoColor=9FEF00&labelColor=0A1F1C" alt="Electron"/>
-  <img src="https://img.shields.io/badge/Version-1.0.0-ff6b00?style=for-the-badge&logo=semver&logoColor=white&labelColor=0A1F1C" alt="Version"/>
-  <img src="https://img.shields.io/badge/Privacy-100%25%20Offline-06d6a0?style=for-the-badge&logo=shield&logoColor=white&labelColor=0A1F1C" alt="Privacy"/>
-  <img src="https://img.shields.io/badge/License-MIT-f72585?style=for-the-badge&logo=opensourceinitiative&logoColor=white&labelColor=0A1F1C" alt="License"/>
-  <img src="https://img.shields.io/badge/Status-Active%20Dev-7209b7?style=for-the-badge&logo=statuspage&logoColor=white&labelColor=0A1F1C" alt="Status"/>
-</p>
-
-<!-- ── Row 2 · Core Tech Stack ───────────────────────────────────────────── -->
-<p align="center">
-  <img src="https://img.shields.io/badge/Backend-Python%203.x%20+%20FastAPI-3a86ff?style=for-the-badge&logo=fastapi&logoColor=white&labelColor=0A1F1C" alt="Backend"/>
-  <img src="https://img.shields.io/badge/PDF%20Engine-PyMuPDF-e63946?style=for-the-badge&logo=adobeacrobatreader&logoColor=white&labelColor=0A1F1C" alt="PyMuPDF"/>
-  <img src="https://img.shields.io/badge/Frontend-Vanilla%20JS%20+%20HTML%2FCSS-f8961e?style=for-the-badge&logo=javascript&logoColor=black&labelColor=0A1F1C" alt="Frontend"/>
-  <img src="https://img.shields.io/badge/Streaming-SSE%20Real--Time-560bad?style=for-the-badge&logo=htmx&logoColor=white&labelColor=0A1F1C" alt="SSE Streaming"/>
-</p>
-
-<!-- ── Row 3 · Tool Suite Modules ────────────────────────────────────────── -->
-<p align="center">
-  <img src="https://img.shields.io/badge/Suite-PDF%20Tools-ff477e?style=for-the-badge&logo=adobe&logoColor=white&labelColor=0A1F1C" alt="PDF Tools"/>
-  <img src="https://img.shields.io/badge/Suite-Doc%20Conversions-fb5607?style=for-the-badge&logo=googledocs&logoColor=white&labelColor=0A1F1C" alt="Doc Conversions"/>
-  <img src="https://img.shields.io/badge/Suite-Audio%20Studio-4cc9f0?style=for-the-badge&logo=audioboom&logoColor=white&labelColor=0A1F1C" alt="Audio Suite"/>
-  <img src="https://img.shields.io/badge/Suite-Image%20Studio-8338ec?style=for-the-badge&logo=googlephotos&logoColor=white&labelColor=0A1F1C" alt="Image Studio"/>
-  <img src="https://img.shields.io/badge/Suite-Video%20Lab-4361ee?style=for-the-badge&logo=youtube&logoColor=white&labelColor=0A1F1C" alt="Video Lab"/>
-</p>
-
-</div>
-
 ---
 
 <div align="center">
