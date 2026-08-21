@@ -11,6 +11,7 @@
  */
 
 import { getActiveTool, setBgJob, getBgJob, syncBgJobBar, clearBgJob } from '../../../../scripts/toolstate.js';
+import { pushNotification } from '../../../../scripts/notificationStore.js';
 import {
   showScanProgress,
   showProgress,
@@ -231,6 +232,14 @@ function _showPdfThumbnail(zone, file, color, dataUri) {
  * @param {File} file
  */
 export async function handleSplitFilePicked(file) {
+  if (!file || !(file.name.toLowerCase().endsWith('.pdf') || file.type === 'application/pdf')) {
+    pushNotification({
+      type: 'warning',
+      message: 'Invalid File Format. Please select a valid PDF file.'
+    });
+    return;
+  }
+
   const tool  = getActiveTool();
   const color = tool ? (tool.color || '#E8924A') : '#E8924A';
   const zone  = document.getElementById('drop-zone');

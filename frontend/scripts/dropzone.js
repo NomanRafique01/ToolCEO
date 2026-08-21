@@ -47,13 +47,30 @@ const ENDPOINT_MAP = {
   'images-pdf' : { url: `${BACKEND}/api/convert/images-to-pdf`, multi: true  },
 };
 
-// ─── WARNING NOTIFICATION ───────────────────────────────────────────────────────
+// ─── WARNING NOTIFICATIONS ──────────────────────────────────────────────────
+
+const PDF_TOOL_IDS = new Set([
+  'merge', 'split', 'compress', 'rotate', 'encrypt', 'watermark', 'ocr', 'metadata',
+  'pdf-docx', 'pdf-html', 'pdf-txt', 'pdf-images'
+]);
 
 export function showNoToolWarning() {
   pushNotification({
     type: 'warning',
     message: 'Please Select a Tool First'
   });
+}
+
+export function showInvalidPdfWarning() {
+  pushNotification({
+    type: 'warning',
+    message: 'Invalid File Format. Please select a valid PDF file.'
+  });
+}
+
+function _isPdfFile(file) {
+  if (!file) return false;
+  return file.name.toLowerCase().endsWith('.pdf') || file.type === 'application/pdf';
 }
 
 // ─── DEFAULT STATE ────────────────────────────────────────────────────────────
@@ -719,6 +736,18 @@ async function _downloadFile(jobId, filename, color, wrap) {
 async function _submitFile(files) {
   const tool = getActiveTool();
   if (!tool) { showNoToolWarning(); return; }
+
+  const fileArray = Array.from(files);
+  if (fileArray.length === 0) return;
+
+  // Validate format for PDF tools
+  if (PDF_TOOL_IDS.has(tool.id)) {
+    const hasInvalid = fileArray.some((f) => !_isPdfFile(f));
+    if (hasInvalid) {
+      showInvalidPdfWarning();
+      return;
+    }
+  }
 
   // Split tool has its own two-step flow — delegated to the splitter module
   if (tool.id === 'split') {
