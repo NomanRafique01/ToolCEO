@@ -20,6 +20,8 @@
  *   escHtml(str)
  */
 
+import { clearBgJob } from '../../scripts/toolstate.js';
+
 const BACKEND = 'http://127.0.0.1:8000';
 
 // ── Ring geometry constants ──────────────────────────────────────────────────
@@ -123,6 +125,7 @@ export function updateProgress(zone, pct, color) {
 export function resetAfterSave(zone, onReset) {
   setTimeout(() => {
     resetZoneContent(zone);
+    clearBgJob();
     if (typeof onReset === 'function') onReset();
   }, 1800);
 }
@@ -204,6 +207,7 @@ export function showDownload(zone, filename, jobId, color, onReset) {
         if (savedPath) {
           btn.style.display = 'none';
           wrap.querySelector('.dz-save-done').classList.add('dz-save-done--visible');
+          clearBgJob();
           resetAfterSave(zone, onReset);
         } else {
           btn.disabled = false;
@@ -221,6 +225,7 @@ export function showDownload(zone, filename, jobId, color, onReset) {
         URL.revokeObjectURL(url);
         btn.style.display = 'none';
         wrap.querySelector('.dz-save-done').classList.add('dz-save-done--visible');
+        clearBgJob();
         resetAfterSave(zone, onReset);
       }
     } catch (err) {
