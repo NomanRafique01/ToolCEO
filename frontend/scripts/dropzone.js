@@ -880,7 +880,8 @@ export function initDropZone() {
     if (
       dropZone.classList.contains('dz-has-thumb') ||
       dropZone.classList.contains('dz-has-compress-thumb') ||
-      dropZone.querySelector('.dz-pdf-thumb-wrap, .dz-compress-thumb-wrap')
+      dropZone.classList.contains('dz-has-merge-thumbs') ||
+      dropZone.querySelector('.dz-pdf-thumb-wrap, .dz-compress-thumb-wrap, .dz-merge-thumb-strip')
     ) {
       return;
     }
@@ -925,7 +926,8 @@ export function initDropZone() {
     if (
       dropZone.classList.contains('dz-has-thumb') ||
       dropZone.classList.contains('dz-has-compress-thumb') ||
-      dropZone.querySelector('.dz-pdf-thumb-wrap, .dz-compress-thumb-wrap')
+      dropZone.classList.contains('dz-has-merge-thumbs') ||
+      dropZone.querySelector('.dz-pdf-thumb-wrap, .dz-compress-thumb-wrap, .dz-merge-thumb-strip')
     ) {
       return;
     }

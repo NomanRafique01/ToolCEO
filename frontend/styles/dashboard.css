@@ -666,7 +666,8 @@
 
 /* Clear zone background so thumbnail reads cleanly */
 .drop-zone.dz-has-thumb,
-.drop-zone.dz-has-compress-thumb {
+.drop-zone.dz-has-compress-thumb,
+.drop-zone.dz-has-merge-thumbs {
   background: transparent !important;
   box-shadow: none !important;
   cursor: default !important;
