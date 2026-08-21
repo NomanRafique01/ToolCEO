@@ -1,9 +1,9 @@
 /* ─────────────────────────────────────────────────────────────
    tools/documents/pdf_tools/compressor/compressor.css
-   Styles specific to the PDF Compressor tool:
-     - PDF thumbnail inside the drop zone
-     - Compression settings panel with all option groups
-     - Preset buttons, toggles
+   Styles for the PDF Compressor tool:
+     - Thumbnail inside the drop zone
+     - Compression settings panel (size-reduction only)
+     - Reduction level buttons, custom slider, actions row
    ───────────────────────────────────────────────────────────── */
 
 /* ─── CSS CUSTOM PROPERTY DEFAULTS ────────────────────────────────────────── */
@@ -122,7 +122,6 @@
   flex-direction: column;
   gap: 14px;
 
-  /* Slide-in animation — starts hidden */
   opacity: 0;
   transform: translateY(10px);
   transition: opacity 220ms ease, transform 220ms ease;
@@ -194,167 +193,123 @@
   gap: 5px;
 }
 
-/* ── Preset group ── */
+/* ─── REDUCTION LEVEL BUTTONS ────────────────────────────────────────────── */
 
-.cmp-preset-group {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
+.cmp-reduction-group {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 8px;
 }
 
-.cmp-preset-btn {
+@media (max-width: 600px) {
+  .cmp-reduction-group {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.cmp-reduction-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 6px;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 8px;
-  padding: 5px 14px;
+  padding: 8px 12px;
   font-size: 12px;
-  font-weight: 500;
   color: var(--text-muted);
   cursor: pointer;
   transition: border-color 140ms ease, color 140ms ease, background 140ms ease;
+  user-select: none;
 }
 
-.cmp-preset-btn:hover {
+.cmp-reduction-btn:hover {
   border-color: color-mix(in srgb, var(--cmp-color, #34D399) 55%, transparent);
   color: var(--text-primary);
 }
 
-.cmp-preset-btn--active {
+.cmp-reduction-title {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.cmp-reduction-sub {
+  font-size: 11px;
+  font-weight: 400;
+  color: var(--text-muted);
+}
+
+.cmp-reduction-size {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--cmp-color, #34D399);
+  background: color-mix(in srgb, var(--cmp-color, #34D399) 12%, transparent);
+  padding: 2px 7px;
+  border-radius: 6px;
+  letter-spacing: 0.01em;
+}
+
+.cmp-reduction-btn--active {
   background: color-mix(in srgb, var(--cmp-color, #34D399) 14%, var(--bg-card));
   border-color: var(--cmp-color, #34D399);
   color: var(--cmp-color, #34D399);
   font-weight: 600;
 }
 
-/* ── Settings grid: 3 equal columns ── */
-
-.cmp-grid {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 14px 16px;
+.cmp-reduction-btn--active .cmp-reduction-title {
+  color: var(--cmp-color, #34D399);
 }
 
-@media (max-width: 680px) {
-  .cmp-grid { grid-template-columns: 1fr; }
-}
+/* ─── CUSTOM SLIDER CONTROL ──────────────────────────────────────────────── */
 
-/* ── Group (column) ── */
-
-.cmp-group {
+.cmp-custom-slider-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
   background: var(--bg-card);
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 12px 13px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
+  padding: 12px 14px;
+  margin-top: 4px;
 }
 
-.cmp-group-label {
-  font-size: 11px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: color-mix(in srgb, var(--cmp-color, #34D399) 80%, var(--text-muted));
+.cmp-slider-row {
   display: flex;
   align-items: center;
-  gap: 5px;
+  justify-content: space-between;
 }
 
-.cmp-group-label--mt {
-  margin-top: 6px;
-  padding-top: 10px;
-  border-top: 1px solid var(--border);
-}
-
-/* ── Field ── */
-
-.cmp-field {
+.cmp-slider-val-box {
   display: flex;
-  flex-direction: column;
-  gap: 5px;
+  align-items: center;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: bold;
+  color: var(--cmp-color, #34D399);
 }
+
+.cmp-slider-input {
+  width: 100%;
+  accent-color: var(--cmp-color, #34D399);
+  cursor: pointer;
+  height: 6px;
+  border-radius: 3px;
+}
+
+.cmp-slider-ticks {
+  display: flex;
+  justify-content: space-between;
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+/* ─── SHARED SMALL INPUTS ────────────────────────────────────────────────── */
 
 .cmp-label {
   font-size: 12px;
   color: var(--text-primary);
   cursor: default;
-}
-
-.cmp-field-hint {
-  font-size: 10px;
-  color: var(--text-muted);
-}
-
-/* ── Toggle switch row ── */
-
-.cmp-toggle-row {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  cursor: pointer;
-  user-select: none;
-}
-
-.cmp-toggle-label {
-  font-size: 12px;
-  color: var(--text-primary);
-  line-height: 1.35;
-}
-
-.cmp-toggle-wrap {
-  position: relative;
-  flex-shrink: 0;
-  width: 32px;
-  height: 18px;
-}
-
-.cmp-toggle-input {
-  opacity: 0;
-  width: 0;
-  height: 0;
-  position: absolute;
-}
-
-.cmp-toggle-knob {
-  position: absolute;
-  inset: 0;
-  border-radius: 18px;
-  background: color-mix(in srgb, var(--border) 100%, transparent);
-  border: 1px solid var(--border);
-  transition: background 160ms ease, border-color 160ms ease;
-  cursor: pointer;
-}
-
-.cmp-toggle-knob::after {
-  content: '';
-  position: absolute;
-  top: 2px;
-  left: 2px;
-  width: 12px;
-  height: 12px;
-  border-radius: 50%;
-  background: var(--text-muted);
-  transition: transform 160ms ease, background 160ms ease;
-}
-
-.cmp-toggle-input:checked + .cmp-toggle-knob {
-  background: color-mix(in srgb, var(--cmp-color, #34D399) 22%, var(--bg-surface));
-  border-color: var(--cmp-color, #34D399);
-}
-
-.cmp-toggle-input:checked + .cmp-toggle-knob::after {
-  transform: translateX(14px);
-  background: var(--cmp-color, #34D399);
-}
-
-/* ── Max file size input ── */
-
-.cmp-max-size-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
 }
 
 .cmp-number-input {
@@ -375,11 +330,6 @@
 
 .cmp-number-input:focus {
   border-color: var(--cmp-color, #34D399);
-}
-
-.cmp-number-unit {
-  font-size: 12px;
-  color: var(--text-muted);
 }
 
 /* ─── ACTIONS ROW ────────────────────────────────────────────────────────── */
@@ -416,7 +366,7 @@
 
 .cmp-submit-btn {
   background: var(--cmp-color, #34D399);
-  color: #0A1F1C;   /* dark text on emerald */
+  color: #0A1F1C;
   border: none;
   border-radius: 8px;
   padding: 7px 18px;

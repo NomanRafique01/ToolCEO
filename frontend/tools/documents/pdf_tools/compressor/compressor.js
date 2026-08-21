@@ -1,13 +1,13 @@
 /**
  * tools/documents/pdf_tools/compressor/compressor.js
  *
- * Self-contained Compressor tool module.
- * Owns all compress-specific state, scan flow, settings panel UI,
- * preset logic, and submission.
+ * PDF Compressor — size-reduction only.
+ * Shows a thumbnail preview, lets the user pick a reduction target
+ * (20 % / 50 % / 80 % / Custom), then submits via the backend job system.
  *
  * Exports:
- *   handleCompressFilePicked(file)  – call when a file is chosen while Compress is active
- *   removeCompressPanel()           – tear down the panel (tool change / reset)
+ *   handleCompressFilePicked(file)  – call when a file is chosen
+ *   removeCompressPanel()           – teardown on tool change / reset
  */
 
 import { getActiveTool }             from '../../../../scripts/toolstate.js';
@@ -42,18 +42,8 @@ function _fmt(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
 
-// ─── PRESET DEFINITIONS ────────────────────────────────────────────────────────
-
-const PRESETS = {
-  screen:  { label: 'Screen'  },
-  ebook:   { label: 'eBook'   },
-  printer: { label: 'Printer' },
-  custom:  { label: 'Custom'  },
-};
-
 // ─── PUBLIC: TEARDOWN ─────────────────────────────────────────────────────────
 
-/** Remove the compress settings panel and thumbnail from the DOM. */
 export function removeCompressPanel() {
   const panel = document.getElementById('compress-settings-panel');
   if (panel) panel.remove();
@@ -72,11 +62,6 @@ export function removeCompressPanel() {
 
 // ─── THUMBNAIL (inside drop zone) ─────────────────────────────────────────────
 
-/**
- * Render the first-page thumbnail inside the drop zone.
- * Same visual contract as splitter: single-file preview card with
- * filename label and remove (×) button.
- */
 function _showCompressThumb(zone, file, color, dataUri) {
   const old = zone.querySelector('.dz-compress-thumb-wrap');
   if (old) old.remove();
@@ -127,9 +112,6 @@ function _showCompressThumb(zone, file, color, dataUri) {
 
 // ─── SETTINGS PANEL ───────────────────────────────────────────────────────────
 
-/**
- * Build and append the compression settings panel below the drop zone.
- */
 function _showSettingsPanel(pageCount, color) {
   const existing = document.getElementById('compress-settings-panel');
   if (existing) existing.remove();
@@ -155,7 +137,7 @@ function _showSettingsPanel(pageCount, color) {
         <span class="cmp-header-text">
           <strong>${pageCount}</strong> page${pageCount !== 1 ? 's' : ''}
           &nbsp;·&nbsp;
-          <strong>${_fmt(_compressFileSize)}</strong>
+          Original Size: <strong>${_fmt(_compressFileSize)}</strong>
         </span>
       </span>
       <button class="cmp-change-btn" id="cmp-change-btn" title="Pick a different file">
@@ -163,110 +145,48 @@ function _showSettingsPanel(pageCount, color) {
       </button>
     </div>
 
-    <!-- ── PRESET ROW ───────────────────────────────────────────────── -->
+    <!-- ── TARGET SIZE REDUCTION SECTION ───────────────────────────── -->
     <div class="cmp-section">
       <div class="cmp-section-title">
         <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-          <circle cx="6" cy="6" r="5" stroke="currentColor" stroke-width="1.2"/>
-          <path d="M4 6h4M6 4v4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+          <path d="M6 1v10M1 6h10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
         </svg>
-        Compression Preset
+        Target Size Reduction
       </div>
-      <div class="cmp-preset-group" id="cmp-preset-group">
-        <button class="cmp-preset-btn" data-preset="screen">Screen</button>
-        <button class="cmp-preset-btn" data-preset="ebook">eBook</button>
-        <button class="cmp-preset-btn" data-preset="printer">Printer</button>
-        <button class="cmp-preset-btn cmp-preset-btn--active" data-preset="custom">Custom</button>
+
+      <div class="cmp-reduction-group" id="cmp-reduction-group">
+        <button class="cmp-reduction-btn" data-reduction="20" id="cmp-red-20">
+          <span class="cmp-reduction-title">20% <span class="cmp-reduction-sub">Low</span></span>
+          <span class="cmp-reduction-size">${_fmt(_compressFileSize * 0.8)}</span>
+        </button>
+        <button class="cmp-reduction-btn cmp-reduction-btn--active" data-reduction="50" id="cmp-red-50">
+          <span class="cmp-reduction-title">50% <span class="cmp-reduction-sub">Medium</span></span>
+          <span class="cmp-reduction-size">${_fmt(_compressFileSize * 0.5)}</span>
+        </button>
+        <button class="cmp-reduction-btn" data-reduction="80" id="cmp-red-80">
+          <span class="cmp-reduction-title">80% <span class="cmp-reduction-sub">High</span></span>
+          <span class="cmp-reduction-size">${_fmt(_compressFileSize * 0.2)}</span>
+        </button>
+        <button class="cmp-reduction-btn" data-reduction="custom" id="cmp-red-custom">
+          <span class="cmp-reduction-title">Custom <span class="cmp-reduction-sub">%</span></span>
+          <span class="cmp-reduction-size" id="cmp-custom-size-sub">${_fmt(_compressFileSize * 0.5)}</span>
+        </button>
+      </div>
+
+      <div class="cmp-custom-slider-wrap" id="cmp-custom-slider-wrap" style="display: none;">
+        <div class="cmp-slider-row">
+          <label class="cmp-label" for="cmp-custom-slider">Custom Reduction:</label>
+          <div class="cmp-slider-val-box">
+            <input type="number" id="cmp-custom-pct-input" min="5" max="95" value="50"
+                   class="cmp-number-input" style="width:56px; text-align:center;"/> %
+          </div>
+        </div>
+        <input type="range" id="cmp-custom-slider" min="5" max="95" value="50" class="cmp-slider-input"/>
+        <div class="cmp-slider-ticks">
+          <span>5%</span><span>50%</span><span>95%</span>
+        </div>
       </div>
     </div>
-
-    <!-- ── SETTINGS GRID ────────────────────────────────────────────── -->
-    <div class="cmp-grid">
-
-      <!-- Content Removal -->
-      <div class="cmp-group">
-        <div class="cmp-group-label">
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-            <path d="M2 3h8M5 1h2M4 3v7a1 1 0 0 0 1 1h2a1 1 0 0 0 1-1V3"
-                  stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-          </svg>
-          Content Removal
-        </div>
-        <label class="cmp-toggle-row">
-          <span class="cmp-toggle-label">Remove metadata</span>
-          <span class="cmp-toggle-wrap">
-            <input type="checkbox" id="cmp-rm-metadata" class="cmp-toggle-input"/>
-            <span class="cmp-toggle-knob"></span>
-          </span>
-        </label>
-        <label class="cmp-toggle-row">
-          <span class="cmp-toggle-label">Remove annotations &amp; comments</span>
-          <span class="cmp-toggle-wrap">
-            <input type="checkbox" id="cmp-rm-annots" class="cmp-toggle-input"/>
-            <span class="cmp-toggle-knob"></span>
-          </span>
-        </label>
-        <label class="cmp-toggle-row">
-          <span class="cmp-toggle-label">Remove bookmarks</span>
-          <span class="cmp-toggle-wrap">
-            <input type="checkbox" id="cmp-rm-bookmarks" class="cmp-toggle-input"/>
-            <span class="cmp-toggle-knob"></span>
-          </span>
-        </label>
-        <label class="cmp-toggle-row">
-          <span class="cmp-toggle-label">Remove embedded thumbnails</span>
-          <span class="cmp-toggle-wrap">
-            <input type="checkbox" id="cmp-rm-thumbs" class="cmp-toggle-input"/>
-            <span class="cmp-toggle-knob"></span>
-          </span>
-        </label>
-      </div>
-
-      <!-- Font + Output -->
-      <div class="cmp-group">
-        <div class="cmp-group-label">
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-            <path d="M2 10L5 2h2l3 8M3.5 7h5" stroke="currentColor" stroke-width="1.2"
-                  stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          Font
-        </div>
-        <label class="cmp-toggle-row">
-          <span class="cmp-toggle-label">Subset fonts</span>
-          <span class="cmp-toggle-wrap">
-            <input type="checkbox" id="cmp-subset-fonts" class="cmp-toggle-input"/>
-            <span class="cmp-toggle-knob"></span>
-          </span>
-        </label>
-
-        <div class="cmp-group-label cmp-group-label--mt">
-          <svg width="12" height="12" viewBox="0 0 12 12" fill="none" aria-hidden="true">
-            <path d="M2 9.5V8a1 1 0 0 1 1-1h6a1 1 0 0 1 1 1v1.5"
-                  stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-            <path d="M6 1v6M4 5l2 2 2-2" stroke="currentColor" stroke-width="1.2"
-                  stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          Output
-        </div>
-        <label class="cmp-toggle-row">
-          <span class="cmp-toggle-label">Flatten form fields</span>
-          <span class="cmp-toggle-wrap">
-            <input type="checkbox" id="cmp-flatten" class="cmp-toggle-input"/>
-            <span class="cmp-toggle-knob"></span>
-          </span>
-        </label>
-        <div class="cmp-field cmp-field--max-size">
-          <label class="cmp-label" for="cmp-max-size">Max file size target</label>
-          <div class="cmp-max-size-row">
-            <input class="cmp-number-input" id="cmp-max-size" type="number"
-                   min="1" step="1" placeholder="e.g. 500"/>
-            <span class="cmp-number-unit">KB</span>
-          </div>
-          <span class="cmp-field-hint">Leave blank for no limit</span>
-        </div>
-      </div>
-
-    </div><!-- /cmp-grid -->
 
     <!-- ── ACTIONS ROW ──────────────────────────────────────────────── -->
     <div class="cmp-actions">
@@ -278,21 +198,48 @@ function _showSettingsPanel(pageCount, color) {
     </div>`;
 
   heroCard.appendChild(panel);
-
-  // Animate in
   requestAnimationFrame(() => panel.classList.add('cmp-panel--visible'));
 
-  // ── Wire up controls ──────────────────────────────────────────────────────
+  // ── Reduction buttons ──────────────────────────────────────────────────────
 
-  // Preset buttons
-  panel.querySelectorAll('[data-preset]').forEach((btn) => {
+  const reductionBtns = panel.querySelectorAll('[data-reduction]');
+  const sliderWrap    = panel.querySelector('#cmp-custom-slider-wrap');
+  const sliderInput   = panel.querySelector('#cmp-custom-slider');
+  const sliderNum     = panel.querySelector('#cmp-custom-pct-input');
+
+  const updateCustomSub = (pct) => {
+    pct = Math.max(5, Math.min(95, pct));
+    const targetBytes = Math.round(_compressFileSize * (1 - pct / 100));
+    const el = panel.querySelector('#cmp-custom-size-sub');
+    if (el) el.textContent = _fmt(targetBytes);
+  };
+
+  reductionBtns.forEach((btn) => {
     btn.addEventListener('click', () => {
-      const preset = btn.dataset.preset;
-      _activatePreset(panel, preset);
+      reductionBtns.forEach((b) => b.classList.remove('cmp-reduction-btn--active'));
+      btn.classList.add('cmp-reduction-btn--active');
+      const val = btn.dataset.reduction;
+      if (val === 'custom') {
+        if (sliderWrap) sliderWrap.style.display = 'flex';
+        updateCustomSub(parseInt(sliderInput.value, 10) || 50);
+      } else {
+        if (sliderWrap) sliderWrap.style.display = 'none';
+      }
     });
   });
 
-  // "Change file" button
+  const syncCustom = (pct) => {
+    pct = Math.max(5, Math.min(95, pct));
+    sliderInput.value = pct;
+    sliderNum.value   = pct;
+    updateCustomSub(pct);
+  };
+
+  sliderInput.addEventListener('input', (e) => syncCustom(parseInt(e.target.value, 10)));
+  sliderNum.addEventListener('input',   (e) => syncCustom(parseInt(e.target.value, 10)));
+
+  // ── "Change file" button ──────────────────────────────────────────────────
+
   panel.querySelector('#cmp-change-btn').addEventListener('click', () => {
     const tool = getActiveTool();
     removeCompressPanel();
@@ -305,61 +252,50 @@ function _showSettingsPanel(pageCount, color) {
     }
   });
 
-  // "Compress PDF" submit
+  // ── "Compress PDF" button ─────────────────────────────────────────────────
+
   panel.querySelector('#cmp-submit-btn').addEventListener('click', () => {
     if (!_compressFile) return;
-    const opts = _collectOptions(panel);
-    const nameInput = panel.querySelector('#cmp-filename-input');
-    const outName   = (nameInput ? nameInput.value.trim() : '') || (_compressBaseName + '_compressed');
-    const mainContent = document.getElementById('main-content');
-    if (mainContent) mainContent.scrollTop = 0;
+    const opts    = _collectOptions(panel);
+    const nameEl  = panel.querySelector('#cmp-filename-input');
+    const outName = (nameEl ? nameEl.value.trim() : '') || (_compressBaseName + '_compressed');
+    const main    = document.getElementById('main-content');
+    if (main) main.scrollTop = 0;
     _submitCompress(_compressFile, opts, outName);
   });
 
-  // Default filename
+  // ── Default filename ──────────────────────────────────────────────────────
+
   const filenameInput = panel.querySelector('#cmp-filename-input');
   if (filenameInput && _compressBaseName) {
     filenameInput.value = `${_compressBaseName}_compressed`;
   }
 }
 
-// ─── PRESET LOGIC ─────────────────────────────────────────────────────────────
-
-function _activatePreset(panel, presetName) {
-  // Update active preset button only — image controls removed from this panel
-  panel.querySelectorAll('[data-preset]').forEach((b) => {
-    b.classList.toggle('cmp-preset-btn--active', b.dataset.preset === presetName);
-  });
-}
-
 // ─── COLLECT OPTIONS ──────────────────────────────────────────────────────────
 
 function _collectOptions(panel) {
-  const activePresetBtn = panel.querySelector('[data-preset].cmp-preset-btn--active');
-  const preset          = activePresetBtn ? activePresetBtn.dataset.preset : 'custom';
+  const activeRedBtn = panel.querySelector('[data-reduction].cmp-reduction-btn--active');
+  let targetBytes = null;
 
-  const maxSizeKb = parseInt(panel.querySelector('#cmp-max-size').value, 10);
-  const maxBytes  = isNaN(maxSizeKb) || maxSizeKb <= 0 ? null : maxSizeKb * 1024;
+  if (activeRedBtn) {
+    const redVal = activeRedBtn.dataset.reduction;
+    let pct = 50;
+    if (redVal === 'custom') {
+      const s = panel.querySelector('#cmp-custom-slider');
+      pct = s ? parseInt(s.value, 10) : 50;
+    } else {
+      pct = parseInt(redVal, 10);
+    }
+    pct = Math.max(5, Math.min(95, pct));
+    targetBytes = Math.round(_compressFileSize * (1 - pct / 100));
+  }
 
-  return {
-    preset,
-    remove_metadata:    panel.querySelector('#cmp-rm-metadata').checked,
-    remove_annotations: panel.querySelector('#cmp-rm-annots').checked,
-    remove_bookmarks:   panel.querySelector('#cmp-rm-bookmarks').checked,
-    remove_thumbnails:  panel.querySelector('#cmp-rm-thumbs').checked,
-    subset_fonts:       panel.querySelector('#cmp-subset-fonts').checked,
-    flatten_forms:      panel.querySelector('#cmp-flatten').checked,
-    max_file_size:      maxBytes,
-  };
+  return { max_file_size: targetBytes };
 }
 
 // ─── SCAN FLOW ────────────────────────────────────────────────────────────────
 
-/**
- * Called when a file is picked while the Compress tool is active.
- * Scans the PDF for page count + thumbnail, then shows the settings panel.
- * @param {File} file
- */
 export async function handleCompressFilePicked(file) {
   const tool  = getActiveTool();
   const color = tool ? (tool.color || '#34D399') : '#34D399';
@@ -410,24 +346,20 @@ async function _submitCompress(file, opts, outputFilename) {
   const zone  = document.getElementById('drop-zone');
   const color = tool.color || '#34D399';
 
-  // Grey out panel while processing
+  // Hide thumbnail + settings immediately; show progress bar only
   const panel = document.getElementById('compress-settings-panel');
-  if (panel) panel.classList.add('cmp-panel--submitting');
+  if (panel) panel.remove();
+  const thumb = zone ? zone.querySelector('.dz-compress-thumb-wrap') : null;
+  if (thumb) thumb.remove();
+  if (zone)  zone.classList.remove('dz-has-compress-thumb');
 
-  // Build FormData — all options as form fields
+  // Build FormData
   const fd = new FormData();
   fd.append('file', file);
-  fd.append('remove_metadata',    String(opts.remove_metadata));
-  fd.append('remove_annotations', String(opts.remove_annotations));
-  fd.append('remove_bookmarks',   String(opts.remove_bookmarks));
-  fd.append('remove_thumbnails',  String(opts.remove_thumbnails));
-  fd.append('subset_fonts',       String(opts.subset_fonts));
-  fd.append('preset',             opts.preset);
-  fd.append('flatten_forms',      String(opts.flatten_forms));
   if (opts.max_file_size != null) fd.append('max_file_size', String(opts.max_file_size));
   fd.append('output_filename', outputFilename);
 
-  showProgress(zone, 0, color, 'Compressing…');
+  showProgress(zone, 10, color, 'Compressing…');
 
   let jobId;
   try {
@@ -443,11 +375,10 @@ async function _submitCompress(file, opts, outputFilename) {
     jobId = json.job_id;
   } catch (err) {
     showError(zone, `Upload failed: ${err.message}`);
-    if (panel) panel.classList.remove('cmp-panel--submitting');
     return;
   }
 
-  // ── SSE progress ───────────────────────────────────────────────────────────
+  // ── SSE progress ────────────────────────────────────────────────────────────
   const sse   = new EventSource(`${BACKEND}/api/progress/${jobId}`);
   let lastPct = 0;
 
@@ -456,8 +387,9 @@ async function _submitCompress(file, opts, outputFilename) {
     try { data = JSON.parse(event.data); } catch { return; }
 
     const { state, progress, error } = data;
-    const pct = typeof progress === 'number' ? progress : lastPct;
-    lastPct   = pct;
+    const rawPct = typeof progress === 'number' ? progress : lastPct;
+    const pct    = Math.max(lastPct, rawPct);
+    lastPct      = pct;
 
     if (state === 'running' || state === 'pending') {
       updateProgress(zone, Math.max(10, Math.min(90, pct)), color);
@@ -468,9 +400,8 @@ async function _submitCompress(file, opts, outputFilename) {
 
     if (state === 'done') {
       updateProgress(zone, 100, color);
-      const baseName = _compressBaseName || 'document';
       removeCompressPanel();
-      const dlName = data.filename || `${baseName}_compressed.pdf`;
+      const dlName = data.filename || `${_compressBaseName}_compressed.pdf`;
       const onReset = () => {
         removeCompressPanel();
         const activeTool = getActiveTool();
@@ -486,13 +417,11 @@ async function _submitCompress(file, opts, outputFilename) {
 
     if (state === 'error') {
       showError(zone, error || 'Compression failed. Please try again.');
-      if (panel) panel.classList.remove('cmp-panel--submitting');
     }
   };
 
   sse.onerror = () => {
     sse.close();
     showError(zone, 'Lost connection to backend. Is the server running?');
-    if (panel) panel.classList.remove('cmp-panel--submitting');
   };
 }

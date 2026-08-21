@@ -52,7 +52,9 @@ app.whenReady().then(() => {
   // ── Save file to Downloads folder ──────────────────────────────────────────
   ipcMain.handle('save-to-downloads', (_event, filename, base64Data) => {
     const downloadsDir = app.getPath('downloads');
-    const filePath = path.join(downloadsDir, filename);
+    let outName = (filename || 'compressed.pdf').trim();
+    if (!outName.toLowerCase().endsWith('.pdf')) outName += '.pdf';
+    const filePath = path.join(downloadsDir, outName);
     const buffer = Buffer.from(base64Data, 'base64');
     fs.writeFileSync(filePath, buffer);
     return filePath;
@@ -60,15 +62,28 @@ app.whenReady().then(() => {
 
   ipcMain.handle('save-file-dialog', async (_event, filename, base64Data) => {
     const downloadsDir = app.getPath('downloads');
+    let outName = (filename || 'compressed.pdf').trim();
+    if (!outName.toLowerCase().endsWith('.pdf')) outName += '.pdf';
+
+    const ext = path.extname(outName).replace('.', '') || 'pdf';
     const { canceled, filePath } = await dialog.showSaveDialog({
-      title: 'Save file',
-      defaultPath: path.join(downloadsDir, filename),
-      buttonLabel: 'Save',
+      title: 'Save compressed PDF',
+      defaultPath: path.join(downloadsDir, outName),
+      buttonLabel: 'Save PDF',
+      filters: [
+        { name: 'PDF Documents (*.pdf)', extensions: ['pdf'] },
+        { name: 'All Files (*.*)', extensions: ['*'] }
+      ]
     });
     if (canceled || !filePath) return null;
+
+    let finalPath = filePath;
+    if (!finalPath.toLowerCase().endsWith('.pdf')) {
+      finalPath += '.pdf';
+    }
     const buffer = Buffer.from(base64Data, 'base64');
-    fs.writeFileSync(filePath, buffer);
-    return filePath;
+    fs.writeFileSync(finalPath, buffer);
+    return finalPath;
   });
 
   // ── Start Python backend, then open window ─────────────────────────────────

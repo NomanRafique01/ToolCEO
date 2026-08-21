@@ -62,8 +62,12 @@ def download_result(job_id: str):
     job = get_job(job_id)
     if job is None or job.state != "done" or job.result is None:
         raise HTTPException(status_code=404, detail="Job not ready or not found.")
+    filename = (job.filename or "compressed.pdf").strip()
+    if not filename.lower().endswith(".pdf"):
+        filename += ".pdf"
+    media_type = job.media_type or "application/pdf"
     return Response(
         content=job.result,
-        media_type=job.media_type or "application/octet-stream",
-        headers={"Content-Disposition": f'attachment; filename="{job.filename}"'},
+        media_type=media_type,
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
