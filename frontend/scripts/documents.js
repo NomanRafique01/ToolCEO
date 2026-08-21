@@ -6,6 +6,7 @@
 
 import { setBreadcrumb } from './navigation.js';
 import { setActiveTool, onToolChange } from './toolstate.js';
+import { openRotateFilePicker } from '../tools/documents/pdf_tools/rotate/rotate.js';
 
 // Sync card selection highlight in the explore-tools grid whenever active tool changes
 onToolChange((tool) => {
@@ -436,27 +437,31 @@ export function renderPdfTools(container, activateNav) {
       <span class="explore-title">PDF — Tools &amp; Conversions</span>
     </div>
 
-    <div class="pdf-zone-label">
-      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" class="pdf-zone-icon">
-        <rect x="1" y="1" width="6" height="6" rx="1.2" stroke="currentColor" stroke-width="1.4"/>
-        <rect x="9" y="1" width="6" height="6" rx="1.2" stroke="currentColor" stroke-width="1.4"/>
-        <rect x="1" y="9" width="6" height="6" rx="1.2" stroke="currentColor" stroke-width="1.4"/>
-        <rect x="9" y="9" width="6" height="6" rx="1.2" stroke="currentColor" stroke-width="1.4"/>
-      </svg>
-      PDF Tools
-    </div>
-    <div class="fmt-grid">
-      ${PDF_TOOLS.map((t) => cardHTML(t)).join('')}
-    </div>
+    <div class="pdf-tools-swap" id="pdf-tools-swap">
+      <div class="pdf-tools-card-view" id="pdf-tools-card-view">
+        <div class="pdf-zone-label">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" class="pdf-zone-icon">
+            <rect x="1" y="1" width="6" height="6" rx="1.2" stroke="currentColor" stroke-width="1.4"/>
+            <rect x="9" y="1" width="6" height="6" rx="1.2" stroke="currentColor" stroke-width="1.4"/>
+            <rect x="1" y="9" width="6" height="6" rx="1.2" stroke="currentColor" stroke-width="1.4"/>
+            <rect x="9" y="9" width="6" height="6" rx="1.2" stroke="currentColor" stroke-width="1.4"/>
+          </svg>
+          PDF Tools
+        </div>
+        <div class="fmt-grid">
+          ${PDF_TOOLS.map((t) => cardHTML(t)).join('')}
+        </div>
 
-    <div class="pdf-zone-label" style="margin-top:22px;">
-      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" class="pdf-zone-icon">
-        <path d="M3 8h10M10 5l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-      </svg>
-      PDF Conversions
-    </div>
-    <div class="fmt-grid">
-      ${PDF_CONVERSIONS.map((t) => cardHTML(t)).join('')}
+        <div class="pdf-zone-label" style="margin-top:22px;">
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none" class="pdf-zone-icon">
+            <path d="M3 8h10M10 5l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          PDF Conversions
+        </div>
+        <div class="fmt-grid">
+          ${PDF_CONVERSIONS.map((t) => cardHTML(t)).join('')}
+        </div>
+      </div>
     </div>
   `;
 
@@ -475,11 +480,16 @@ export function renderPdfTools(container, activateNav) {
       const item = allItems.find((t) => t.id === card.dataset.id);
       if (item) {
         const { mainText, subText } = _dropTextFor(item);
-        setActiveTool({
+        const tool = {
           id: item.id, label: item.label, mainText, subText,
           icon: item.icon, color: item.color, bg: item.bg,
           tag: item.tag,
-        });
+        };
+        setActiveTool(tool);
+        if (item.id === 'rotate') {
+          openRotateFilePicker(container, tool);
+          return;
+        }
         _scrollToDropZone();
       }
     });

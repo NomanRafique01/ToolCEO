@@ -1,0 +1,307 @@
+/* ─────────────────────────────────────────────────────────────
+   tools/documents/pdf_tools/rotate/rotate.css
+   Full-area PDF page rotation viewer for the Documents PDF panel.
+   ───────────────────────────────────────────────────────────── */
+
+.pdf-tools-swap {
+  position: relative;
+  min-height: 430px;
+}
+
+.pdf-tools-card-view {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 300ms ease, transform 300ms ease;
+}
+
+.pdf-tools-card-view.rotate-hidden {
+  display: none;
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.rotate-viewer {
+  display: none;
+  flex-direction: column;
+  width: 100%;
+  min-height: 430px;
+  max-height: min(72vh, 760px);
+  background: #0d1f1a;
+  border: 1px solid color-mix(in srgb, #00f5d4 20%, var(--border));
+  border-radius: 12px;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 300ms ease, transform 300ms ease;
+}
+
+.rotate-viewer.rotate-viewer--visible {
+  display: flex;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.rotate-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  display: grid;
+  grid-template-columns: minmax(90px, 1fr) minmax(160px, 1.4fr) minmax(280px, 1fr);
+  align-items: center;
+  gap: 12px;
+  padding: 12px 14px;
+  background: rgba(13, 31, 26, 0.96);
+  border-bottom: 1px solid rgba(0, 245, 212, 0.16);
+  backdrop-filter: blur(12px);
+}
+
+.rotate-back-btn,
+.rotate-action-btn,
+.rotate-page-btn {
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: border-color 150ms ease, color 150ms ease, background 150ms ease, opacity 150ms ease;
+}
+
+.rotate-back-btn {
+  justify-self: start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 10px;
+  border-radius: 8px;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+.rotate-back-btn:hover {
+  color: #00f5d4;
+  border-color: rgba(0, 245, 212, 0.3);
+  background: rgba(0, 245, 212, 0.06);
+}
+
+.rotate-file-meta {
+  min-width: 0;
+  text-align: center;
+}
+
+.rotate-file-name {
+  display: block;
+  color: var(--text-primary);
+  font-size: 13px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rotate-page-count {
+  display: block;
+  margin-top: 2px;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+.rotate-actions {
+  justify-self: end;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.rotate-action-btn {
+  height: 32px;
+  padding: 0 11px;
+  border-radius: 8px;
+  border-color: rgba(0, 245, 212, 0.24);
+  color: #00f5d4;
+  background: rgba(0, 245, 212, 0.06);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.rotate-action-btn:hover {
+  border-color: #00f5d4;
+  background: rgba(0, 245, 212, 0.12);
+}
+
+.rotate-save-btn {
+  color: #08211d;
+  background: #00f5d4;
+  border-color: #00f5d4;
+}
+
+.rotate-save-btn:hover {
+  filter: brightness(1.05);
+}
+
+.rotate-action-btn:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.rotate-grid {
+  flex: 1;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: minmax(230px, auto);
+  gap: 14px;
+  padding: 16px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: rgba(0, 245, 212, 0.55) rgba(255, 255, 255, 0.05);
+}
+
+.rotate-page-card {
+  min-width: 0;
+  background: rgba(9, 23, 20, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.09);
+  border-radius: 8px;
+  padding: 10px;
+  display: grid;
+  grid-template-rows: minmax(150px, 1fr) auto auto;
+  gap: 9px;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.rotate-page-card:hover {
+  border-color: #00f5d4;
+  box-shadow: 0 0 0 1px rgba(0, 245, 212, 0.1), 0 8px 26px rgba(0, 245, 212, 0.08);
+  transform: translateY(-1px);
+}
+
+.rotate-thumb-stage {
+  position: relative;
+  min-height: 150px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 7px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.rotate-thumb-stage canvas {
+  max-width: 92%;
+  max-height: 138px;
+  width: auto;
+  height: auto;
+  display: block;
+  border-radius: 3px;
+  box-shadow: 0 10px 24px rgba(0, 0, 0, 0.35);
+  transform-origin: center center;
+  transition: transform 220ms ease;
+}
+
+.rotate-thumb-skeleton {
+  width: 78px;
+  height: 108px;
+  border-radius: 5px;
+  background:
+    linear-gradient(90deg, transparent, rgba(255,255,255,0.08), transparent),
+    rgba(255, 255, 255, 0.06);
+  background-size: 180% 100%, 100% 100%;
+  animation: rotateSkeleton 1.15s ease-in-out infinite;
+}
+
+.rotate-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  display: none;
+  min-width: 36px;
+  padding: 3px 7px;
+  border-radius: 999px;
+  background: rgba(0, 245, 212, 0.92);
+  color: #06201c;
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+}
+
+.rotate-badge.rotate-badge--visible {
+  display: inline-flex;
+  justify-content: center;
+}
+
+.rotate-page-number {
+  color: var(--text-muted);
+  font-size: 12px;
+  text-align: center;
+}
+
+.rotate-page-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.rotate-page-btn {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  border-color: rgba(0, 245, 212, 0.25);
+  color: #00f5d4;
+  background: rgba(0, 245, 212, 0.05);
+  font-size: 17px;
+  line-height: 1;
+}
+
+.rotate-page-btn:hover {
+  border-color: #00f5d4;
+  background: rgba(0, 245, 212, 0.11);
+}
+
+.rotate-empty-state {
+  grid-column: 1 / -1;
+  align-self: center;
+  justify-self: center;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+@keyframes rotateSkeleton {
+  from { background-position: 180% 0, 0 0; }
+  to { background-position: -180% 0, 0 0; }
+}
+
+@media (max-width: 1180px) {
+  .rotate-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .rotate-topbar {
+    grid-template-columns: 1fr;
+    align-items: stretch;
+  }
+
+  .rotate-file-meta {
+    text-align: left;
+  }
+
+  .rotate-actions,
+  .rotate-back-btn {
+    justify-self: stretch;
+  }
+
+  .rotate-actions {
+    justify-content: flex-start;
+  }
+
+  .rotate-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 560px) {
+  .rotate-grid {
+    grid-template-columns: 1fr;
+  }
+}
