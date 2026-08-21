@@ -410,7 +410,6 @@ function _buildPageCards(viewer, pageCount) {
     card.innerHTML = `
       <div class="rotate-thumb-stage">
         <div class="rotate-thumb-skeleton" aria-hidden="true"></div>
-        <span class="rotate-badge"></span>
         <div class="rotate-deleted-overlay">
           <svg width="22" height="22" viewBox="0 0 16 16" fill="none">
             <path d="M2 4h12M5.333 4V2.667a1.333 1.333 0 0 1 1.334-1.334h2.666a1.333 1.333 0 0 1 1.334 1.334V4m2 0v9.333a1.333 1.333 0 0 1-1.334 1.333H4.667a1.333 1.333 0 0 1-1.334-1.333V4h9.334z" stroke="#FF4D4D" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
@@ -446,13 +445,8 @@ function _updatePageRotation(viewer, index) {
 
   const rotation = _rotations[index] || 0;
   const canvas = card.querySelector('canvas');
-  const badge = card.querySelector('.rotate-badge');
 
   if (canvas) canvas.style.transform = `rotate(${rotation}deg)`;
-  if (badge) {
-    badge.textContent = `${rotation}deg`;
-    badge.classList.toggle('rotate-badge--visible', rotation !== 0);
-  }
 }
 
 function _rotatePage(index, delta, viewer) {
@@ -492,7 +486,13 @@ async function _renderPage(pdfDoc, pageNumber, viewer, token) {
 
   const skeleton = stage.querySelector('.rotate-thumb-skeleton');
   if (skeleton) skeleton.remove();
-  stage.insertBefore(canvas, stage.querySelector('.rotate-badge'));
+
+  const overlay = stage.querySelector('.rotate-deleted-overlay');
+  if (overlay) {
+    stage.insertBefore(canvas, overlay);
+  } else {
+    stage.appendChild(canvas);
+  }
   _updatePageRotation(viewer, pageNumber - 1);
 
   if (pageNumber === 1 && !_firstPageThumbShown && _selectedFile) {
