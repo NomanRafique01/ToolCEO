@@ -12,7 +12,7 @@
  *   removeEncryptPanel()           – teardown on tool change / reset
  */
 
-import { getActiveTool } from '../../../../scripts/toolstate.js';
+import { getActiveTool, setBgJob, getBgJob, syncBgJobBar, clearBgJob } from '../../../../scripts/toolstate.js';
 import { pushNotification } from '../../../../scripts/notificationStore.js';
 import {
   showScanProgress,
@@ -28,12 +28,13 @@ const BACKEND = 'http://127.0.0.1:8000';
 
 // ─── MODULE STATE ──────────────────────────────────────────────────────────────
 
-let _encryptFile     = null;
-let _encryptBaseName = '';
-let _encryptFileSize = 0;
-let _encInfo         = null;
-let _activeTab       = 'encrypt'; // 'encrypt' | 'decrypt'
-let _thumbDataUri    = null;
+let _encryptFile      = null;
+let _encryptBaseName  = '';
+let _encryptFileSize  = 0;
+let _encryptPageCount = 1;
+let _encInfo          = null;
+let _activeTab        = 'encrypt'; // 'encrypt' | 'decrypt'
+let _thumbDataUri     = null;
 
 function _fmt(bytes) {
   if (bytes < 1024)        return `${bytes} B`;
@@ -54,12 +55,13 @@ export function removeEncryptPanel() {
     zone.classList.remove('dz-has-encrypt-thumb');
   }
 
-  _encryptFile     = null;
-  _encryptBaseName = '';
-  _encryptFileSize = 0;
-  _encInfo         = null;
-  _activeTab       = 'encrypt';
-  _thumbDataUri    = null;
+  _encryptFile      = null;
+  _encryptBaseName  = '';
+  _encryptFileSize  = 0;
+  _encryptPageCount = 1;
+  _encInfo          = null;
+  _activeTab        = 'encrypt';
+  _thumbDataUri     = null;
 }
 
 // ─── THUMBNAIL (inside drop zone) ─────────────────────────────────────────────
@@ -540,8 +542,9 @@ export async function handleEncryptFilePicked(file) {
     console.error('Check encryption failed:', err);
   }
 
-  _encInfo = encInfo;
-  _thumbDataUri = thumbUri;
+  _encInfo          = encInfo;
+  _thumbDataUri     = thumbUri;
+  _encryptPageCount = pageCount;
 
   // Clear scan ring
   resetZoneContent(zone);
@@ -570,10 +573,22 @@ async function _submitEncrypt(opts) {
     color,
   } = opts;
 
+  const tool = getActiveTool();
   const zone = document.getElementById('drop-zone');
   if (!zone) return;
 
-  showProgress(zone, 30, color, 'Encrypting PDF…');
+  // Immediately hide panel & thumbnail; show progress ring inside drop zone
+  const panel = document.getElementById('encrypt-settings-panel');
+  if (panel) panel.remove();
+  resetZoneContent(zone);
+  showProgress(zone, 15, color, 'Encrypting PDF…');
+
+  let outName = (output_filename || 'encrypted').trim();
+  if (!outName.toLowerCase().endsWith('.pdf')) outName += '.pdf';
+
+  // Register background job so the floating bar syncs
+  setBgJob({ jobId: null, tool, filename: outName, progress: 15, state: 'running', sse: null });
+  syncBgJobBar();
 
   const fd = new FormData();
   fd.append('file', file);
@@ -586,10 +601,11 @@ async function _submitEncrypt(opts) {
   fd.append('allow_annotations', allow_annotations);
   fd.append('allow_forms', allow_forms);
 
-  let outName = (output_filename || 'encrypted').trim();
-  if (!outName.toLowerCase().endsWith('.pdf')) outName += '.pdf';
-
   try {
+    updateProgress(zone, 50, color);
+    const bgMid = getBgJob();
+    if (bgMid) { bgMid.progress = 50; syncBgJobBar(); }
+
     const res = await fetch(`${BACKEND}/api/pdf/encrypt`, {
       method: 'POST',
       body: fd,
@@ -601,10 +617,19 @@ async function _submitEncrypt(opts) {
     }
 
     const blob = await res.blob();
+
     updateProgress(zone, 100, color);
+    const bgDone = getBgJob();
+    if (bgDone) {
+      bgDone.progress = 100;
+      bgDone.state    = 'done';
+      bgDone.filename = outName;
+      syncBgJobBar();
+    }
 
     const resetCb = () => {
       removeEncryptPanel();
+      clearBgJob();
       const t = getActiveTool();
       if (t) {
         import('../../../../scripts/dropzone.js').then(({ _updateDropZoneForTool }) => {
@@ -623,6 +648,7 @@ async function _submitEncrypt(opts) {
     }, 200);
 
   } catch (err) {
+    clearBgJob();
     showError(zone, err.message || 'Encryption failed.');
     pushNotification({
       type: 'error',
@@ -634,19 +660,32 @@ async function _submitEncrypt(opts) {
 
 async function _submitDecrypt(opts) {
   const { file, password, output_filename, color } = opts;
+  const tool = getActiveTool();
   const zone = document.getElementById('drop-zone');
   if (!zone) return;
 
-  showProgress(zone, 30, color, 'Unlocking PDF…');
+  // Immediately hide panel & thumbnail; show progress ring inside drop zone
+  const panel = document.getElementById('encrypt-settings-panel');
+  if (panel) panel.remove();
+  resetZoneContent(zone);
+  showProgress(zone, 15, color, 'Unlocking PDF…');
+
+  let outName = (output_filename || 'unlocked').trim();
+  if (!outName.toLowerCase().endsWith('.pdf')) outName += '.pdf';
+
+  // Register background job so floating bar syncs
+  setBgJob({ jobId: null, tool, filename: outName, progress: 15, state: 'running', sse: null });
+  syncBgJobBar();
 
   const fd = new FormData();
   fd.append('file', file);
   fd.append('password', password);
 
-  let outName = (output_filename || 'unlocked').trim();
-  if (!outName.toLowerCase().endsWith('.pdf')) outName += '.pdf';
-
   try {
+    updateProgress(zone, 50, color);
+    const bgMid = getBgJob();
+    if (bgMid) { bgMid.progress = 50; syncBgJobBar(); }
+
     const res = await fetch(`${BACKEND}/api/pdf/decrypt`, {
       method: 'POST',
       body: fd,
@@ -655,13 +694,15 @@ async function _submitDecrypt(opts) {
     if (res.status === 400) {
       const json = await res.json().catch(() => ({}));
       if (json.error === 'incorrect_password') {
-        // Stop progress bar and show inline field error (DO NOT push notification)
+        // Stop background job and restore panel with inline error
+        clearBgJob();
         resetZoneContent(zone);
         _showEncryptThumb(zone, _encryptFile, color, _thumbDataUri);
+        _showSettingsPanel(_encryptPageCount, _encInfo, color);
 
-        const panel = document.getElementById('encrypt-settings-panel');
-        if (panel) {
-          const errEl = panel.querySelector('#dec-field-error');
+        const restoredPanel = document.getElementById('encrypt-settings-panel');
+        if (restoredPanel) {
+          const errEl = restoredPanel.querySelector('#dec-field-error');
           if (errEl) {
             errEl.style.display = 'block';
             errEl.textContent = 'Incorrect password. Try again.';
@@ -678,10 +719,19 @@ async function _submitDecrypt(opts) {
     }
 
     const blob = await res.blob();
+
     updateProgress(zone, 100, color);
+    const bgDone = getBgJob();
+    if (bgDone) {
+      bgDone.progress = 100;
+      bgDone.state    = 'done';
+      bgDone.filename = outName;
+      syncBgJobBar();
+    }
 
     const resetCb = () => {
       removeEncryptPanel();
+      clearBgJob();
       const t = getActiveTool();
       if (t) {
         import('../../../../scripts/dropzone.js').then(({ _updateDropZoneForTool }) => {
@@ -700,6 +750,7 @@ async function _submitDecrypt(opts) {
     }, 200);
 
   } catch (err) {
+    clearBgJob();
     showError(zone, err.message || 'Decryption failed.');
     pushNotification({
       type: 'error',
