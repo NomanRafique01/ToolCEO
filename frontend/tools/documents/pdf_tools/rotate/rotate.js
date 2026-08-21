@@ -387,7 +387,7 @@ async function _renderPage(pdfDoc, pageNumber, viewer, token) {
 
   if (pageNumber === 1 && !_firstPageThumbShown && _selectedFile) {
     _firstPageThumbShown = true;
-    _showRotateDropzoneThumbnail(_selectedFile, '#D97706', canvas.toDataURL('image/jpeg', 0.95));
+    _showRotateDropzoneThumbnail(_selectedFile, '#00E5C0', canvas.toDataURL('image/jpeg', 0.95));
   }
 }
 
@@ -414,7 +414,7 @@ async function _loadPdfIntoViewer(container, file) {
 
     _pdfDoc = pdfDoc;
     _rotations = Array(pdfDoc.numPages).fill(0);
-    _showRotateDropzoneThumbnail(file, '#D97706');
+    _showRotateDropzoneThumbnail(file, '#00E5C0');
     viewer.querySelector('.rotate-file-name').textContent = file.name;
     viewer.querySelector('.rotate-page-count').textContent = `${pdfDoc.numPages} page${pdfDoc.numPages === 1 ? '' : 's'}`;
     _buildPageCards(viewer, pdfDoc.numPages);

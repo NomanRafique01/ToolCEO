@@ -1,15 +1,15 @@
 /* ─────────────────────────────────────────────────────────────
    tools/documents/pdf_tools/rotate/rotate.css
    Full-area PDF page rotation viewer for the Documents PDF panel.
-   Professional Dark Espresso & Warm Bronze Brown Theme (#D97706).
+   Teal / Green Theme (#00E5C0).
    ───────────────────────────────────────────────────────────── */
 
 .pdf-tools-swap {
   position: relative;
   min-height: 620px;
-  --rotate-color: #D97706;
-  --rotate-bg: rgba(217, 119, 6, 0.15);
-  --rotate-bg-strong: rgba(217, 119, 6, 0.28);
+  --rotate-color: #00E5C0;
+  --rotate-bg: rgba(0, 229, 192, 0.12);
+  --rotate-bg-strong: rgba(0, 229, 192, 0.22);
 }
 
 .pdf-tools-card-view {
@@ -30,14 +30,14 @@
   width: 100%;
   min-height: calc(100vh - 160px);
   max-height: none;
-  background: linear-gradient(180deg, #1C140E 0%, #120D09 100%);
-  border: 1px solid color-mix(in srgb, var(--rotate-color) 35%, #3B2A1E);
+  background: linear-gradient(180deg, var(--bg-surface, #0F2D29) 0%, var(--bg-primary, #0A1F1C) 100%);
+  border: 1px solid color-mix(in srgb, var(--rotate-color) 30%, var(--border, #1A3D38));
   border-radius: 12px;
   overflow: hidden;
   opacity: 0;
   transform: translateY(8px);
   transition: opacity 300ms ease, transform 300ms ease;
-  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.55);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
 }
 
 .rotate-viewer.rotate-viewer--visible {
@@ -58,8 +58,8 @@ body.has-rotate-viewer .features-strip {
   align-items: center;
   gap: 16px;
   padding: 12px 18px;
-  background: rgba(28, 20, 14, 0.96);
-  border-bottom: 1px solid color-mix(in srgb, var(--rotate-color) 28%, #3B2A1E);
+  background: rgba(15, 45, 41, 0.96);
+  border-bottom: 1px solid color-mix(in srgb, var(--rotate-color) 25%, var(--border, #1A3D38));
   backdrop-filter: blur(12px);
   flex-wrap: wrap;
 }
@@ -82,16 +82,16 @@ body.has-rotate-viewer .features-strip {
   height: 34px;
   padding: 0 12px;
   border-radius: 8px;
-  color: #D4A373;
+  color: var(--text-muted);
   font-size: 13px;
   font-weight: 500;
-  border: 1px solid #3B2A1E;
-  background: #241A12;
+  border: 1px solid var(--border, #1A3D38);
+  background: var(--bg-card, #112C28);
 }
 
 .rotate-back-btn:hover {
   color: var(--rotate-color);
-  border-color: color-mix(in srgb, var(--rotate-color) 45%, transparent);
+  border-color: color-mix(in srgb, var(--rotate-color) 40%, transparent);
   background: var(--rotate-bg);
 }
 
@@ -103,7 +103,7 @@ body.has-rotate-viewer .features-strip {
 
 .rotate-file-name {
   display: block;
-  color: #FAEDCD;
+  color: var(--text-primary);
   font-size: 14px;
   font-weight: 600;
   overflow: hidden;
@@ -115,9 +115,8 @@ body.has-rotate-viewer .features-strip {
 .rotate-page-count {
   display: block;
   margin-top: 1px;
-  color: #CCD5AE;
+  color: var(--text-muted);
   font-size: 11px;
-  opacity: 0.8;
 }
 
 /* ── Search in topbar ── */
@@ -135,10 +134,10 @@ body.has-rotate-viewer .features-strip {
   flex: 1;
   height: 34px;
   padding: 0 10px 0 32px;
-  background: #241A12;
-  border: 1px solid #3B2A1E;
+  background: var(--bg-card, #112C28);
+  border: 1px solid var(--border, #1A3D38);
   border-radius: 8px;
-  color: #FAEDCD;
+  color: var(--text-primary);
   font-size: 12px;
   font-family: inherit;
   outline: none;
@@ -148,7 +147,7 @@ body.has-rotate-viewer .features-strip {
 .rotate-search-icon {
   position: absolute;
   left: 10px;
-  color: #D4A373;
+  color: var(--text-muted);
   pointer-events: none;
 }
 
@@ -174,12 +173,12 @@ body.has-rotate-viewer .features-strip {
 
 .rotate-search-input:focus {
   border-color: var(--rotate-color);
-  box-shadow: 0 0 0 2px color-mix(in srgb, var(--rotate-color) 25%, transparent);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--rotate-color) 20%, transparent);
 }
 
 .rotate-search-input::placeholder {
-  color: #D4A373;
-  opacity: 0.65;
+  color: var(--text-muted);
+  opacity: 0.75;
 }
 
 .rotate-actions {
@@ -207,15 +206,15 @@ body.has-rotate-viewer .features-strip {
 }
 
 .rotate-save-btn {
-  color: #120D09;
+  color: #0A1F1C;
   background: var(--rotate-color);
   border-color: var(--rotate-color);
   font-weight: 700;
 }
 
 .rotate-save-btn:hover {
-  filter: brightness(1.15);
-  box-shadow: 0 0 16px color-mix(in srgb, var(--rotate-color) 50%, transparent);
+  filter: brightness(1.1);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--rotate-color) 40%, transparent);
 }
 
 .rotate-action-btn:disabled {
@@ -232,13 +231,13 @@ body.has-rotate-viewer .features-strip {
   padding: 24px;
   overflow-y: auto;
   scrollbar-width: thin;
-  scrollbar-color: color-mix(in srgb, var(--rotate-color) 50%, transparent) rgba(0, 0, 0, 0.3);
+  scrollbar-color: color-mix(in srgb, var(--rotate-color) 50%, transparent) rgba(0, 0, 0, 0.2);
 }
 
 .rotate-page-card {
   min-width: 0;
-  background: #241A12;
-  border: 1px solid color-mix(in srgb, var(--rotate-color) 20%, #3B2A1E);
+  background: var(--bg-card, #112C28);
+  border: 1px solid color-mix(in srgb, var(--rotate-color) 16%, var(--border, #1A3D38));
   border-radius: 10px;
   padding: 16px;
   display: grid;
@@ -249,19 +248,19 @@ body.has-rotate-viewer .features-strip {
 
 .rotate-page-card:hover {
   border-color: var(--rotate-color);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--rotate-color) 35%, transparent), 0 12px 32px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--rotate-color) 25%, transparent), 0 12px 32px rgba(0, 0, 0, 0.4);
   transform: translateY(-2px);
 }
 
 .rotate-page-card.rotate-card-highlight {
   border-color: var(--rotate-color) !important;
-  box-shadow: 0 0 0 4px color-mix(in srgb, var(--rotate-color) 50%, transparent), 0 12px 36px rgba(0, 0, 0, 0.6) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--rotate-color) 40%, transparent), 0 12px 32px rgba(0, 0, 0, 0.5) !important;
   animation: cardPulse 1.2s ease infinite alternate;
 }
 
 @keyframes cardPulse {
   from { box-shadow: 0 0 0 2px color-mix(in srgb, var(--rotate-color) 30%, transparent); }
-  to   { box-shadow: 0 0 0 6px color-mix(in srgb, var(--rotate-color) 70%, transparent); }
+  to   { box-shadow: 0 0 0 5px color-mix(in srgb, var(--rotate-color) 60%, transparent); }
 }
 
 .rotate-thumb-stage {
@@ -272,7 +271,7 @@ body.has-rotate-viewer .features-strip {
   justify-content: center;
   overflow: hidden;
   border-radius: 8px;
-  background: rgba(0, 0, 0, 0.35);
+  background: rgba(0, 0, 0, 0.25);
   border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
@@ -283,7 +282,7 @@ body.has-rotate-viewer .features-strip {
   height: auto;
   display: block;
   border-radius: 4px;
-  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.6);
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5);
   transform-origin: center center;
   transition: transform 220ms ease;
   image-rendering: -webkit-optimize-contrast;
@@ -294,7 +293,7 @@ body.has-rotate-viewer .features-strip {
   height: 120px;
   border-radius: 6px;
   background:
-    linear-gradient(90deg, transparent, rgba(217, 119, 6, 0.15), transparent),
+    linear-gradient(90deg, transparent, rgba(0, 229, 192, 0.12), transparent),
     rgba(255, 255, 255, 0.04);
   background-size: 180% 100%, 100% 100%;
   animation: rotateSkeleton 1.15s ease-in-out infinite;
@@ -309,11 +308,11 @@ body.has-rotate-viewer .features-strip {
   padding: 3px 8px;
   border-radius: 999px;
   background: var(--rotate-color);
-  color: #120D09;
+  color: #0A1F1C;
   font-size: 11px;
   font-weight: 700;
   text-align: center;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
 }
 
 .rotate-badge.rotate-badge--visible {
@@ -322,7 +321,7 @@ body.has-rotate-viewer .features-strip {
 }
 
 .rotate-page-number {
-  color: #D4A373;
+  color: var(--text-muted);
   font-size: 12px;
   font-weight: 500;
   text-align: center;
@@ -354,7 +353,7 @@ body.has-rotate-viewer .features-strip {
   grid-column: 1 / -1;
   align-self: center;
   justify-self: center;
-  color: #D4A373;
+  color: var(--text-muted);
   font-size: 14px;
 }
 
@@ -396,5 +395,6 @@ body.has-rotate-viewer .features-strip {
     grid-template-columns: 1fr;
   }
 }
+
 
 

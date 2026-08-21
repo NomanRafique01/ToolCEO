@@ -102,8 +102,8 @@ const PDF_TOOLS = [
     label: 'Rotate Pages',
     desc: 'Rotate individual or all pages',
     tag: 'Tool',
-    color: '#D97706',
-    bg: 'rgba(217, 119, 6, 0.15)',
+    color: '#00E5C0',
+    bg: 'rgba(0, 229, 192, 0.15)',
     icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
       <path d="M13 8a5 5 0 1 1-1.46-3.54" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
       <path d="M11 1v4h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
