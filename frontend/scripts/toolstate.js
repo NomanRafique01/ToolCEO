@@ -1,3 +1,5 @@
+import { pushNotification } from './notificationStore.js';
+
 /** @type {{ id: string, label: string, mainText: string, subText: string, color?: string, icon?: string } | null} */
 let _activeTool = null;
 
@@ -126,12 +128,28 @@ export function syncBgJobBar() {
     if (!_bgJobDoneHandled) {
       _bgJobDoneHandled = true;
       const doneJob = _activeBgJob;
+      // Push success notification
+      pushNotification({
+        type: 'success',
+        message: `${doneJob.tool.label} completed`,
+        detail: doneJob.filename || '',
+      });
       document.dispatchEvent(new CustomEvent('bg-job-switch', { detail: { tool: doneJob.tool } }));
     }
   } else if (state === 'error') {
     statusBadge = `
       <span class="bg-job-badge bg-job-badge--error">Failed</span>`;
     actionBtn = '';
+    // Push error notification once
+    if (!_bgJobDoneHandled) {
+      _bgJobDoneHandled = true;
+      const errJob = _activeBgJob;
+      pushNotification({
+        type: 'error',
+        message: `${errJob.tool.label} failed`,
+        detail: errJob.filename || '',
+      });
+    }
   }
 
   bar.innerHTML = `

@@ -10,7 +10,7 @@
  *   electron/ui/tools/documents/pdf_tools/splitter/splitter.js
  */
 
-import { getActiveTool, setActiveTool, onToolChange, setBgJob, getBgJob, syncBgJobBar } from './toolstate.js';
+import { getActiveTool, setActiveTool, onToolChange, setBgJob, getBgJob, syncBgJobBar, clearBgJob } from './toolstate.js';
 import {
   handleSplitFilePicked,
   removeSplitPanel,

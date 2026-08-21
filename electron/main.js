@@ -80,27 +80,28 @@ app.whenReady().then(() => {
     const buffer = Buffer.from(base64Data, 'base64');
     try {
       fs.writeFileSync(finalPath, buffer);
-    } catch (err) {
-      if (err.code === 'EBUSY' || err.code === 'EPERM' || err.code === 'EACCES') {
-        // Destination file is open or locked in another program.
-        // Save with an incremented filename (e.g. "filename (1).pdf")
-        const dir   = path.dirname(finalPath);
-        const ext   = path.extname(finalPath);
-        const base  = path.basename(finalPath, ext);
-        let counter = 1;
-        while (counter < 100) {
-          const altPath = path.join(dir, `${base} (${counter})${ext}`);
-          try {
-            fs.writeFileSync(altPath, buffer);
-            return altPath;
-          } catch (_) {
-            counter++;
-          }
+      return finalPath;
+    } catch (_err) {
+      // If direct overwrite fails (e.g. file locked by another application),
+      // attempt saving with incremented filename (e.g. "filename (1).pdf").
+      const dir   = path.dirname(finalPath);
+      const ext   = path.extname(finalPath);
+      const base  = path.basename(finalPath, ext);
+      let counter = 1;
+      while (counter < 100) {
+        const altPath = path.join(dir, `${base} (${counter})${ext}`);
+        try {
+          fs.writeFileSync(altPath, buffer);
+          return altPath;
+        } catch (_) {
+          counter++;
         }
       }
-      throw err;
+      // Ultimate fallback
+      const fallbackPath = path.join(dir, `${base}_${Date.now()}${ext}`);
+      fs.writeFileSync(fallbackPath, buffer);
+      return fallbackPath;
     }
-    return finalPath;
   });
 
   // ── Start Python backend, then open window ─────────────────────────────────
