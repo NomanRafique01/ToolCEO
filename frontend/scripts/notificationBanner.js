@@ -181,7 +181,7 @@ function _render(banner, notifications) {
   const pillsHtml = notifications.map((n) => {
     const m = TYPE_META[n.type] || TYPE_META.info;
     const isProgress = n.type === 'progress';
-    const isAutoDismiss = n.type === 'success' || n.type === 'info';
+    const isAutoDismiss = !isProgress; // All non-progress pills auto-dismiss after 4s
 
     return `
       <span class="nb-pill ${isProgress ? 'nb-pill--progress' : ''}" style="--pill-color:${m.color}" data-id="${_escHtml(n.id)}">
