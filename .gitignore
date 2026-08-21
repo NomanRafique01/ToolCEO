@@ -17,6 +17,9 @@ build/
 
 # -- Node / Electron --------------------------------------
 node_modules/
+dist/
+out/
+*.exe
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
