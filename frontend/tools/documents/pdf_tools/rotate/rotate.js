@@ -6,6 +6,8 @@
  */
 
 import { pushNotification } from '../../../../scripts/notificationStore.js';
+import { getActiveTool, setBgJob, getBgJob, syncBgJobBar, clearBgJob } from '../../../../scripts/toolstate.js';
+import { showProgress, updateProgress, showDownloadBlobCard, showError, resetZoneContent } from '../../../shared/progress.js';
 
 const BACKEND = 'http://127.0.0.1:8000';
 const PDFJS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
@@ -16,6 +18,7 @@ let _fileInput = null;
 let _selectedFile = null;
 let _pdfDoc = null;
 let _rotations = [];
+let _deletedPages = new Set();
 let _renderToken = 0;
 let _activeContainer = null;
 let _firstPageThumbShown = false;
@@ -328,6 +331,7 @@ function _closeViewer(container) {
   _selectedFile = null;
   _pdfDoc = null;
   _rotations = [];
+  _deletedPages.clear();
   _firstPageThumbShown = false;
   removeRotatePanel();
 
@@ -346,6 +350,53 @@ function _showLoading(viewer, file) {
     <div class="rotate-empty-state">Preparing PDF preview...</div>`;
 }
 
+function _updatePageCountMeta(viewer) {
+  if (!_pdfDoc || !viewer) return;
+  const total = _pdfDoc.numPages;
+  const deletedCount = _deletedPages.size;
+  const meta = viewer.querySelector('.rotate-page-count');
+  if (!meta) return;
+
+  if (deletedCount > 0) {
+    const remaining = total - deletedCount;
+    meta.textContent = `${remaining} of ${total} page${total === 1 ? '' : 's'} (${deletedCount} deleted)`;
+  } else {
+    meta.textContent = `${total} page${total === 1 ? '' : 's'}`;
+  }
+}
+
+function _updatePageDeleteState(viewer, index) {
+  const card = viewer.querySelector(`.rotate-page-card[data-page-index="${index}"]`);
+  if (!card) return;
+
+  const isDeleted = _deletedPages.has(index);
+  card.classList.toggle('rotate-card-deleted', isDeleted);
+
+  const deleteBtn = card.querySelector('.rotate-delete-btn');
+  if (deleteBtn) {
+    deleteBtn.classList.toggle('rotate-delete-btn--active', isDeleted);
+    const pageNum = index + 1;
+    deleteBtn.title = isDeleted ? `Undo delete for page ${pageNum}` : `Delete page ${pageNum}`;
+    deleteBtn.setAttribute('aria-label', deleteBtn.title);
+  }
+
+  const rotBtns = card.querySelectorAll('.rotate-rot-btn');
+  rotBtns.forEach((btn) => {
+    btn.disabled = isDeleted;
+  });
+
+  _updatePageCountMeta(viewer);
+}
+
+function _toggleDeletePage(index, viewer) {
+  if (_deletedPages.has(index)) {
+    _deletedPages.delete(index);
+  } else {
+    _deletedPages.add(index);
+  }
+  _updatePageDeleteState(viewer, index);
+}
+
 function _buildPageCards(viewer, pageCount) {
   const grid = viewer.querySelector('.rotate-grid');
   grid.innerHTML = '';
@@ -360,16 +411,31 @@ function _buildPageCards(viewer, pageCount) {
       <div class="rotate-thumb-stage">
         <div class="rotate-thumb-skeleton" aria-hidden="true"></div>
         <span class="rotate-badge"></span>
+        <div class="rotate-deleted-overlay">
+          <svg width="22" height="22" viewBox="0 0 16 16" fill="none">
+            <path d="M2 4h12M5.333 4V2.667a1.333 1.333 0 0 1 1.334-1.334h2.666a1.333 1.333 0 0 1 1.334 1.334V4m2 0v9.333a1.333 1.333 0 0 1-1.334 1.333H4.667a1.333 1.333 0 0 1-1.334-1.333V4h9.334z" stroke="#FF4D4D" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span>DELETED</span>
+        </div>
       </div>
       <div class="rotate-page-number">Page ${pageNumber}</div>
       <div class="rotate-page-actions">
-        <button class="rotate-page-btn" type="button" title="Rotate page ${pageNumber} left" aria-label="Rotate page ${pageNumber} left">&#8634;</button>
-        <button class="rotate-page-btn" type="button" title="Rotate page ${pageNumber} right" aria-label="Rotate page ${pageNumber} right">&#8635;</button>
+        <button class="rotate-page-btn rotate-rot-btn" type="button" title="Rotate page ${pageNumber} left" aria-label="Rotate page ${pageNumber} left">&#8634;</button>
+        <button class="rotate-page-btn rotate-rot-btn" type="button" title="Rotate page ${pageNumber} right" aria-label="Rotate page ${pageNumber} right">&#8635;</button>
+        <button class="rotate-page-btn rotate-delete-btn" type="button" title="Delete page ${pageNumber}" aria-label="Delete page ${pageNumber}">
+          <svg width="15" height="15" viewBox="0 0 16 16" fill="none">
+            <path d="M2 4h12M5.333 4V2.667a1.333 1.333 0 0 1 1.334-1.334h2.666a1.333 1.333 0 0 1 1.334 1.334V4m2 0v9.333a1.333 1.333 0 0 1-1.334 1.333H4.667a1.333 1.333 0 0 1-1.334-1.333V4h9.334z" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
       </div>`;
 
-    const [leftBtn, rightBtn] = card.querySelectorAll('.rotate-page-btn');
+    const [leftBtn, rightBtn] = card.querySelectorAll('.rotate-rot-btn');
+    const deleteBtn = card.querySelector('.rotate-delete-btn');
+
     leftBtn.addEventListener('click', () => _rotatePage(i, -90, viewer));
     rightBtn.addEventListener('click', () => _rotatePage(i, 90, viewer));
+    deleteBtn.addEventListener('click', () => _toggleDeletePage(i, viewer));
+
     grid.appendChild(card);
   }
 }
@@ -390,13 +456,21 @@ function _updatePageRotation(viewer, index) {
 }
 
 function _rotatePage(index, delta, viewer) {
+  if (_deletedPages.has(index)) return;
   _rotations[index] = ((_rotations[index] || 0) + delta + 360) % 360;
   _updatePageRotation(viewer, index);
 }
 
 function _rotateAll(delta, viewer) {
-  _rotations = _rotations.map((value) => (value + delta + 360) % 360);
-  _rotations.forEach((_, index) => _updatePageRotation(viewer, index));
+  _rotations = _rotations.map((value, index) => {
+    if (_deletedPages.has(index)) return value;
+    return (value + delta + 360) % 360;
+  });
+  _rotations.forEach((_, index) => {
+    if (!_deletedPages.has(index)) {
+      _updatePageRotation(viewer, index);
+    }
+  });
 }
 
 async function _renderPage(pdfDoc, pageNumber, viewer, token) {
@@ -434,6 +508,7 @@ async function _loadPdfIntoViewer(container, file) {
   _selectedFile = file;
   _pdfDoc = null;
   _rotations = [];
+  _deletedPages.clear();
   _activeContainer = container;
   _firstPageThumbShown = false;
   _renderToken += 1;
@@ -452,7 +527,7 @@ async function _loadPdfIntoViewer(container, file) {
     _rotations = Array(pdfDoc.numPages).fill(0);
     _showRotateDropzoneThumbnail(file, '#00E5C0');
     viewer.querySelector('.rotate-file-name').textContent = file.name;
-    viewer.querySelector('.rotate-page-count').textContent = `${pdfDoc.numPages} page${pdfDoc.numPages === 1 ? '' : 's'}`;
+    _updatePageCountMeta(viewer);
     
     // Clear search input on new PDF load
     const searchInput = viewer.querySelector('.rotate-search-input');
@@ -481,17 +556,66 @@ async function _loadPdfIntoViewer(container, file) {
 async function _applyAndSave(viewer) {
   if (!_selectedFile || !_rotations.length) return;
 
-  const btn = viewer.querySelector('.rotate-save-btn');
-  const originalText = btn.textContent;
-  btn.disabled = true;
-  btn.textContent = 'Saving...';
+  const remainingPages = _pdfDoc ? (_pdfDoc.numPages - _deletedPages.size) : 1;
+  if (remainingPages <= 0) {
+    pushNotification({
+      type: 'warning',
+      message: 'Cannot Save PDF',
+      detail: 'All pages are marked as deleted. At least one page must remain.',
+    });
+    return;
+  }
+
+  const fileData = _selectedFile;
+  const rotationsData = [..._rotations];
+  const deletedList = Array.from(_deletedPages);
+
+  // 1. Disappear pages window (viewer) immediately
+  if (_activeContainer) {
+    _closeViewer(_activeContainer);
+  }
+
+  // 2. Scroll main content area to top smoothly
+  const mainContent = document.getElementById('main-content');
+  if (mainContent) {
+    mainContent.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+
+  // 3. Setup tool & dropzone progress UI
+  const tool = getActiveTool();
+  const color = (tool && tool.color) || '#00E5C0';
+  const zone = document.getElementById('drop-zone');
+
+  const hasDeleted = deletedList.length > 0;
+  const outName = `${hasDeleted ? 'modified' : 'rotated'}_${_baseName(fileData.name)}.pdf`;
+
+  if (zone) {
+    resetZoneContent(zone);
+    showProgress(zone, 15, color, 'Processing PDF…');
+  }
+
+  // 4. Register background progress job (triggers bg progress bar)
+  setBgJob({ jobId: null, tool, filename: outName, progress: 15, state: 'running', sse: null });
+  syncBgJobBar();
 
   try {
-    const file = await _fileToBase64(_selectedFile);
+    const file = await _fileToBase64(fileData);
+
+    if (zone) updateProgress(zone, 50, color);
+    const bgMid = getBgJob();
+    if (bgMid) {
+      bgMid.progress = 50;
+      syncBgJobBar();
+    }
+
     const res = await fetch(`${BACKEND}/api/rotate-pdf`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ file, rotations: _rotations }),
+      body: JSON.stringify({
+        file,
+        rotations: rotationsData,
+        deleted_pages: deletedList,
+      }),
     });
     const json = await res.json();
     if (!res.ok) {
@@ -502,24 +626,54 @@ async function _applyAndSave(viewer) {
     const output = json.file || json.output || json.pdf || json.data;
     if (!output) throw new Error('Backend did not return a PDF.');
 
-    const filename = `rotated_${_baseName(_selectedFile.name)}.pdf`;
-    const saved = await _downloadBase64Pdf(output, filename);
-    if (saved) {
-      pushNotification({
-        type: 'success',
-        message: 'PDF Rotated',
-        detail: filename,
-      });
+    // Convert base64 payload into Blob for dropzone download card
+    const bytes = atob(output);
+    const uint8 = new Uint8Array(bytes.length);
+    for (let i = 0; i < bytes.length; i += 1) {
+      uint8[i] = bytes.charCodeAt(i);
     }
+    const blob = new Blob([uint8], { type: 'application/pdf' });
+
+    if (zone) updateProgress(zone, 100, color);
+
+    const bgDone = getBgJob();
+    if (bgDone) {
+      bgDone.progress = 100;
+      bgDone.state = 'done';
+      bgDone.filename = outName;
+      syncBgJobBar();
+    }
+
+    const onReset = () => {
+      removeRotatePanel();
+      clearBgJob();
+      const activeTool = getActiveTool();
+      if (activeTool) {
+        import('../../../../scripts/dropzone.js').then(({ _updateDropZoneForTool }) => {
+          if (_updateDropZoneForTool) _updateDropZoneForTool(activeTool);
+        }).catch(() => {});
+      }
+    };
+
+    if (zone) {
+      setTimeout(() => showDownloadBlobCard(zone, blob, outName, color, onReset), 200);
+    }
+
+    pushNotification({
+      type: 'success',
+      message: hasDeleted ? 'PDF Pages Updated' : 'PDF Rotated',
+      detail: hasDeleted
+        ? `${outName} (${deletedList.length} page${deletedList.length === 1 ? '' : 's'} deleted)`
+        : outName,
+    });
   } catch (err) {
+    if (zone) showError(zone, err.message || 'Unable to save modified PDF.');
+    clearBgJob();
     pushNotification({
       type: 'error',
-      message: 'Rotate failed',
-      detail: err.message || 'Unable to save rotated PDF.',
+      message: 'Save failed',
+      detail: err.message || 'Unable to save modified PDF.',
     });
-  } finally {
-    btn.disabled = false;
-    btn.textContent = originalText;
   }
 }
 

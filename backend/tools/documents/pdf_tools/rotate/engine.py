@@ -100,13 +100,15 @@ def get_pdf_info(data: bytes, password: Optional[str] = None) -> dict:
 def rotate_pdf_pages(
     data: bytes,
     rotations: Sequence[int],
+    deleted_pages: Optional[Sequence[int]] = None,
     password: Optional[str] = None,
 ) -> bytes:
     """
-    Apply per-page rotations to a PDF.
+    Apply per-page rotations and optional page deletions to a PDF.
 
-    rotations is zero-based by page index and must have exactly one value per
+    rotations is zero-based by original page index and must have exactly one value per
     page. Values are absolute cumulative rotations: 0, 90, 180 or 270.
+    deleted_pages is an optional sequence of zero-based original page indices to remove.
     """
     doc = _open_bytes(data, password)
     page_count = doc.page_count
@@ -117,7 +119,16 @@ def rotate_pdf_pages(
             f"Rotation count must match PDF page count ({page_count})."
         )
 
-    for index, angle in enumerate(rotations):
-        doc[index].set_rotation(_normalize_rotation(angle))
+    deleted_set = {int(idx) for idx in (deleted_pages or []) if 0 <= int(idx) < page_count}
+    if len(deleted_set) >= page_count:
+        doc.close()
+        raise ValueError("Cannot delete all pages in the PDF. At least one page must remain.")
+
+    for index in range(page_count):
+        if index not in deleted_set:
+            doc[index].set_rotation(_normalize_rotation(rotations[index]))
+
+    for index in sorted(deleted_set, reverse=True):
+        doc.delete_page(index)
 
     return _to_bytes(doc)

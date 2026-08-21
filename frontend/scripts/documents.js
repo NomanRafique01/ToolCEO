@@ -113,8 +113,8 @@ const PDF_TOOLS = [
   },
   {
     id: 'rotate',
-    label: 'Rotate Pages',
-    desc: 'Rotate individual or all pages',
+    label: 'Rotate / Delete Pages',
+    desc: 'Rotate or delete individual or all pages',
     tag: 'Tool',
     color: '#00E5C0',
     bg: 'rgba(0, 229, 192, 0.15)',

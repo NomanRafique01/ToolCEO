@@ -33,6 +33,7 @@ router = APIRouter(tags=["PDF Rotate"])
 class RotatePdfRequest(BaseModel):
     file: str = Field(..., min_length=1)
     rotations: List[int] = Field(..., min_length=1)
+    deleted_pages: Optional[List[int]] = Field(default_factory=list)
     password: Optional[str] = None
 
     @validator("rotations")
@@ -102,6 +103,7 @@ async def rotate_pdf_endpoint(payload: RotatePdfRequest):
         output = rotate_pdf_pages(
             raw,
             payload.rotations,
+            payload.deleted_pages,
             payload.password or None,
         )
     except ValueError as exc:
