@@ -18,10 +18,12 @@
   border: 1.5px solid var(--border);
   border-radius: 12px;
   padding: 16px;
+  min-height: 130px;
   cursor: pointer;
   transition: border-color 150ms ease, background 150ms ease, transform 120ms ease;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
 }
 
 .fmt-card:hover {
