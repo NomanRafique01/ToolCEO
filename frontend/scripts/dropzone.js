@@ -10,7 +10,7 @@
  *   electron/ui/tools/documents/pdf_tools/splitter/splitter.js
  */
 
-import { getActiveTool, onToolChange } from './toolstate.js';
+import { getActiveTool, setActiveTool, onToolChange, setBgJob, getBgJob, syncBgJobBar } from './toolstate.js';
 import {
   handleSplitFilePicked,
   removeSplitPanel,
@@ -186,13 +186,6 @@ function _updateDropZone(tool) {
   removeMergePanel();        // hide previous merge queue panel if tool changed
   removeCompressPanel();     // hide previous compress settings panel if tool changed
 
-  const currentIcon = zone.querySelector('.drop-icon');
-  if (currentIcon && icon) currentIcon.outerHTML = _scaledIcon(icon, color);
-
-  mainEl.textContent = mainText;
-  subEl.textContent  = subText;
-  privEl.textContent = 'Your files never leave your device.';
-
   zone.style.setProperty('--dz-color', color);
   zone.style.setProperty('--dz-bg', bg);
   zone.classList.add('drop-zone--tool-active');
@@ -207,6 +200,31 @@ function _updateDropZone(tool) {
       </span>`;
   }
   if (heroHintEl) { heroHintEl.textContent = 'Drop or click below'; heroHintEl.style.color = color; }
+
+  // Check if there is an active background job for this tool.
+  // If so, restore the normal progress ring (or download card) inside the drop zone!
+  const bgJob = getBgJob();
+  if (bgJob && bgJob.tool && bgJob.tool.id === tool.id) {
+    if (bgJob.state === 'running' || bgJob.state === 'pending' || bgJob.state === 'submitting') {
+      _showProgress(zone, bgJob.progress || 10, color, 'Processing…');
+      return;
+    }
+    if (bgJob.state === 'done') {
+      _showDownload(zone, bgJob.filename, bgJob.jobId, color);
+      return;
+    }
+    if (bgJob.state === 'error') {
+      _showError(zone, 'Processing failed. Please try again.');
+      return;
+    }
+  }
+
+  const currentIcon = zone.querySelector('.drop-icon');
+  if (currentIcon && icon) currentIcon.outerHTML = _scaledIcon(icon, color);
+
+  mainEl.textContent = mainText;
+  subEl.textContent  = subText;
+  privEl.textContent = 'Your files never leave your device.';
 }
 
 // ─── DOWNLOAD PANEL (right-column panel) ──────────────────────────────────────
@@ -743,6 +761,10 @@ async function _submitFile(files) {
   // ── Show initial progress ──────────────────────────────────────────────────
   _showProgress(zone, 0, color);
 
+  // Register job immediately so bar appears if user switches tools during upload
+  const earlyFilename = files[0] ? files[0].name : 'processed_file';
+  setBgJob({ jobId: null, tool, filename: earlyFilename, progress: 5, state: 'submitting', sse: null });
+
   // ── POST to backend ────────────────────────────────────────────────────────
   let jobId;
   try {
@@ -758,12 +780,16 @@ async function _submitFile(files) {
     jobId = json.job_id;
   } catch (err) {
     _showError(zone, `Upload failed: ${err.message}`);
+    clearBgJob();
     return;
   }
 
   // ── Subscribe to SSE progress ──────────────────────────────────────────────
   const sse = new EventSource(`${BACKEND}/api/progress/${jobId}`);
   let  lastPct = 0;
+
+  // Upgrade from 'submitting' to 'running' now that we have a real jobId + SSE
+  setBgJob({ jobId, tool, filename: earlyFilename, progress: 10, state: 'running', sse });
 
   sse.onmessage = (event) => {
     let data;
@@ -772,6 +798,14 @@ async function _submitFile(files) {
     const { state, progress, error } = data;
     const pct = typeof progress === 'number' ? progress : lastPct;
     lastPct   = pct;
+
+    const bg = getBgJob();
+    if (bg && bg.jobId === jobId) {
+      bg.progress = Math.max(10, Math.min(100, pct));
+      bg.state    = state === 'done' ? 'done' : (state === 'error' ? 'error' : 'running');
+      if (data.filename) bg.filename = data.filename;
+      syncBgJobBar();
+    }
 
     if (state === 'running' || state === 'pending') {
       const displayPct = Math.max(10, Math.min(90, pct));
@@ -785,6 +819,7 @@ async function _submitFile(files) {
       _updateProgress(zone, 100, color);
       const dlName = data.filename || `output_${jobId.slice(0, 8)}`;
       setTimeout(() => _showDownload(zone, dlName, jobId, color), 200);
+      document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
@@ -808,6 +843,13 @@ export function initDropZone() {
   if (!dropZone || !fileInput) return;
 
   onToolChange(_updateDropZone);
+
+  // Handle "View Tool" button in the bg-job-bar — switch back to the tool that
+  // was executing in the background without causing a syncBgJobBar re-render loop.
+  document.addEventListener('bg-job-switch', (e) => {
+    const tool = e.detail && e.detail.tool;
+    if (tool) setActiveTool(tool);
+  });
 
   // ── Click ──────────────────────────────────────────────────────────────────
   dropZone.addEventListener('click', (e) => {

@@ -10,7 +10,7 @@
  *   removeMergePanel()             – tear down the panel (tool change / reset)
  */
 
-import { getActiveTool }         from '../../../../scripts/toolstate.js';
+import { getActiveTool, setBgJob, getBgJob, syncBgJobBar, clearBgJob } from '../../../../scripts/toolstate.js';
 import {
   showScanProgress,
   showProgress,
@@ -410,6 +410,10 @@ async function _submitMerge(outputFilename) {
   // Show progress ring
   showProgress(zone, 0, color, 'Merging…');
 
+  // Register job immediately so bar appears if user switches tools during upload
+  const earlyFilename = `${outputFilename}.pdf`;
+  setBgJob({ jobId: null, tool, filename: earlyFilename, progress: 5, state: 'submitting', sse: null });
+
   // POST to backend
   let jobId;
   try {
@@ -425,12 +429,16 @@ async function _submitMerge(outputFilename) {
     jobId = json.job_id;
   } catch (err) {
     showError(zone, `Upload failed: ${err.message}`);
+    clearBgJob();
     return;
   }
 
   // Subscribe to SSE progress
   const sse    = new EventSource(`${BACKEND}/api/progress/${jobId}`);
   let lastPct  = 0;
+
+  // Upgrade from 'submitting' to 'running' now that we have a real jobId + SSE
+  setBgJob({ jobId, tool, filename: earlyFilename, progress: 10, state: 'running', sse });
 
   sse.onmessage = (event) => {
     let data;
@@ -439,6 +447,14 @@ async function _submitMerge(outputFilename) {
     const { state, progress, error } = data;
     const pct = typeof progress === 'number' ? progress : lastPct;
     lastPct   = pct;
+
+    const bg = getBgJob();
+    if (bg && bg.jobId === jobId) {
+      bg.progress = Math.max(10, Math.min(100, pct));
+      bg.state    = state === 'done' ? 'done' : (state === 'error' ? 'error' : 'running');
+      if (data.filename) bg.filename = data.filename;
+      syncBgJobBar();
+    }
 
     if (state === 'running' || state === 'pending') {
       updateProgress(zone, Math.max(10, Math.min(90, pct)), color);
@@ -463,6 +479,7 @@ async function _submitMerge(outputFilename) {
       };
 
       setTimeout(() => showDownload(zone, dlName, jobId, color, onReset), 200);
+      document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 

@@ -10,7 +10,7 @@
  *   removeCompressPanel()           – teardown on tool change / reset
  */
 
-import { getActiveTool }             from '../../../../scripts/toolstate.js';
+import { getActiveTool, setBgJob, getBgJob, syncBgJobBar, clearBgJob } from '../../../../scripts/toolstate.js';
 import {
   showScanProgress,
   showProgress,
@@ -313,6 +313,10 @@ async function _submitCompress(file, opts, outputFilename) {
 
   showProgress(zone, 10, color, 'Compressing…');
 
+  // Register job immediately so bar appears if user switches tools during upload
+  const earlyFilename = `${_compressBaseName}_compressed.pdf`;
+  setBgJob({ jobId: null, tool, filename: earlyFilename, progress: 5, state: 'submitting', sse: null });
+
   let jobId;
   try {
     const res  = await fetch(`${BACKEND}/api/pdf/compressor/compress`, { method: 'POST', body: fd });
@@ -327,12 +331,16 @@ async function _submitCompress(file, opts, outputFilename) {
     jobId = json.job_id;
   } catch (err) {
     showError(zone, `Upload failed: ${err.message}`);
+    clearBgJob();
     return;
   }
 
   // ── SSE progress ────────────────────────────────────────────────────────────
   const sse   = new EventSource(`${BACKEND}/api/progress/${jobId}`);
   let lastPct = 0;
+
+  // Upgrade from 'submitting' to 'running' now that we have a real jobId + SSE
+  setBgJob({ jobId, tool, filename: earlyFilename, progress: 10, state: 'running', sse });
 
   sse.onmessage = (event) => {
     let data;
@@ -342,6 +350,14 @@ async function _submitCompress(file, opts, outputFilename) {
     const rawPct = typeof progress === 'number' ? progress : lastPct;
     const pct    = Math.max(lastPct, rawPct);
     lastPct      = pct;
+
+    const bg = getBgJob();
+    if (bg && bg.jobId === jobId) {
+      bg.progress = Math.max(10, Math.min(100, pct));
+      bg.state    = state === 'done' ? 'done' : (state === 'error' ? 'error' : 'running');
+      if (data.filename) bg.filename = data.filename;
+      syncBgJobBar();
+    }
 
     if (state === 'running' || state === 'pending') {
       updateProgress(zone, Math.max(10, Math.min(90, pct)), color);
@@ -364,6 +380,7 @@ async function _submitCompress(file, opts, outputFilename) {
         }
       };
       setTimeout(() => showDownload(zone, dlName, jobId, color, onReset), 200);
+      document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 

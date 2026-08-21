@@ -10,7 +10,7 @@
  *   autoChunkSize(n)             – mirrors backend _auto_chunk_size logic
  */
 
-import { getActiveTool }             from '../../../../scripts/toolstate.js';
+import { getActiveTool, setBgJob, getBgJob, syncBgJobBar, clearBgJob } from '../../../../scripts/toolstate.js';
 import {
   showScanProgress,
   showProgress,
@@ -302,6 +302,11 @@ async function _submitSplitFile(file, fromVal, toVal) {
   // Show progress inside drop zone
   showProgress(zone, 0, color, 'Processing…');
 
+  // Register job immediately so bar appears if user switches tools during upload
+  const baseName = _splitBaseName || 'document';
+  const earlyFilename = `${baseName}_split_pdfs.zip`;
+  setBgJob({ jobId: null, tool, filename: earlyFilename, progress: 5, state: 'submitting', sse: null });
+
   let jobId;
   try {
     const res  = await fetch(`${BACKEND}/api/pdf/split`, { method: 'POST', body: fd });
@@ -317,12 +322,16 @@ async function _submitSplitFile(file, fromVal, toVal) {
   } catch (err) {
     showError(zone, `Upload failed: ${err.message}`);
     if (panel) panel.classList.remove('split-info-panel--submitting');
+    clearBgJob();
     return;
   }
 
   // ── Subscribe to SSE progress ──────────────────────────────────────────────
   const sse = new EventSource(`${BACKEND}/api/progress/${jobId}`);
   let  lastPct = 0;
+
+  // Upgrade from 'submitting' to 'running' now that we have a real jobId + SSE
+  setBgJob({ jobId, tool, filename: earlyFilename, progress: 10, state: 'running', sse });
 
   sse.onmessage = (event) => {
     let data;
@@ -331,6 +340,14 @@ async function _submitSplitFile(file, fromVal, toVal) {
     const { state, progress, error } = data;
     const pct = typeof progress === 'number' ? progress : lastPct;
     lastPct   = pct;
+
+    const bg = getBgJob();
+    if (bg && bg.jobId === jobId) {
+      bg.progress = Math.max(10, Math.min(100, pct));
+      bg.state    = state === 'done' ? 'done' : (state === 'error' ? 'error' : 'running');
+      if (data.filename) bg.filename = `${_splitBaseName || baseName}_${data.filename}`;
+      syncBgJobBar();
+    }
 
     if (state === 'running' || state === 'pending') {
       const displayPct = Math.max(10, Math.min(90, pct));
@@ -343,13 +360,13 @@ async function _submitSplitFile(file, fromVal, toVal) {
     if (state === 'done') {
       updateProgress(zone, 100, color);
       // Capture base name before removeSplitPanel clears it
-      const baseName = _splitBaseName || 'document';
+      const currentBase = _splitBaseName || baseName;
       // Remove the split panel on success
       removeSplitPanel();
       // Build filename: original PDF base name + "_split_pages.zip"
       const dlName = data.filename
-        ? `${baseName}_${data.filename}`
-        : `${baseName}_split_pdfs.zip`;
+        ? `${currentBase}_${data.filename}`
+        : `${currentBase}_split_pdfs.zip`;
       // onReset: after save, clear split state and re-apply tool appearance
       const onReset = () => {
         removeSplitPanel();
@@ -361,6 +378,7 @@ async function _submitSplitFile(file, fromVal, toVal) {
         }
       };
       setTimeout(() => showDownload(zone, dlName, jobId, color, onReset), 200);
+      document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }
 
