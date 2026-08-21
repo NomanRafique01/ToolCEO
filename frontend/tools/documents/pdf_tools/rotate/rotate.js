@@ -190,6 +190,7 @@ function _getSwapParts(container) {
             <path d="M11 11L14 14" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
           </svg>
           <input class="rotate-search-input" type="text" placeholder="Go to page (e.g. 5)..." aria-label="Go to page" />
+          <button class="rotate-search-btn" type="button" title="Find page">Find</button>
         </div>
         <div class="rotate-actions">
           <button class="rotate-action-btn" type="button" data-rotate-all="left">Rotate All Left &#8634;</button>
@@ -205,30 +206,56 @@ function _getSwapParts(container) {
     viewer.querySelector('[data-rotate-all="right"]').addEventListener('click', () => _rotateAll(90, viewer));
     viewer.querySelector('.rotate-save-btn').addEventListener('click', () => _applyAndSave(viewer));
 
-    // Page search functionality
+    // Page search functionality (instant calculation & scroll)
     const searchInput = viewer.querySelector('.rotate-search-input');
-    if (searchInput) {
-      searchInput.addEventListener('input', (e) => {
-        const val = e.target.value.trim();
-        const cards = viewer.querySelectorAll('.rotate-page-card');
-        if (!val) {
-          cards.forEach((c) => c.classList.remove('rotate-card-highlight'));
-          return;
+    const searchBtn   = viewer.querySelector('.rotate-search-btn');
+
+    const performSearch = () => {
+      const grid = viewer.querySelector('.rotate-grid');
+      if (!searchInput || !grid) return;
+
+      const val = searchInput.value.trim();
+      const cards = viewer.querySelectorAll('.rotate-page-card');
+
+      if (!val) {
+        cards.forEach((c) => c.classList.remove('rotate-card-highlight'));
+        return;
+      }
+
+      const matchNum = val.match(/\d+/);
+      const targetPageNum = matchNum ? parseInt(matchNum[0], 10) : null;
+
+      let targetCard = null;
+      cards.forEach((card) => {
+        const pIdx = parseInt(card.dataset.pageIndex, 10);
+        const pNum = pIdx + 1;
+        if (targetPageNum !== null && pNum === targetPageNum) {
+          card.classList.add('rotate-card-highlight');
+          targetCard = card;
+        } else {
+          card.classList.remove('rotate-card-highlight');
         }
+      });
 
-        const matchNum = val.match(/\d+/);
-        const targetPageNum = matchNum ? parseInt(matchNum[0], 10) : null;
+      if (targetCard && grid) {
+        const targetTop = targetCard.offsetTop - grid.offsetTop;
+        grid.scrollTo({ top: Math.max(0, targetTop - 16), behavior: 'smooth' });
+      }
+    };
 
-        cards.forEach((card) => {
-          const pIdx = parseInt(card.dataset.pageIndex, 10);
-          const pNum = pIdx + 1;
-          if (targetPageNum !== null && pNum === targetPageNum) {
-            card.classList.add('rotate-card-highlight');
-            card.scrollIntoView({ behavior: 'smooth', block: 'center' });
-          } else {
-            card.classList.remove('rotate-card-highlight');
-          }
-        });
+    if (searchInput) {
+      searchInput.addEventListener('input', performSearch);
+      searchInput.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter') {
+          e.preventDefault();
+          performSearch();
+        }
+      });
+    }
+    if (searchBtn) {
+      searchBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        performSearch();
       });
     }
   }
@@ -360,7 +387,7 @@ async function _renderPage(pdfDoc, pageNumber, viewer, token) {
 
   if (pageNumber === 1 && !_firstPageThumbShown && _selectedFile) {
     _firstPageThumbShown = true;
-    _showRotateDropzoneThumbnail(_selectedFile, '#00E5C0', canvas.toDataURL('image/jpeg', 0.95));
+    _showRotateDropzoneThumbnail(_selectedFile, '#D97706', canvas.toDataURL('image/jpeg', 0.95));
   }
 }
 
@@ -387,7 +414,7 @@ async function _loadPdfIntoViewer(container, file) {
 
     _pdfDoc = pdfDoc;
     _rotations = Array(pdfDoc.numPages).fill(0);
-    _showRotateDropzoneThumbnail(file, '#00E5C0');
+    _showRotateDropzoneThumbnail(file, '#D97706');
     viewer.querySelector('.rotate-file-name').textContent = file.name;
     viewer.querySelector('.rotate-page-count').textContent = `${pdfDoc.numPages} page${pdfDoc.numPages === 1 ? '' : 's'}`;
     _buildPageCards(viewer, pdfDoc.numPages);
