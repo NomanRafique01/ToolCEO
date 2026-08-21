@@ -1,25 +1,21 @@
-<div align="center">
-
-<!-- ── Gradient SVG ASCII Art Header ─────────────────────────────────────── -->
-<picture>
-  <source media="(prefers-color-scheme: dark)" srcset="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=30&pause=99999&color=00E5C0&center=true&vCenter=true&width=600&lines=T+O+O+L++C+E+O">
-  <img alt="ToolCEO" src="https://readme-typing-svg.demolab.com?font=Fira+Code&weight=700&size=30&pause=99999&color=00E5C0&center=true&vCenter=true&width=600&lines=T+O+O+L++C+E+O">
-</picture>
-
-<br>
-
-<img src="https://capsule-render.vercel.app/api?type=waving&color=0:00E5C0,50:7209b7,100:ff6b00&height=120&section=header&text=&fontSize=0" width="100%"/>
-
-<br>
-
-```
- ████████╗ ██████╗  ██████╗ ██╗      ██████╗███████╗ ██████╗
-    ██╔══╝██╔═══██╗██╔═══██╗██║     ██╔════╝██╔════╝██╔═══██╗
-    ██║   ██║   ██║██║   ██║██║     ██║     █████╗  ██║   ██║
-    ██║   ██║   ██║██║   ██║██║     ██║     ██╔══╝  ██║   ██║
-    ██║   ╚██████╔╝╚██████╔╝███████╗╚██████╗███████╗╚██████╔╝
-    ╚═╝    ╚═════╝  ╚═════╝ ╚══════╝ ╚═════╝╚══════╝ ╚═════╝
-```
+<p align="center">
+  <svg xmlns="http://www.w3.org/2000/svg" width="100%" viewBox="0 0 1000 200">
+    <defs>
+      <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="0%">
+        <stop offset="0%" stop-color="#00f5d4"/>
+        <stop offset="50%" stop-color="#7209b7"/>
+        <stop offset="100%" stop-color="#f77f00"/>
+      </linearGradient>
+      <filter id="shadow">
+        <feDropShadow dx="0" dy="4" stdDeviation="6" flood-color="#00000066"/>
+      </filter>
+    </defs>
+    <!-- Wave/banner shape using path -->
+    <path d="M0,40 C250,120 750,-20 1000,40 L1000,200 L0,200 Z" fill="url(#bg)"/>
+    <!-- ToolCEO text centered and floating -->
+    <text x="500" y="145" font-family="'Arial Black', sans-serif" font-size="90" font-weight="900" fill="white" text-anchor="middle" letter-spacing="12" filter="url(#shadow)">ToolCEO</text>
+  </svg>
+</p>
 
 <br>
 
