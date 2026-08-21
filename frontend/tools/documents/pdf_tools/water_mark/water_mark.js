@@ -805,6 +805,10 @@ async function _submitWatermark(file, opts, outputFilename) {
   // Close the editor view first — shows drop zone progress
   _closeViewer(_activeContainer);
 
+  // Scroll back up to the tool / drop zone (same as Merge PDFs)
+  const mainContent = document.getElementById('main-content');
+  if (mainContent) mainContent.scrollTo({ top: 0, behavior: 'smooth' });
+
   const zone  = document.getElementById('drop-zone');
   const color = tool.color || '#38BDF8';
 
