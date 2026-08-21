@@ -47,6 +47,7 @@ export function clearBgJob() {
   }
   _activeBgJob = null;
   syncBgJobBar();
+  document.dispatchEvent(new CustomEvent('bg-job-cleared'));
 }
 
 export function syncBgJobBar() {

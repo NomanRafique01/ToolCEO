@@ -81,8 +81,22 @@ app.whenReady().then(() => {
     try {
       fs.writeFileSync(finalPath, buffer);
     } catch (err) {
-      if (err.code === 'EBUSY') {
-        throw new Error(`File is locked or open in another program. Please close it or choose a different filename.`);
+      if (err.code === 'EBUSY' || err.code === 'EPERM' || err.code === 'EACCES') {
+        // Destination file is open or locked in another program.
+        // Save with an incremented filename (e.g. "filename (1).pdf")
+        const dir   = path.dirname(finalPath);
+        const ext   = path.extname(finalPath);
+        const base  = path.basename(finalPath, ext);
+        let counter = 1;
+        while (counter < 100) {
+          const altPath = path.join(dir, `${base} (${counter})${ext}`);
+          try {
+            fs.writeFileSync(altPath, buffer);
+            return altPath;
+          } catch (_) {
+            counter++;
+          }
+        }
       }
       throw err;
     }

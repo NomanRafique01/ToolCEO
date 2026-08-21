@@ -544,8 +544,10 @@ function _updateProgress(zone, pct, color) {
 function _resetAfterSave(zone) {
   setTimeout(() => {
     _resetZoneContent(zone);
-    // Also clear split-tool state so it's ready for a new file
+    clearBgJob();
     removeSplitPanel();
+    removeMergePanel();
+    removeCompressPanel();
     const tool = getActiveTool();
     if (tool) _updateDropZone(tool);
   }, 1800);
@@ -855,6 +857,19 @@ export function initDropZone() {
   document.addEventListener('bg-job-switch', (e) => {
     const tool = e.detail && e.detail.tool;
     if (tool) setActiveTool(tool);
+  });
+
+  // When background job is cleared or saved, reset drop zone overlays
+  document.addEventListener('bg-job-cleared', () => {
+    const zone = document.getElementById('drop-zone');
+    if (zone) {
+      _resetZoneContent(zone);
+      removeSplitPanel();
+      removeMergePanel();
+      removeCompressPanel();
+      const tool = getActiveTool();
+      if (tool) _updateDropZone(tool);
+    }
   });
 
   // ── Click ──────────────────────────────────────────────────────────────────
