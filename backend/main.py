@@ -9,6 +9,7 @@ from tools.documents.pdf_tools.splitter.router   import router as splitter_route
 from tools.documents.pdf_tools.merger.router      import router as merger_router
 from tools.documents.pdf_tools.compressor.router  import router as compressor_router
 from tools.documents.pdf_tools.encrypt.router     import router as encrypt_router
+from tools.documents.pdf_tools.rotate.router      import router as rotate_router
 
 app = FastAPI(title="ToolCEO Backend")
 
@@ -32,6 +33,7 @@ def health():
 
 
 app.include_router(encrypt_router, prefix="/api")
+app.include_router(rotate_router, prefix="/api")
 app.include_router(pdf_router, prefix="/api")
 app.include_router(pdf_conversions_router, prefix="/api")
 app.include_router(sse_router, prefix="/api")
