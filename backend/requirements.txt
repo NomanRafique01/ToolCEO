@@ -6,3 +6,5 @@ Pillow
 python-multipart
 fonttools
 pikepdf
+pycryptodome
+cryptography

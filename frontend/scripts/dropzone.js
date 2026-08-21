@@ -934,6 +934,9 @@ export function initDropZone() {
     if (tool && tool.id === 'merge') {
       fileInput.multiple = true;
       fileInput.accept   = '.pdf,application/pdf';
+    } else if (tool && tool.id === 'encrypt') {
+      fileInput.multiple = false;
+      fileInput.accept   = '.pdf,.tceo,application/pdf,application/octet-stream';
     } else {
       fileInput.multiple = false;
       fileInput.accept   = '*/*';

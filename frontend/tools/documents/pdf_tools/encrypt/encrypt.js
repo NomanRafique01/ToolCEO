@@ -1,11 +1,9 @@
 /**
  * tools/documents/pdf_tools/encrypt/encrypt.js
  *
- * Encrypt / Decrypt PDF Tool module.
- * Shows thumbnail in drop zone, tab switcher (Encrypt / Decrypt),
- * password inputs with eye toggles, password strength indicator,
- * permissions toggle switches, encryption level selector,
- * status badges, and handles submit via backend endpoints.
+ * PDF Encrypt / Decrypt & ToolCEO Vault (.tceo) Tool module.
+ * Supports standard PDF encryption/decryption as well as the high-security
+ * ToolCEO Vault (.tceo) binary container format.
  *
  * Exports:
  *   handleEncryptFilePicked(file)  – call when a file is chosen
@@ -33,7 +31,9 @@ let _encryptBaseName  = '';
 let _encryptFileSize  = 0;
 let _encryptPageCount = 1;
 let _encInfo          = null;
-let _activeTab        = 'encrypt'; // 'encrypt' | 'decrypt'
+let _vaultInfo        = null; // { is_tceo, version, has_hint, tampered }
+let _isTceo           = false;
+let _activeTab        = 'encrypt'; // 'encrypt' | 'decrypt' | 'vault'
 let _thumbDataUri     = null;
 
 function _fmt(bytes) {
@@ -60,6 +60,8 @@ export function removeEncryptPanel() {
   _encryptFileSize  = 0;
   _encryptPageCount = 1;
   _encInfo          = null;
+  _vaultInfo        = null;
+  _isTceo           = false;
   _activeTab        = 'encrypt';
   _thumbDataUri     = null;
 }
@@ -72,16 +74,25 @@ function _showEncryptThumb(zone, file, color, dataUri) {
 
   const thumbContent = dataUri
     ? `<img class="dz-encrypt-thumb-img" src="${dataUri}" alt="PDF preview" draggable="false" />`
-    : `<svg class="dz-encrypt-thumb-icon" viewBox="0 0 90 116" xmlns="http://www.w3.org/2000/svg">
-        <rect x="0" y="0" width="90" height="116" fill="#ffffff"/>
-        <polygon points="62,0 90,28 62,28" fill="#e0e0e0"/>
-        <polyline points="62,0 62,28 90,28" fill="none" stroke="#cccccc" stroke-width="1"/>
-        <rect x="0" y="42" width="90" height="26" fill="${color}"/>
-        <text x="45" y="60" font-family="Arial,sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">PDF</text>
-        <line x1="12" y1="80" x2="78" y2="80" stroke="#dddddd" stroke-width="2" stroke-linecap="round"/>
-        <line x1="12" y1="89" x2="78" y2="89" stroke="#dddddd" stroke-width="2" stroke-linecap="round"/>
-        <line x1="12" y1="98" x2="55" y2="98" stroke="#dddddd" stroke-width="2" stroke-linecap="round"/>
-      </svg>`;
+    : (_isTceo
+        ? `<svg class="dz-encrypt-thumb-icon" viewBox="0 0 90 116" xmlns="http://www.w3.org/2000/svg">
+            <rect x="0" y="0" width="90" height="116" rx="6" fill="#1E1B4B"/>
+            <polygon points="62,0 90,28 62,28" fill="#312E81"/>
+            <polyline points="62,0 62,28 90,28" fill="none" stroke="#4338CA" stroke-width="1"/>
+            <path d="M45 38 L65 48 V64 C65 76 45 88 45 88 C45 88 25 76 25 64 V48 Z" fill="none" stroke="#818CF8" stroke-width="2.5" stroke-linejoin="round"/>
+            <path d="M45 54 V64 M45 70 V71" stroke="#818CF8" stroke-width="2.5" stroke-linecap="round"/>
+            <text x="45" y="102" font-family="Arial,sans-serif" font-size="10" font-weight="bold" fill="#818CF8" text-anchor="middle">.TCEO</text>
+          </svg>`
+        : `<svg class="dz-encrypt-thumb-icon" viewBox="0 0 90 116" xmlns="http://www.w3.org/2000/svg">
+            <rect x="0" y="0" width="90" height="116" fill="#ffffff"/>
+            <polygon points="62,0 90,28 62,28" fill="#e0e0e0"/>
+            <polyline points="62,0 62,28 90,28" fill="none" stroke="#cccccc" stroke-width="1"/>
+            <rect x="0" y="42" width="90" height="26" fill="${color}"/>
+            <text x="45" y="60" font-family="Arial,sans-serif" font-size="14" font-weight="bold" fill="#ffffff" text-anchor="middle" dominant-baseline="middle">PDF</text>
+            <line x1="12" y1="80" x2="78" y2="80" stroke="#dddddd" stroke-width="2" stroke-linecap="round"/>
+            <line x1="12" y1="89" x2="78" y2="89" stroke="#dddddd" stroke-width="2" stroke-linecap="round"/>
+            <line x1="12" y1="98" x2="55" y2="98" stroke="#dddddd" stroke-width="2" stroke-linecap="round"/>
+          </svg>`);
 
   const wrap = document.createElement('div');
   wrap.className = 'dz-encrypt-thumb-wrap';
@@ -124,29 +135,49 @@ function _showSettingsPanel(pageCount, encInfo, color) {
   panel.className = 'enc-panel';
   panel.style.setProperty('--enc-color', color);
 
-  const badgeHtml = encInfo && encInfo.is_encrypted
-    ? `<span class="enc-badge enc-badge--encrypted">🔒 Encrypted</span>`
-    : `<span class="enc-badge enc-badge--unlocked">🔓 Unlocked</span>`;
+  let badgeHtml = '';
+  if (_isTceo) {
+    badgeHtml = `<span class="enc-badge enc-badge--vault">🛡️ ToolCEO Vault v2</span>`;
+    if (_vaultInfo && _vaultInfo.tampered) {
+      badgeHtml += ` <span class="enc-badge enc-badge--tampered">⚠️ File Tampered</span>`;
+    }
+  } else if (encInfo && encInfo.is_encrypted) {
+    badgeHtml = `<span class="enc-badge enc-badge--encrypted">🔒 Encrypted</span>`;
+  } else {
+    badgeHtml = `<span class="enc-badge enc-badge--unlocked">🔓 Unlocked</span>`;
+  }
+
+  const headerInfo = _isTceo
+    ? `<span><strong>.tceo Vault Container</strong> &nbsp;·&nbsp; Size: <strong>${_fmt(_encryptFileSize)}</strong></span> ${badgeHtml}`
+    : `<span><strong>${pageCount}</strong> page${pageCount !== 1 ? 's' : ''} &nbsp;·&nbsp; Size: <strong>${_fmt(_encryptFileSize)}</strong></span> ${badgeHtml}`;
+
+  const tabsHtml = _isTceo
+    ? `<div class="enc-tabs">
+        <button type="button" class="enc-tab-btn enc-tab-btn--active" data-tab="vault">
+          🛡️ ToolCEO Vault Unlock
+        </button>
+       </div>`
+    : `<div class="enc-tabs">
+        <button type="button" class="enc-tab-btn ${!(_activeTab === 'decrypt' || _activeTab === 'vault') ? 'enc-tab-btn--active' : ''}" data-tab="encrypt">
+          🔒 Encrypt PDF
+        </button>
+        <button type="button" class="enc-tab-btn ${_activeTab === 'decrypt' ? 'enc-tab-btn--active' : ''}" data-tab="decrypt">
+          🔓 Decrypt PDF
+        </button>
+        <button type="button" class="enc-tab-btn ${_activeTab === 'vault' ? 'enc-tab-btn--active' : ''}" data-tab="vault">
+          🛡️ ToolCEO Vault
+        </button>
+       </div>`;
 
   panel.innerHTML = `
     <!-- ── PANEL HEADER ── -->
     <div class="enc-header">
-      <div class="enc-header-info">
-        <span><strong>${pageCount}</strong> page${pageCount !== 1 ? 's' : ''} &nbsp;·&nbsp; Size: <strong>${_fmt(_encryptFileSize)}</strong></span>
-        ${badgeHtml}
-      </div>
+      <div class="enc-header-info">${headerInfo}</div>
       <button class="enc-change-btn" id="enc-change-btn" title="Pick a different file">Change file</button>
     </div>
 
     <!-- ── MODE TABS ── -->
-    <div class="enc-tabs">
-      <button type="button" class="enc-tab-btn ${!(encInfo && encInfo.is_encrypted) ? 'enc-tab-btn--active' : ''}" data-tab="encrypt">
-        🔒 Encrypt PDF
-      </button>
-      <button type="button" class="enc-tab-btn ${encInfo && encInfo.is_encrypted ? 'enc-tab-btn--active' : ''}" data-tab="decrypt">
-        🔓 Decrypt PDF
-      </button>
-    </div>
+    ${tabsHtml}
 
     <!-- ── DYNAMIC FORM BODY ── -->
     <div class="enc-form-body" id="enc-form-body"></div>
@@ -171,10 +202,12 @@ function _showSettingsPanel(pageCount, encInfo, color) {
     }
   });
 
-  // Default active tab: if encrypted -> default to decrypt tab, else default to encrypt tab
-  _activeTab = encInfo && encInfo.is_encrypted ? 'decrypt' : 'encrypt';
+  if (_isTceo) {
+    _activeTab = 'vault';
+  } else if (!_activeTab || _activeTab === 'decrypt') {
+    _activeTab = encInfo && encInfo.is_encrypted ? 'decrypt' : 'encrypt';
+  }
 
-  // Tab switcher click handlers
   panel.querySelectorAll('.enc-tab-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
       panel.querySelectorAll('.enc-tab-btn').forEach((b) => b.classList.remove('enc-tab-btn--active'));
@@ -288,7 +321,7 @@ function _renderFormBody(panel, encInfo, color) {
     `;
 
     _wireEncryptEvents(panel, color);
-  } else {
+  } else if (_activeTab === 'decrypt') {
     // ── DECRYPT TAB ──────────────────────────────────────────────────────────
     if (encInfo && !encInfo.is_encrypted) {
       formBody.innerHTML = `
@@ -323,6 +356,82 @@ function _renderFormBody(panel, encInfo, color) {
       `;
       _wireDecryptEvents(panel, color);
     }
+  } else if (_activeTab === 'vault') {
+    // ── TOOLCEO VAULT TAB ────────────────────────────────────────────────────
+    if (_isTceo) {
+      // Vault Unlock Mode (.tceo file loaded)
+      const hintNotice = _vaultInfo && _vaultInfo.has_hint
+        ? `<div class="enc-warning-banner" style="border-color:rgba(99,102,241,0.4);background:rgba(99,102,241,0.1);color:#818CF8">
+             💡 This vault container has an encrypted password hint. Enter password to unlock.
+           </div>`
+        : '';
+      const tamperedNotice = _vaultInfo && _vaultInfo.tampered
+        ? `<div class="enc-warning-banner" style="border-color:rgba(248,113,113,0.4);background:rgba(248,113,113,0.1);color:#F87171">
+             ⚠️ Warning: SHA-256 Checksum mismatch. File may be tampered with or corrupted.
+           </div>`
+        : '';
+
+      formBody.innerHTML = `
+        ${hintNotice}
+        ${tamperedNotice}
+        <div class="enc-field-group">
+          <label class="enc-label" for="vlt-pass">Vault Password <span style="color:#F87171">*</span></label>
+          <div class="enc-input-wrap">
+            <input type="password" id="vlt-pass" class="enc-input" placeholder="Enter master password to recover PDF" />
+            <button type="button" class="enc-eye-btn" data-target="vlt-pass" title="Toggle password visibility">👁️</button>
+          </div>
+          <div class="dec-field-error" id="vlt-field-error" style="display:none"></div>
+        </div>
+      `;
+
+      actionsRow.innerHTML = `
+        <input class="enc-filename-input" id="enc-filename-input" type="text"
+               value="${escHtml(_encryptBaseName)}_unlocked" placeholder="Output filename" spellcheck="false" />
+        <span class="enc-filename-ext">.pdf</span>
+        <button type="button" class="enc-submit-btn" id="enc-submit-btn" disabled style="background:#6366F1">🔓 Unlock & Recover PDF</button>
+      `;
+
+      _wireVaultUnlockEvents(panel, color);
+    } else {
+      // Vault Lock Mode (Standard PDF loaded)
+      formBody.innerHTML = `
+        <div class="enc-field-group">
+          <label class="enc-label" for="vlt-user-pass">Vault Password <span style="color:#F87171">*</span> (Min 4 characters)</label>
+          <div class="enc-input-wrap">
+            <input type="password" id="vlt-user-pass" class="enc-input" placeholder="Enter high-security master password" />
+            <button type="button" class="enc-eye-btn" data-target="vlt-user-pass" title="Toggle password visibility">👁️</button>
+          </div>
+          <div class="enc-strength-wrap">
+            <div class="enc-strength-bar"><div class="enc-strength-fill" id="vlt-strength-fill"></div></div>
+            <span class="enc-strength-label" id="vlt-strength-label"></span>
+          </div>
+        </div>
+
+        <div class="enc-field-group">
+          <label class="enc-label" for="vlt-confirm-pass">Confirm Password <span style="color:#F87171">*</span></label>
+          <div class="enc-input-wrap">
+            <input type="password" id="vlt-confirm-pass" class="enc-input" placeholder="Re-enter master password" />
+            <button type="button" class="enc-eye-btn" data-target="vlt-confirm-pass" title="Toggle password visibility">👁️</button>
+          </div>
+        </div>
+
+        <div class="enc-field-group">
+          <label class="enc-label" for="vlt-hint">Password Hint <span style="font-size:11px;color:var(--text-muted);font-weight:400">(Optional)</span></label>
+          <div class="enc-input-wrap">
+            <input type="text" id="vlt-hint" class="enc-input" placeholder="Encrypted hint to help remember password" spellcheck="false" />
+          </div>
+        </div>
+      `;
+
+      actionsRow.innerHTML = `
+        <input class="enc-filename-input" id="enc-filename-input" type="text"
+               value="${escHtml(_encryptBaseName)}" placeholder="Output filename" spellcheck="false" />
+        <span class="enc-filename-ext">.tceo</span>
+        <button type="button" class="enc-submit-btn" id="enc-submit-btn" disabled style="background:#6366F1">🛡️ Lock in ToolCEO Vault (.tceo)</button>
+      `;
+
+      _wireVaultLockEvents(panel, color);
+    }
   }
 
   _wireEyeToggles(panel);
@@ -341,7 +450,6 @@ function _wireEncryptEvents(panel, color) {
   const advBody    = panel.querySelector('#enc-advanced-body');
   const advChevron = panel.querySelector('#enc-advanced-chevron');
 
-  // Advanced collapsible
   if (advToggle && advBody && advChevron) {
     advToggle.addEventListener('click', () => {
       const isOpen = advBody.style.display !== 'none';
@@ -350,7 +458,6 @@ function _wireEncryptEvents(panel, color) {
     });
   }
 
-  // Encryption level pills
   let selectedLevel = '256';
   const pillBtns = panel.querySelectorAll('#enc-pill-group .enc-pill-btn');
   pillBtns.forEach((btn) => {
@@ -361,12 +468,10 @@ function _wireEncryptEvents(panel, color) {
     });
   });
 
-  // Password validation & strength check
   const _validate = () => {
     const uPass = userPassInput ? userPassInput.value : '';
     const cPass = confirmPassInput ? confirmPassInput.value : '';
 
-    // Strength
     if (!uPass) {
       if (strengthFill) { strengthFill.style.width = '0%'; strengthFill.style.backgroundColor = 'transparent'; }
       if (strengthLabel) { strengthLabel.textContent = ''; }
@@ -381,7 +486,6 @@ function _wireEncryptEvents(panel, color) {
       if (strengthLabel) { strengthLabel.textContent = 'Strong'; strengthLabel.style.color = '#34D399'; }
     }
 
-    // Enable button only if user password filled and matches confirm password
     const valid = uPass.length > 0 && uPass === cPass;
     if (submitBtn) submitBtn.disabled = !valid;
   };
@@ -389,7 +493,6 @@ function _wireEncryptEvents(panel, color) {
   if (userPassInput) userPassInput.addEventListener('input', _validate);
   if (confirmPassInput) confirmPassInput.addEventListener('input', _validate);
 
-  // Submit Encrypt
   if (submitBtn) {
     submitBtn.addEventListener('click', () => {
       if (!_encryptFile) return;
@@ -466,6 +569,93 @@ function _wireDecryptEvents(panel, color) {
   }
 }
 
+// ─── EVENT WIRING FOR VAULT TAB ────────────────────────────────────────────────
+
+function _wireVaultLockEvents(panel, color) {
+  const userPassInput    = panel.querySelector('#vlt-user-pass');
+  const confirmPassInput = panel.querySelector('#vlt-confirm-pass');
+  const hintInput        = panel.querySelector('#vlt-hint');
+  const submitBtn        = panel.querySelector('#enc-submit-btn');
+  const strengthFill     = panel.querySelector('#vlt-strength-fill');
+  const strengthLabel    = panel.querySelector('#vlt-strength-label');
+
+  const _validate = () => {
+    const uPass = userPassInput ? userPassInput.value : '';
+    const cPass = confirmPassInput ? confirmPassInput.value : '';
+
+    if (!uPass) {
+      if (strengthFill) { strengthFill.style.width = '0%'; strengthFill.style.backgroundColor = 'transparent'; }
+      if (strengthLabel) { strengthLabel.textContent = ''; }
+    } else if (uPass.length < 4) {
+      if (strengthFill) { strengthFill.style.width = '25%'; strengthFill.style.backgroundColor = '#F87171'; }
+      if (strengthLabel) { strengthLabel.textContent = 'Too Short (Min 4)'; strengthLabel.style.color = '#F87171'; }
+    } else if (uPass.length < 8) {
+      if (strengthFill) { strengthFill.style.width = '50%'; strengthFill.style.backgroundColor = '#FBBF24'; }
+      if (strengthLabel) { strengthLabel.textContent = 'Fair'; strengthLabel.style.color = '#FBBF24'; }
+    } else {
+      if (strengthFill) { strengthFill.style.width = '100%'; strengthFill.style.backgroundColor = '#818CF8'; }
+      if (strengthLabel) { strengthLabel.textContent = 'Vault Grade (600k iterations)'; strengthLabel.style.color = '#818CF8'; }
+    }
+
+    const valid = uPass.length >= 4 && uPass === cPass;
+    if (submitBtn) submitBtn.disabled = !valid;
+  };
+
+  if (userPassInput) userPassInput.addEventListener('input', _validate);
+  if (confirmPassInput) confirmPassInput.addEventListener('input', _validate);
+
+  if (submitBtn) {
+    submitBtn.addEventListener('click', () => {
+      if (!_encryptFile) return;
+      const userPassword = userPassInput ? userPassInput.value : '';
+      const confirmPass  = confirmPassInput ? confirmPassInput.value : '';
+      if (!userPassword || userPassword.length < 4 || userPassword !== confirmPass) return;
+
+      const hintText = hintInput ? hintInput.value.trim() : '';
+      const nameEl   = panel.querySelector('#enc-filename-input');
+      const outName  = (nameEl ? nameEl.value.trim() : '') || _encryptBaseName;
+
+      _submitVaultLock({
+        file: _encryptFile,
+        password: userPassword,
+        hint: hintText,
+        output_filename: outName,
+        color,
+      });
+    });
+  }
+}
+
+function _wireVaultUnlockEvents(panel, color) {
+  const passInput = panel.querySelector('#vlt-pass');
+  const submitBtn = panel.querySelector('#enc-submit-btn');
+
+  const _validate = () => {
+    const pass = passInput ? passInput.value : '';
+    if (submitBtn) submitBtn.disabled = pass.length === 0;
+  };
+
+  if (passInput) passInput.addEventListener('input', _validate);
+
+  if (submitBtn) {
+    submitBtn.addEventListener('click', () => {
+      if (!_encryptFile) return;
+      const password = passInput ? passInput.value : '';
+      if (!password) return;
+
+      const nameEl  = panel.querySelector('#enc-filename-input');
+      const outName = (nameEl ? nameEl.value.trim() : '') || (_encryptBaseName + '_unlocked');
+
+      _submitVaultUnlock({
+        file: _encryptFile,
+        password,
+        output_filename: outName,
+        color,
+      });
+    });
+  }
+}
+
 // ─── EYE TOGGLE BUTTONS ────────────────────────────────────────────────────────
 
 function _wireEyeToggles(panel) {
@@ -485,10 +675,16 @@ function _wireEyeToggles(panel) {
 // ─── PUBLIC: HANDLE FILE PICKED ────────────────────────────────────────────────
 
 export async function handleEncryptFilePicked(file) {
-  if (!file || !(file.name.toLowerCase().endsWith('.pdf') || file.type === 'application/pdf')) {
+  if (!file) return;
+
+  const fname  = file.name.toLowerCase();
+  const isPdf  = fname.endsWith('.pdf')  || file.type === 'application/pdf';
+  const isTceo = fname.endsWith('.tceo') || fname.endsWith('.tceo.pdf');
+
+  if (!isPdf && !isTceo) {
     pushNotification({
       type: 'warning',
-      message: 'Invalid File Format. Please select a valid PDF file.'
+      message: 'Invalid File Format. Please select a valid PDF or .tceo Vault file.'
     });
     return;
   }
@@ -504,11 +700,33 @@ export async function handleEncryptFilePicked(file) {
   _encryptFile     = file;
   _encryptBaseName = file.name.includes('.') ? file.name.substring(0, file.name.lastIndexOf('.')) : file.name;
   _encryptFileSize = file.size;
+  _isTceo          = isTceo;
 
   // Show indeterminate scanning ring
   showScanProgress(zone, color);
 
-  // Fetch encryption info, page count, and thumbnail concurrently
+  if (isTceo) {
+    _activeTab = 'vault';
+    let vaultInfo = null;
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const res = await fetch(`${BACKEND}/api/pdf/vault-check`, { method: 'POST', body: fd });
+      if (res.ok) {
+        vaultInfo = await res.json();
+      }
+    } catch (err) {
+      console.error('Vault check failed:', err);
+    }
+
+    _vaultInfo = vaultInfo;
+    resetZoneContent(zone);
+    _showEncryptThumb(zone, file, color, null);
+    _showSettingsPanel(1, null, color);
+    return;
+  }
+
+  // Standard PDF scanning
   let encInfo = null;
   let pageCount = 1;
   let thumbUri = null;
@@ -577,7 +795,6 @@ async function _submitEncrypt(opts) {
   const zone = document.getElementById('drop-zone');
   if (!zone) return;
 
-  // Immediately hide panel & thumbnail; show progress ring inside drop zone
   const panel = document.getElementById('encrypt-settings-panel');
   if (panel) panel.remove();
   resetZoneContent(zone);
@@ -586,7 +803,6 @@ async function _submitEncrypt(opts) {
   let outName = (output_filename || 'encrypted').trim();
   if (!outName.toLowerCase().endsWith('.pdf')) outName += '.pdf';
 
-  // Register background job so the floating bar syncs
   setBgJob({ jobId: null, tool, filename: outName, progress: 15, state: 'running', sse: null });
   syncBgJobBar();
 
@@ -664,7 +880,6 @@ async function _submitDecrypt(opts) {
   const zone = document.getElementById('drop-zone');
   if (!zone) return;
 
-  // Immediately hide panel & thumbnail; show progress ring inside drop zone
   const panel = document.getElementById('encrypt-settings-panel');
   if (panel) panel.remove();
   resetZoneContent(zone);
@@ -673,7 +888,6 @@ async function _submitDecrypt(opts) {
   let outName = (output_filename || 'unlocked').trim();
   if (!outName.toLowerCase().endsWith('.pdf')) outName += '.pdf';
 
-  // Register background job so floating bar syncs
   setBgJob({ jobId: null, tool, filename: outName, progress: 15, state: 'running', sse: null });
   syncBgJobBar();
 
@@ -694,7 +908,6 @@ async function _submitDecrypt(opts) {
     if (res.status === 400) {
       const json = await res.json().catch(() => ({}));
       if (json.error === 'incorrect_password') {
-        // Stop background job and restore panel with inline error
         clearBgJob();
         resetZoneContent(zone);
         _showEncryptThumb(zone, _encryptFile, color, _thumbDataUri);
@@ -756,6 +969,184 @@ async function _submitDecrypt(opts) {
       type: 'error',
       message: 'Decryption Failed',
       detail: err.message || 'An error occurred during decryption',
+    });
+  }
+}
+
+async function _submitVaultLock(opts) {
+  const { file, password, hint, output_filename, color } = opts;
+  const tool = getActiveTool();
+  const zone = document.getElementById('drop-zone');
+  if (!zone) return;
+
+  const panel = document.getElementById('encrypt-settings-panel');
+  if (panel) panel.remove();
+  resetZoneContent(zone);
+  showProgress(zone, 15, color, 'Locking in ToolCEO Vault…');
+
+  let outName = (output_filename || 'vault').trim();
+  if (!outName.toLowerCase().endsWith('.tceo')) outName += '.tceo';
+
+  setBgJob({ jobId: null, tool, filename: outName, progress: 15, state: 'running', sse: null });
+  syncBgJobBar();
+
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('password', password);
+  if (hint) fd.append('hint', hint);
+
+  try {
+    updateProgress(zone, 50, color);
+    const bgMid = getBgJob();
+    if (bgMid) { bgMid.progress = 50; syncBgJobBar(); }
+
+    const res = await fetch(`${BACKEND}/api/pdf/vault-lock`, {
+      method: 'POST',
+      body: fd,
+    });
+
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}));
+      throw new Error(json.message || `Vault Lock failed (${res.status})`);
+    }
+
+    const blob = await res.blob();
+
+    updateProgress(zone, 100, color);
+    const bgDone = getBgJob();
+    if (bgDone) {
+      bgDone.progress = 100;
+      bgDone.state    = 'done';
+      bgDone.filename = outName;
+      syncBgJobBar();
+    }
+
+    const resetCb = () => {
+      removeEncryptPanel();
+      clearBgJob();
+      const t = getActiveTool();
+      if (t) {
+        import('../../../../scripts/dropzone.js').then(({ _updateDropZoneForTool }) => {
+          if (_updateDropZoneForTool) _updateDropZoneForTool(t);
+        }).catch(() => {});
+      }
+    };
+
+    setTimeout(() => {
+      showDownloadBlobCard(zone, blob, outName, color, resetCb);
+      pushNotification({
+        type: 'success',
+        message: 'PDF Locked in ToolCEO Vault (.tceo)',
+        detail: outName,
+      });
+    }, 200);
+
+  } catch (err) {
+    clearBgJob();
+    showError(zone, err.message || 'Vault Lock failed.');
+    pushNotification({
+      type: 'error',
+      message: 'Vault Lock Failed',
+      detail: err.message || 'An error occurred during vault locking',
+    });
+  }
+}
+
+async function _submitVaultUnlock(opts) {
+  const { file, password, output_filename, color } = opts;
+  const tool = getActiveTool();
+  const zone = document.getElementById('drop-zone');
+  if (!zone) return;
+
+  const panel = document.getElementById('encrypt-settings-panel');
+  if (panel) panel.remove();
+  resetZoneContent(zone);
+  showProgress(zone, 15, color, 'Unlocking ToolCEO Vault…');
+
+  let outName = (output_filename || 'unlocked').trim();
+  if (!outName.toLowerCase().endsWith('.pdf')) outName += '.pdf';
+
+  setBgJob({ jobId: null, tool, filename: outName, progress: 15, state: 'running', sse: null });
+  syncBgJobBar();
+
+  const fd = new FormData();
+  fd.append('file', file);
+  fd.append('password', password);
+
+  try {
+    updateProgress(zone, 50, color);
+    const bgMid = getBgJob();
+    if (bgMid) { bgMid.progress = 50; syncBgJobBar(); }
+
+    const res = await fetch(`${BACKEND}/api/pdf/vault-unlock`, {
+      method: 'POST',
+      body: fd,
+    });
+
+    if (res.status === 400) {
+      const json = await res.json().catch(() => ({}));
+      if (json.error === 'wrong_password' || json.error === 'incorrect_password') {
+        clearBgJob();
+        resetZoneContent(zone);
+        _showEncryptThumb(zone, _encryptFile, color, null);
+        _showSettingsPanel(1, null, color);
+
+        const restoredPanel = document.getElementById('encrypt-settings-panel');
+        if (restoredPanel) {
+          const errEl = restoredPanel.querySelector('#vlt-field-error');
+          if (errEl) {
+            errEl.style.display = 'block';
+            errEl.textContent = 'Incorrect password or invalid vault file.';
+          }
+        }
+        return;
+      }
+      throw new Error(json.message || 'Vault Unlock failed (400)');
+    }
+
+    if (!res.ok) {
+      const json = await res.json().catch(() => ({}));
+      throw new Error(json.message || `Vault Unlock failed (${res.status})`);
+    }
+
+    const blob = await res.blob();
+
+    updateProgress(zone, 100, color);
+    const bgDone = getBgJob();
+    if (bgDone) {
+      bgDone.progress = 100;
+      bgDone.state    = 'done';
+      bgDone.filename = outName;
+      syncBgJobBar();
+    }
+
+    const resetCb = () => {
+      removeEncryptPanel();
+      clearBgJob();
+      const t = getActiveTool();
+      if (t) {
+        import('../../../../scripts/dropzone.js').then(({ _updateDropZoneForTool }) => {
+          if (_updateDropZoneForTool) _updateDropZoneForTool(t);
+        }).catch(() => {});
+      }
+    };
+
+    setTimeout(() => {
+      showDownloadBlobCard(zone, blob, outName, color, resetCb);
+      pushNotification({
+        type: 'success',
+        message: 'PDF Recovered & Unlocked Successfully',
+        detail: outName,
+      });
+    }, 200);
+
+  } catch (err) {
+    clearBgJob();
+    showError(zone, err.message || 'Vault Unlock failed.');
+    pushNotification({
+      type: 'error',
+      message: 'Vault Unlock Failed',
+      detail: err.message || 'An error occurred during vault unlocking',
     });
   }
 }

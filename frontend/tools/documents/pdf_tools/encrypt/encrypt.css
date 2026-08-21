@@ -184,6 +184,18 @@
   border: 1px solid rgba(251, 191, 36, 0.3);
 }
 
+.enc-badge--vault {
+  background: rgba(99, 102, 241, 0.15);
+  color: #818CF8;
+  border: 1px solid rgba(99, 102, 241, 0.4);
+}
+
+.enc-badge--tampered {
+  background: rgba(248, 113, 113, 0.15);
+  color: #F87171;
+  border: 1px solid rgba(248, 113, 113, 0.4);
+}
+
 .enc-change-btn {
   background: none;
   border: 1px solid var(--border);

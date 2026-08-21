@@ -14,8 +14,13 @@ from tools.documents.pdf_tools.encrypt.engine import (
     decrypt_pdf,
     encrypt_pdf,
 )
+from tools.documents.pdf_tools.encrypt.vault_engine import (
+    check_vault_file,
+    lock_vault_pdf,
+    unlock_vault_pdf,
+)
 
-router = APIRouter(prefix="/pdf", tags=["PDF Encrypt / Decrypt"])
+router = APIRouter(prefix="/pdf", tags=["PDF Encrypt / Decrypt / ToolCEO Vault"])
 
 
 def _make_error_response(status_code: int, error_code: str, message: str) -> JSONResponse:
@@ -36,7 +41,15 @@ def _handle_engine_exception(exc: Exception) -> JSONResponse:
         parts = msg_str.split(":", 1)
         err_code = parts[0].strip()
         err_msg = parts[1].strip()
-        if err_code in ("incorrect_password", "not_encrypted", "invalid_file"):
+        if err_code in (
+            "incorrect_password",
+            "not_encrypted",
+            "invalid_file",
+            "password_too_short",
+            "invalid_pdf",
+            "not_tceo_file",
+            "wrong_password",
+        ):
             return _make_error_response(400, err_code, err_msg)
 
     return _make_error_response(500, "server_error", msg_str)
@@ -120,3 +133,75 @@ async def check_encryption_endpoint(
         return _handle_engine_exception(exc)
 
     return JSONResponse(content=info)
+
+
+# ---------------------------------------------------------------------------
+# ToolCEO Vault (.tceo) Endpoints
+# ---------------------------------------------------------------------------
+
+
+@router.post("/vault-lock", summary="Permanently lock a PDF into a ToolCEO Vault (.tceo) binary container")
+async def vault_lock_endpoint(
+    file: UploadFile = File(...),
+    password: str = Form(...),
+    hint: Optional[str] = Form(None),
+):
+    try:
+        raw = await file.read()
+        vault_bytes = lock_vault_pdf(file_bytes=raw, password=password, hint=hint)
+    except Exception as exc:
+        return _handle_engine_exception(exc)
+
+    orig_name = file.filename or "document.pdf"
+    base_name = orig_name.rsplit(".", 1)[0] if "." in orig_name else orig_name
+    out_filename = f"{base_name}.tceo"
+
+    return Response(
+        content=vault_bytes,
+        media_type="application/octet-stream",
+        headers={
+            "Content-Disposition": f'attachment; filename="{out_filename}"',
+            "Access-Control-Expose-Headers": "Content-Disposition",
+        },
+    )
+
+
+@router.post("/vault-unlock", summary="Recover and unlock a PDF from a ToolCEO Vault (.tceo) container")
+async def vault_unlock_endpoint(
+    file: UploadFile = File(...),
+    password: str = Form(...),
+):
+    try:
+        raw = await file.read()
+        pdf_bytes = unlock_vault_pdf(file_bytes=raw, password=password)
+    except Exception as exc:
+        return _handle_engine_exception(exc)
+
+    orig_name = file.filename or "locked.tceo"
+    base_name = orig_name.rsplit(".", 1)[0] if "." in orig_name else orig_name
+    if base_name.endswith("_encrypted") or base_name.endswith("_vault"):
+        base_name = base_name.rsplit("_", 1)[0]
+    out_filename = f"{base_name}_unlocked.pdf"
+
+    return Response(
+        content=pdf_bytes,
+        media_type="application/pdf",
+        headers={
+            "Content-Disposition": f'attachment; filename="{out_filename}"',
+            "Access-Control-Expose-Headers": "Content-Disposition",
+        },
+    )
+
+
+@router.post("/vault-check", summary="Check if a file is a ToolCEO Vault (.tceo) container")
+async def vault_check_endpoint(
+    file: UploadFile = File(...),
+):
+    try:
+        raw = await file.read()
+        info = check_vault_file(file_bytes=raw)
+    except Exception as exc:
+        return _handle_engine_exception(exc)
+
+    return JSONResponse(content=info)
+
