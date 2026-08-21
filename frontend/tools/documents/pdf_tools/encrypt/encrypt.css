@@ -304,7 +304,6 @@
   color: var(--text-muted);
   cursor: pointer;
   padding: 4px;
-  font-size: 14px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -314,6 +313,12 @@
 
 .enc-eye-btn:hover {
   color: var(--text-primary);
+}
+
+.enc-eye-btn .eye-icon {
+  width: 16px;
+  height: 16px;
+  display: block;
 }
 
 /* ── Password Strength Bar ── */
@@ -568,4 +573,158 @@
   opacity: 0.45;
   cursor: not-allowed;
   filter: none;
+}
+
+/* ── Vault About Row ── */
+
+.enc-vault-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+
+.enc-vault-about-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+.enc-vault-about-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: color-mix(in srgb, var(--enc-color, #FBBF24) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--enc-color, #FBBF24) 35%, transparent);
+  border-radius: 7px;
+  color: var(--enc-color, #FBBF24);
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 10px;
+  transition: background 150ms ease, border-color 150ms ease;
+}
+
+.enc-vault-about-btn:hover {
+  background: color-mix(in srgb, var(--enc-color, #FBBF24) 20%, transparent);
+  border-color: color-mix(in srgb, var(--enc-color, #FBBF24) 55%, transparent);
+}
+
+/* ── Vault About Banner ── */
+
+.enc-vault-about-banner {
+  position: relative;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 20px;
+  overflow: hidden;
+
+  opacity: 0;
+  transform: translateY(-6px);
+  transition: opacity 240ms ease, transform 240ms ease;
+}
+
+.vlt-about-banner--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.enc-vault-about-close {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  background: color-mix(in srgb, var(--enc-color, #FBBF24) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--enc-color, #FBBF24) 35%, transparent);
+  border-radius: 6px;
+  color: var(--enc-color, #FBBF24);
+  width: 26px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 130ms ease;
+}
+
+.enc-vault-about-close:hover {
+  background: color-mix(in srgb, var(--enc-color, #FBBF24) 25%, transparent);
+}
+
+.enc-vault-about-content {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.enc-vault-about-text {
+  flex: 1;
+  color: rgba(255, 255, 255, 0.75);
+}
+
+.enc-vault-about-text h4 {
+  margin: 0 0 8px;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--enc-color, #FBBF24);
+  letter-spacing: 0.01em;
+}
+
+.enc-vault-about-text p {
+  margin: 0 0 10px;
+  font-size: 12px;
+  line-height: 1.65;
+}
+
+.enc-vault-about-text strong {
+  color: color-mix(in srgb, var(--enc-color, #FBBF24) 85%, white);
+}
+
+.enc-vault-about-text ul {
+  list-style: none;
+  margin: 0 0 10px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.enc-vault-about-text li {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 12px;
+  color: var(--text-primary);
+}
+
+.enc-vault-about-tip {
+  margin: 0 !important;
+  font-size: 11px !important;
+  color: color-mix(in srgb, var(--enc-color, #FBBF24) 70%, transparent) !important;
+}
+
+.enc-vault-about-tip code {
+  font-family: monospace;
+  background: color-mix(in srgb, var(--enc-color, #FBBF24) 15%, transparent);
+  padding: 1px 4px;
+  border-radius: 3px;
+  color: var(--enc-color, #FBBF24);
+}
+
+.enc-vault-label-row {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-primary);
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  flex-wrap: wrap;
+}
+
+.enc-label-hint {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 400;
 }

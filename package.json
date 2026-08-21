@@ -1,12 +1,90 @@
 {
   "name": "toolceo",
   "version": "1.0.0",
+  "description": "ToolCEO — offline file conversion and processing suite",
   "main": "electron/main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "build:win":   "electron-builder --win",
+    "build:mac":   "electron-builder --mac",
+    "build:linux": "electron-builder --linux"
   },
   "devDependencies": {
     "electron": "latest",
+    "electron-builder": "^24.0.0",
     "jimp": "^1.6.1"
+  },
+  "build": {
+    "appId": "com.toolceo.app",
+    "productName": "ToolCEO",
+    "copyright": "Copyright © 2024 ToolCEO",
+    "directories": {
+      "buildResources": "resources"
+    },
+    "files": [
+      "electron/**/*",
+      "frontend/**/*",
+      "assets/**/*",
+      "resources/**/*"
+    ],
+    "fileAssociations": [
+      {
+        "ext": "tceo",
+        "name": "ToolCEO Vault File",
+        "description": "ToolCEO encrypted vault container",
+        "mimeType": "application/x-tceo",
+        "icon": "resources/tceo-file-icon",
+        "role": "Editor",
+        "isPackage": false
+      }
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.png"
+    },
+    "mac": {
+      "target": "dmg",
+      "icon": "assets/icon.png",
+      "category": "public.app-category.productivity",
+      "extendInfo": {
+        "CFBundleDocumentTypes": [
+          {
+            "CFBundleTypeExtensions": ["tceo"],
+            "CFBundleTypeIconFile": "tceo-file-icon",
+            "CFBundleTypeMIMETypes": ["application/x-tceo"],
+            "CFBundleTypeName": "ToolCEO Vault File",
+            "CFBundleTypeRole": "Editor",
+            "LSHandlerRank": "Owner",
+            "LSItemContentTypes": ["com.toolceo.vaultfile"]
+          }
+        ],
+        "UTExportedTypeDeclarations": [
+          {
+            "UTTypeIdentifier": "com.toolceo.vaultfile",
+            "UTTypeDescription": "ToolCEO Vault File",
+            "UTTypeConformsTo": ["public.data"],
+            "UTTypeTagSpecification": {
+              "public.filename-extension": ["tceo"],
+              "public.mime-type": ["application/x-tceo"]
+            }
+          }
+        ]
+      }
+    },
+    "linux": {
+      "target": "AppImage",
+      "icon": "assets/icon.png",
+      "category": "Office",
+      "mimeTypes": ["application/x-tceo"],
+      "desktop": {
+        "MimeType": "application/x-tceo;"
+      }
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true
+    }
   }
 }

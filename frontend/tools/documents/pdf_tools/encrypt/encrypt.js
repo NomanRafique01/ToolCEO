@@ -137,35 +137,40 @@ function _showSettingsPanel(pageCount, encInfo, color) {
 
   let badgeHtml = '';
   if (_isTceo) {
-    badgeHtml = `<span class="enc-badge enc-badge--vault">🛡️ ToolCEO Vault v2</span>`;
+    badgeHtml = `<span class="enc-badge enc-badge--vault"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.35C17.25 22.15 21 17.25 21 12V7L12 2z"/></svg> ToolCEO Vault v2</span>`;
     if (_vaultInfo && _vaultInfo.tampered) {
-      badgeHtml += ` <span class="enc-badge enc-badge--tampered">⚠️ File Tampered</span>`;
+      badgeHtml += ` <span class="enc-badge enc-badge--tampered"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg> File Tampered</span>`;
     }
   } else if (encInfo && encInfo.is_encrypted) {
-    badgeHtml = `<span class="enc-badge enc-badge--encrypted">🔒 Encrypted</span>`;
+    badgeHtml = `<span class="enc-badge enc-badge--encrypted"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> Encrypted</span>`;
   } else {
-    badgeHtml = `<span class="enc-badge enc-badge--unlocked">🔓 Unlocked</span>`;
+    badgeHtml = `<span class="enc-badge enc-badge--unlocked"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 019.9-1"/></svg> Unlocked</span>`;
   }
 
   const headerInfo = _isTceo
     ? `<span><strong>.tceo Vault Container</strong> &nbsp;·&nbsp; Size: <strong>${_fmt(_encryptFileSize)}</strong></span> ${badgeHtml}`
     : `<span><strong>${pageCount}</strong> page${pageCount !== 1 ? 's' : ''} &nbsp;·&nbsp; Size: <strong>${_fmt(_encryptFileSize)}</strong></span> ${badgeHtml}`;
 
+  // SVG icon definitions
+  const svgLock = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>`;
+  const svgUnlock = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 019.9-1"/></svg>`;
+  const svgShield = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.35C17.25 22.15 21 17.25 21 12V7L12 2z"/></svg>`;
+
   const tabsHtml = _isTceo
     ? `<div class="enc-tabs">
         <button type="button" class="enc-tab-btn enc-tab-btn--active" data-tab="vault">
-          🛡️ ToolCEO Vault Unlock
+          ${svgShield} ToolCEO Vault Unlock
         </button>
        </div>`
     : `<div class="enc-tabs">
         <button type="button" class="enc-tab-btn ${!(_activeTab === 'decrypt' || _activeTab === 'vault') ? 'enc-tab-btn--active' : ''}" data-tab="encrypt">
-          🔒 Encrypt PDF
+          ${svgLock} Encrypt PDF
         </button>
         <button type="button" class="enc-tab-btn ${_activeTab === 'decrypt' ? 'enc-tab-btn--active' : ''}" data-tab="decrypt">
-          🔓 Decrypt PDF
+          ${svgUnlock} Decrypt PDF
         </button>
         <button type="button" class="enc-tab-btn ${_activeTab === 'vault' ? 'enc-tab-btn--active' : ''}" data-tab="vault">
-          🛡️ ToolCEO Vault
+          ${svgShield} ToolCEO Vault
         </button>
        </div>`;
 
@@ -234,7 +239,7 @@ function _renderFormBody(panel, encInfo, color) {
         <label class="enc-label" for="enc-user-pass">User Password <span style="color:#F87171">*</span></label>
         <div class="enc-input-wrap">
           <input type="password" id="enc-user-pass" class="enc-input" placeholder="Enter password to block opening" />
-          <button type="button" class="enc-eye-btn" data-target="enc-user-pass" title="Toggle password visibility">👁️</button>
+          <button type="button" class="enc-eye-btn" data-target="enc-user-pass" title="Toggle password visibility"><svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
         </div>
         <div class="enc-strength-wrap">
           <div class="enc-strength-bar"><div class="enc-strength-fill" id="enc-strength-fill"></div></div>
@@ -246,7 +251,7 @@ function _renderFormBody(panel, encInfo, color) {
         <label class="enc-label" for="enc-confirm-pass">Confirm Password <span style="color:#F87171">*</span></label>
         <div class="enc-input-wrap">
           <input type="password" id="enc-confirm-pass" class="enc-input" placeholder="Re-enter password to verify" />
-          <button type="button" class="enc-eye-btn" data-target="enc-confirm-pass" title="Toggle password visibility">👁️</button>
+          <button type="button" class="enc-eye-btn" data-target="enc-confirm-pass" title="Toggle password visibility"><svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
         </div>
       </div>
 
@@ -260,7 +265,7 @@ function _renderFormBody(panel, encInfo, color) {
             <label class="enc-label" for="enc-owner-pass">Owner Password <span style="font-size:11px;color:var(--text-muted);font-weight:400">(Optional)</span></label>
             <div class="enc-input-wrap">
               <input type="password" id="enc-owner-pass" class="enc-input" placeholder="Full access password (falls back to user password)" />
-              <button type="button" class="enc-eye-btn" data-target="enc-owner-pass" title="Toggle password visibility">👁️</button>
+              <button type="button" class="enc-eye-btn" data-target="enc-owner-pass" title="Toggle password visibility"><svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
             </div>
           </div>
 
@@ -317,7 +322,7 @@ function _renderFormBody(panel, encInfo, color) {
       <input class="enc-filename-input" id="enc-filename-input" type="text"
              value="${escHtml(_encryptBaseName)}_encrypted" placeholder="Output filename" spellcheck="false" />
       <span class="enc-filename-ext">.pdf</span>
-      <button type="button" class="enc-submit-btn" id="enc-submit-btn" disabled>🔒 Encrypt PDF</button>
+      <button type="button" class="enc-submit-btn" id="enc-submit-btn" disabled><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg> Encrypt PDF</button>
     `;
 
     _wireEncryptEvents(panel, color);
@@ -335,7 +340,7 @@ function _renderFormBody(panel, encInfo, color) {
         </div>
       `;
       actionsRow.innerHTML = `
-        <button type="button" class="enc-submit-btn" id="enc-submit-btn" disabled>🔓 Remove Password & Unlock</button>
+        <button type="button" class="enc-submit-btn" id="enc-submit-btn" disabled><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 019.9-1"/></svg> Remove Password &amp; Unlock</button>
       `;
     } else {
       formBody.innerHTML = `
@@ -343,7 +348,7 @@ function _renderFormBody(panel, encInfo, color) {
           <label class="enc-label" for="dec-pass">Password <span style="color:#F87171">*</span></label>
           <div class="enc-input-wrap">
             <input type="password" id="dec-pass" class="enc-input" placeholder="Enter current password to unlock" />
-            <button type="button" class="enc-eye-btn" data-target="dec-pass" title="Toggle password visibility">👁️</button>
+            <button type="button" class="enc-eye-btn" data-target="dec-pass" title="Toggle password visibility"><svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
           </div>
           <div class="dec-field-error" id="dec-field-error" style="display:none"></div>
         </div>
@@ -352,7 +357,7 @@ function _renderFormBody(panel, encInfo, color) {
         <input class="enc-filename-input" id="enc-filename-input" type="text"
                value="${escHtml(_encryptBaseName)}_unlocked" placeholder="Output filename" spellcheck="false" />
         <span class="enc-filename-ext">.pdf</span>
-        <button type="button" class="enc-submit-btn" id="enc-submit-btn" disabled>🔓 Remove Password & Unlock</button>
+        <button type="button" class="enc-submit-btn" id="enc-submit-btn" disabled><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 019.9-1"/></svg> Remove Password &amp; Unlock</button>
       `;
       _wireDecryptEvents(panel, color);
     }
@@ -378,7 +383,7 @@ function _renderFormBody(panel, encInfo, color) {
           <label class="enc-label" for="vlt-pass">Vault Password <span style="color:#F87171">*</span></label>
           <div class="enc-input-wrap">
             <input type="password" id="vlt-pass" class="enc-input" placeholder="Enter master password to recover PDF" />
-            <button type="button" class="enc-eye-btn" data-target="vlt-pass" title="Toggle password visibility">👁️</button>
+            <button type="button" class="enc-eye-btn" data-target="vlt-pass" title="Toggle password visibility"><svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
           </div>
           <div class="dec-field-error" id="vlt-field-error" style="display:none"></div>
         </div>
@@ -395,11 +400,38 @@ function _renderFormBody(panel, encInfo, color) {
     } else {
       // Vault Lock Mode (Standard PDF loaded)
       formBody.innerHTML = `
+        <div class="enc-vault-header-row">
+          <span class="enc-vault-about-label">About ToolCEO Vault</span>
+          <button type="button" class="enc-vault-about-btn" id="vlt-about-btn" title="What is ToolCEO Vault?">
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
+            About
+          </button>
+        </div>
+
+        <div class="enc-vault-about-banner" id="vlt-about-banner" style="display:none">
+          <button type="button" class="enc-vault-about-close" id="vlt-about-close" title="Close">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+          </button>
+          <div class="enc-vault-about-content">
+            <div class="enc-vault-about-text">
+              <h4>ToolCEO Vault (.tceo)</h4>
+              <p>ToolCEO Vault is a bank-level encrypted container format that wraps your PDF inside a proprietary <strong>.tceo</strong> binary file. It uses <strong>AES-256-GCM</strong> encryption with <strong>600,000 PBKDF2-SHA256</strong> key-derivation iterations, making brute-force attacks practically impossible to brute-force.</p>
+              <ul>
+                <li><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> AES-256-GCM authenticated encryption</li>
+                <li><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> SHA-256 tamper-detection checksum</li>
+                <li><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> 600,000 PBKDF2 iterations — beyond standard PDF encryption</li>
+                <li><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg> Optional encrypted password hint stored inside the vault</li>
+              </ul>
+              <p class="enc-vault-about-tip"><strong>The resulting <code>.tceo</code> file can only be opened using ToolCEO — no other software can read it.</strong></p>
+            </div>
+          </div>
+        </div>
+
         <div class="enc-field-group">
-          <label class="enc-label" for="vlt-user-pass">Vault Password <span style="color:#F87171">*</span> (Min 4 characters)</label>
+          <label class="enc-vault-label-row" for="vlt-user-pass">Vault Password <span style="color:#F87171">*</span> <span class="enc-label-hint">(Min 4 characters)</span></label>
           <div class="enc-input-wrap">
             <input type="password" id="vlt-user-pass" class="enc-input" placeholder="Enter high-security master password" />
-            <button type="button" class="enc-eye-btn" data-target="vlt-user-pass" title="Toggle password visibility">👁️</button>
+            <button type="button" class="enc-eye-btn" data-target="vlt-user-pass" title="Toggle password visibility"><svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
           </div>
           <div class="enc-strength-wrap">
             <div class="enc-strength-bar"><div class="enc-strength-fill" id="vlt-strength-fill"></div></div>
@@ -411,7 +443,7 @@ function _renderFormBody(panel, encInfo, color) {
           <label class="enc-label" for="vlt-confirm-pass">Confirm Password <span style="color:#F87171">*</span></label>
           <div class="enc-input-wrap">
             <input type="password" id="vlt-confirm-pass" class="enc-input" placeholder="Re-enter master password" />
-            <button type="button" class="enc-eye-btn" data-target="vlt-confirm-pass" title="Toggle password visibility">👁️</button>
+            <button type="button" class="enc-eye-btn" data-target="vlt-confirm-pass" title="Toggle password visibility"><svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></button>
           </div>
         </div>
 
@@ -427,10 +459,11 @@ function _renderFormBody(panel, encInfo, color) {
         <input class="enc-filename-input" id="enc-filename-input" type="text"
                value="${escHtml(_encryptBaseName)}" placeholder="Output filename" spellcheck="false" />
         <span class="enc-filename-ext">.tceo</span>
-        <button type="button" class="enc-submit-btn" id="enc-submit-btn" disabled style="background:#6366F1">🛡️ Lock in ToolCEO Vault (.tceo)</button>
+        <button type="button" class="enc-submit-btn" id="enc-submit-btn" disabled style="background:#6366F1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.35C17.25 22.15 21 17.25 21 12V7L12 2z"/></svg> Lock in ToolCEO Vault (.tceo)</button>
       `;
 
       _wireVaultLockEvents(panel, color);
+      _wireAboutBanner(panel);
     }
   }
 
@@ -658,6 +691,9 @@ function _wireVaultUnlockEvents(panel, color) {
 
 // ─── EYE TOGGLE BUTTONS ────────────────────────────────────────────────────────
 
+const _svgEyeOpen  = `<svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
+const _svgEyeClosed = `<svg class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17.94 17.94A10.07 10.07 0 0112 20c-7 0-11-8-11-8a18.45 18.45 0 015.06-5.94M9.9 4.24A9.12 9.12 0 0112 4c7 0 11 8 11 8a18.5 18.5 0 01-2.16 3.19m-6.72-1.07a3 3 0 11-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+
 function _wireEyeToggles(panel) {
   panel.querySelectorAll('.enc-eye-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
@@ -666,9 +702,55 @@ function _wireEyeToggles(panel) {
       if (input) {
         const isPass = input.type === 'password';
         input.type = isPass ? 'text' : 'password';
-        btn.textContent = isPass ? '🔒' : '👁️';
+        btn.innerHTML = isPass ? _svgEyeClosed : _svgEyeOpen;
       }
     });
+  });
+}
+
+// ─── ABOUT BANNER TOGGLE ──────────────────────────────────────────────────────
+
+function _wireAboutBanner(panel) {
+  const aboutBtn    = panel.querySelector('#vlt-about-btn');
+  const aboutBanner = panel.querySelector('#vlt-about-banner');
+  const aboutClose  = panel.querySelector('#vlt-about-close');
+  if (!aboutBtn || !aboutBanner) return;
+
+  let _bannerOpen = false;
+
+  const openBanner = () => {
+    _bannerOpen = true;
+    aboutBanner.style.display = 'block';
+    requestAnimationFrame(() => aboutBanner.classList.add('vlt-about-banner--visible'));
+  };
+
+  const closeBanner = () => {
+    _bannerOpen = false;
+    aboutBanner.classList.remove('vlt-about-banner--visible');
+    setTimeout(() => { if (!_bannerOpen) aboutBanner.style.display = 'none'; }, 250);
+  };
+
+  aboutBtn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (_bannerOpen) closeBanner(); else openBanner();
+  });
+
+  if (aboutClose) {
+    aboutClose.addEventListener('click', (e) => {
+      e.stopPropagation();
+      closeBanner();
+    });
+  }
+
+  // Close on clicking anywhere outside the banner
+  document.addEventListener('click', function _outsideClick(e) {
+    if (_bannerOpen && !aboutBanner.contains(e.target) && e.target !== aboutBtn) {
+      closeBanner();
+    }
+    // Auto-remove listener when panel is gone
+    if (!document.contains(aboutBanner)) {
+      document.removeEventListener('click', _outsideClick);
+    }
   });
 }
 
