@@ -102,12 +102,11 @@ def _serialize(doc: fitz.Document) -> bytes:
 def _params_for_ratio(ratio: float) -> tuple[int, float]:
     """
     Calculate quality and scale_factor continuously based on target ratio.
-    Since image area scales with scale_factor^2, setting scale_factor = sqrt(ratio)
-    aligns the compressed file size with the UI estimated target size.
+    Accounts for document non-image overhead (fonts, text streams, XRef tables).
     """
     ratio = max(0.05, min(0.95, ratio))
-    scale_factor = math.sqrt(ratio)
-    quality = max(18, min(85, int(15 + 70 * ratio)))
+    scale_factor = max(0.12, ratio ** 0.65)
+    quality = max(15, min(85, int(10 + 75 * ratio)))
     return quality, scale_factor
 
 
@@ -258,6 +257,20 @@ def compress_pdf(
     result = _serialize(doc)
     doc.close()
     _report(job_id, 92)
+
+    # Dynamic precision adjustment pass if output exceeds target by > 8%
+    if len(result) > target * 1.08 and ratio < 0.50:
+        over_ratio = target / len(result)
+        adj_scale = max(0.08, scale_factor * math.sqrt(over_ratio))
+        adj_quality = max(10, int(quality * over_ratio))
+        doc2 = _open_bytes(data, password)
+        _reencode_images(doc2, quality=adj_quality, scale_factor=adj_scale, job_id=job_id,
+                         progress_start=85, progress_end=92)
+        adj_result = _serialize(doc2)
+        doc2.close()
+        if len(adj_result) < len(result):
+            result = adj_result
+        _report(job_id, 92)
 
     # Return the compressed result
     return result if len(result) < len(struct_bytes) else struct_bytes
