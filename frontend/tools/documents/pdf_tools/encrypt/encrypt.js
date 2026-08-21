@@ -548,7 +548,7 @@ function _wireEncryptEvents(panel, color) {
       const outName = (nameEl ? nameEl.value.trim() : '') || (_encryptBaseName + '_encrypted');
 
       const main = document.getElementById('main-content');
-      if (main) main.scrollTop = 0;
+      if (main) main.scrollTo({ top: 0, behavior: 'smooth' });
 
       _submitEncrypt({
         file: _encryptFile,
@@ -601,7 +601,7 @@ function _wireDecryptEvents(panel, color) {
       const outName = (nameEl ? nameEl.value.trim() : '') || (_encryptBaseName + '_unlocked');
 
       const main = document.getElementById('main-content');
-      if (main) main.scrollTop = 0;
+      if (main) main.scrollTo({ top: 0, behavior: 'smooth' });
 
       _submitDecrypt({
         file: _encryptFile,
@@ -659,6 +659,9 @@ function _wireVaultLockEvents(panel, color) {
       const nameEl   = panel.querySelector('#enc-filename-input');
       const outName  = (nameEl ? nameEl.value.trim() : '') || _encryptBaseName;
 
+      const main = document.getElementById('main-content');
+      if (main) main.scrollTo({ top: 0, behavior: 'smooth' });
+
       _submitVaultLock({
         file: _encryptFile,
         password: userPassword,
@@ -700,6 +703,9 @@ function _wireVaultUnlockEvents(panel, color) {
 
       const nameEl  = panel.querySelector('#enc-filename-input');
       const outName = (nameEl ? nameEl.value.trim() : '') || (_encryptBaseName + '_unlocked');
+
+      const main = document.getElementById('main-content');
+      if (main) main.scrollTo({ top: 0, behavior: 'smooth' });
 
       _submitVaultUnlock({
         file: _encryptFile,
@@ -1122,6 +1128,9 @@ async function _submitVaultLock(opts) {
   const zone = document.getElementById('drop-zone');
   if (!zone) return;
 
+  const main = document.getElementById('main-content');
+  if (main) main.scrollTo({ top: 0, behavior: 'smooth' });
+
   const panel = document.getElementById('encrypt-settings-panel');
   if (panel) panel.remove();
   resetZoneContent(zone);
@@ -1200,6 +1209,9 @@ async function _submitVaultUnlock(opts) {
   const tool = getActiveTool();
   const zone = document.getElementById('drop-zone');
   if (!zone) return;
+
+  const main = document.getElementById('main-content');
+  if (main) main.scrollTo({ top: 0, behavior: 'smooth' });
 
   const panel     = document.getElementById('encrypt-settings-panel');
   const passInput = panel ? panel.querySelector('#vlt-pass') : null;
