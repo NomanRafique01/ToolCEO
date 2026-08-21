@@ -167,24 +167,10 @@ function _showSettingsPanel(pageCount, color) {
           <span class="cmp-reduction-title">80% <span class="cmp-reduction-sub">High</span></span>
           <span class="cmp-reduction-size">${_fmt(_compressFileSize * 0.2)}</span>
         </button>
-        <button class="cmp-reduction-btn" data-reduction="custom" id="cmp-red-custom">
-          <span class="cmp-reduction-title">Custom <span class="cmp-reduction-sub">%</span></span>
-          <span class="cmp-reduction-size" id="cmp-custom-size-sub">${_fmt(_compressFileSize * 0.5)}</span>
+        <button class="cmp-reduction-btn" data-reduction="90" id="cmp-red-90">
+          <span class="cmp-reduction-title">90% <span class="cmp-reduction-sub">Max</span></span>
+          <span class="cmp-reduction-size">${_fmt(_compressFileSize * 0.1)}</span>
         </button>
-      </div>
-
-      <div class="cmp-custom-slider-wrap" id="cmp-custom-slider-wrap" style="display: none;">
-        <div class="cmp-slider-row">
-          <label class="cmp-label" for="cmp-custom-slider">Custom Reduction:</label>
-          <div class="cmp-slider-val-box">
-            <input type="number" id="cmp-custom-pct-input" min="5" max="95" value="50"
-                   class="cmp-number-input" style="width:56px; text-align:center;"/> %
-          </div>
-        </div>
-        <input type="range" id="cmp-custom-slider" min="5" max="95" value="50" class="cmp-slider-input"/>
-        <div class="cmp-slider-ticks">
-          <span>5%</span><span>50%</span><span>95%</span>
-        </div>
       </div>
     </div>
 
@@ -203,40 +189,13 @@ function _showSettingsPanel(pageCount, color) {
   // ── Reduction buttons ──────────────────────────────────────────────────────
 
   const reductionBtns = panel.querySelectorAll('[data-reduction]');
-  const sliderWrap    = panel.querySelector('#cmp-custom-slider-wrap');
-  const sliderInput   = panel.querySelector('#cmp-custom-slider');
-  const sliderNum     = panel.querySelector('#cmp-custom-pct-input');
-
-  const updateCustomSub = (pct) => {
-    pct = Math.max(5, Math.min(95, pct));
-    const targetBytes = Math.round(_compressFileSize * (1 - pct / 100));
-    const el = panel.querySelector('#cmp-custom-size-sub');
-    if (el) el.textContent = _fmt(targetBytes);
-  };
 
   reductionBtns.forEach((btn) => {
     btn.addEventListener('click', () => {
       reductionBtns.forEach((b) => b.classList.remove('cmp-reduction-btn--active'));
       btn.classList.add('cmp-reduction-btn--active');
-      const val = btn.dataset.reduction;
-      if (val === 'custom') {
-        if (sliderWrap) sliderWrap.style.display = 'flex';
-        updateCustomSub(parseInt(sliderInput.value, 10) || 50);
-      } else {
-        if (sliderWrap) sliderWrap.style.display = 'none';
-      }
     });
   });
-
-  const syncCustom = (pct) => {
-    pct = Math.max(5, Math.min(95, pct));
-    sliderInput.value = pct;
-    sliderNum.value   = pct;
-    updateCustomSub(pct);
-  };
-
-  sliderInput.addEventListener('input', (e) => syncCustom(parseInt(e.target.value, 10)));
-  sliderNum.addEventListener('input',   (e) => syncCustom(parseInt(e.target.value, 10)));
 
   // ── "Change file" button ──────────────────────────────────────────────────
 
@@ -280,14 +239,7 @@ function _collectOptions(panel) {
 
   if (activeRedBtn) {
     const redVal = activeRedBtn.dataset.reduction;
-    let pct = 50;
-    if (redVal === 'custom') {
-      const s = panel.querySelector('#cmp-custom-slider');
-      pct = s ? parseInt(s.value, 10) : 50;
-    } else {
-      pct = parseInt(redVal, 10);
-    }
-    pct = Math.max(5, Math.min(95, pct));
+    const pct = Math.max(5, Math.min(95, parseInt(redVal, 10) || 50));
     targetBytes = Math.round(_compressFileSize * (1 - pct / 100));
   }
 
