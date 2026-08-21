@@ -89,10 +89,9 @@ function _scaledIcon(svgString, color) {
 
 function _tagBadge(tag, color, bg) {
   if (!tag) return '';
-  const isConvert  = tag.toLowerCase() === 'convert';
-  const badgeColor  = isConvert ? '#38BDF8' : color;
-  const badgeBg     = isConvert ? 'rgba(56,189,248,0.12)' : bg;
-  const badgeBorder = isConvert ? 'rgba(56,189,248,0.3)' : `${color}4D`;
+  const badgeColor  = color || '#00E5C0';
+  const badgeBg     = bg || `color-mix(in srgb, ${badgeColor} 12%, transparent)`;
+  const badgeBorder = `color-mix(in srgb, ${badgeColor} 30%, transparent)`;
   return `<span class="hero-tool-badge"
     style="color:${badgeColor};background:${badgeBg};border-color:${badgeBorder}">
     ${tag}
