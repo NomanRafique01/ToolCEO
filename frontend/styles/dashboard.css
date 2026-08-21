@@ -1232,7 +1232,15 @@
 }
 
 .tool-icon-box {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
   line-height: 0;
+  /* background & color are set per-card via inline style in index.html */
 }
 
 .tool-icon-box svg {

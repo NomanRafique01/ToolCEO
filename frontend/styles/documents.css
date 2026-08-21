@@ -43,7 +43,15 @@
 }
 
 .fmt-icon-box {
+  width: 38px;
+  height: 38px;
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--fmt-color) 15%, transparent);
   color: var(--fmt-color);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
   line-height: 0;
 }
 
