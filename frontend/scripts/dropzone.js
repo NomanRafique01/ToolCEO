@@ -573,6 +573,12 @@ function _showDownload(zone, filename, jobId, color) {
   wrap.className = 'dz-download-wrap';
   wrap.innerHTML = `
     <div class="dz-save-card" style="--save-color:${color}">
+      <button class="dz-save-close" type="button" title="Close download window" aria-label="Close download window">
+        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+      </button>
       <div class="dz-save-icon" aria-hidden="true">
         <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
           <path d="M12 3v13M7 11l5 5 5-5" stroke="currentColor" stroke-width="1.8"
@@ -603,6 +609,21 @@ function _showDownload(zone, filename, jobId, color) {
     </div>`;
 
   zone.appendChild(wrap);
+
+  const closeBtn = wrap.querySelector('.dz-save-close');
+  if (closeBtn) {
+    closeBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      _resetZoneContent(zone);
+      clearBgJob();
+      removeSplitPanel();
+      removeMergePanel();
+      removeCompressPanel();
+      removeEncryptPanel();
+      const tool = getActiveTool();
+      if (tool) _updateDropZone(tool);
+    });
+  }
 
   const btn = wrap.querySelector('.dz-save-btn');
   btn.addEventListener('click', async (e) => {
