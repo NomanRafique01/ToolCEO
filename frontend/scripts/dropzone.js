@@ -146,18 +146,14 @@ function _updateDropZone(tool) {
   // Reset the download panel when the tool changes; it will only become
   // active again after a conversion completes (_dlPanelReady is called then).
   _dlPanelReset();
-  const zone     = document.getElementById('drop-zone');
-  const mainEl   = zone && zone.querySelector('.drop-main-text');
-  const subEl    = zone && zone.querySelector('.drop-browse');
-  const privEl   = zone && zone.querySelector('.drop-private');
-  const iconSlot = zone && zone.querySelector('.drop-icon');
+  const zone = document.getElementById('drop-zone');
 
   const heroHeader  = document.querySelector('.hero-card-header');
   const heroTitleEl = heroHeader && heroHeader.querySelector('.hero-title');
   const heroSubEl   = heroHeader && heroHeader.querySelector('.hero-subtitle');
   const heroHintEl  = heroHeader && heroHeader.querySelector('.hero-hint');
 
-  if (!zone || !mainEl || !subEl || !privEl) return;
+  if (!zone) return;
 
   // ── RESET ──────────────────────────────────────────────────────────────────
   if (!tool) {
@@ -165,10 +161,16 @@ function _updateDropZone(tool) {
     removeSplitPanel();
     removeMergePanel();
     removeCompressPanel();
+
+    const mainEl   = zone.querySelector('.drop-main-text');
+    const subEl    = zone.querySelector('.drop-browse');
+    const privEl   = zone.querySelector('.drop-private');
+    const iconSlot = zone.querySelector('.drop-icon');
+
     if (iconSlot) iconSlot.outerHTML = DEFAULT_ICON_SVG;
-    mainEl.textContent = DEFAULT_MAIN;
-    subEl.textContent  = DEFAULT_SUB;
-    privEl.textContent = DEFAULT_PRIV;
+    if (mainEl) mainEl.textContent = DEFAULT_MAIN;
+    if (subEl)  subEl.textContent  = DEFAULT_SUB;
+    if (privEl) privEl.textContent = DEFAULT_PRIV;
     zone.removeAttribute('style');
     zone.classList.remove('drop-zone--tool-active');
 
@@ -201,6 +203,17 @@ function _updateDropZone(tool) {
   }
   if (heroHintEl) { heroHintEl.textContent = 'Drop or click below'; heroHintEl.style.color = color; }
 
+  // Fresh DOM query after _resetZoneContent
+  const mainEl      = zone.querySelector('.drop-main-text');
+  const subEl       = zone.querySelector('.drop-browse');
+  const privEl      = zone.querySelector('.drop-private');
+  const currentIcon = zone.querySelector('.drop-icon');
+
+  if (currentIcon && icon) currentIcon.outerHTML = _scaledIcon(icon, color);
+  if (mainEl) mainEl.textContent = mainText;
+  if (subEl)  subEl.textContent  = subText;
+  if (privEl) privEl.textContent = 'Your files never leave your device.';
+
   // Check if there is an active background job for this tool.
   // If so, restore the normal progress ring (or download card) inside the drop zone!
   const bgJob = getBgJob();
@@ -218,13 +231,6 @@ function _updateDropZone(tool) {
       return;
     }
   }
-
-  const currentIcon = zone.querySelector('.drop-icon');
-  if (currentIcon && icon) currentIcon.outerHTML = _scaledIcon(icon, color);
-
-  mainEl.textContent = mainText;
-  subEl.textContent  = subText;
-  privEl.textContent = 'Your files never leave your device.';
 }
 
 // ─── DOWNLOAD PANEL (right-column panel) ──────────────────────────────────────

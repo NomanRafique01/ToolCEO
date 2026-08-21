@@ -62,27 +62,30 @@ app.whenReady().then(() => {
 
   ipcMain.handle('save-file-dialog', async (_event, filename, base64Data) => {
     const downloadsDir = app.getPath('downloads');
-    let outName = (filename || 'compressed.pdf').trim();
-    if (!outName.toLowerCase().endsWith('.pdf')) outName += '.pdf';
+    let outName = (filename || 'output.pdf').trim();
+    const ext = path.extname(outName).replace('.', '').toLowerCase() || 'pdf';
 
-    const ext = path.extname(outName).replace('.', '') || 'pdf';
     const { canceled, filePath } = await dialog.showSaveDialog({
-      title: 'Save compressed PDF',
+      title: 'Save File',
       defaultPath: path.join(downloadsDir, outName),
-      buttonLabel: 'Save PDF',
+      buttonLabel: 'Save',
       filters: [
-        { name: 'PDF Documents (*.pdf)', extensions: ['pdf'] },
+        { name: `${ext.toUpperCase()} Documents (*.${ext})`, extensions: [ext] },
         { name: 'All Files (*.*)', extensions: ['*'] }
       ]
     });
     if (canceled || !filePath) return null;
 
     let finalPath = filePath;
-    if (!finalPath.toLowerCase().endsWith('.pdf')) {
-      finalPath += '.pdf';
-    }
     const buffer = Buffer.from(base64Data, 'base64');
-    fs.writeFileSync(finalPath, buffer);
+    try {
+      fs.writeFileSync(finalPath, buffer);
+    } catch (err) {
+      if (err.code === 'EBUSY') {
+        throw new Error(`File is locked or open in another program. Please close it or choose a different filename.`);
+      }
+      throw err;
+    }
     return finalPath;
   });
 

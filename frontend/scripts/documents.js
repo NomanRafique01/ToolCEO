@@ -5,7 +5,20 @@
  */
 
 import { setBreadcrumb } from './navigation.js';
-import { setActiveTool } from './toolstate.js';
+import { setActiveTool, onToolChange } from './toolstate.js';
+
+// Sync card selection highlight in the explore-tools grid whenever active tool changes
+onToolChange((tool) => {
+  const container = document.getElementById('explore-tools-content');
+  if (!container) return;
+  container.querySelectorAll('.fmt-card').forEach((card) => {
+    if (tool && card.dataset.id === tool.id) {
+      card.classList.add('selected');
+    } else {
+      card.classList.remove('selected');
+    }
+  });
+});
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 
