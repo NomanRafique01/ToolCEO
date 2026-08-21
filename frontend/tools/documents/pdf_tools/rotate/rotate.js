@@ -17,6 +17,8 @@ let _selectedFile = null;
 let _pdfDoc = null;
 let _rotations = [];
 let _renderToken = 0;
+let _activeContainer = null;
+let _firstPageThumbShown = false;
 
 function _escHtml(str) {
   return String(str)
@@ -32,6 +34,61 @@ function _isPdfFile(file) {
 
 function _baseName(filename) {
   return String(filename || 'document').replace(/\.[^.]+$/, '');
+}
+
+function _fallbackPdfIcon(color) {
+  return `<svg class="dz-pdf-thumb-icon" viewBox="0 0 90 116" xmlns="http://www.w3.org/2000/svg">
+    <rect x="0" y="0" width="90" height="116" fill="#ffffff"/>
+    <polygon points="62,0 90,28 62,28" fill="#e0e0e0"/>
+    <polyline points="62,0 62,28 90,28" fill="none" stroke="#cccccc" stroke-width="1"/>
+    <rect x="0" y="42" width="90" height="26" fill="${color}"/>
+    <text x="45" y="60" font-family="Arial,sans-serif" font-size="14" font-weight="bold"
+          fill="#ffffff" text-anchor="middle" dominant-baseline="middle">PDF</text>
+    <line x1="12" y1="80" x2="78" y2="80" stroke="#dddddd" stroke-width="2" stroke-linecap="round"/>
+    <line x1="12" y1="89" x2="78" y2="89" stroke="#dddddd" stroke-width="2" stroke-linecap="round"/>
+    <line x1="12" y1="98" x2="55" y2="98" stroke="#dddddd" stroke-width="2" stroke-linecap="round"/>
+  </svg>`;
+}
+
+function _showRotateDropzoneThumbnail(file, color, dataUri = null) {
+  const zone = document.getElementById('drop-zone');
+  if (!zone || !file) return;
+
+  removeRotatePanel();
+
+  const thumbContent = dataUri
+    ? `<img class="dz-pdf-thumb-img" src="${dataUri}" alt="PDF preview" draggable="false" />`
+    : _fallbackPdfIcon(color);
+
+  const wrap = document.createElement('div');
+  wrap.className = 'dz-pdf-thumb-wrap dz-rotate-thumb-wrap';
+  wrap.innerHTML = `
+    <div class="dz-pdf-thumb-card">
+      <div class="dz-pdf-thumb-frame" style="border: 2px solid ${color}; box-shadow: 0 4px 18px rgba(0,0,0,0.45);">
+        ${thumbContent}
+      </div>
+      <button class="dz-pdf-thumb-remove dz-rotate-thumb-remove" title="Remove file" style="--thumb-color:${color}" aria-label="Remove file">&#x2715;</button>
+    </div>
+    <span class="dz-pdf-thumb-name">${_escHtml(file.name)}</span>`;
+
+  zone.classList.add('dz-has-thumb');
+  zone.appendChild(wrap);
+
+  wrap.querySelector('.dz-rotate-thumb-remove').addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (_activeContainer) _closeViewer(_activeContainer);
+    removeRotatePanel();
+  });
+}
+
+export function removeRotatePanel() {
+  const zone = document.getElementById('drop-zone');
+  if (!zone) return;
+
+  zone.querySelectorAll('.dz-rotate-thumb-wrap').forEach((thumb) => thumb.remove());
+  if (!zone.querySelector('.dz-pdf-thumb-wrap, .dz-compress-thumb-wrap, .dz-encrypt-thumb-wrap, .dz-merge-thumb-strip')) {
+    zone.classList.remove('dz-has-thumb');
+  }
 }
 
 function _ensureFileInput() {
@@ -165,6 +222,8 @@ function _closeViewer(container) {
   _selectedFile = null;
   _pdfDoc = null;
   _rotations = [];
+  _firstPageThumbShown = false;
+  removeRotatePanel();
 
   viewer.classList.remove('rotate-viewer--visible');
   cardView.classList.remove('rotate-hidden');
@@ -255,6 +314,11 @@ async function _renderPage(pdfDoc, pageNumber, viewer, token) {
   if (skeleton) skeleton.remove();
   stage.insertBefore(canvas, stage.querySelector('.rotate-badge'));
   _updatePageRotation(viewer, pageNumber - 1);
+
+  if (pageNumber === 1 && !_firstPageThumbShown && _selectedFile) {
+    _firstPageThumbShown = true;
+    _showRotateDropzoneThumbnail(_selectedFile, '#A78BFA', canvas.toDataURL('image/jpeg', 0.9));
+  }
 }
 
 async function _loadPdfIntoViewer(container, file) {
@@ -264,6 +328,8 @@ async function _loadPdfIntoViewer(container, file) {
   _selectedFile = file;
   _pdfDoc = null;
   _rotations = [];
+  _activeContainer = container;
+  _firstPageThumbShown = false;
   _renderToken += 1;
   const token = _renderToken;
 
@@ -278,6 +344,7 @@ async function _loadPdfIntoViewer(container, file) {
 
     _pdfDoc = pdfDoc;
     _rotations = Array(pdfDoc.numPages).fill(0);
+    _showRotateDropzoneThumbnail(file, '#A78BFA');
     viewer.querySelector('.rotate-file-name').textContent = file.name;
     viewer.querySelector('.rotate-page-count').textContent = `${pdfDoc.numPages} page${pdfDoc.numPages === 1 ? '' : 's'}`;
     _buildPageCards(viewer, pdfDoc.numPages);

@@ -28,6 +28,9 @@ import {
   handleEncryptFilePicked,
   removeEncryptPanel,
 } from '../tools/documents/pdf_tools/encrypt/encrypt.js';
+import {
+  removeRotatePanel,
+} from '../tools/documents/pdf_tools/rotate/rotate.js';
 
 const BACKEND = 'http://127.0.0.1:8000';
 
@@ -143,6 +146,7 @@ function _updateDropZone(tool) {
     removeMergePanel();
     removeCompressPanel();
     removeEncryptPanel();
+    removeRotatePanel();
 
     const mainEl   = zone.querySelector('.drop-main-text');
     const subEl    = zone.querySelector('.drop-browse');
@@ -170,6 +174,7 @@ function _updateDropZone(tool) {
   removeMergePanel();        // hide previous merge queue panel if tool changed
   removeCompressPanel();     // hide previous compress settings panel if tool changed
   removeEncryptPanel();      // hide previous encrypt settings panel if tool changed
+  removeRotatePanel();       // hide previous rotate thumbnail if tool changed
 
   zone.style.setProperty('--dz-color', color);
   zone.style.setProperty('--dz-bg', bg);
@@ -620,6 +625,7 @@ function _showDownload(zone, filename, jobId, color) {
       removeMergePanel();
       removeCompressPanel();
       removeEncryptPanel();
+      removeRotatePanel();
       const tool = getActiveTool();
       if (tool) _updateDropZone(tool);
     });
