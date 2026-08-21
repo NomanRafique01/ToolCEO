@@ -185,9 +185,9 @@
 }
 
 .enc-badge--vault {
-  background: rgba(99, 102, 241, 0.15);
-  color: #818CF8;
-  border: 1px solid rgba(99, 102, 241, 0.4);
+  background: color-mix(in srgb, var(--enc-color, #FBBF24) 15%, transparent);
+  color: var(--enc-color, #FBBF24);
+  border: 1px solid color-mix(in srgb, var(--enc-color, #FBBF24) 40%, transparent);
 }
 
 .enc-badge--tampered {

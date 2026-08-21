@@ -74,7 +74,8 @@ export function showInvalidPdfWarning() {
 
 function _isPdfFile(file) {
   if (!file) return false;
-  return file.name.toLowerCase().endsWith('.pdf') || file.type === 'application/pdf';
+  const fname = (file.name || '').toLowerCase();
+  return fname.endsWith('.pdf') || fname.endsWith('.tceo') || fname.endsWith('.tceo.pdf') || file.type === 'application/pdf';
 }
 
 // ─── DEFAULT STATE ────────────────────────────────────────────────────────────

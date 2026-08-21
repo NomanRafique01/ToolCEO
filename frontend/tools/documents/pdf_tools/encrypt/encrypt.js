@@ -69,6 +69,8 @@ export function removeEncryptPanel() {
 // ─── THUMBNAIL (inside drop zone) ─────────────────────────────────────────────
 
 function _showEncryptThumb(zone, file, color, dataUri) {
+  if (!file) return;
+
   const old = zone.querySelector('.dz-encrypt-thumb-wrap');
   if (old) old.remove();
 
@@ -76,12 +78,12 @@ function _showEncryptThumb(zone, file, color, dataUri) {
     ? `<img class="dz-encrypt-thumb-img" src="${dataUri}" alt="PDF preview" draggable="false" />`
     : (_isTceo
         ? `<svg class="dz-encrypt-thumb-icon" viewBox="0 0 90 116" xmlns="http://www.w3.org/2000/svg">
-            <rect x="0" y="0" width="90" height="116" rx="6" fill="#1E1B4B"/>
-            <polygon points="62,0 90,28 62,28" fill="#312E81"/>
-            <polyline points="62,0 62,28 90,28" fill="none" stroke="#4338CA" stroke-width="1"/>
-            <path d="M45 38 L65 48 V64 C65 76 45 88 45 88 C45 88 25 76 25 64 V48 Z" fill="none" stroke="#818CF8" stroke-width="2.5" stroke-linejoin="round"/>
-            <path d="M45 54 V64 M45 70 V71" stroke="#818CF8" stroke-width="2.5" stroke-linecap="round"/>
-            <text x="45" y="102" font-family="Arial,sans-serif" font-size="10" font-weight="bold" fill="#818CF8" text-anchor="middle">.TCEO</text>
+            <rect x="0" y="0" width="90" height="116" rx="6" fill="var(--bg-card)"/>
+            <polygon points="62,0 90,28 62,28" fill="color-mix(in srgb, ${color} 20%, var(--bg-card))"/>
+            <polyline points="62,0 62,28 90,28" fill="none" stroke="color-mix(in srgb, ${color} 40%, transparent)" stroke-width="1"/>
+            <path d="M45 38 L65 48 V64 C65 76 45 88 45 88 C45 88 25 76 25 64 V48 Z" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round"/>
+            <path d="M45 54 V64 M45 70 V71" stroke="${color}" stroke-width="2.5" stroke-linecap="round"/>
+            <text x="45" y="102" font-family="Arial,sans-serif" font-size="10" font-weight="bold" fill="${color}" text-anchor="middle">.TCEO</text>
           </svg>`
         : `<svg class="dz-encrypt-thumb-icon" viewBox="0 0 90 116" xmlns="http://www.w3.org/2000/svg">
             <rect x="0" y="0" width="90" height="116" fill="#ffffff"/>
@@ -366,7 +368,7 @@ function _renderFormBody(panel, encInfo, color) {
     if (_isTceo) {
       // Vault Unlock Mode (.tceo file loaded)
       const hintNotice = _vaultInfo && _vaultInfo.has_hint
-        ? `<div class="enc-warning-banner" style="border-color:rgba(99,102,241,0.4);background:rgba(99,102,241,0.1);color:#818CF8">
+        ? `<div class="enc-warning-banner" style="border-color:color-mix(in srgb, ${color} 40%, transparent);background:color-mix(in srgb, ${color} 10%, transparent);color:${color}">
              💡 This vault container has an encrypted password hint. Enter password to unlock.
            </div>`
         : '';
@@ -393,7 +395,7 @@ function _renderFormBody(panel, encInfo, color) {
         <input class="enc-filename-input" id="enc-filename-input" type="text"
                value="${escHtml(_encryptBaseName)}_unlocked" placeholder="Output filename" spellcheck="false" />
         <span class="enc-filename-ext">.pdf</span>
-        <button type="button" class="enc-submit-btn" id="enc-submit-btn" disabled style="background:#6366F1">🔓 Unlock & Recover PDF</button>
+        <button type="button" class="enc-submit-btn" id="enc-submit-btn" disabled><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 019.9-1"/></svg> Unlock &amp; Recover PDF</button>
       `;
 
       _wireVaultUnlockEvents(panel, color);
@@ -459,7 +461,7 @@ function _renderFormBody(panel, encInfo, color) {
         <input class="enc-filename-input" id="enc-filename-input" type="text"
                value="${escHtml(_encryptBaseName)}" placeholder="Output filename" spellcheck="false" />
         <span class="enc-filename-ext">.tceo</span>
-        <button type="button" class="enc-submit-btn" id="enc-submit-btn" disabled style="background:#6366F1"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.35C17.25 22.15 21 17.25 21 12V7L12 2z"/></svg> Lock in ToolCEO Vault (.tceo)</button>
+        <button type="button" class="enc-submit-btn" id="enc-submit-btn" disabled><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2L3 7v5c0 5.25 3.75 10.15 9 11.35C17.25 22.15 21 17.25 21 12V7L12 2z"/></svg> Lock in ToolCEO Vault (.tceo)</button>
       `;
 
       _wireVaultLockEvents(panel, color);
@@ -626,8 +628,8 @@ function _wireVaultLockEvents(panel, color) {
       if (strengthFill) { strengthFill.style.width = '50%'; strengthFill.style.backgroundColor = '#FBBF24'; }
       if (strengthLabel) { strengthLabel.textContent = 'Fair'; strengthLabel.style.color = '#FBBF24'; }
     } else {
-      if (strengthFill) { strengthFill.style.width = '100%'; strengthFill.style.backgroundColor = '#818CF8'; }
-      if (strengthLabel) { strengthLabel.textContent = 'Vault Grade (600k iterations)'; strengthLabel.style.color = '#818CF8'; }
+      if (strengthFill) { strengthFill.style.width = '100%'; strengthFill.style.backgroundColor = color; }
+      if (strengthLabel) { strengthLabel.textContent = 'Vault Grade (600k iterations)'; strengthLabel.style.color = color; }
     }
 
     const valid = uPass.length >= 4 && uPass === cPass;
@@ -989,10 +991,16 @@ async function _submitDecrypt(opts) {
 
     if (res.status === 400) {
       const json = await res.json().catch(() => ({}));
-      if (json.error === 'incorrect_password') {
+      const errCode = json.error || '';
+      const errMsg  = json.message || '';
+      if (
+        errCode === 'wrong_password' ||
+        errCode === 'incorrect_password' ||
+        errMsg.toLowerCase().includes('password')
+      ) {
         clearBgJob();
         resetZoneContent(zone);
-        _showEncryptThumb(zone, _encryptFile, color, _thumbDataUri);
+        if (_encryptFile) _showEncryptThumb(zone, _encryptFile, color, _thumbDataUri);
         _showSettingsPanel(_encryptPageCount, _encInfo, color);
 
         const restoredPanel = document.getElementById('encrypt-settings-panel');
@@ -1000,12 +1008,12 @@ async function _submitDecrypt(opts) {
           const errEl = restoredPanel.querySelector('#dec-field-error');
           if (errEl) {
             errEl.style.display = 'block';
-            errEl.textContent = 'Incorrect password. Try again.';
+            errEl.textContent = errMsg || 'Incorrect password. Try again.';
           }
         }
         return;
       }
-      throw new Error(json.message || 'Decryption failed (400)');
+      throw new Error(errMsg || 'Decryption failed (400)');
     }
 
     if (!res.ok) {
@@ -1167,10 +1175,16 @@ async function _submitVaultUnlock(opts) {
 
     if (res.status === 400) {
       const json = await res.json().catch(() => ({}));
-      if (json.error === 'wrong_password' || json.error === 'incorrect_password') {
+      const errCode = json.error || '';
+      const errMsg  = json.message || '';
+      if (
+        errCode === 'wrong_password' ||
+        errCode === 'incorrect_password' ||
+        errMsg.toLowerCase().includes('password')
+      ) {
         clearBgJob();
         resetZoneContent(zone);
-        _showEncryptThumb(zone, _encryptFile, color, null);
+        if (_encryptFile) _showEncryptThumb(zone, _encryptFile, color, null);
         _showSettingsPanel(1, null, color);
 
         const restoredPanel = document.getElementById('encrypt-settings-panel');
@@ -1178,12 +1192,12 @@ async function _submitVaultUnlock(opts) {
           const errEl = restoredPanel.querySelector('#vlt-field-error');
           if (errEl) {
             errEl.style.display = 'block';
-            errEl.textContent = 'Incorrect password or invalid vault file.';
+            errEl.textContent = errMsg || 'Incorrect password or invalid vault file.';
           }
         }
         return;
       }
-      throw new Error(json.message || 'Vault Unlock failed (400)');
+      throw new Error(errMsg || 'Vault Unlock failed (400)');
     }
 
     if (!res.ok) {
