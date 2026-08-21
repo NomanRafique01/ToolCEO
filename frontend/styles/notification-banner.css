@@ -29,31 +29,30 @@
   color: var(--text-muted);
   padding: 0 20px;
   opacity: 1;
-  transition: all 0.3s ease;
 }
 
-/* ── Banner Expand & Collapse Animations ── */
-
-.notification-banner.nb-expand {
-  animation: bannerExpand 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+/* Hidden state when 0 active notifications */
+.notification-banner.nb-hidden {
+  display: none !important;
 }
 
-.notification-banner.nb-collapse {
-  animation: bannerCollapse 0.25s ease-in forwards;
+/* ── Banner Slide Down & Slide Up Animations ── */
+
+.notification-banner.nb-slide-down {
+  display: flex !important;
+  animation: bannerSlideDown 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
 }
 
-/* Empty state banner (No active notifications) */
-.notification-banner.notification-banner--empty {
-  min-height: 32px;
-  max-height: 32px;
-  opacity: 0.6;
+.notification-banner.nb-slide-up {
+  display: flex !important;
+  animation: bannerSlideUp 0.25s ease-in forwards;
 }
 
-@keyframes bannerExpand {
+@keyframes bannerSlideDown {
   from {
     max-height: 0;
     opacity: 0;
-    transform: translateY(-8px);
+    transform: translateY(-10px);
   }
   to {
     max-height: 60px;
@@ -62,7 +61,7 @@
   }
 }
 
-@keyframes bannerCollapse {
+@keyframes bannerSlideUp {
   from {
     max-height: 60px;
     opacity: 1;
@@ -71,7 +70,7 @@
   to {
     max-height: 0;
     opacity: 0;
-    transform: translateY(-6px);
+    transform: translateY(-10px);
   }
 }
 
@@ -145,12 +144,6 @@
   align-items: center;
 }
 
-.nb-middle.nb-empty-state {
-  font-size: 12px;
-  color: #4a7a72;
-  font-style: italic;
-}
-
 .nb-pills-track {
   display: flex;
   align-items: center;
@@ -220,7 +213,7 @@
   }
 }
 
-/* Countdown progress line for auto-dismissable success/info pills */
+/* 5-second countdown progress line for auto-dismissable success/info pills */
 .nb-pill-progress {
   position: absolute;
   bottom: 0;
@@ -230,7 +223,7 @@
   background: var(--pill-color, #00E5C0);
   border-radius: 0 0 8px 8px;
   transform-origin: left center;
-  animation: pillCountdown 6s linear forwards;
+  animation: pillCountdown 5s linear forwards;
 }
 
 .nb-pill:hover .nb-pill-progress {
@@ -329,8 +322,12 @@
 /* ─── MAIN CONTENT OFFSET ────────────────────────────────── */
 
 #main-content {
-  top: calc(var(--topbar-height) + 42px) !important;
+  top: var(--topbar-height) !important;
   transition: top 0.3s ease;
+}
+
+body.has-active-banner #main-content {
+  top: calc(var(--topbar-height) + 42px) !important;
 }
 
 /* ─── NOTIFICATION MODAL OVERLAY ─────────────────────────── */

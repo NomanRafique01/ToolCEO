@@ -4,12 +4,10 @@
  * Renders and manages the persistent notification banner strip.
  * Features a premium frosted glass HUD bar directly below topbar with CSS animations.
  *
- * Supported Types:
- *   success  -> green icon  (auto-dismisses after 6s via CSS countdown)
- *   warning  -> amber icon  (stays until user dismisses)
- *   error    -> red icon    (stays until user dismisses)
- *   info     -> blue icon   (auto-dismisses after 6s via CSS countdown)
- *   progress -> blue icon   (active background processing)
+ * Zero-Notification behavior:
+ *   - When 0 notifications exist, banner is completely hidden (display: none).
+ *   - When 1+ notifications arrive, banner slides down cleanly from top.
+ *   - When all notifications expire/dismiss, waits 400ms delay, then slides up & hides.
  */
 
 import {
@@ -140,45 +138,48 @@ function _buildModal() {
 // ─── BANNER RENDER ─────────────────────────────────────────────────────────────
 
 let _prevNotifCount = 0;
+let _closeTimer = null;
 
 function _render(banner, notifications) {
   const unread = getUnreadCount();
   const currentCount = notifications.length;
 
-  if (currentCount > 0 && _prevNotifCount === 0) {
-    banner.classList.remove('notification-banner--empty', 'nb-collapse');
-    banner.classList.add('nb-expand');
-  } else if (currentCount === 0 && _prevNotifCount > 0) {
-    banner.classList.remove('nb-expand');
-    banner.classList.add('nb-collapse');
-    setTimeout(() => {
-      banner.classList.remove('nb-collapse');
-      banner.classList.add('notification-banner--empty');
-    }, 250);
-  } else if (currentCount === 0) {
-    banner.classList.add('notification-banner--empty');
-  } else {
-    banner.classList.remove('notification-banner--empty', 'nb-collapse');
+  if (_closeTimer) {
+    clearTimeout(_closeTimer);
+    _closeTimer = null;
   }
 
-  _prevNotifCount = currentCount;
-
-  if (notifications.length === 0) {
-    banner.innerHTML = `
-      <div class="nb-left">
-        <svg class="nb-bell" width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path d="M8 1.5C5.5 1.5 3.5 3.5 3.5 6v3L2 11.5h12L12.5 9V6c0-2.5-2-4.5-4.5-4.5Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
-          <path d="M6.5 12a1.5 1.5 0 0 0 3 0" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
-        </svg>
-        <span class="nb-label">Notifications</span>
-      </div>
-      <div class="nb-divider"></div>
-      <div class="nb-middle nb-empty-state">No active notifications</div>
-      <div class="nb-right" style="opacity:0;pointer-events:none">
-        <button class="nb-viewall">View all</button>
-        <span class="nb-sep">|</span>
-        <button class="nb-dismiss">Dismiss</button>
-      </div>`;
+  if (currentCount > 0) {
+    document.body.classList.add('has-active-banner');
+    banner.classList.remove('nb-hidden', 'nb-slide-up');
+    if (_prevNotifCount === 0) {
+      banner.classList.add('nb-slide-down');
+    }
+    _prevNotifCount = currentCount;
+  } else {
+    if (_prevNotifCount > 0) {
+      _closeTimer = setTimeout(() => {
+        const checkCount = getAll().length;
+        if (checkCount === 0) {
+          banner.classList.remove('nb-slide-down');
+          banner.classList.add('nb-slide-up');
+          document.body.classList.remove('has-active-banner');
+          setTimeout(() => {
+            if (getAll().length === 0) {
+              banner.classList.add('nb-hidden');
+              banner.classList.remove('nb-slide-up');
+              banner.innerHTML = '';
+            }
+          }, 250);
+        }
+      }, 400);
+    } else {
+      banner.classList.add('nb-hidden');
+      banner.classList.remove('nb-slide-down', 'nb-slide-up');
+      document.body.classList.remove('has-active-banner');
+      banner.innerHTML = '';
+    }
+    _prevNotifCount = 0;
     return;
   }
 
@@ -252,7 +253,7 @@ function _render(banner, notifications) {
     });
   });
 
-  // Attach CSS countdown animationend listeners for auto-dismissable pills
+  // Attach CSS countdown animationend listeners for 5s auto-dismissable pills
   banner.querySelectorAll('.nb-pill-progress').forEach((bar) => {
     bar.addEventListener('animationend', (e) => {
       if (e.animationName !== 'pillCountdown') return;
@@ -277,7 +278,7 @@ export function initNotificationBanner() {
   if (!banner) {
     banner = document.createElement('div');
     banner.id = 'notification-banner';
-    banner.className = 'notification-banner';
+    banner.className = 'notification-banner nb-hidden';
     document.body.appendChild(banner);
   }
 
