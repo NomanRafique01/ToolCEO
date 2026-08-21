@@ -36,16 +36,16 @@
 /* ── 3. Hover & Selected States ── */
 .tool-card:hover,
 .fmt-card:hover {
-  border-color: var(--fmt-color, var(--accent, #00E5C0)) !important;
+  border-color: var(--fmt-color, #00E5C0) !important;
   background: var(--fmt-bg, rgba(0, 229, 192, 0.12)) !important;
   transform: translateY(-1px) !important;
 }
 
 .tool-card.selected,
 .fmt-card.selected {
-  border-color: var(--fmt-color, var(--accent, #00E5C0)) !important;
+  border-color: var(--fmt-color, #00E5C0) !important;
   background: var(--fmt-bg, rgba(0, 229, 192, 0.12)) !important;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--fmt-color, var(--accent, #00E5C0)) 18%, transparent) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--fmt-color, #00E5C0) 18%, transparent) !important;
 }
 
 /* ── 4. Card Header & Icon Box ── */
@@ -61,8 +61,8 @@
   width: 36px !important;
   height: 36px !important;
   border-radius: 10px !important;
-  background: color-mix(in srgb, var(--fmt-color, var(--accent, #00E5C0)) 15%, transparent) !important;
-  color: var(--fmt-color, var(--accent, #00E5C0)) !important;
+  background: var(--fmt-bg, color-mix(in srgb, var(--fmt-color, #00E5C0) 15%, transparent)) !important;
+  color: var(--fmt-color, #00E5C0) !important;
   display: flex !important;
   align-items: center !important;
   justify-content: center !important;
@@ -106,7 +106,7 @@
 .fmt-ext,
 .fmt-tag {
   font-size: 12px !important;
-  color: var(--fmt-color, var(--accent, #00E5C0)) !important;
+  color: var(--fmt-color, #00E5C0) !important;
   margin-top: 8px !important;
   font-weight: 600 !important;
 }
