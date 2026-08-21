@@ -86,8 +86,17 @@
 }
 
 @keyframes heroDotPulse {
-  0%, 100% { opacity: 1;   transform: scale(1);   }
-  50%       { opacity: 0.5; transform: scale(0.75); }
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.5;
+    transform: scale(0.75);
+  }
 }
 
 .hero-tool-badge {
@@ -107,7 +116,7 @@
 
 .drop-zone {
   --dz-color: #00E5C0;
-  --dz-bg:    rgba(0, 229, 192, 0.06);
+  --dz-bg: rgba(0, 229, 192, 0.06);
 
   width: 100%;
   height: 200px;
@@ -135,7 +144,7 @@
   border-style: solid;
   background: radial-gradient(ellipse at center, var(--dz-bg) 0%, transparent 70%);
   box-shadow: 0 0 0 1px color-mix(in srgb, var(--dz-color) 15%, transparent),
-              inset 0 0 40px color-mix(in srgb, var(--dz-color) 4%, transparent);
+    inset 0 0 40px color-mix(in srgb, var(--dz-color) 4%, transparent);
 }
 
 .drop-zone--tool-active:hover,
@@ -154,7 +163,9 @@
   color: var(--text-muted);
 }
 
-#file-input { display: none; }
+#file-input {
+  display: none;
+}
 
 .drop-icon {
   display: block;
@@ -163,8 +174,15 @@
 }
 
 @keyframes dropIconFadeIn {
-  from { opacity: 0; transform: scale(0.82); }
-  to   { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.82);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 .drop-main-text {
@@ -190,8 +208,13 @@
 /* ─── DROP ZONE OVERLAYS (progress / download / error) ───── */
 
 /* Pointer lock while processing */
-.dz-state-processing { cursor: default; }
-.dz-state-done       { cursor: default; }
+.dz-state-processing {
+  cursor: default;
+}
+
+.dz-state-done {
+  cursor: default;
+}
 
 /* Hide default drop-zone text/icon while processing or result is displayed */
 .dz-state-processing .drop-icon,
@@ -273,8 +296,15 @@
 }
 
 @keyframes dzRingFadeIn {
-  from { opacity: 0; transform: scale(0.92); }
-  to   { opacity: 1; transform: scale(1); }
+  from {
+    opacity: 0;
+    transform: scale(0.92);
+  }
+
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
 }
 
 /* ── SVG ring container ── */
@@ -297,7 +327,7 @@
   stroke-width: 5;
   stroke-linecap: round;
   transition: stroke-dashoffset 320ms cubic-bezier(0.4, 0, 0.2, 1),
-              stroke 240ms ease;
+    stroke 240ms ease;
   transform-origin: center;
   transform: rotate(-90deg);
 }
@@ -311,8 +341,17 @@
 }
 
 @keyframes dzGlowPulse {
-  0%, 100% { opacity: 0.07; transform: scale(1);    }
-  50%       { opacity: 0.15; transform: scale(1.12); }
+
+  0%,
+  100% {
+    opacity: 0.07;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.15;
+    transform: scale(1.12);
+  }
 }
 
 /* Orbiting dot */
@@ -349,14 +388,20 @@
 
 /* ── Indeterminate / scan state ── */
 @keyframes dzRingSpinCW {
-  from { transform: rotate(-90deg); }
-  to   { transform: rotate(270deg); }
+  from {
+    transform: rotate(-90deg);
+  }
+
+  to {
+    transform: rotate(270deg);
+  }
 }
 
 .dz-ring-fill--indeterminate {
   animation: dzRingSpinCW 1.1s linear infinite !important;
   transition: none !important;
-  stroke-dasharray: 88 251 !important; /* ~35% arc of full circle (r=40) */
+  stroke-dasharray: 88 251 !important;
+  /* ~35% arc of full circle (r=40) */
   stroke-dashoffset: 0 !important;
 }
 
@@ -388,7 +433,7 @@
   position: relative;
   width: 100%;
   max-width: 340px;
-  background: rgba(255,255,255,0.04);
+  background: rgba(255, 255, 255, 0.04);
   border: 1px solid color-mix(in srgb, var(--save-color) 35%, transparent);
   border-radius: 10px;
   padding: 14px 16px 12px;
@@ -501,9 +546,22 @@
   cursor: pointer;
   transition: opacity 150ms ease, transform 120ms ease;
 }
-.dz-save-btn:hover    { opacity: 0.88; transform: translateY(-1px); }
-.dz-save-btn:active   { opacity: 1;    transform: translateY(0); }
-.dz-save-btn:disabled { opacity: 0.5;  cursor: default; transform: none; }
+
+.dz-save-btn:hover {
+  opacity: 0.88;
+  transform: translateY(-1px);
+}
+
+.dz-save-btn:active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.dz-save-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+  transform: none;
+}
 
 .dz-save-done {
   display: none;
@@ -514,6 +572,7 @@
   font-weight: 500;
   color: var(--save-color);
 }
+
 .dz-save-done--visible {
   display: flex;
 }
@@ -529,7 +588,12 @@
   border-radius: 8px;
   padding: 8px 12px;
 }
-.dz-error-wrap svg { flex-shrink: 0; margin-top: 1px; }
+
+.dz-error-wrap svg {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
 .dz-error-msg {
   font-size: 12px;
   color: #F87171;
@@ -601,6 +665,7 @@
   font-family: inherit;
   transition: border-color 120ms ease, color 120ms ease;
 }
+
 .sip-change-btn:hover {
   border-color: var(--split-color);
   color: var(--split-color);
@@ -637,7 +702,7 @@
 .sip-input {
   width: 76px;
   padding: 5px 8px;
-  background: rgba(255,255,255,0.05);
+  background: rgba(255, 255, 255, 0.05);
   border: 1px solid var(--border);
   border-radius: 6px;
   color: var(--text-primary);
@@ -647,13 +712,25 @@
   font-family: inherit;
   transition: border-color 140ms ease;
 }
-.sip-input:focus { border-color: var(--split-color); }
-.sip-input::placeholder { color: var(--text-muted); }
+
+.sip-input:focus {
+  border-color: var(--split-color);
+}
+
+.sip-input::placeholder {
+  color: var(--text-muted);
+}
 
 /* hide number spinners */
 .sip-input::-webkit-inner-spin-button,
-.sip-input::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
-.sip-input[type=number] { -moz-appearance: textfield; }
+.sip-input::-webkit-outer-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.sip-input[type=number] {
+  -moz-appearance: textfield;
+}
 
 .sip-sep {
   font-size: 14px;
@@ -674,8 +751,16 @@
   cursor: pointer;
   transition: opacity 150ms ease, transform 120ms ease;
 }
-.sip-split-btn:hover  { opacity: 0.88; transform: translateY(-1px); }
-.sip-split-btn:active { opacity: 1;    transform: translateY(0); }
+
+.sip-split-btn:hover {
+  opacity: 0.88;
+  transform: translateY(-1px);
+}
+
+.sip-split-btn:active {
+  opacity: 1;
+  transform: translateY(0);
+}
 
 .sip-range-error {
   display: block;
@@ -690,7 +775,7 @@
   color: var(--text-muted, #888);
   margin-top: 6px;
   padding: 5px 8px;
-  background: rgba(0,0,0,0.12);
+  background: rgba(0, 0, 0, 0.12);
   border-radius: 5px;
   line-height: 1.5;
 }
@@ -758,7 +843,8 @@
 
 .dz-pdf-thumb-frame {
   width: 90px;
-  height: 116px;          /* A4-ish aspect ratio */
+  height: 116px;
+  /* A4-ish aspect ratio */
   border-radius: 4px;
   overflow: hidden;
   background: #fff;
@@ -900,7 +986,9 @@
   cursor: pointer;
 }
 
-.recent-list { list-style: none; }
+.recent-list {
+  list-style: none;
+}
 
 .recent-item {
   display: flex;
@@ -910,7 +998,9 @@
   border-bottom: 1px solid var(--border);
 }
 
-.recent-item:last-child { border-bottom: none; }
+.recent-item:last-child {
+  border-bottom: none;
+}
 
 .file-type-icon {
   width: 32px;
@@ -944,7 +1034,10 @@
   text-overflow: ellipsis;
 }
 
-.file-conv  { font-size: 11px; color: var(--text-muted); }
+.file-conv {
+  font-size: 11px;
+  color: var(--text-muted);
+}
 
 .file-meta {
   display: flex;
@@ -954,8 +1047,16 @@
   flex-shrink: 0;
 }
 
-.file-time  { font-size: 11px; color: var(--text-muted); white-space: nowrap; }
-.check-icon { color: var(--accent); display: block; }
+.file-time {
+  font-size: 11px;
+  color: var(--text-muted);
+  white-space: nowrap;
+}
+
+.check-icon {
+  color: var(--accent);
+  display: block;
+}
 
 /* ─── DOWNLOAD PANEL ─────────────────────────────────────── */
 
@@ -971,7 +1072,7 @@
 
 .dl-panel {
   --dl-color: #00E5C0;
-  --dl-bg:    rgba(0,229,192,0.08);
+  --dl-bg: rgba(0, 229, 192, 0.08);
 
   display: none;
   background: var(--bg-card);
@@ -996,7 +1097,9 @@
 }
 
 .dl-panel--active::before,
-.dl-panel--ready::before  { opacity: 1; }
+.dl-panel--ready::before {
+  opacity: 1;
+}
 
 /* ── Inner padding wrapper ── */
 .dl-panel-inner {
@@ -1028,7 +1131,9 @@
 
 /* When active/ready hide the idle placeholder */
 .dl-panel--active .dl-panel-idle,
-.dl-panel--ready  .dl-panel-idle  { display: none; }
+.dl-panel--ready .dl-panel-idle {
+  display: none;
+}
 
 /* ── Header row (tool icon + tool name) ── */
 .dl-panel-header {
@@ -1076,8 +1181,15 @@
 }
 
 @keyframes dlDotPulse {
-  0%, 100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--dl-color) 55%, transparent); }
-  50%       { box-shadow: 0 0 0 5px transparent; }
+
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--dl-color) 55%, transparent);
+  }
+
+  50% {
+    box-shadow: 0 0 0 5px transparent;
+  }
 }
 
 /* ── Waiting state (tool active, no file yet) ── */
@@ -1093,10 +1205,15 @@
   color: color-mix(in srgb, var(--dl-color) 70%, var(--text-muted));
 }
 
-.dl-panel-waiting svg { flex-shrink: 0; opacity: 0.7; }
+.dl-panel-waiting svg {
+  flex-shrink: 0;
+  opacity: 0.7;
+}
 
 /* Hide waiting when file is ready */
-.dl-panel--ready .dl-panel-waiting { display: none; }
+.dl-panel--ready .dl-panel-waiting {
+  display: none;
+}
 
 /* ── File info block (filename + size/ext) ── */
 .dl-file-block {
@@ -1110,7 +1227,9 @@
   margin-bottom: 12px;
 }
 
-.dl-panel--ready .dl-file-block { display: flex; }
+.dl-panel--ready .dl-file-block {
+  display: flex;
+}
 
 .dl-file-name {
   font-size: 13px;
@@ -1145,10 +1264,21 @@
   pointer-events: auto;
 }
 
-.dl-panel--ready .dl-save-btn { display: block; }
+.dl-panel--ready .dl-save-btn {
+  display: block;
+}
 
-.dl-save-btn:hover  { opacity: 0.88; transform: translateY(-1px); filter: brightness(1.08); }
-.dl-save-btn:active { opacity: 1;    transform: translateY(0); }
+.dl-save-btn:hover {
+  opacity: 0.88;
+  transform: translateY(-1px);
+  filter: brightness(1.08);
+}
+
+.dl-save-btn:active {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .dl-save-btn:disabled {
   opacity: 0.5;
   cursor: default;
@@ -1170,22 +1300,49 @@
   transition: opacity 300ms ease;
 }
 
-.dl-panel--saved .dl-saved-row { display: flex; opacity: 1; }
+.dl-panel--saved .dl-saved-row {
+  display: flex;
+  opacity: 1;
+}
 
 /* ── Slide-in animation for the inner content ── */
 @keyframes dlPanelIn {
-  from { opacity: 0; transform: translateY(8px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .dl-panel--active .dl-panel-inner,
-.dl-panel--ready  .dl-panel-inner {
+.dl-panel--ready .dl-panel-inner {
   animation: dlPanelIn 280ms cubic-bezier(0.22, 1, 0.36, 1) forwards;
 }
 
 /* ─── EXPLORE TOOLS ──────────────────────────────────────── */
 
-.explore-section { margin-top: 24px; }
+.explore-section {
+  margin-top: 24px;
+}
+
+.explore-swap-fade {
+  animation: exploreSwapFade 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes exploreSwapFade {
+  from {
+    opacity: 0.65;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
 
 .explore-header {
   display: flex;
@@ -1194,7 +1351,10 @@
   margin-bottom: 14px;
 }
 
-.explore-icon  { color: var(--accent); flex-shrink: 0; }
+.explore-icon {
+  color: var(--accent);
+  flex-shrink: 0;
+}
 
 .explore-title {
   font-size: 15px;
@@ -1205,21 +1365,29 @@
 .tools-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: 1fr;
   gap: 12px;
 }
 
 .tool-card {
   background: var(--bg-card);
-  border: 1px solid var(--border);
+  border: 1.5px solid var(--border);
   border-radius: 12px;
   padding: 16px;
+  min-height: 136px;
+  height: 100%;
+  box-sizing: border-box;
   cursor: pointer;
-  transition: border-color 150ms ease, background 150ms ease;
+  transition: border-color 150ms ease, background 150ms ease, transform 120ms ease;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 .tool-card:hover {
   border-color: rgba(0, 229, 192, 0.6);
   background: #162F2B;
+  transform: translateY(-1px);
 }
 
 .tool-card-top {
@@ -1229,21 +1397,39 @@
 }
 
 .tool-icon-box {
-  width: 40px;
-  height: 40px;
-  background: var(--bg-surface);
-  border-radius: 10px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  flex-shrink: 0;
-  /* colour is set per-card via inline style to match sidebar icon colours */
+  line-height: 0;
 }
 
-.tool-arrow  { font-size: 18px; color: var(--text-muted); line-height: 1; }
-.tool-name   { font-size: 14px; font-weight: 500; color: var(--text-primary); margin-top: 12px; }
-.tool-formats { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
-.tool-count  { font-size: 12px; color: var(--accent); margin-top: 8px; }
+.tool-icon-box svg {
+  width: 26px;
+  height: 26px;
+}
+
+.tool-arrow {
+  font-size: 18px;
+  color: var(--text-muted);
+  line-height: 1;
+}
+
+.tool-name {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-top: 12px;
+}
+
+.tool-formats {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+.tool-count {
+  font-size: 12px;
+  color: var(--accent);
+  margin-top: 8px;
+  font-weight: 500;
+}
 
 /* ─── FEATURES STRIP ─────────────────────────────────────── */
 
@@ -1264,9 +1450,22 @@
   gap: 6px;
 }
 
-.feature-icon  { color: var(--accent); flex-shrink: 0; }
-.feature-label { font-size: 13px; font-weight: 500; color: var(--text-primary); }
-.feature-desc  { font-size: 11px; color: var(--text-muted); line-height: 1.5; }
+.feature-icon {
+  color: var(--accent);
+  flex-shrink: 0;
+}
+
+.feature-label {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.feature-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.5;
+}
 
 /* ─── BACKGROUND JOB PROGRESS BAR (UNDER DROP ZONE) ──────────── */
 
@@ -1287,7 +1486,7 @@
   flex-direction: column;
   gap: 8px;
   box-shadow: 0 4px 18px rgba(0, 0, 0, 0.35),
-              0 0 20px color-mix(in srgb, var(--bg-job-color) 12%, transparent);
+    0 0 20px color-mix(in srgb, var(--bg-job-color) 12%, transparent);
 }
 
 .bg-job-header {
@@ -1357,8 +1556,17 @@
 }
 
 @keyframes bgJobDotPulse {
-  0%, 100% { opacity: 1; transform: scale(1); }
-  50%       { opacity: 0.4; transform: scale(0.7); }
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.4;
+    transform: scale(0.7);
+  }
 }
 
 .bg-job-right {

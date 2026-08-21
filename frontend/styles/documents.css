@@ -10,6 +10,7 @@
 .fmt-grid {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
+  grid-auto-rows: 1fr;
   gap: 12px;
 }
 
@@ -18,10 +19,14 @@
   border: 1.5px solid var(--border);
   border-radius: 12px;
   padding: 16px;
+  min-height: 136px;
+  height: 100%;
+  box-sizing: border-box;
   cursor: pointer;
   transition: border-color 150ms ease, background 150ms ease, transform 120ms ease;
   display: flex;
   flex-direction: column;
+  justify-content: space-between;
 }
 
 .fmt-card:hover {
@@ -45,6 +50,11 @@
 .fmt-icon-box {
   color: var(--fmt-color);
   line-height: 0;
+}
+
+.fmt-icon-box svg {
+  width: 26px;
+  height: 26px;
 }
 
 .fmt-arrow { font-size: 18px; color: var(--text-muted); line-height: 1; }
@@ -115,12 +125,7 @@
 /* ─── PDF entry card — subtle drill-down hint ────────────── */
 
 .fmt-card--pdf-entry::after {
-  content: '8 tools + 6 conversions';
-  display: block;
-  font-size: 10px;
-  color: var(--text-muted);
-  margin-top: 4px;
-  opacity: 0.7;
+  display: none !important;
 }
 
 /* ─── BACK BUTTON & CATEGORY ICON IN EXPLORE HEADER ─────── */

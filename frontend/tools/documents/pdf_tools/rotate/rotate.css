@@ -1,0 +1,507 @@
+/* ─────────────────────────────────────────────────────────────
+   tools/documents/pdf_tools/rotate/rotate.css
+   Full-area PDF page rotation viewer for the Documents PDF panel.
+   Teal / Green Theme (#00E5C0).
+   ───────────────────────────────────────────────────────────── */
+
+.pdf-tools-swap {
+  position: relative;
+  min-height: 620px;
+  --rotate-color: #00E5C0;
+  --rotate-bg: rgba(0, 229, 192, 0.12);
+  --rotate-bg-strong: rgba(0, 229, 192, 0.22);
+}
+
+.pdf-tools-card-view {
+  opacity: 1;
+  transform: translateY(0);
+  transition: opacity 300ms ease, transform 300ms ease;
+}
+
+.pdf-tools-card-view.rotate-hidden {
+  display: none;
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+.rotate-viewer {
+  display: none;
+  flex-direction: column;
+  width: 100%;
+  min-height: calc(100vh - 160px);
+  max-height: none;
+  background: linear-gradient(180deg, var(--bg-surface, #0F2D29) 0%, var(--bg-primary, #0A1F1C) 100%);
+  border: 1px solid color-mix(in srgb, var(--rotate-color) 30%, var(--border, #1A3D38));
+  border-radius: 12px;
+  overflow: hidden;
+  opacity: 0;
+  transform: translateY(8px);
+  transition: opacity 300ms ease, transform 300ms ease;
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45);
+}
+
+.rotate-viewer.rotate-viewer--visible {
+  display: flex;
+  opacity: 1;
+  transform: translateY(0);
+}
+
+body.has-rotate-viewer .features-strip {
+  display: none !important;
+}
+
+.rotate-topbar {
+  flex-shrink: 0;
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 14px 18px;
+  background: rgba(15, 45, 41, 0.96);
+  border-bottom: 1px solid color-mix(in srgb, var(--rotate-color) 25%, var(--border, #1A3D38));
+  backdrop-filter: blur(12px);
+}
+
+.rotate-topbar-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  width: 100%;
+}
+
+.rotate-topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.rotate-search-row {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  width: 100%;
+}
+
+.rotate-back-btn,
+.rotate-action-btn,
+.rotate-page-btn,
+.rotate-search-btn {
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: border-color 150ms ease, color 150ms ease, background 150ms ease, opacity 150ms ease;
+}
+
+.rotate-back-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 8px;
+  color: var(--text-muted);
+  font-size: 13px;
+  font-weight: 500;
+  border: 1px solid var(--border, #1A3D38);
+  background: var(--bg-card, #112C28);
+}
+
+.rotate-back-btn:hover {
+  color: var(--rotate-color);
+  border-color: color-mix(in srgb, var(--rotate-color) 40%, transparent);
+  background: var(--rotate-bg);
+}
+
+.rotate-file-meta {
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.rotate-file-name {
+  display: block;
+  color: var(--text-primary);
+  font-size: 14px;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 260px;
+}
+
+.rotate-page-count {
+  display: block;
+  margin-top: 1px;
+  color: var(--text-muted);
+  font-size: 11px;
+}
+
+/* ── Search in topbar (under toggles) ── */
+.rotate-search-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  max-width: 360px;
+  gap: 6px;
+}
+
+.rotate-search-input {
+  flex: 1;
+  height: 34px;
+  padding: 0 10px 0 32px;
+  background: var(--bg-card, #112C28);
+  border: 1px solid var(--border, #1A3D38);
+  border-radius: 8px;
+  color: var(--text-primary);
+  font-size: 12px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.rotate-search-icon {
+  position: absolute;
+  left: 10px;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.rotate-search-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 8px;
+  background: var(--rotate-bg);
+  border: 1px solid color-mix(in srgb, var(--rotate-color) 35%, transparent);
+  color: var(--rotate-color);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
+.rotate-search-btn:hover {
+  background: var(--rotate-bg-strong);
+  border-color: var(--rotate-color);
+}
+
+.rotate-search-input:focus {
+  border-color: var(--rotate-color);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--rotate-color) 20%, transparent);
+}
+
+.rotate-search-input::placeholder {
+  color: var(--text-muted);
+  opacity: 0.75;
+}
+
+.rotate-actions {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.rotate-action-btn {
+  height: 34px;
+  padding: 0 13px;
+  border-radius: 8px;
+  border-color: color-mix(in srgb, var(--rotate-color) 35%, transparent);
+  color: var(--rotate-color);
+  background: var(--rotate-bg);
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.rotate-action-btn:hover {
+  border-color: var(--rotate-color);
+  background: var(--rotate-bg-strong);
+}
+
+.rotate-save-btn {
+  color: #0A1F1C;
+  background: var(--rotate-color);
+  border-color: var(--rotate-color);
+  font-weight: 700;
+}
+
+.rotate-save-btn:hover {
+  filter: brightness(1.1);
+  box-shadow: 0 0 14px color-mix(in srgb, var(--rotate-color) 40%, transparent);
+}
+
+.rotate-action-btn:disabled {
+  cursor: default;
+  opacity: 0.55;
+}
+
+.rotate-grid {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-auto-rows: minmax(280px, auto);
+  gap: 16px;
+  padding: 20px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--rotate-color) 60%, transparent) rgba(0, 0, 0, 0.3);
+}
+
+/* Custom Scrollbar for Pages Window (.rotate-grid) */
+.rotate-grid::-webkit-scrollbar {
+  width: 8px;
+}
+
+.rotate-grid::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.25);
+  border-radius: 4px;
+}
+
+.rotate-grid::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--rotate-color) 50%, transparent);
+  border-radius: 4px;
+  border: 1px solid rgba(0, 0, 0, 0.2);
+}
+
+.rotate-grid::-webkit-scrollbar-thumb:hover {
+  background: var(--rotate-color);
+  box-shadow: 0 0 10px var(--rotate-color);
+}
+
+.rotate-page-card {
+  min-width: 0;
+  background: var(--bg-card, #112C28);
+  border: 1px solid color-mix(in srgb, var(--rotate-color) 16%, var(--border, #1A3D38));
+  border-radius: 10px;
+  padding: 14px;
+  display: grid;
+  grid-template-rows: minmax(220px, 1fr) auto auto;
+  gap: 10px;
+  transition: border-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.rotate-page-card:hover {
+  border-color: var(--rotate-color);
+  box-shadow: 0 0 0 1px color-mix(in srgb, var(--rotate-color) 25%, transparent), 0 12px 32px rgba(0, 0, 0, 0.4);
+  transform: translateY(-2px);
+}
+
+.rotate-page-card.rotate-card-highlight {
+  border-color: var(--rotate-color) !important;
+  box-shadow: 0 0 0 4px color-mix(in srgb, var(--rotate-color) 45%, transparent), 0 12px 36px rgba(0, 0, 0, 0.55) !important;
+  animation: cardPulse 1s ease infinite alternate;
+}
+
+@keyframes cardPulse {
+  from { box-shadow: 0 0 0 2px color-mix(in srgb, var(--rotate-color) 30%, transparent); }
+  to   { box-shadow: 0 0 0 5px color-mix(in srgb, var(--rotate-color) 60%, transparent); }
+}
+
+.rotate-thumb-stage {
+  position: relative;
+  min-height: 220px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.rotate-thumb-stage canvas {
+  max-width: 92%;
+  max-height: 240px;
+  width: auto;
+  height: auto;
+  display: block;
+  border-radius: 4px;
+  box-shadow: 0 10px 28px rgba(0, 0, 0, 0.5);
+  transform-origin: center center;
+  transition: transform 220ms ease;
+  image-rendering: -webkit-optimize-contrast;
+}
+
+.rotate-thumb-skeleton {
+  width: 90px;
+  height: 120px;
+  border-radius: 6px;
+  background:
+    linear-gradient(90deg, transparent, rgba(0, 229, 192, 0.12), transparent),
+    rgba(255, 255, 255, 0.04);
+  background-size: 180% 100%, 100% 100%;
+  animation: rotateSkeleton 1.15s ease-in-out infinite;
+}
+
+.rotate-badge {
+  display: none !important;
+}
+
+.rotate-page-number {
+  color: var(--text-muted);
+  font-size: 12px;
+  font-weight: 500;
+  text-align: center;
+}
+
+.rotate-page-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+}
+
+.rotate-page-btn {
+  width: 32px;
+  height: 32px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 8px;
+  border-color: color-mix(in srgb, var(--rotate-color) 35%, transparent);
+  color: var(--rotate-color);
+  background: var(--rotate-bg);
+  font-size: 17px;
+  line-height: 1;
+}
+
+.rotate-page-btn:hover {
+  border-color: var(--rotate-color);
+  background: var(--rotate-bg-strong);
+}
+
+/* ── Red Delete Button ── */
+.rotate-page-btn.rotate-delete-btn {
+  border-color: rgba(255, 77, 77, 0.35);
+  color: #FF4D4D;
+  background: rgba(255, 77, 77, 0.12);
+  font-size: 13px;
+  transition: all 180ms ease;
+}
+
+.rotate-page-btn.rotate-delete-btn:hover {
+  border-color: #FF4D4D;
+  background: rgba(255, 77, 77, 0.25);
+  box-shadow: 0 0 10px rgba(255, 77, 77, 0.35);
+  transform: scale(1.06);
+}
+
+.rotate-page-btn.rotate-delete-btn.rotate-delete-btn--active {
+  background: #FF4D4D;
+  color: #FFFFFF;
+  border-color: #FF4D4D;
+  box-shadow: 0 0 12px rgba(255, 77, 77, 0.55);
+}
+
+/* ── Deleted Card State ── */
+.rotate-page-card.rotate-card-deleted {
+  border-color: rgba(255, 77, 77, 0.55) !important;
+  background: rgba(28, 14, 16, 0.85) !important;
+  box-shadow: 0 4px 18px rgba(255, 77, 77, 0.12) !important;
+}
+
+.rotate-page-card.rotate-card-deleted .rotate-page-number {
+  color: #FF6B6B;
+}
+
+.rotate-page-card.rotate-card-deleted .rotate-thumb-stage canvas {
+  filter: opacity(0.35) grayscale(0.6);
+}
+
+.rotate-rot-btn:disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Deleted overlay in thumb stage */
+.rotate-deleted-overlay {
+  position: absolute;
+  inset: 0;
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  background: rgba(26, 8, 10, 0.82);
+  backdrop-filter: blur(3px);
+  z-index: 3;
+  border-radius: 8px;
+  animation: rotateFadeIn 150ms ease;
+}
+
+.rotate-page-card.rotate-card-deleted .rotate-deleted-overlay {
+  display: flex;
+}
+
+.rotate-deleted-overlay span {
+  color: #FF4D4D;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.6);
+}
+
+@keyframes rotateFadeIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.rotate-empty-state {
+  grid-column: 1 / -1;
+  align-self: center;
+  justify-self: center;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+@keyframes rotateSkeleton {
+  from { background-position: 180% 0, 0 0; }
+  to { background-position: -180% 0, 0 0; }
+}
+
+@media (max-width: 1180px) {
+  .rotate-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 860px) {
+  .rotate-topbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .rotate-file-meta {
+    text-align: left;
+  }
+
+  .rotate-actions,
+  .rotate-back-btn,
+  .rotate-search-wrap {
+    max-width: 100%;
+    margin: 0;
+  }
+
+  .rotate-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 560px) {
+  .rotate-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+
+

@@ -432,6 +432,10 @@ function createWindow() {
 
   mainWindow.loadFile(path.join(__dirname, '..', 'frontend', 'index.html'));
 
+  if (!app.isPackaged) {
+    mainWindow.webContents.session.clearCache();
+  }
+
   mainWindow.webContents.once('did-finish-load', () => {
     // A .tceo file was queued before the window was ready — send it now.
     if (_pendingVaultFile) {
@@ -446,6 +450,7 @@ function createWindow() {
 // ─── APP READY ────────────────────────────────────────────────────────────────
 
 app.commandLine.appendSwitch('disable-gpu-shader-disk-cache');
+app.commandLine.appendSwitch('disable-http-cache');
 
 app.whenReady().then(async () => {
   // ── IPC: Save file to downloads ───────────────────────────────────────────
