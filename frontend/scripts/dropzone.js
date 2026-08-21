@@ -970,8 +970,9 @@ export function initDropZone() {
     if (
       dropZone.classList.contains('dz-has-thumb') ||
       dropZone.classList.contains('dz-has-compress-thumb') ||
+      dropZone.classList.contains('dz-has-encrypt-thumb') ||
       dropZone.classList.contains('dz-has-merge-thumbs') ||
-      dropZone.querySelector('.dz-pdf-thumb-wrap, .dz-compress-thumb-wrap, .dz-merge-thumb-strip')
+      dropZone.querySelector('.dz-pdf-thumb-wrap, .dz-compress-thumb-wrap, .dz-encrypt-thumb-wrap, .dz-merge-thumb-strip')
     ) {
       return;
     }

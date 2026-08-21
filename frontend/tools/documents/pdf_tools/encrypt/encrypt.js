@@ -138,10 +138,10 @@ function _showSettingsPanel(pageCount, encInfo, color) {
 
     <!-- ── MODE TABS ── -->
     <div class="enc-tabs">
-      <button type="button" class="enc-tab-btn ${!encInfo.is_encrypted ? 'enc-tab-btn--active' : ''}" data-tab="encrypt">
+      <button type="button" class="enc-tab-btn ${!(encInfo && encInfo.is_encrypted) ? 'enc-tab-btn--active' : ''}" data-tab="encrypt">
         🔒 Encrypt PDF
       </button>
-      <button type="button" class="enc-tab-btn ${encInfo.is_encrypted ? 'enc-tab-btn--active' : ''}" data-tab="decrypt">
+      <button type="button" class="enc-tab-btn ${encInfo && encInfo.is_encrypted ? 'enc-tab-btn--active' : ''}" data-tab="decrypt">
         🔓 Decrypt PDF
       </button>
     </div>
@@ -483,11 +483,13 @@ function _wireEyeToggles(panel) {
 // ─── PUBLIC: HANDLE FILE PICKED ────────────────────────────────────────────────
 
 export async function handleEncryptFilePicked(file) {
-  if (!file) return;
-
-  _encryptFile     = file;
-  _encryptBaseName = file.name.includes('.') ? file.name.rsplit('.', 1)[0] : file.name;
-  _encryptFileSize = file.size;
+  if (!file || !(file.name.toLowerCase().endsWith('.pdf') || file.type === 'application/pdf')) {
+    pushNotification({
+      type: 'warning',
+      message: 'Invalid File Format. Please select a valid PDF file.'
+    });
+    return;
+  }
 
   const tool  = getActiveTool();
   const color = (tool && tool.color) || '#FBBF24';
@@ -495,10 +497,16 @@ export async function handleEncryptFilePicked(file) {
 
   if (!zone) return;
 
+  removeEncryptPanel();
+
+  _encryptFile     = file;
+  _encryptBaseName = file.name.includes('.') ? file.name.substring(0, file.name.lastIndexOf('.')) : file.name;
+  _encryptFileSize = file.size;
+
   // Show indeterminate scanning ring
   showScanProgress(zone, color);
 
-  // Fetch encryption info and thumbnail concurrently
+  // Fetch encryption info, page count, and thumbnail concurrently
   let encInfo = null;
   let pageCount = 1;
   let thumbUri = null;
@@ -506,25 +514,30 @@ export async function handleEncryptFilePicked(file) {
   try {
     const fdEnc = new FormData();
     fdEnc.append('file', file);
-    const encRes = await fetch(`${BACKEND}/api/pdf/check-encryption`, { method: 'POST', body: fdEnc });
-    if (encRes.ok) {
-      encInfo = await encRes.json();
+    const fdCount = new FormData();
+    fdCount.append('file', file);
+    const fdThumb = new FormData();
+    fdThumb.append('file', file);
+
+    const [encRes, countRes, thumbRes] = await Promise.all([
+      fetch(`${BACKEND}/api/pdf/check-encryption`, { method: 'POST', body: fdEnc }).catch(() => null),
+      fetch(`${BACKEND}/api/pdf/page-count`, { method: 'POST', body: fdCount }).catch(() => null),
+      fetch(`${BACKEND}/api/pdf/thumbnail`, { method: 'POST', body: fdThumb }).catch(() => null),
+    ]);
+
+    if (encRes && encRes.ok) {
+      encInfo = await encRes.json().catch(() => null);
+    }
+    if (countRes && countRes.ok) {
+      const countJson = await countRes.json().catch(() => ({}));
+      pageCount = countJson.page_count || 1;
+    }
+    if (thumbRes && thumbRes.ok) {
+      const thumbJson = await thumbRes.json().catch(() => ({}));
+      thumbUri = thumbJson.thumbnail || null;
     }
   } catch (err) {
     console.error('Check encryption failed:', err);
-  }
-
-  try {
-    const fdThumb = new FormData();
-    fdThumb.append('file', file);
-    const infoRes = await fetch(`${BACKEND}/api/pdf/compressor/info`, { method: 'POST', body: fdThumb });
-    if (infoRes.ok) {
-      const info = await infoRes.json();
-      pageCount = info.page_count || 1;
-      thumbUri  = info.thumbnail || null;
-    }
-  } catch (err) {
-    // Fall back
   }
 
   _encInfo = encInfo;
@@ -574,7 +587,7 @@ async function _submitEncrypt(opts) {
   fd.append('allow_forms', allow_forms);
 
   let outName = (output_filename || 'encrypted').trim();
-  if (!outName.toLowerCase().endswith('.pdf')) outName += '.pdf';
+  if (!outName.toLowerCase().endsWith('.pdf')) outName += '.pdf';
 
   try {
     const res = await fetch(`${BACKEND}/api/pdf/encrypt`, {
@@ -631,7 +644,7 @@ async function _submitDecrypt(opts) {
   fd.append('password', password);
 
   let outName = (output_filename || 'unlocked').trim();
-  if (!outName.toLowerCase().endswith('.pdf')) outName += '.pdf';
+  if (!outName.toLowerCase().endsWith('.pdf')) outName += '.pdf';
 
   try {
     const res = await fetch(`${BACKEND}/api/pdf/decrypt`, {
