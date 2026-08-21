@@ -11,6 +11,7 @@
  */
 
 import { getActiveTool, setBgJob, getBgJob, syncBgJobBar, clearBgJob } from '../../../../scripts/toolstate.js';
+import { pushNotification } from '../../../../scripts/notificationStore.js';
 import {
   showScanProgress,
   showProgress,
@@ -319,12 +320,19 @@ export async function handleMergeFilesPicked(files) {
   const zone  = document.getElementById('drop-zone');
 
   // Filter to PDFs only
-  const pdfs = Array.from(files).filter(
+  const allFiles = Array.from(files);
+  const pdfs = allFiles.filter(
     (f) => f.type === 'application/pdf' || f.name.toLowerCase().endsWith('.pdf')
   );
 
+  if (pdfs.length < allFiles.length) {
+    pushNotification({
+      type: 'warning',
+      message: 'Invalid File Format. Please select a valid PDF file.'
+    });
+  }
+
   if (pdfs.length === 0) {
-    showError(zone, 'Please select PDF files only.');
     return;
   }
 
