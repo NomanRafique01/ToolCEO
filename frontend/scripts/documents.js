@@ -88,8 +88,8 @@ const PDF_TOOLS = [
     label: 'Compress PDF',
     desc: 'Reduce file size without quality loss',
     tag: 'Tool',
-    color: '#34D399',
-    bg: 'rgba(52,211,153,0.15)',
+    color: '#A855F7',
+    bg: 'rgba(168,85,247,0.15)',
     icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
       <rect x="2" y="2" width="12" height="12" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
       <path d="M5 8h6M8 5v6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
