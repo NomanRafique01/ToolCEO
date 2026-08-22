@@ -127,6 +127,35 @@ body.has-editor-viewer .features-strip {
   box-shadow: 0 8px 18px rgba(0, 229, 192, 0.2);
 }
 
+/* Floating delete button (trash icon) – appears above selected objects */
+.ed-float-delete {
+  position: absolute;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 8px;
+  background: var(--ed-bg-strong);
+  color: var(--ed-text);
+  border: 1px solid var(--ed-border);
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: 0 4px 12px rgba(0, 229, 192, 0.2);
+  cursor: pointer;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+.ed-float-delete:hover {
+  background: var(--ed-bg);
+  box-shadow: 0 6px 16px rgba(0, 229, 192, 0.3);
+}
+
+/* Disabled state for toolbar delete button */
+#ed-delete-selected:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .editor-select-header {
   display: none;
   align-items: center;

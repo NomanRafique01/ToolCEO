@@ -181,6 +181,7 @@ function _buildToolbarHTML() {
     undo: '<svg viewBox="0 0 24 24"><path d="M9 14 4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-2"/></svg>',
     redo: '<svg viewBox="0 0 24 24"><path d="m15 14 5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h2"/></svg>',
     clear: '<svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m19 6-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg>',
+    delete: '<svg viewBox="0 0 24 24"><path d="M3 6h18"/><path d="M8 6V4h8v2"/><path d="m19 6-1 14H6L5 6"/><path d="M10 11v5M14 11v5"/></svg>',
   };
 
   return `
@@ -225,10 +226,10 @@ function _buildToolbarHTML() {
         </div>
       </div>
 
-      <label class="ed-label">Size <span id="ed-font-size-val">32px</span></label>
+      <label class="ed-label" style="margin-top:10px;">Size <span id="ed-font-size-val">32px</span></label>
       <input type="range" class="ed-slider" id="ed-font-size" min="8" max="120" value="32" />
 
-      <div class="ed-tool-row">
+      <div class="ed-tool-row" style="margin-top:10px;">
         <button type="button" class="ed-toggle" id="ed-bold" style="flex:1;">Bold</button>
         <button type="button" class="ed-toggle" id="ed-italic" style="flex:1;">Italic</button>
       </div>
@@ -323,6 +324,7 @@ function _buildViewerHTML() {
             <div class="ed-canvas-stage" id="ed-canvas-stage">
               <canvas id="ed-overlay-canvas"></canvas>
             </div>
+
           </div>
         </div>
       </div>
@@ -879,6 +881,17 @@ function _wirePageEditor(viewer) {
     if (file) _insertImage(file);
   });
 
+  // Delete Selected toolbar button
+  const deleteSelectedBtn = viewer.querySelector('#ed-delete-selected');
+  if (deleteSelectedBtn) {
+    deleteSelectedBtn.addEventListener('click', () => _deleteSelectedObject(viewer));
+  }
+  // Floating delete badge click (same action)
+  const floatDeleteBtn = viewer.querySelector('#ed-float-delete');
+  if (floatDeleteBtn) {
+    floatDeleteBtn.addEventListener('click', () => _deleteSelectedObject(viewer));
+  }
+
   viewer.querySelector('#ed-clear').addEventListener('click', () => {
     if (!state.page || !confirm('Clear all edits on this page?')) return;
     _clearFabricObjects();
@@ -887,6 +900,7 @@ function _wirePageEditor(viewer) {
 
   state.fabric.on('selection:created', (opt) => _onObjectSelected(viewer, opt));
   state.fabric.on('selection:updated', (opt) => _onObjectSelected(viewer, opt));
+  state.fabric.on('selection:cleared', () => _onSelectionCleared(viewer));
   state.fabric.on('mouse:down', _fabricPointerDown);
   state.fabric.on('mouse:move', _fabricPointerMove);
   state.fabric.on('mouse:up', _fabricPointerUp);
@@ -900,6 +914,11 @@ function _wirePageEditor(viewer) {
     if (e.code === 'Space') {
       state.spaceDown = true;
       state.scroll.classList.add('ed-panning-ready');
+    }
+    // Delete / Backspace: remove selected fabric object (skip if text is being edited)
+    if ((e.key === 'Delete' || e.key === 'Backspace') && !_isTypingInText()) {
+      e.preventDefault();
+      _deleteSelectedObject(viewer);
     }
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'z') {
       e.preventDefault();
@@ -1148,6 +1167,10 @@ function _onObjectSelected(viewer, opt) {
 
   _applyRotateControl(obj);
 
+  // Enable toolbar delete button
+  const delBtn = viewer.querySelector('#ed-delete-selected');
+  if (delBtn) delBtn.disabled = false;
+
   if (_isFabricImageObject(obj)) {
     _setTool(viewer, 'select');
   } else if (_isTextObject(obj)) {
@@ -1171,6 +1194,55 @@ function _onObjectSelected(viewer, opt) {
     viewer.querySelector('#ed-italic')?.classList.toggle('active', isItalic);
   }
   state.fabric.requestRenderAll();
+}
+
+function _onSelectionCleared(viewer) {
+  // Disable toolbar delete button
+  const delBtn = viewer.querySelector('#ed-delete-selected');
+  if (delBtn) delBtn.disabled = true;
+}
+
+function _deleteSelectedObject(viewer) {
+  const state = _editorState;
+  if (!state?.fabric || !state.page) return;
+  const active = state.fabric.getActiveObject();
+  if (!active) return;
+  // Handle multi-object selection
+  if (active.type === 'activeSelection' && active.getObjects) {
+    const objs = active.getObjects();
+    state.fabric.discardActiveObject();
+    objs.forEach((obj) => state.fabric.remove(obj));
+  } else {
+    state.fabric.remove(active);
+    state.fabric.discardActiveObject();
+  }
+  state.fabric.requestRenderAll();
+  _afterFabricChange();
+  _onSelectionCleared(viewer);
+}
+
+/** Returns true when the user is currently typing inside a Fabric text object (prevents accidental deletes). */
+function _isTypingInText() {
+  const state = _editorState;
+  if (!state?.fabric) return false;
+  const active = state.fabric.getActiveObject();
+  return !!active && _isTextObject(active) && !!active.isEditing;
+}
+
+/** Positions the floating delete badge above the selected object's bounding box on the canvas stage. */
+function _positionFloatDelete(viewer, obj) {
+  const state = _editorState;
+  const floatDel = viewer.querySelector('#ed-float-delete');
+  if (!floatDel || !state?.fabric || !obj) return;
+  // getBoundingRect returns coords in canvas (display) pixel space
+  const bounds = obj.getBoundingRect();
+  const zoom = state.zoom || 1;
+  // Center badge horizontally over object, ~40px above top edge
+  const badgeLeft = Math.max(0, bounds.left + bounds.width / 2 - 36);
+  const badgeTop = Math.max(0, bounds.top - 44);
+  floatDel.style.left = `${badgeLeft}px`;
+  floatDel.style.top = `${badgeTop}px`;
+  floatDel.hidden = false;
 }
 
 function _fabricPointerDown(opt) {
@@ -1415,6 +1487,7 @@ function _applyRotateControl(obj) {
   if (!obj.controls) {
     obj.controls = controlsUtils.createObjectDefaultControls();
   }
+  // Rotate handle at top-center
   obj.controls.mtr = new Control({
     x: 0,
     y: -0.5,
@@ -1423,6 +1496,33 @@ function _applyRotateControl(obj) {
     actionHandler: controlsUtils.rotationWithSnapping,
     actionName: 'rotate',
     render: _renderRotateControl,
+  });
+  // Delete control at top-right corner — anchored like the rotate handle
+  obj.controls.deleteControl = new Control({
+    x: 0.5,
+    y: -0.5,
+    offsetX: 18,
+    offsetY: -18,
+    sizeX: 30,
+    sizeY: 30,
+    cursorStyle: 'pointer',
+    mouseUpHandler: (_eventData, transform) => {
+      const canvas = transform.target.canvas;
+      if (!canvas) return false;
+      const target = transform.target;
+      if (target.type === 'activeSelection' && target.getObjects) {
+        const objs = target.getObjects();
+        canvas.discardActiveObject();
+        objs.forEach((o) => canvas.remove(o));
+      } else {
+        canvas.remove(target);
+        canvas.discardActiveObject();
+      }
+      canvas.requestRenderAll();
+      _afterFabricChange();
+      return true;
+    },
+    render: _renderDeleteControl,
   });
   obj.setControlsVisibility({
     ml: true,
@@ -1434,6 +1534,7 @@ function _applyRotateControl(obj) {
     bl: true,
     br: true,
     mtr: true,
+    deleteControl: true,
   });
   obj.set({
     cornerColor: EDITOR_COLOR,
@@ -1445,6 +1546,7 @@ function _applyRotateControl(obj) {
     hasRotatingPoint: true,
   });
 }
+
 
 function _isFabricImageObject(obj) {
   return !!obj && (obj instanceof FabricImage || obj.isType?.('image') || String(obj.type || '').toLowerCase() === 'image');
@@ -1499,6 +1601,63 @@ function _renderRotateControl(ctx, left, top) {
   ctx.lineTo(8.5, -2.5);
   ctx.closePath();
   ctx.fill();
+
+  ctx.restore();
+}
+
+function _renderDeleteControl(ctx, left, top) {
+  ctx.save();
+  ctx.translate(left, top);
+
+  // Drop shadow
+  ctx.shadowColor = 'rgba(0,0,0,0.5)';
+  ctx.shadowBlur = 7;
+  ctx.shadowOffsetY = 2;
+
+  // Outer circle — vivid red fill with teal ring for visibility
+  ctx.beginPath();
+  ctx.arc(0, 0, 14, 0, Math.PI * 2);
+  ctx.fillStyle = '#C0392B';
+  ctx.fill();
+
+  ctx.shadowColor = 'transparent';
+  ctx.strokeStyle = '#FF6B6B';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Trash-can icon drawn in white — lid
+  ctx.strokeStyle = '#FFFFFF';
+  ctx.lineWidth = 1.8;
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.beginPath();
+  // lid top bar
+  ctx.moveTo(-6, -5);
+  ctx.lineTo(6, -5);
+  ctx.stroke();
+  // lid handle
+  ctx.beginPath();
+  ctx.moveTo(-2, -5);
+  ctx.lineTo(-2, -7.5);
+  ctx.lineTo(2, -7.5);
+  ctx.lineTo(2, -5);
+  ctx.stroke();
+  // body
+  ctx.beginPath();
+  ctx.moveTo(-5, -4);
+  ctx.lineTo(-4, 6);
+  ctx.lineTo(4, 6);
+  ctx.lineTo(5, -4);
+  ctx.stroke();
+  // inner lines
+  ctx.beginPath();
+  ctx.moveTo(-1.5, -2);
+  ctx.lineTo(-1.5, 4);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(1.5, -2);
+  ctx.lineTo(1.5, 4);
+  ctx.stroke();
 
   ctx.restore();
 }
