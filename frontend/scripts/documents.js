@@ -6,11 +6,10 @@
 
 import { setBreadcrumb } from './navigation.js';
 import { setActiveTool, onToolChange } from './toolstate.js';
-import { openRotateFilePicker } from '../tools/documents/pdf_tools/rotate/rotate.js';
 
 // Sync card selection highlight in the explore-tools grid whenever active tool changes
 onToolChange((tool) => {
-  const container = document.getElementById('explore-tools-content');
+  const container = document.getElementById('explore-section');
   if (!container) return;
   container.querySelectorAll('.fmt-card').forEach((card) => {
     if (tool && card.dataset.id === tool.id) {

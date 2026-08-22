@@ -15,10 +15,9 @@ import {
   showDownload,
   showError,
 } from '../../../shared/progress.js';
+import { ensurePdfJs, loadPdfDocument, getOfflinePdfInfo } from '../../../shared/pdfRenderer.js';
 
 const BACKEND = 'http://127.0.0.1:8000';
-const PDFJS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
-const PDFJS_WORKER_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 const THUMBNAIL_SCALE = 1.5;
 
 let _selectedFile = null;
@@ -46,31 +45,7 @@ function _fileBaseName(filename) {
 }
 
 function _ensurePdfJs() {
-  if (window.pdfjsLib) {
-    window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_URL;
-    return Promise.resolve(window.pdfjsLib);
-  }
-
-  return new Promise((resolve, reject) => {
-    const existing = document.querySelector(`script[src="${PDFJS_URL}"]`);
-    const script = existing || document.createElement('script');
-
-    script.onload = () => {
-      if (!window.pdfjsLib) {
-        reject(new Error('PDF.js did not initialize.'));
-        return;
-      }
-      window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_URL;
-      resolve(window.pdfjsLib);
-    };
-    script.onerror = () => reject(new Error('Could not load PDF.js.'));
-
-    if (!existing) {
-      script.src = PDFJS_URL;
-      script.async = true;
-      document.head.appendChild(script);
-    }
-  });
+  return ensurePdfJs();
 }
 
 function _fallbackPdfIcon(color) {
@@ -123,11 +98,39 @@ function _showPdfThumbnail(zone, file, color, dataUri = null) {
 }
 
 function _getSwapParts(container) {
-  const swap = container.querySelector('#pdf-tools-swap');
-  const cardView = container.querySelector('#pdf-tools-card-view');
-  let viewer = container.querySelector('#extractor-viewer');
+  let target = container || document.getElementById('explore-section') || document.body;
+  let swap = target.querySelector('#pdf-tools-swap');
+  let cardView = target.querySelector('#pdf-tools-card-view');
 
-  if (swap && !viewer) {
+  if (!swap) {
+    const explore = document.getElementById('explore-section');
+    if (explore) {
+      target = explore;
+      swap = explore.querySelector('#pdf-tools-swap');
+      cardView = explore.querySelector('#pdf-tools-card-view');
+    }
+  }
+
+  if (!swap) {
+    swap = document.createElement('div');
+    swap.id = 'pdf-tools-swap';
+    swap.className = 'pdf-tools-swap';
+    target.appendChild(swap);
+  }
+
+  if (!cardView) {
+    cardView = swap.querySelector('#pdf-tools-card-view');
+    if (!cardView) {
+      cardView = document.createElement('div');
+      cardView.id = 'pdf-tools-card-view';
+      cardView.className = 'pdf-tools-card-view';
+      swap.appendChild(cardView);
+    }
+  }
+
+  let viewer = target.querySelector('#extractor-viewer') || swap.querySelector('#extractor-viewer');
+
+  if (!viewer) {
     viewer = document.createElement('div');
     viewer.id = 'extractor-viewer';
     viewer.className = 'extractor-viewer';
@@ -441,18 +444,28 @@ async function _loadPdfIntoViewer(container, file) {
   const fd = new FormData();
   fd.append('file', file);
 
-  let info;
+  let info = null;
   try {
-    const res = await fetch(`${BACKEND}/api/pdf/extractor/info`, { method: 'POST', body: fd });
-    const json = await res.json();
-    if (!res.ok) {
-      const detail = json.detail;
-      throw new Error(typeof detail === 'string' ? detail : `Server error ${res.status}`);
+    const res = await fetch(`${BACKEND}/api/pdf/extractor/info`, { method: 'POST', body: fd }).catch(() => null);
+    if (res && res.ok) {
+      info = await res.json();
     }
-    info = json;
   } catch (err) {
-    showError(zone, `Could not read PDF: ${err.message}`);
-    return;
+    info = null;
+  }
+
+  if (!info) {
+    try {
+      const offlineInfo = await getOfflinePdfInfo(file, 0.5);
+      info = {
+        page_count: offlineInfo.pageCount || 0,
+        thumbnail: offlineInfo.thumbnail || null,
+        image_status: { has_usable_images: true }
+      };
+    } catch (offlineErr) {
+      showError(zone, `Could not read PDF: ${offlineErr.message}`);
+      return;
+    }
   }
 
   _selectedFile = file;
@@ -492,9 +505,7 @@ async function _loadPdfIntoViewer(container, file) {
   _buildPageCards(viewer, _pageCount);
 
   try {
-    const pdfjsLib = await _ensurePdfJs();
-    const buffer = await file.arrayBuffer();
-    const pdfDoc = await pdfjsLib.getDocument({ data: buffer }).promise;
+    const pdfDoc = await loadPdfDocument(file);
     if (token !== _renderToken) return;
     _pdfDoc = pdfDoc;
     for (let pageNumber = 1; pageNumber <= pdfDoc.numPages; pageNumber += 1) {
@@ -632,7 +643,7 @@ export function removeExtractorPanel() {
     }
   }
 
-  const container = _activeContainer || document.getElementById('explore-tools-content') || document.body;
+  const container = _activeContainer || document.getElementById('explore-section') || document.body;
   const viewer = container.querySelector('#extractor-viewer');
   const cardView = container.querySelector('#pdf-tools-card-view');
   if (viewer) viewer.classList.remove('extractor-viewer--visible');
@@ -660,6 +671,6 @@ export function handleExtractorFilePicked(file) {
     return;
   }
 
-  const container = document.getElementById('explore-tools-content') || document.body;
+  const container = document.getElementById('explore-section') || document.body;
   _loadPdfIntoViewer(container, file);
 }

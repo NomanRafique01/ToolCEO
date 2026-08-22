@@ -20,6 +20,7 @@ import {
   showDownload,
   showError,
 } from '../../../shared/progress.js';
+import { getOfflinePdfInfo } from '../../../shared/pdfRenderer.js';
 
 const BACKEND = 'http://127.0.0.1:8000';
 
@@ -272,20 +273,29 @@ export async function handleCompressFilePicked(file) {
   let thumbnail = null;
   let fileSize  = file.size;
 
+  let loaded = false;
   try {
-    const res  = await fetch(`${BACKEND}/api/pdf/compressor/info`, { method: 'POST', body: fd });
-    if (res.ok) {
+    const res  = await fetch(`${BACKEND}/api/pdf/compressor/info`, { method: 'POST', body: fd }).catch(() => null);
+    if (res && res.ok) {
       const json = await res.json();
       pageCount  = json.page_count  || 1;
       thumbnail  = json.thumbnail   || null;
       fileSize   = json.file_size   || file.size;
-    } else {
-      const json = await res.json().catch(() => ({}));
-      throw new Error(json.detail || `Server error ${res.status}`);
+      loaded     = true;
     }
   } catch (err) {
-    showError(zone, `Could not read PDF: ${err.message}`);
-    return;
+    loaded = false;
+  }
+
+  if (!loaded) {
+    try {
+      const offlineInfo = await getOfflinePdfInfo(file, 0.5);
+      pageCount = offlineInfo.pageCount || 1;
+      thumbnail = offlineInfo.thumbnail || null;
+    } catch (offlineErr) {
+      showError(zone, `Could not read PDF: ${offlineErr.message}`);
+      return;
+    }
   }
 
   resetZoneContent(zone);

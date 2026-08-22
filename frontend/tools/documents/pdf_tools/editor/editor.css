@@ -1,6 +1,22 @@
 /* Edit PDF uses a comfortable dark neutral workspace with #00E5C0 accents matching the Edit PDF tool theme. */
 
+body.has-editor-viewer #main-content {
+  padding-top: 0 !important;
+}
+
+body.has-editor-viewer .explore-header {
+  display: none !important;
+}
+
+body.has-editor-viewer .features-strip {
+  display: none !important;
+}
+
 .extractor-viewer.editor-viewer {
+  margin-top: 0;
+  border-top: none;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
   --extractor-color: #00E5C0;
   --extractor-bg: rgba(0, 229, 192, 0.1);
   --extractor-bg-strong: rgba(0, 229, 192, 0.18);
@@ -23,7 +39,8 @@
     inset 0 1px 0 rgba(168, 245, 230, 0.1);
 }
 
-.editor-viewer .extractor-thumb-stage img {
+.editor-viewer .extractor-thumb-stage img,
+.editor-viewer .extractor-thumb-stage canvas {
   max-width: 92%;
   max-height: 240px;
   width: auto;
@@ -376,10 +393,21 @@
 .ed-wide-btn.active,
 .ed-chip.active,
 .ed-toggle.active {
-  background: rgba(0, 229, 192, 0.22);
+  background: rgba(0, 229, 192, 0.28);
   border-color: var(--ed-color);
   color: #FFFFFF;
-  box-shadow: 0 0 0 3px rgba(0, 229, 192, 0.14), 0 8px 22px rgba(0, 0, 0, 0.18);
+  font-weight: 600;
+  text-shadow: 0 0 10px rgba(0, 229, 192, 0.5);
+  box-shadow:
+    0 0 0 3px rgba(0, 229, 192, 0.22),
+    0 0 18px rgba(0, 229, 192, 0.28),
+    0 8px 22px rgba(0, 0, 0, 0.18);
+}
+
+.ed-tool-btn.active svg,
+.ed-wide-btn.active svg {
+  stroke: #00E5C0;
+  filter: drop-shadow(0 0 4px rgba(0, 229, 192, 0.55));
 }
 
 .ed-danger-btn {
@@ -592,7 +620,17 @@
 
 .ed-swatch.active {
   border-color: var(--ed-color);
-  box-shadow: 0 0 0 3px rgba(0, 229, 192, 0.36);
+  box-shadow:
+    0 0 0 3px rgba(0, 229, 192, 0.42),
+    0 0 12px rgba(0, 229, 192, 0.36);
+  transform: scale(1.18);
+  animation: edSwatchPulse 0.35s ease-out;
+}
+
+@keyframes edSwatchPulse {
+  0%   { transform: scale(1); }
+  50%  { transform: scale(1.28); }
+  100% { transform: scale(1.18); }
 }
 
 .ed-color-row {
@@ -658,6 +696,9 @@
     0 16px 48px rgba(0, 0, 0, 0.45);
   transform-origin: top center;
   transition: box-shadow 0.2s ease;
+  /* HD: ensure pixel-perfect rendering at all zoom levels */
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: crisp-edges;
 }
 
 .ed-canvas-stage.ed-stage--loading::before {
@@ -680,6 +721,8 @@
     0 0 0 2px rgba(0, 229, 192, 0.86),
     0 0 24px rgba(0, 229, 192, 0.36),
     0 20px 60px rgba(0, 0, 0, 0.5);
+}
+
 .ed-grid-2 {
   display: grid;
   grid-template-columns: 1fr 1fr;

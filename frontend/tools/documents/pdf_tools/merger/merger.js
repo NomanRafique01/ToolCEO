@@ -20,6 +20,7 @@ import {
   showDownload,
   showError,
 } from '../../../shared/progress.js';
+import { getOfflinePdfInfo } from '../../../shared/pdfRenderer.js';
 
 const BACKEND = 'http://127.0.0.1:8000';
 
@@ -357,24 +358,34 @@ export async function handleMergeFilesPicked(files) {
     const fd1 = new FormData(); fd1.append('file', file);
     const fd2 = new FormData(); fd2.append('file', file);
 
-    let pageCount = 1;
+    let pageCount = null;
     let thumbnail = null;
 
     try {
       const [countRes, thumbRes] = await Promise.all([
-        fetch(`${BACKEND}/api/pdf/page-count`, { method: 'POST', body: fd1 }),
-        fetch(`${BACKEND}/api/pdf/thumbnail`,  { method: 'POST', body: fd2 }),
+        fetch(`${BACKEND}/api/pdf/page-count`, { method: 'POST', body: fd1 }).catch(() => null),
+        fetch(`${BACKEND}/api/pdf/thumbnail`,  { method: 'POST', body: fd2 }).catch(() => null),
       ]);
-      if (countRes.ok) {
+      if (countRes && countRes.ok) {
         const cj = await countRes.json();
         pageCount = cj.page_count || 1;
       }
-      if (thumbRes.ok) {
+      if (thumbRes && thumbRes.ok) {
         const tj = await thumbRes.json();
         thumbnail = tj.thumbnail || null;
       }
     } catch (_) {
-      // Non-fatal — show fallback icon, use page count 1
+      pageCount = null;
+    }
+
+    if (!pageCount) {
+      try {
+        const offlineInfo = await getOfflinePdfInfo(file, 0.5);
+        pageCount = offlineInfo.pageCount || 1;
+        thumbnail = offlineInfo.thumbnail || null;
+      } catch (_) {
+        pageCount = 1;
+      }
     }
 
     _queue.push({ file, pageCount, thumbnail });

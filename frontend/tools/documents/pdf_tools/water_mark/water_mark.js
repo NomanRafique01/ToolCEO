@@ -2,16 +2,7 @@
  * tools/documents/pdf_tools/water_mark/water_mark.js
  *
  * Interactive PDF Watermark Editor — ToolCEO
- *
- * Uses the same "swap" pattern as the Rotate Pages tool:
- *   - When a PDF is loaded, #pdf-tools-card-view hides and #wm-viewer swaps in.
- *   - HD first-page preview with a draggable watermark label.
- *   - Controls: text, presets, font, size, color, opacity, angle, spacing.
- *   - Apply → async background job → SSE progress → Download panel.
- *
- * Exports:
- *   handleWatermarkFilePicked(file)  – triggered when file is chosen
- *   removeWatermarkPanel()           – cleanup / reset drop zone thumb
+ * 100% Offline Page Preview & Visual Drag-and-Drop Watermarking.
  */
 
 import { pushNotification } from '../../../../scripts/notificationStore.js';
@@ -19,39 +10,37 @@ import {
   getActiveTool, setBgJob, getBgJob, syncBgJobBar, clearBgJob,
 } from '../../../../scripts/toolstate.js';
 import {
-  showScanProgress,
   showProgress,
   updateProgress,
   resetZoneContent,
   showDownload,
   showError,
 } from '../../../shared/progress.js';
+import { getOfflinePdfInfo, renderPdfPageToDataUri } from '../../../shared/pdfRenderer.js';
 
 const BACKEND = 'http://127.0.0.1:8000';
 
-// ─── MODULE STATE ──────────────────────────────────────────────────────────────
-
-let _wmFile      = null;
-let _wmBaseName  = '';
-let _wmFileSize  = 0;
+let _wmFile = null;
+let _wmBaseName = '';
+let _wmFileSize = 0;
 let _wmPageCount = 1;
-let _wmHdUri     = '';
-let _pageWidth   = 595;  // PDF page width in points (for coord mapping)
-let _pageHeight  = 842;  // PDF page height in points
+let _wmHdUri = '';
+let _pageWidth = 595;
+let _pageHeight = 842;
 
 let _activeContainer = null;
 
 const WM_DEFAULTS = {
-  mode:        'text',
-  text:        '',
+  mode: 'text',
+  text: '',
   font_family: 'helv',
-  font_size:   48,
-  color:       '#CC0000',
-  opacity:     0.73,
-  angle:       -45,
-  spacing:     0,
-  x_pct:       50,
-  y_pct:       50,
+  font_size: 48,
+  color: '#CC0000',
+  opacity: 0.73,
+  angle: -45,
+  spacing: 0,
+  x_pct: 50,
+  y_pct: 50,
   signature_data_url: '',
   sign_width_pct: 34,
 };
@@ -67,37 +56,98 @@ function _esc(str) {
 }
 
 function _fmt(bytes) {
-  if (bytes < 1024)        return `${bytes} B`;
-  if (bytes < 1048576)     return `${(bytes / 1024).toFixed(1)} KB`;
+  if (bytes < 1024) return `${bytes} B`;
+  if (bytes < 1048576) return `${(bytes / 1024).toFixed(1)} KB`;
   return `${(bytes / 1048576).toFixed(2)} MB`;
-}
-
-function _pct(v) {
-  return `${Math.round(v)}%`;
 }
 
 function _fontFamilyCss(val) {
   if (val === 'times') return '"Times New Roman", Times, serif';
-  if (val === 'cour')  return '"Courier New", Courier, monospace';
+  if (val === 'cour') return '"Courier New", Courier, monospace';
   return 'Arial, Helvetica, sans-serif';
+}
+
+function _isPdfFile(file) {
+  if (!file) return false;
+  const name = (file.name || '').toLowerCase();
+  return name.endsWith('.pdf') || file.type === 'application/pdf';
+}
+
+function _fallbackPdfIcon(color) {
+  return `<svg class="dz-pdf-thumb-icon" viewBox="0 0 90 116" xmlns="http://www.w3.org/2000/svg">
+    <rect x="0" y="0" width="90" height="116" fill="#ffffff"/>
+    <polygon points="62,0 90,28 62,28" fill="#e0e0e0"/>
+    <polyline points="62,0 62,28 90,28" fill="none" stroke="#cccccc" stroke-width="1"/>
+    <rect x="0" y="42" width="90" height="26" fill="${color}"/>
+    <text x="45" y="60" font-family="Arial,sans-serif" font-size="14" font-weight="bold"
+          fill="#ffffff" text-anchor="middle" dominant-baseline="middle">PDF</text>
+    <line x1="12" y1="80" x2="78" y2="80" stroke="#dddddd" stroke-width="2" stroke-linecap="round"/>
+    <line x1="12" y1="89" x2="78" y2="89" stroke="#dddddd" stroke-width="2" stroke-linecap="round"/>
+    <line x1="12" y1="98" x2="55" y2="98" stroke="#dddddd" stroke-width="2" stroke-linecap="round"/>
+  </svg>`;
+}
+
+function _showWatermarkThumbnail(zone, file, color, dataUri = null) {
+  if (!zone || !file) return;
+  zone.querySelectorAll('.dz-watermark-thumb-wrap').forEach((thumb) => thumb.remove());
+
+  const thumbContent = dataUri
+    ? `<img class="dz-pdf-thumb-img" src="${dataUri}" alt="PDF preview" draggable="false" />`
+    : _fallbackPdfIcon(color);
+
+  const wrap = document.createElement('div');
+  wrap.className = 'dz-pdf-thumb-wrap dz-watermark-thumb-wrap';
+  wrap.innerHTML = `
+    <div class="dz-pdf-thumb-card">
+      <div class="dz-pdf-thumb-frame" style="border: 2px solid ${color}; box-shadow: 0 4px 18px rgba(0,0,0,0.45);">
+        ${thumbContent}
+      </div>
+      <button class="dz-pdf-thumb-remove dz-watermark-thumb-remove" title="Remove file" style="--thumb-color:${color}" aria-label="Remove file">&#x2715;</button>
+    </div>
+    <span class="dz-pdf-thumb-name">${_esc(file.name)}</span>`;
+
+  zone.classList.add('dz-has-thumb');
+  zone.appendChild(wrap);
+
+  wrap.querySelector('.dz-watermark-thumb-remove').addEventListener('click', (e) => {
+    e.stopPropagation();
+    if (_activeContainer) _closeViewer(_activeContainer);
+    removeWatermarkPanel();
+    resetZoneContent(zone);
+    const activeTool = getActiveTool();
+    if (activeTool) {
+      import('../../../../scripts/dropzone.js')
+        .then(({ _updateDropZoneForTool }) => { if (_updateDropZoneForTool) _updateDropZoneForTool(activeTool); })
+        .catch(() => {});
+    }
+  });
+}
+
+export function removeWatermarkPanel() {
+  const zone = document.getElementById('drop-zone');
+  if (!zone) return;
+
+  zone.querySelectorAll('.dz-watermark-thumb-wrap').forEach((thumb) => thumb.remove());
+  if (!zone.querySelector('.dz-pdf-thumb-wrap, .dz-compress-thumb-wrap, .dz-encrypt-thumb-wrap, .dz-merge-thumb-strip, .dz-editor-thumb-wrap, .dz-rotate-thumb-wrap, .dz-extractor-thumb-wrap')) {
+    zone.classList.remove('dz-has-thumb');
+  }
 }
 
 /** Preview width for scaling PDF pt → screen px (viewer may still be display:none). */
 function _previewWidthPx(viewer) {
   const frame = viewer.querySelector('#wm-frame-container');
-  const img   = viewer.querySelector('#wm-hd-img');
+  const img = viewer.querySelector('#wm-hd-img');
 
   let w = frame ? frame.clientWidth : 0;
   if (!w && img) w = img.clientWidth || 0;
   if (!w && img && img.naturalWidth && img.naturalHeight) {
-    // Estimate laid-out width from CSS max bounds before the viewer is visible
     const maxW = 600;
     const maxH = 770;
     const byW = maxW;
     const byH = (img.naturalWidth / img.naturalHeight) * maxH;
     w = Math.min(byW, byH);
   }
-  if (!w) w = 600; // CSS .wm-frame-container max-width fallback
+  if (!w) w = 600;
   return w;
 }
 
@@ -115,18 +165,18 @@ function _syncDraggableLabel(viewer) {
 
   labelEl.classList.toggle('wm-draggable-label--empty', !hasSign && !hasText);
   labelEl.classList.toggle('wm-draggable-label--sign', !!hasSign);
-  labelEl.innerHTML           = hasSign
+  labelEl.innerHTML = hasSign
     ? `<img class="wm-sign-preview-img" src="${_opts.signature_data_url}" alt="Signature" draggable="false" />${_rotateHandleHTML()}`
     : `${_esc(_opts.text || '')}${_rotateHandleHTML()}`;
-  labelEl.style.fontFamily    = _fontFamilyCss(_opts.font_family);
-  labelEl.style.fontSize      = `${displaySize}px`;
-  labelEl.style.fontWeight    = '700';
-  labelEl.style.color         = _opts.color;
-  labelEl.style.opacity       = String(_opts.opacity);
+  labelEl.style.fontFamily = _fontFamilyCss(_opts.font_family);
+  labelEl.style.fontSize = `${displaySize}px`;
+  labelEl.style.fontWeight = '700';
+  labelEl.style.color = _opts.color;
+  labelEl.style.opacity = String(_opts.opacity);
   labelEl.style.letterSpacing = `${_opts.spacing}px`;
-  labelEl.style.left          = `${_opts.x_pct}%`;
-  labelEl.style.top           = `${_opts.y_pct}%`;
-  labelEl.style.transform     = `translate(-50%, -50%) rotate(${_opts.angle}deg)`;
+  labelEl.style.left = `${_opts.x_pct}%`;
+  labelEl.style.top = `${_opts.y_pct}%`;
+  labelEl.style.transform = `translate(-50%, -50%) rotate(${_opts.angle}deg)`;
 
   if (hasSign) {
     labelEl.style.width = `${Math.max(12, Math.min(70, _opts.sign_width_pct))}%`;
@@ -148,11 +198,38 @@ function _rotateHandleHTML() {
 // ─── SWAP PARTS (mirrors rotate.js _getSwapParts) ─────────────────────────────
 
 function _getSwapParts(container) {
-  const swap     = container.querySelector('#pdf-tools-swap');
-  const cardView = container.querySelector('#pdf-tools-card-view');
-  let   viewer   = container.querySelector('#wm-viewer');
+  let target = container || document.getElementById('explore-section') || document.body;
+  let swap = target.querySelector('#pdf-tools-swap');
+  let cardView = target.querySelector('#pdf-tools-card-view');
 
-  // Rebuild if missing preview / signature panel, or outdated event wiring
+  if (!swap) {
+    const explore = document.getElementById('explore-section');
+    if (explore) {
+      target = explore;
+      swap = explore.querySelector('#pdf-tools-swap');
+      cardView = explore.querySelector('#pdf-tools-card-view');
+    }
+  }
+
+  if (!swap) {
+    swap = document.createElement('div');
+    swap.id = 'pdf-tools-swap';
+    swap.className = 'pdf-tools-swap';
+    target.appendChild(swap);
+  }
+
+  if (!cardView) {
+    cardView = swap.querySelector('#pdf-tools-card-view');
+    if (!cardView) {
+      cardView = document.createElement('div');
+      cardView.id = 'pdf-tools-card-view';
+      cardView.className = 'pdf-tools-card-view';
+      swap.appendChild(cardView);
+    }
+  }
+
+  let viewer = target.querySelector('#wm-viewer') || swap.querySelector('#wm-viewer');
+
   if (
     viewer &&
     (
@@ -165,9 +242,9 @@ function _getSwapParts(container) {
     viewer = null;
   }
 
-  if (swap && !viewer) {
+  if (!viewer) {
     viewer = document.createElement('div');
-    viewer.id        = 'wm-viewer';
+    viewer.id = 'wm-viewer';
     viewer.className = 'wm-viewer';
     viewer.dataset.wmVer = '6';
     viewer.innerHTML = _buildViewerHTML();
@@ -416,19 +493,17 @@ function _wireViewerEvents(viewer) {
 
   viewer.querySelector('#wm-apply-btn').addEventListener('click', () => {
     if (!_wmFile) return;
-    const nameEl  = viewer.querySelector('#wm-filename-input');
+    const nameEl = viewer.querySelector('#wm-filename-input');
     const outName = (nameEl ? nameEl.value.trim() : '') || `${_wmBaseName}_watermarked`;
-    // Snapshot live control values so output matches the preview exactly
     const opts = _collectOptsFromViewer(viewer);
     _scrollMainToTool();
     _submitWatermark(_wmFile, opts, outName);
   });
 
   const container = viewer.querySelector('#wm-frame-container');
-  const labelEl   = viewer.querySelector('#wm-draggable-label');
-  const posBadge  = viewer.querySelector('#wm-pos-badge');
+  const labelEl = viewer.querySelector('#wm-draggable-label');
+  const posBadge = viewer.querySelector('#wm-pos-badge');
 
-  /** Map pointer to page % using the actual page image box (1:1 with PDF page). */
   function _setPosFromClient(clientX, clientY) {
     if (!container) return;
     const img = container.querySelector('#wm-hd-img');
@@ -437,12 +512,12 @@ function _wireViewerEvents(viewer) {
       : container.getBoundingClientRect();
     if (!rect.width || !rect.height) return;
 
-    let x = Math.max(0, Math.min(rect.width,  clientX - rect.left));
+    let x = Math.max(0, Math.min(rect.width, clientX - rect.left));
     let y = Math.max(0, Math.min(rect.height, clientY - rect.top));
-    _opts.x_pct = parseFloat(((x / rect.width)  * 100).toFixed(1));
+    _opts.x_pct = parseFloat(((x / rect.width) * 100).toFixed(1));
     _opts.y_pct = parseFloat(((y / rect.height) * 100).toFixed(1));
     labelEl.style.left = `${_opts.x_pct}%`;
-    labelEl.style.top  = `${_opts.y_pct}%`;
+    labelEl.style.top = `${_opts.y_pct}%`;
     if (posBadge) posBadge.textContent = `${Math.round(_opts.x_pct)}% · ${Math.round(_opts.y_pct)}%`;
   }
 
@@ -538,18 +613,18 @@ function _wireViewerEvents(viewer) {
     }
   });
 
-  const textInput   = viewer.querySelector('#wm-text');
-  const fontSelect  = viewer.querySelector('#wm-font');
-  const sizeSlider  = viewer.querySelector('#wm-size');
-  const sizeVal     = viewer.querySelector('#wm-size-val');
-  const colorInput  = viewer.querySelector('#wm-color');
-  const colorPrev   = viewer.querySelector('#wm-color-preview');
-  const colorHex    = viewer.querySelector('#wm-color-hex');
-  const opacSlider  = viewer.querySelector('#wm-opacity');
-  const opacVal     = viewer.querySelector('#wm-opacity-val');
+  const textInput = viewer.querySelector('#wm-text');
+  const fontSelect = viewer.querySelector('#wm-font');
+  const sizeSlider = viewer.querySelector('#wm-size');
+  const sizeVal = viewer.querySelector('#wm-size-val');
+  const colorInput = viewer.querySelector('#wm-color');
+  const colorPrev = viewer.querySelector('#wm-color-preview');
+  const colorHex = viewer.querySelector('#wm-color-hex');
+  const opacSlider = viewer.querySelector('#wm-opacity');
+  const opacVal = viewer.querySelector('#wm-opacity-val');
   const spaceSlider = viewer.querySelector('#wm-space');
-  const spaceVal    = viewer.querySelector('#wm-space-val');
-  const signSize    = viewer.querySelector('#wm-sign-size');
+  const spaceVal = viewer.querySelector('#wm-space-val');
+  const signSize = viewer.querySelector('#wm-sign-size');
   const signSizeVal = viewer.querySelector('#wm-sign-size-val');
 
   function _setColor(hex, fromPicker = false) {
@@ -570,13 +645,13 @@ function _wireViewerEvents(viewer) {
 
   _refreshLabel();
 
-  // Re-scale once the HD page image finishes loading / layout settles
   const hdImg = viewer.querySelector('#wm-hd-img');
   if (hdImg) {
     hdImg.addEventListener('load', () => {
       requestAnimationFrame(() => _syncDraggableLabel(viewer));
     });
   }
+
   textInput.addEventListener('input', (e) => {
     _opts.mode = 'text';
     _opts.text = e.target.value;
@@ -800,21 +875,22 @@ function _clearSwatchActive(viewer) {
   viewer.querySelectorAll('.wm-swatch').forEach((s) => s.classList.remove('active'));
 }
 
-// ─── SHOW / CLOSE VIEWER (mirrors rotate.js) ──────────────────────────────────
+// ─── SHOW / CLOSE VIEWER ──────────────────────────────────────────────────────
 
 function _showViewer(container) {
   const { cardView, viewer } = _getSwapParts(container);
-  if (!cardView || !viewer) return;
+  if (!viewer) return;
 
   document.body.classList.add('has-wm-viewer');
-  cardView.style.opacity   = '0';
-  cardView.style.transform = 'translateY(8px)';
+  if (cardView) {
+    cardView.style.opacity = '0';
+    cardView.style.transform = 'translateY(8px)';
+  }
 
   setTimeout(() => {
-    cardView.classList.add('wm-hidden');
+    if (cardView) cardView.classList.add('wm-hidden');
     viewer.classList.add('wm-viewer--visible');
 
-    // Layout is ready only after display:flex — re-apply real preview font size
     requestAnimationFrame(() => {
       _syncDraggableLabel(viewer);
       requestAnimationFrame(() => _syncDraggableLabel(viewer));
@@ -829,24 +905,25 @@ function _showViewer(container) {
 }
 
 function _closeViewer(container) {
-  if (!container) return;
-  const { cardView, viewer } = _getSwapParts(container);
-  if (!cardView || !viewer) return;
+  const target = container || _activeContainer || document.getElementById('explore-section') || document.body;
+  const { cardView, viewer } = _getSwapParts(target);
+  if (!viewer) return;
 
   document.body.classList.remove('has-wm-viewer');
-  _wmFile      = null;
-  _wmBaseName  = '';
-  _wmFileSize  = 0;
+  _wmFile = null;
+  _wmBaseName = '';
+  _wmFileSize = 0;
   _wmPageCount = 1;
-  _wmHdUri     = '';
+  _wmHdUri = '';
 
   viewer.classList.remove('wm-viewer--visible');
-  cardView.classList.remove('wm-hidden');
-
-  requestAnimationFrame(() => {
-    cardView.style.opacity   = '1';
-    cardView.style.transform = 'translateY(0)';
-  });
+  if (cardView) {
+    cardView.classList.remove('wm-hidden');
+    requestAnimationFrame(() => {
+      cardView.style.opacity = '1';
+      cardView.style.transform = 'translateY(0)';
+    });
+  }
 
   removeWatermarkPanel();
 }
@@ -854,7 +931,6 @@ function _closeViewer(container) {
 // ─── POPULATE VIEWER DATA ─────────────────────────────────────────────────────
 
 function _populateViewer(viewer) {
-  // Reset to defaults on every PDF load
   _opts = { ...WM_DEFAULTS };
 
   const nameEl = viewer.querySelector('.wm-file-name');
@@ -868,25 +944,24 @@ function _populateViewer(viewer) {
     filenameInput.value = `${_wmBaseName}_watermarked`;
   }
 
-  // Sync control UI to defaults
-  const textInput   = viewer.querySelector('#wm-text');
-  const fontSelect  = viewer.querySelector('#wm-font');
-  const sizeSlider  = viewer.querySelector('#wm-size');
-  const sizeVal     = viewer.querySelector('#wm-size-val');
-  const colorInput  = viewer.querySelector('#wm-color');
-  const colorPrev   = viewer.querySelector('#wm-color-preview');
-  const colorHex    = viewer.querySelector('#wm-color-hex');
-  const opacSlider  = viewer.querySelector('#wm-opacity');
-  const opacVal     = viewer.querySelector('#wm-opacity-val');
+  const textInput = viewer.querySelector('#wm-text');
+  const fontSelect = viewer.querySelector('#wm-font');
+  const sizeSlider = viewer.querySelector('#wm-size');
+  const sizeVal = viewer.querySelector('#wm-size-val');
+  const colorInput = viewer.querySelector('#wm-color');
+  const colorPrev = viewer.querySelector('#wm-color-preview');
+  const colorHex = viewer.querySelector('#wm-color-hex');
+  const opacSlider = viewer.querySelector('#wm-opacity');
+  const opacVal = viewer.querySelector('#wm-opacity-val');
   const spaceSlider = viewer.querySelector('#wm-space');
-  const spaceVal    = viewer.querySelector('#wm-space-val');
-  const labelEl     = viewer.querySelector('#wm-draggable-label');
-  const posBadge    = viewer.querySelector('#wm-pos-badge');
-  const signSize    = viewer.querySelector('#wm-sign-size');
+  const spaceVal = viewer.querySelector('#wm-space-val');
+  const labelEl = viewer.querySelector('#wm-draggable-label');
+  const posBadge = viewer.querySelector('#wm-pos-badge');
+  const signSize = viewer.querySelector('#wm-sign-size');
   const signSizeVal = viewer.querySelector('#wm-sign-size-val');
-  const signStatus  = viewer.querySelector('#wm-sign-status');
+  const signStatus = viewer.querySelector('#wm-sign-status');
 
-  if (textInput)  textInput.value = _opts.text;
+  if (textInput) textInput.value = _opts.text;
   if (fontSelect) fontSelect.value = _opts.font_family;
   if (sizeSlider) {
     sizeSlider.value = _opts.font_size;
@@ -909,6 +984,7 @@ function _populateViewer(viewer) {
     _updateSliderFill(spaceSlider, -2, 24);
   }
   if (spaceVal) spaceVal.textContent = `${_opts.spacing}px`;
+
   if (signSize) {
     signSize.value = _opts.sign_width_pct;
     _updateSliderFill(signSize, 12, 70);
@@ -919,119 +995,95 @@ function _populateViewer(viewer) {
 
   if (labelEl) {
     labelEl.style.left = `${_opts.x_pct}%`;
-    labelEl.style.top  = `${_opts.y_pct}%`;
+    labelEl.style.top = `${_opts.y_pct}%`;
   }
 
-  // Apply immediately (uses fallback width if still hidden), then again after layout
   _syncDraggableLabel(viewer);
   setTimeout(() => _syncDraggableLabel(viewer), 50);
   setTimeout(() => _syncDraggableLabel(viewer), 350);
 }
 
-// ─── THUMBNAIL (drop zone mini) ───────────────────────────────────────────────
+// ─── OFFLINE PDF LOADER ───────────────────────────────────────────────────────
 
-function _showWatermarkThumb(zone, file, color, dataUri) {
-  const old = zone.querySelector('.dz-wm-thumb-wrap');
-  if (old) old.remove();
-
-  const wrap = document.createElement('div');
-  wrap.className = 'dz-wm-thumb-wrap dz-pdf-thumb-wrap dz-rotate-thumb-wrap';
-  wrap.innerHTML = `
-    <div class="dz-pdf-thumb-card">
-      <div class="dz-pdf-thumb-frame" style="border:2px solid ${color};box-shadow:0 4px 18px rgba(0,0,0,0.35)">
-        ${dataUri ? `<img class="dz-pdf-thumb-img" src="${dataUri}" alt="PDF preview" draggable="false" />` : ''}
-      </div>
-      <button class="dz-pdf-thumb-remove dz-wm-thumb-remove" title="Remove file"
-              style="--thumb-color:${color}" aria-label="Remove file">&#x2715;</button>
-    </div>
-    <span class="dz-pdf-thumb-name">${_esc(file.name)}</span>`;
-
-  zone.classList.add('dz-has-thumb');
-  zone.appendChild(wrap);
-
-  wrap.querySelector('.dz-wm-thumb-remove').addEventListener('click', (e) => {
-    e.stopPropagation();
-    _closeViewer(_activeContainer);
-  });
-}
-
-// ─── PUBLIC: TEARDOWN ─────────────────────────────────────────────────────────
-
-export function removeWatermarkPanel() {
+async function _loadPdfIntoViewer(container, file) {
+  const tool = getActiveTool();
+  const color = (tool && tool.color) || '#38BDF8';
   const zone = document.getElementById('drop-zone');
-  if (!zone) return;
-
-  zone.querySelectorAll('.dz-wm-thumb-wrap').forEach((el) => el.remove());
-  if (!zone.querySelector('.dz-pdf-thumb-wrap, .dz-compress-thumb-wrap, .dz-encrypt-thumb-wrap, .dz-merge-thumb-strip')) {
-    zone.classList.remove('dz-has-thumb');
+  if (zone) {
+    removeWatermarkPanel();
+    resetZoneContent(zone);
+    showProgress(zone, 10, color, 'Reading PDF offline…');
   }
-}
-
-// ─── SCAN FLOW (main entry) ───────────────────────────────────────────────────
-
-export async function handleWatermarkFilePicked(file) {
-  if (!file || !(file.name.toLowerCase().endsWith('.pdf') || file.type === 'application/pdf')) {
-    pushNotification({ type: 'warning', message: 'Please select a valid PDF file.' });
-    return;
-  }
-
-  const tool  = getActiveTool();
-  const color = tool ? (tool.color || '#38BDF8') : '#38BDF8';
-  const zone  = document.getElementById('drop-zone');
-
-  removeWatermarkPanel();
-  showScanProgress(zone, color);
-
-  const fd = new FormData();
-  fd.append('file', file);
 
   try {
-    const res = await fetch(`${BACKEND}/api/pdf/watermark/info`, { method: 'POST', body: fd });
-    if (res.ok) {
-      const json   = await res.json();
-      _wmPageCount = json.page_count || 1;
-      _wmFileSize  = json.file_size  || file.size;
-      _wmHdUri     = json.thumbnail  || '';
-      _pageWidth   = json.width      || 595;
-      _pageHeight  = json.height     || 842;
-    } else {
-      const json = await res.json().catch(() => ({}));
-      throw new Error(json.detail || `Server error ${res.status}`);
+    const info = await getOfflinePdfInfo(file, 0.5);
+    const pdfDoc = info.pdfDoc;
+    const page1 = await pdfDoc.getPage(1);
+    const vp = page1.getViewport({ scale: 1.0 });
+
+    const scale = Math.min(2.0, 1200 / Math.max(vp.width, 1));
+    const hdDataUri = await renderPdfPageToDataUri(page1, scale);
+
+    _wmFile = file;
+    _wmBaseName = (file.name || 'document').replace(/\.[^.]+$/, '');
+    _wmFileSize = file.size || 0;
+    _wmPageCount = info.pageCount || 1;
+    _wmHdUri = hdDataUri;
+    _pageWidth = Math.round(vp.width) || 595;
+    _pageHeight = Math.round(vp.height) || 842;
+    _activeContainer = container || document.getElementById('explore-section') || document.body;
+
+    if (zone) {
+      updateProgress(zone, 100, color);
+      resetZoneContent(zone);
+      _showWatermarkThumbnail(zone, file, color, info.thumbnail);
     }
+
+    const { viewer } = _getSwapParts(_activeContainer);
+    if (viewer) {
+      _showViewer(_activeContainer);
+      _populateViewer(viewer);
+    }
+
+    pushNotification({
+      type: 'info',
+      message: 'PDF Loaded',
+      detail: `${file.name} (${_wmPageCount} page${_wmPageCount === 1 ? '' : 's'}) ready for watermark.`,
+    });
   } catch (err) {
-    showError(zone, `Could not read PDF: ${err.message}`);
+    if (zone) showError(zone, `Could not read PDF: ${err.message}`);
+    pushNotification({
+      type: 'error',
+      message: 'PDF Load Failed',
+      detail: err.message || 'Could not load PDF offline.',
+    });
+  }
+}
+
+export function handleWatermarkFilePicked(file) {
+  if (!file || !_isPdfFile(file)) {
+    pushNotification({
+      type: 'warning',
+      message: 'Invalid File Format. Please select a valid PDF file.',
+    });
     return;
   }
 
-  resetZoneContent(zone);
-
-  _wmFile     = file;
-  _wmBaseName = file.name.replace(/\.[^.]+$/, '');
-
-  // Show mini thumb in drop zone
-  _showWatermarkThumb(zone, file, color, _wmHdUri);
-
-  // Open the full editor in the explore-tools content area (same as rotate)
-  const container = document.getElementById('explore-tools-content') || document.body;
-  _activeContainer = container;
-
-  const { viewer } = _getSwapParts(container);
-  _populateViewer(viewer);
-  _showViewer(container);
+  const container = document.getElementById('explore-section') || document.body;
+  _loadPdfIntoViewer(container, file);
 }
 
 // ─── SUBMIT ───────────────────────────────────────────────────────────────────
 
-/** Read watermark options from the editor UI + drag position (preview truth). */
 function _collectOptsFromViewer(viewer) {
-  const textInput   = viewer?.querySelector('#wm-text');
-  const fontSelect  = viewer?.querySelector('#wm-font');
-  const sizeSlider  = viewer?.querySelector('#wm-size');
-  const colorInput  = viewer?.querySelector('#wm-color');
-  const colorHex    = viewer?.querySelector('#wm-color-hex');
-  const opacSlider  = viewer?.querySelector('#wm-opacity');
+  const textInput = viewer?.querySelector('#wm-text');
+  const fontSelect = viewer?.querySelector('#wm-font');
+  const sizeSlider = viewer?.querySelector('#wm-size');
+  const colorInput = viewer?.querySelector('#wm-color');
+  const colorHex = viewer?.querySelector('#wm-color-hex');
+  const opacSlider = viewer?.querySelector('#wm-opacity');
   const spaceSlider = viewer?.querySelector('#wm-space');
-  const signSize    = viewer?.querySelector('#wm-sign-size');
+  const signSize = viewer?.querySelector('#wm-sign-size');
 
   let color = (colorInput?.value || colorHex?.value || _opts.color || '#CC0000').trim();
   if (color && !color.startsWith('#')) color = `#${color}`;
@@ -1039,16 +1091,16 @@ function _collectOptsFromViewer(viewer) {
   const opacityPct = opacSlider ? parseFloat(opacSlider.value) : Math.round((_opts.opacity ?? 0.73) * 100);
 
   return {
-    mode:        _opts.mode === 'sign' && _opts.signature_data_url ? 'sign' : 'text',
-    text:        (textInput?.value ?? _opts.text ?? '').trim(),
+    mode: _opts.mode === 'sign' && _opts.signature_data_url ? 'sign' : 'text',
+    text: (textInput?.value ?? _opts.text ?? '').trim(),
     font_family: fontSelect?.value || _opts.font_family || 'helv',
-    font_size:   parseFloat(sizeSlider?.value ?? _opts.font_size ?? 48),
-    color:       /^#[0-9A-Fa-f]{6}$/i.test(color) ? color.toUpperCase() : (_opts.color || '#CC0000'),
-    opacity:     Math.max(0.05, Math.min(1, opacityPct / 100)),
-    angle:       Number.isFinite(_opts.angle) ? _opts.angle : -45,
-    spacing:     parseFloat(spaceSlider?.value ?? _opts.spacing ?? 0),
-    x_pct:       Number.isFinite(_opts.x_pct) ? _opts.x_pct : 50,
-    y_pct:       Number.isFinite(_opts.y_pct) ? _opts.y_pct : 50,
+    font_size: parseFloat(sizeSlider?.value ?? _opts.font_size ?? 48),
+    color: /^#[0-9A-Fa-f]{6}$/i.test(color) ? color.toUpperCase() : (_opts.color || '#CC0000'),
+    opacity: Math.max(0.05, Math.min(1, opacityPct / 100)),
+    angle: Number.isFinite(_opts.angle) ? _opts.angle : -45,
+    spacing: parseFloat(spaceSlider?.value ?? _opts.spacing ?? 0),
+    x_pct: Number.isFinite(_opts.x_pct) ? _opts.x_pct : 50,
+    y_pct: Number.isFinite(_opts.y_pct) ? _opts.y_pct : 50,
     signature_data_url: _opts.signature_data_url || '',
     sign_width_pct: parseFloat(signSize?.value ?? _opts.sign_width_pct ?? 34),
   };
@@ -1057,7 +1109,6 @@ function _collectOptsFromViewer(viewer) {
 function _scrollMainToTool() {
   const mainContent = document.getElementById('main-content');
   if (!mainContent) return;
-  // Instant jump — smooth scroll gets cancelled when the tall editor unmounts
   mainContent.scrollTop = 0;
 }
 
@@ -1070,18 +1121,17 @@ async function _submitWatermark(file, opts, outputFilename) {
   const tool = getActiveTool();
   if (!tool) return;
 
-  // Normalize once — never use || for numeric fields (0° / 0% must stay 0)
   const payload = {
-    mode:        opts.mode === 'sign' && opts.signature_data_url ? 'sign' : 'text',
-    text:        (opts.text || '').trim(),
+    mode: opts.mode === 'sign' && opts.signature_data_url ? 'sign' : 'text',
+    text: (opts.text || '').trim(),
     font_family: opts.font_family || 'helv',
-    font_size:   _formNum(opts.font_size, 48),
-    color:       opts.color || '#CC0000',
-    opacity:     _formNum(opts.opacity, 0.73),
-    angle:       _formNum(opts.angle, -45),
-    spacing:     _formNum(opts.spacing, 0),
-    x_pct:       _formNum(opts.x_pct, 50),
-    y_pct:       _formNum(opts.y_pct, 50),
+    font_size: _formNum(opts.font_size, 48),
+    color: opts.color || '#CC0000',
+    opacity: _formNum(opts.opacity, 0.73),
+    angle: _formNum(opts.angle, -45),
+    spacing: _formNum(opts.spacing, 0),
+    x_pct: _formNum(opts.x_pct, 50),
+    y_pct: _formNum(opts.y_pct, 50),
     signature_data_url: opts.signature_data_url || '',
     sign_width_pct: _formNum(opts.sign_width_pct, 34),
   };
@@ -1091,10 +1141,8 @@ async function _submitWatermark(file, opts, outputFilename) {
     return;
   }
 
-  // Close the editor view first — shows drop zone progress
   _closeViewer(_activeContainer);
 
-  // Scroll back up to the tool / drop zone (same as Merge PDFs)
   _scrollMainToTool();
   requestAnimationFrame(() => {
     _scrollMainToTool();
@@ -1102,23 +1150,23 @@ async function _submitWatermark(file, opts, outputFilename) {
   });
   setTimeout(_scrollMainToTool, 80);
 
-  const zone  = document.getElementById('drop-zone');
+  const zone = document.getElementById('drop-zone');
   const color = tool.color || '#38BDF8';
 
   const fd = new FormData();
   fd.append('file', file);
-  fd.append('text',            payload.text);
-  fd.append('mode',            payload.mode);
-  fd.append('font_family',     payload.font_family);
-  fd.append('font_size',       String(payload.font_size));
-  fd.append('color',           payload.color);
-  fd.append('opacity',         String(payload.opacity));
-  fd.append('angle',           String(payload.angle));
-  fd.append('spacing',         String(payload.spacing));
-  fd.append('x_pct',           String(payload.x_pct));
-  fd.append('y_pct',           String(payload.y_pct));
+  fd.append('text', payload.text);
+  fd.append('mode', payload.mode);
+  fd.append('font_family', payload.font_family);
+  fd.append('font_size', String(payload.font_size));
+  fd.append('color', payload.color);
+  fd.append('opacity', String(payload.opacity));
+  fd.append('angle', String(payload.angle));
+  fd.append('spacing', String(payload.spacing));
+  fd.append('x_pct', String(payload.x_pct));
+  fd.append('y_pct', String(payload.y_pct));
   fd.append('signature_data_url', payload.signature_data_url);
-  fd.append('sign_width_pct',  String(payload.sign_width_pct));
+  fd.append('sign_width_pct', String(payload.sign_width_pct));
   fd.append('output_filename', outputFilename);
 
   showProgress(zone, 10, color, 'Applying Watermark…');
@@ -1128,7 +1176,7 @@ async function _submitWatermark(file, opts, outputFilename) {
 
   let jobId;
   try {
-    const res  = await fetch(`${BACKEND}/api/pdf/watermark/process`, { method: 'POST', body: fd });
+    const res = await fetch(`${BACKEND}/api/pdf/watermark/process`, { method: 'POST', body: fd });
     const json = await res.json();
     if (!res.ok) {
       const detail = json.detail;
@@ -1144,7 +1192,7 @@ async function _submitWatermark(file, opts, outputFilename) {
     return;
   }
 
-  const sse   = new EventSource(`${BACKEND}/api/progress/${jobId}`);
+  const sse = new EventSource(`${BACKEND}/api/progress/${jobId}`);
   let lastPct = 0;
 
   setBgJob({ jobId, tool, filename: earlyFilename, progress: 10, state: 'running', sse });
@@ -1160,7 +1208,7 @@ async function _submitWatermark(file, opts, outputFilename) {
     const bg = getBgJob();
     if (bg && bg.jobId === jobId) {
       bg.progress = Math.max(10, Math.min(100, pct));
-      bg.state    = state === 'done' ? 'done' : (state === 'error' ? 'error' : 'running');
+      bg.state = state === 'done' ? 'done' : (state === 'error' ? 'error' : 'running');
       if (data.filename) bg.filename = data.filename;
       syncBgJobBar();
     }
@@ -1182,7 +1230,7 @@ async function _submitWatermark(file, opts, outputFilename) {
         if (activeTool) {
           import('../../../../scripts/dropzone.js')
             .then(({ _updateDropZoneForTool }) => { if (_updateDropZoneForTool) _updateDropZoneForTool(activeTool); })
-            .catch(() => {});
+            .catch(() => { });
         }
       };
       setTimeout(() => showDownload(zone, dlName, jobId, color, onReset), 200);

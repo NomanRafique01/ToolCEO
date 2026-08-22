@@ -14,6 +14,7 @@ import {
   showDownloadBlobCard,
   showError,
 } from '../../../shared/progress.js';
+import { ensurePdfJs, loadPdfDocument, getOfflinePdfInfo } from '../../../shared/pdfRenderer.js';
 import {
   Canvas as FabricCanvas,
   Circle,
@@ -21,6 +22,7 @@ import {
   FabricImage,
   Group,
   IText,
+  Textbox,
   Line,
   PencilBrush,
   Rect,
@@ -28,18 +30,18 @@ import {
   Triangle,
   controlsUtils,
   util as fabricUtil,
-} from '../../../../../node_modules/fabric/dist/index.min.mjs';
+} from '../../../../vendor/fabric/index.min.mjs';
 
 const BACKEND = 'http://127.0.0.1:8000';
 const EDITOR_COLOR = '#00E5C0';
-const PDFJS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
-const PDFJS_WORKER_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
+const PDFJS_URL = '../../../../vendor/pdfjs/pdf.min.js';
+const PDFJS_WORKER_URL = '../../../../vendor/pdfjs/pdf.worker.min.js';
 const THUMBNAIL_SCALE = 1.5;
-const EDIT_PAGE_MAX_WIDTH = 1400;
-const EDIT_PAGE_MAX_HEIGHT = 1800;
+const EDIT_PAGE_MAX_WIDTH = 1920;   // HD: Full-HD width baseline
+const EDIT_PAGE_MAX_HEIGHT = 2560;  // HD: Full-HD height baseline
 
 const BRUSH_SIZES = { thin: 2, medium: 5, thick: 9 };
-const FONT_SIZES = [10, 12, 14, 18, 24, 36];
+const FONT_SIZES = [10, 12, 14, 18, 24, 32, 36, 48, 64];
 const PALETTE = [
   ['#000000', 'Black'],
   ['#FFFFFF', 'White'],
@@ -109,31 +111,7 @@ function _thumbnailDataUri(thumbnail) {
 }
 
 function _ensurePdfJs() {
-  if (window.pdfjsLib) {
-    window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_URL;
-    return Promise.resolve(window.pdfjsLib);
-  }
-
-  return new Promise((resolve, reject) => {
-    const existing = document.querySelector(`script[src="${PDFJS_URL}"]`);
-    const script = existing || document.createElement('script');
-
-    script.onload = () => {
-      if (!window.pdfjsLib) {
-        reject(new Error('PDF.js did not initialize.'));
-        return;
-      }
-      window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_URL;
-      resolve(window.pdfjsLib);
-    };
-    script.onerror = () => reject(new Error('Could not load PDF.js.'));
-
-    if (!existing) {
-      script.src = PDFJS_URL;
-      script.async = true;
-      document.head.appendChild(script);
-    }
-  });
+  return ensurePdfJs();
 }
 
 function _fallbackPdfIcon(color) {
@@ -247,8 +225,8 @@ function _buildToolbarHTML() {
         </div>
       </div>
 
-      <label class="ed-label">Size <span id="ed-font-size-val">14px</span></label>
-      <input type="range" class="ed-slider" id="ed-font-size" min="8" max="72" value="14" />
+      <label class="ed-label">Size <span id="ed-font-size-val">32px</span></label>
+      <input type="range" class="ed-slider" id="ed-font-size" min="8" max="120" value="32" />
 
       <div class="ed-tool-row">
         <button type="button" class="ed-toggle" id="ed-bold" style="flex:1;">Bold</button>
@@ -352,16 +330,44 @@ function _buildViewerHTML() {
 }
 
 function _getSwapParts(container) {
-  const swap = container.querySelector('#pdf-tools-swap');
-  const cardView = container.querySelector('#pdf-tools-card-view');
-  let viewer = container.querySelector('#editor-viewer');
+  let target = container || document.getElementById('explore-section') || document.body;
+  let swap = target.querySelector('#pdf-tools-swap');
+  let cardView = target.querySelector('#pdf-tools-card-view');
+
+  if (!swap) {
+    const explore = document.getElementById('explore-section');
+    if (explore) {
+      target = explore;
+      swap = explore.querySelector('#pdf-tools-swap');
+      cardView = explore.querySelector('#pdf-tools-card-view');
+    }
+  }
+
+  if (!swap) {
+    swap = document.createElement('div');
+    swap.id = 'pdf-tools-swap';
+    swap.className = 'pdf-tools-swap';
+    target.appendChild(swap);
+  }
+
+  if (!cardView) {
+    cardView = swap.querySelector('#pdf-tools-card-view');
+    if (!cardView) {
+      cardView = document.createElement('div');
+      cardView.id = 'pdf-tools-card-view';
+      cardView.className = 'pdf-tools-card-view';
+      swap.appendChild(cardView);
+    }
+  }
+
+  let viewer = target.querySelector('#editor-viewer') || swap.querySelector('#editor-viewer');
 
   if (viewer && viewer.dataset.editorVer !== '5') {
     viewer.remove();
     viewer = null;
   }
 
-  if (swap && !viewer) {
+  if (!viewer) {
     viewer = document.createElement('div');
     viewer.id = 'editor-viewer';
     viewer.className = 'extractor-viewer editor-viewer';
@@ -369,7 +375,7 @@ function _getSwapParts(container) {
     viewer.innerHTML = _buildViewerHTML();
     swap.appendChild(viewer);
 
-  viewer.querySelector('.editor-back-btn').addEventListener('click', () => _closeViewer(container));
+    viewer.querySelector('.editor-back-btn').addEventListener('click', () => _closeViewer(container));
     viewer.querySelectorAll('[data-editor-save]').forEach((btn) => {
       btn.addEventListener('click', () => _saveEditedPdf(viewer));
     });
@@ -413,8 +419,8 @@ function _closeViewer(container) {
 function _scrollToViewer(viewer) {
   const mainContent = document.getElementById('main-content');
   if (mainContent && viewer) {
-    const viewerTop = viewer.getBoundingClientRect().top + mainContent.scrollTop - 70;
-    mainContent.scrollTo({ top: Math.max(0, viewerTop), behavior: 'smooth' });
+    const top = viewer.getBoundingClientRect().top + mainContent.scrollTop - 70;
+    mainContent.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
   }
 }
 
@@ -548,15 +554,39 @@ async function _renderPageThumbnail(pageNumber, viewer, token) {
   if (token !== _renderToken) return;
 
   const vp1 = pdfPage.getViewport({ scale: 1 });
-  const rendered = await _renderPageToDataUri(pdfPage, THUMBNAIL_SCALE);
+  const viewport = pdfPage.getViewport({ scale: THUMBNAIL_SCALE });
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d', { alpha: false });
+  canvas.width = Math.ceil(viewport.width);
+  canvas.height = Math.ceil(viewport.height);
+
+  await pdfPage.render({ canvasContext: ctx, viewport }).promise;
   if (token !== _renderToken) return;
 
   const page = _pageByNumber(pageNumber);
-  if (!page) return;
-  page.thumbnailDataUri = rendered.dataUri;
-  page.width = vp1.width;
-  page.height = vp1.height;
-  _setCardThumbnail(viewer, page, rendered.dataUri);
+  if (page) {
+    page.width = vp1.width;
+    page.height = vp1.height;
+  }
+
+  const card = viewer.querySelector(`.editor-page-card[data-page-index="${pageNumber - 1}"]`);
+  const stage = card?.querySelector('.extractor-thumb-stage');
+  if (!stage) return;
+
+  const skeleton = stage.querySelector('.extractor-thumb-skeleton');
+  if (skeleton) skeleton.remove();
+
+  const existingCanvas = stage.querySelector('canvas');
+  if (existingCanvas) existingCanvas.remove();
+  const existingImg = stage.querySelector('img');
+  if (existingImg) existingImg.remove();
+
+  const overlay = stage.querySelector('.extractor-selected-overlay');
+  if (overlay) {
+    stage.insertBefore(canvas, overlay);
+  } else {
+    stage.appendChild(canvas);
+  }
 }
 
 async function _ensurePageImage(page) {
@@ -571,7 +601,7 @@ async function _ensurePageImage(page) {
   const scale = Math.min(
     EDIT_PAGE_MAX_WIDTH / Math.max(viewport.width, 1),
     EDIT_PAGE_MAX_HEIGHT / Math.max(viewport.height, 1),
-    2
+    3  // HD: allow up to 3x for crisp high-resolution output
   );
   const rendered = await _renderPageToDataUri(pdfPage, scale);
   page.baseDataUri = rendered.dataUri;
@@ -592,15 +622,24 @@ async function _loadPdfJsDocument(file, viewer, token) {
 async function _renderThumbnailsQueue(viewer, token) {
   const pdfDoc = _pdfDoc;
   if (!pdfDoc) return;
-  for (let pageNumber = 1; pageNumber <= pdfDoc.numPages; pageNumber += 1) {
+  const numPages = pdfDoc.numPages;
+
+  const BATCH_SIZE = 4;
+  for (let i = 1; i <= numPages; i += BATCH_SIZE) {
     if (token !== _renderToken) return;
-    await _renderPageThumbnail(pageNumber, viewer, token).catch(() => {
-      const card = viewer.querySelector(`.editor-page-card[data-page-index="${pageNumber - 1}"]`);
-      const stage = card?.querySelector('.extractor-thumb-stage');
-      if (stage && !stage.querySelector('img')) {
-        stage.innerHTML = '<span class="extractor-empty-state">Preview failed</span>';
-      }
-    });
+    const batch = [];
+    for (let p = i; p < i + BATCH_SIZE && p <= numPages; p += 1) {
+      batch.push(
+        _renderPageThumbnail(p, viewer, token).catch(() => {
+          const card = viewer.querySelector(`.editor-page-card[data-page-index="${p - 1}"]`);
+          const stage = card?.querySelector('.extractor-thumb-stage');
+          if (stage && !stage.querySelector('canvas, img')) {
+            stage.innerHTML = '<span class="extractor-empty-state">Preview failed</span>';
+          }
+        })
+      );
+    }
+    await Promise.all(batch);
   }
 }
 
@@ -611,37 +650,20 @@ async function _loadPdfIntoViewer(container, file) {
   if (!zone) return;
 
   removeEditorPanel();
-  showProgress(zone, 0, color, 'Reading PDF...');
+  showProgress(zone, 10, color, 'Reading PDF offline…');
   _renderToken += 1;
   const token = _renderToken;
 
-  let info;
+  let info = null;
   try {
-    const countFd = new FormData();
-    countFd.append('file', file);
-    const thumbFd = new FormData();
-    thumbFd.append('file', file);
-    const [countRes, thumbRes] = await Promise.all([
-      fetch(`${BACKEND}/api/pdf/page-count`, { method: 'POST', body: countFd }),
-      fetch(`${BACKEND}/api/pdf/thumbnail`, { method: 'POST', body: thumbFd }).catch(() => null),
-    ]);
-
-    updateProgress(zone, 55, color);
-    const json = await countRes.json();
-    if (!countRes.ok) {
-      const detail = json.detail;
-      throw new Error(typeof detail === 'string' ? detail : `Server error ${countRes.status}`);
-    }
-
-    let thumbnail = null;
-    if (thumbRes && thumbRes.ok) {
-      const thumbJson = await thumbRes.json();
-      thumbnail = _thumbnailDataUri(thumbJson.thumbnail);
-    }
-
-    info = { page_count: json.page_count || 0, thumbnail };
-  } catch (err) {
-    showError(zone, `Could not read PDF: ${err.message}`);
+    const offlineInfo = await getOfflinePdfInfo(file, 0.5);
+    info = {
+      page_count: offlineInfo.pageCount || 0,
+      thumbnail: offlineInfo.thumbnail,
+      pdfDoc: offlineInfo.pdfDoc,
+    };
+  } catch (offlineErr) {
+    showError(zone, `Could not read PDF: ${offlineErr.message}`);
     return;
   }
 
@@ -652,36 +674,32 @@ async function _loadPdfIntoViewer(container, file) {
   _pages = _buildPlaceholderPages(_pageCount, info.thumbnail);
   _sessionId = null;
   _selectedPage = null;
-  _activeContainer = container;
-  _pdfDoc = null;
+  _activeContainer = container || document.getElementById('explore-section') || document.body;
+  _pdfDoc = info.pdfDoc || null;
 
   updateProgress(zone, 100, color);
   resetZoneContent(zone);
   _showPdfThumbnail(zone, file, color, info.thumbnail);
 
-  const { viewer: activeViewer } = _getSwapParts(container);
+  const { viewer: activeViewer } = _getSwapParts(_activeContainer);
   if (!activeViewer) return;
 
-  _showViewer(container, color);
+  _showViewer(_activeContainer, color);
   activeViewer.querySelector('.extractor-file-name').textContent = file.name;
   activeViewer.querySelector('.extractor-page-count').textContent =
     `${_pageCount} page${_pageCount === 1 ? '' : 's'} ready to edit`;
   _buildPageCards(activeViewer, _pages);
 
-  _pdfLoadPromise = _loadPdfJsDocument(file, activeViewer, token).catch((err) => {
-    pushNotification({
-      type: 'warning',
-      message: 'Preview Limited',
-      detail: err.message || 'Page thumbnails could not be rendered.',
+  _pdfLoadPromise = (_pdfDoc ? Promise.resolve(_pdfDoc) : loadPdfDocument(file))
+    .then((doc) => {
+      if (token !== _renderToken) return;
+      _pdfDoc = doc;
+      _renderThumbnailsQueue(activeViewer, token);
+    })
+    .catch(() => {})
+    .finally(() => {
+      if (token === _renderToken) _pdfLoadPromise = null;
     });
-  }).finally(() => {
-    if (token === _renderToken) _pdfLoadPromise = null;
-  });
-
-  pushNotification({
-    type: 'info',
-    message: `PDF loaded - ${_pageCount} pages ready to edit`,
-  });
 }
 
 function _defaultEditorState(viewer) {
@@ -699,7 +717,7 @@ function _defaultEditorState(viewer) {
     shapeWidth: 3,
     opacity: 1,
     fontFamily: 'Arial',
-    fontSize: 14,
+    fontSize: 32,
     bold: false,
     italic: false,
     zoom: 1,
@@ -718,12 +736,8 @@ function _wirePageEditor(viewer) {
 
   viewer.querySelector('.ed-page-back').addEventListener('click', () => _backToGrid(viewer));
   viewer.querySelector('#ed-apply-btn').addEventListener('click', () => {
-    const pageNum = _selectedPage;
-    const hadEdits = _saveCurrentPageEdit(viewer);
+    _saveCurrentPageEdit(viewer);
     _backToGrid(viewer);
-    if (hadEdits) {
-      pushNotification({ type: 'info', message: `Changes applied to page ${pageNum}` });
-    }
   });
 
   viewer.querySelectorAll('[data-tool]').forEach((btn) => {
@@ -795,7 +809,7 @@ function _wirePageEditor(viewer) {
         fontTrigger.setAttribute('aria-expanded', 'false');
 
         const active = state.fabric?.getActiveObject();
-        if (active && (active instanceof IText || active.type === 'i-text' || active.type === 'text')) {
+        if (active && _isTextObject(active)) {
           active.set('fontFamily', state.fontFamily);
           state.fabric.requestRenderAll();
           _afterFabricChange();
@@ -814,11 +828,11 @@ function _wirePageEditor(viewer) {
   const fontSizeSlider = viewer.querySelector('#ed-font-size');
   if (fontSizeSlider) {
     fontSizeSlider.addEventListener('input', () => {
-      state.fontSize = parseInt(fontSizeSlider.value, 10) || 14;
+      state.fontSize = parseInt(fontSizeSlider.value, 10) || 32;
       const fontVal = viewer.querySelector('#ed-font-size-val');
       if (fontVal) fontVal.textContent = `${state.fontSize}px`;
       const active = state.fabric?.getActiveObject();
-      if (active && (active instanceof IText || active.type === 'i-text' || active.type === 'text')) {
+      if (active && _isTextObject(active)) {
         active.set('fontSize', state.fontSize);
         state.fabric.requestRenderAll();
         _afterFabricChange();
@@ -829,7 +843,7 @@ function _wirePageEditor(viewer) {
     state.bold = !state.bold;
     e.currentTarget.classList.toggle('active', state.bold);
     const active = state.fabric?.getActiveObject();
-    if (active && (active instanceof IText || active.type === 'i-text' || active.type === 'text')) {
+    if (active && _isTextObject(active)) {
       active.set('fontWeight', state.bold ? '700' : '400');
       state.fabric.requestRenderAll();
       _afterFabricChange();
@@ -839,7 +853,7 @@ function _wirePageEditor(viewer) {
     state.italic = !state.italic;
     e.currentTarget.classList.toggle('active', state.italic);
     const active = state.fabric?.getActiveObject();
-    if (active && (active instanceof IText || active.type === 'i-text' || active.type === 'text')) {
+    if (active && _isTextObject(active)) {
       active.set('fontStyle', state.italic ? 'italic' : 'normal');
       state.fabric.requestRenderAll();
       _afterFabricChange();
@@ -1018,19 +1032,10 @@ async function _saveEditedPdf(viewer) {
       setTimeout(() => showDownloadBlobCard(zone, blob, outName, color, _resetAfterEditorSave), 200);
     }
 
-    pushNotification({
-      type: 'success',
-      message: 'PDF ready to save',
-      detail: `${outName} (${edits.length} edited page${edits.length === 1 ? '' : 's'})`,
-    });
+
   } catch (err) {
     if (zone) showError(zone, err.message || 'Unable to save edited PDF.');
     clearBgJob();
-    pushNotification({
-      type: 'error',
-      message: 'Save failed',
-      detail: err.message || 'Unable to save edited PDF.',
-    });
   }
 }
 
@@ -1139,11 +1144,33 @@ function _onObjectSelected(viewer, opt) {
   const state = _editorState;
   if (!state) return;
   const obj = opt?.selected?.[0] || state.fabric?.getActiveObject();
-  if (obj && _isFabricImageObject(obj)) {
+  if (!obj) return;
+
+  _applyRotateControl(obj);
+
+  if (_isFabricImageObject(obj)) {
     _setTool(viewer, 'select');
-    _applyWordLikeImageControls(obj);
-    state.fabric.requestRenderAll();
+  } else if (_isTextObject(obj)) {
+    if (obj.fontFamily) {
+      state.fontFamily = obj.fontFamily;
+      const fontLabel = viewer.querySelector('#ed-font-family-label');
+      if (fontLabel) fontLabel.textContent = obj.fontFamily;
+    }
+    if (obj.fontSize) {
+      state.fontSize = obj.fontSize;
+      const fsInput = viewer.querySelector('#ed-font-size');
+      const fsVal = viewer.querySelector('#ed-font-size-val');
+      if (fsInput) fsInput.value = obj.fontSize;
+      if (fsVal) fsVal.textContent = `${obj.fontSize}px`;
+    }
+    const isBold = obj.fontWeight === '700' || obj.fontWeight === 'bold';
+    state.bold = isBold;
+    viewer.querySelector('#ed-bold')?.classList.toggle('active', isBold);
+    const isItalic = obj.fontStyle === 'italic';
+    state.italic = isItalic;
+    viewer.querySelector('#ed-italic')?.classList.toggle('active', isItalic);
   }
+  state.fabric.requestRenderAll();
 }
 
 function _fabricPointerDown(opt) {
@@ -1161,7 +1188,26 @@ function _fabricPointerDown(opt) {
 
   const p = state.fabric.getScenePoint(evt);
   if (state.tool === 'text') {
-    _addFabricText(p);
+    state.startPoint = p;
+    state.currentPoint = p;
+    state.hasDragged = false;
+    state.isDrawingText = true;
+    state.activeTextFrame = new Rect({
+      left: p.x,
+      top: p.y,
+      width: 1,
+      height: 1,
+      fill: 'rgba(0, 229, 192, 0.08)',
+      stroke: EDITOR_COLOR,
+      strokeWidth: 1.5,
+      strokeDashArray: [4, 4],
+      strokeUniform: true,
+      selectable: false,
+      evented: false,
+    });
+    state.fabric.add(state.activeTextFrame);
+    state.fabric.requestRenderAll();
+    evt.preventDefault();
     return;
   }
 
@@ -1187,6 +1233,24 @@ function _fabricPointerMove(opt) {
     return;
   }
 
+  if (state.isDrawingText && state.activeTextFrame && state.startPoint) {
+    const current = state.fabric.getScenePoint(evt);
+    state.currentPoint = current;
+    const dist = Math.hypot(current.x - state.startPoint.x, current.y - state.startPoint.y);
+    if (dist >= 6) {
+      state.hasDragged = true;
+    }
+    state.activeTextFrame.set({
+      left: Math.min(state.startPoint.x, current.x),
+      top: Math.min(state.startPoint.y, current.y),
+      width: Math.max(1, Math.abs(current.x - state.startPoint.x)),
+      height: Math.max(1, Math.abs(current.y - state.startPoint.y)),
+    });
+    state.fabric.requestRenderAll();
+    evt.preventDefault();
+    return;
+  }
+
   if (!state.activeShape || !state.startPoint) return;
   const current = state.fabric.getScenePoint(evt);
   state.currentPoint = current;
@@ -1202,6 +1266,57 @@ function _fabricPointerMove(opt) {
 function _fabricPointerUp() {
   const state = _editorState;
   if (!state) return;
+
+  if (state.isDrawingText) {
+    if (state.activeTextFrame) {
+      state.fabric.remove(state.activeTextFrame);
+      state.activeTextFrame = null;
+    }
+    const a = state.startPoint || { x: 50, y: 50 };
+    const b = state.currentPoint || a;
+    const left = Math.min(a.x, b.x);
+    const top = Math.min(a.y, b.y);
+    const w = Math.abs(b.x - a.x);
+    const finalWidth = (state.hasDragged && w >= 30) ? Math.max(80, w) : 200;
+
+    const text = new Textbox('Type text here', {
+      left: left,
+      top: top,
+      width: finalWidth,
+      fill: _hexToRgba(state.color, state.opacity),
+      fontSize: state.fontSize || 32,
+      fontFamily: state.fontFamily || 'Arial',
+      fontWeight: state.bold ? '700' : '400',
+      fontStyle: state.italic ? 'italic' : 'normal',
+      cornerColor: EDITOR_COLOR,
+      borderColor: EDITOR_COLOR,
+      cornerStyle: 'circle',
+      cornerSize: 11,
+      touchCornerSize: 24,
+      transparentCorners: false,
+      hasRotatingPoint: true,
+      editable: true,
+    });
+    _applyRotateControl(text);
+    state.fabric.add(text);
+    state.fabric.setActiveObject(text);
+    _setTool(state.viewer, 'select');
+    state.fabric.requestRenderAll();
+
+    setTimeout(() => {
+      text.enterEditing();
+      text.selectAll();
+      state.fabric.requestRenderAll();
+    }, 50);
+
+    _afterFabricChange();
+
+    state.isDrawingText = false;
+    state.startPoint = null;
+    state.currentPoint = null;
+    state.hasDragged = false;
+    return;
+  }
 
   if (state.activeShape) {
     const dist = state.startPoint && state.currentPoint
@@ -1221,6 +1336,7 @@ function _fabricPointerUp() {
         cornerStyle: 'circle',
         transparentCorners: false,
       });
+      _applyRotateControl(state.activeShape);
       state.activeShape.setCoords();
       state.fabric.requestRenderAll();
       _afterFabricChange();
@@ -1276,7 +1392,7 @@ function _insertImage(file) {
       hasRotatingPoint: true,
       lockUniScaling: false,
     });
-    _applyWordLikeImageControls(image);
+    _applyRotateControl(image);
     _setTool(state.viewer, 'select');
     state.fabric.add(image);
     state.fabric.setActiveObject(image);
@@ -1294,19 +1410,21 @@ export function insertImageIntoActiveEditor(file) {
   return true;
 }
 
-function _applyWordLikeImageControls(image) {
-  if (!image) return;
-  image.controls = controlsUtils.createObjectDefaultControls();
-  image.controls.mtr = new Control({
+function _applyRotateControl(obj) {
+  if (!obj) return;
+  if (!obj.controls) {
+    obj.controls = controlsUtils.createObjectDefaultControls();
+  }
+  obj.controls.mtr = new Control({
     x: 0,
     y: -0.5,
     offsetY: -34,
     cursorStyleHandler: controlsUtils.rotationStyleHandler,
     actionHandler: controlsUtils.rotationWithSnapping,
     actionName: 'rotate',
-    render: _renderImageRotateControl,
+    render: _renderRotateControl,
   });
-  image.setControlsVisibility({
+  obj.setControlsVisibility({
     ml: true,
     mr: true,
     mt: true,
@@ -1317,13 +1435,26 @@ function _applyWordLikeImageControls(image) {
     br: true,
     mtr: true,
   });
+  obj.set({
+    cornerColor: EDITOR_COLOR,
+    borderColor: EDITOR_COLOR,
+    cornerStyle: 'circle',
+    cornerSize: 11,
+    touchCornerSize: 24,
+    transparentCorners: false,
+    hasRotatingPoint: true,
+  });
 }
 
 function _isFabricImageObject(obj) {
   return !!obj && (obj instanceof FabricImage || obj.isType?.('image') || String(obj.type || '').toLowerCase() === 'image');
 }
 
-function _renderImageRotateControl(ctx, left, top) {
+function _isTextObject(obj) {
+  return !!obj && (obj instanceof Textbox || obj instanceof IText || obj.type === 'textbox' || obj.type === 'i-text' || obj.type === 'text');
+}
+
+function _renderRotateControl(ctx, left, top) {
   ctx.save();
   ctx.translate(left, top);
 
@@ -1528,22 +1659,34 @@ function _isTinyShape(obj) {
 
 function _addFabricText(p) {
   const state = _editorState;
-  const text = new IText('Text', {
+  const text = new Textbox('Type text here', {
     left: p.x,
     top: p.y,
+    width: 200,
     fill: _hexToRgba(state.color, state.opacity),
-    fontSize: state.fontSize || 14,
-    fontFamily: state.fontFamily || 'Arial, sans-serif',
+    fontSize: state.fontSize || 32,
+    fontFamily: state.fontFamily || 'Arial',
     fontWeight: state.bold ? '700' : '400',
     fontStyle: state.italic ? 'italic' : 'normal',
     cornerColor: EDITOR_COLOR,
     borderColor: EDITOR_COLOR,
+    cornerStyle: 'circle',
+    cornerSize: 11,
+    touchCornerSize: 24,
     transparentCorners: false,
+    hasRotatingPoint: true,
+    editable: true,
   });
+  _applyRotateControl(text);
   state.fabric.add(text);
   state.fabric.setActiveObject(text);
-  text.enterEditing();
-  text.selectAll();
+  _setTool(state.viewer, 'select');
+  state.fabric.requestRenderAll();
+  setTimeout(() => {
+    text.enterEditing();
+    text.selectAll();
+    state.fabric.requestRenderAll();
+  }, 50);
   _afterFabricChange();
 }
 
@@ -1552,6 +1695,10 @@ function _applyColorToObject(obj, color) {
   const value = _hexToRgba(color, state.opacity);
   if (obj.type === 'group' && obj.getObjects) {
     obj.getObjects().forEach((child) => _applyColorToObject(child, color));
+    return;
+  }
+  if (_isTextObject(obj)) {
+    obj.set('fill', value);
     return;
   }
   if (obj.fill && obj.fill !== 'rgba(0,0,0,0)') obj.set('fill', value);
@@ -1580,7 +1727,7 @@ async function _loadFabricObjects(objects) {
   if (rawObjects.length) {
     const revived = await fabricUtil.enlivenObjects(rawObjects);
     revived.forEach((obj) => {
-      if (_isFabricImageObject(obj)) _applyWordLikeImageControls(obj);
+      _applyRotateControl(obj);
       state.fabric.add(obj);
     });
   }
@@ -1670,7 +1817,8 @@ function _saveOverlayOnly() {
   const state = _editorState;
   if (!state || !state.page) return;
   state.page.fabricObjects = JSON.parse(_currentFabricSnapshot());
-  state.page.overlayDataUri = state.fabric.toDataURL({ format: 'png', multiplier: 1 });
+  // HD: render overlay at 2x resolution for crisp output
+  state.page.overlayDataUri = state.fabric.toDataURL({ format: 'png', multiplier: 2 });
 }
 
 function _saveCurrentPageEdit(viewer) {
@@ -1678,8 +1826,9 @@ function _saveCurrentPageEdit(viewer) {
   if (!state || !state.page) return false;
   _saveOverlayOnly();
   state.page.hasEdits = _pageHasCanvasEdits();
+  // HD: export at 2x for full HD output
   state.page.editedDataUri = state.page.hasEdits
-    ? state.fabric.toDataURL({ format: 'png', multiplier: 1 })
+    ? state.fabric.toDataURL({ format: 'png', multiplier: 2 })
     : null;
   _refreshEditedCard(viewer, state.page);
   return state.page.hasEdits;
@@ -1692,23 +1841,34 @@ function _pageHasCanvasEdits() {
 
 function _refreshEditedCard(viewer, page) {
   const card = viewer.querySelector(`.editor-page-card[data-page-index="${page.page_number - 1}"]`);
-  const img = card?.querySelector('.extractor-thumb-stage img');
-  if (img) img.src = page.editedDataUri || page.thumbnailDataUri || _thumbnailDataUri(page.thumbnail) || img.src;
-  const badge = card?.querySelector('.ed-edited-badge');
+  if (!card) return;
+  const stage = card.querySelector('.extractor-thumb-stage');
+  if (!stage) return;
+
+  const dataUri = page.editedDataUri || page.thumbnailDataUri || _thumbnailDataUri(page.thumbnail);
+  if (dataUri) {
+    let img = stage.querySelector('img');
+    if (!img) {
+      const canvas = stage.querySelector('canvas');
+      if (canvas) canvas.remove();
+      img = document.createElement('img');
+      img.alt = `Page ${page.page_number} preview`;
+      img.draggable = false;
+      const overlay = stage.querySelector('.extractor-selected-overlay');
+      if (overlay) stage.insertBefore(img, overlay);
+      else stage.appendChild(img);
+    }
+    img.src = dataUri;
+  }
+  const badge = card.querySelector('.ed-edited-badge');
   if (badge) badge.hidden = !(page.hasEdits && page.editedDataUri);
 }
 
 function _backToGrid(viewer) {
   const pageNumber = _selectedPage;
-  const hadEdits = _saveCurrentPageEdit(viewer);
+  _saveCurrentPageEdit(viewer);
   viewer.classList.remove('editor-viewer--canvas-mode');
   viewer.querySelector('#ed-page-editor').setAttribute('aria-hidden', 'true');
-  if (hadEdits) {
-    pushNotification({
-      type: 'info',
-      message: `Page ${pageNumber} edits saved`,
-    });
-  }
   if (pageNumber) {
     _updateSelection(viewer, pageNumber);
     const card = viewer.querySelector(`.editor-page-card[data-page-index="${pageNumber - 1}"]`);
@@ -1729,7 +1889,7 @@ export function removeEditorPanel() {
     }
   }
 
-  const container = _activeContainer || document.getElementById('explore-tools-content') || document.body;
+  const container = _activeContainer || document.getElementById('explore-section') || document.body;
   const viewer = container.querySelector('#editor-viewer');
   const cardView = container.querySelector('#pdf-tools-card-view');
   if (viewer) viewer.classList.remove('extractor-viewer--visible', 'editor-viewer--canvas-mode');
@@ -1764,6 +1924,6 @@ export function handleEditorFilePicked(file) {
     return;
   }
 
-  const container = document.getElementById('explore-tools-content') || document.body;
+  const container = document.getElementById('explore-section') || document.body;
   _loadPdfIntoViewer(container, file);
 }

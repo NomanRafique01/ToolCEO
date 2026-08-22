@@ -8,10 +8,9 @@
 import { pushNotification } from '../../../../scripts/notificationStore.js';
 import { getActiveTool, setBgJob, getBgJob, syncBgJobBar, clearBgJob } from '../../../../scripts/toolstate.js';
 import { showProgress, updateProgress, showDownloadBlobCard, showError, resetZoneContent } from '../../../shared/progress.js';
+import { ensurePdfJs, loadPdfDocument } from '../../../shared/pdfRenderer.js';
 
 const BACKEND = 'http://127.0.0.1:8000';
-const PDFJS_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js';
-const PDFJS_WORKER_URL = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
 const THUMBNAIL_SCALE = 1.5; // High definition scale for crisp page previews
 
 let _fileInput = null;
@@ -105,31 +104,7 @@ function _ensureFileInput() {
 }
 
 function _ensurePdfJs() {
-  if (window.pdfjsLib) {
-    window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_URL;
-    return Promise.resolve(window.pdfjsLib);
-  }
-
-  return new Promise((resolve, reject) => {
-    const existing = document.querySelector(`script[src="${PDFJS_URL}"]`);
-    const script = existing || document.createElement('script');
-
-    script.onload = () => {
-      if (!window.pdfjsLib) {
-        reject(new Error('PDF.js did not initialize.'));
-        return;
-      }
-      window.pdfjsLib.GlobalWorkerOptions.workerSrc = PDFJS_WORKER_URL;
-      resolve(window.pdfjsLib);
-    };
-    script.onerror = () => reject(new Error('Could not load PDF.js.'));
-
-    if (!existing) {
-      script.src = PDFJS_URL;
-      script.async = true;
-      document.head.appendChild(script);
-    }
-  });
+  return ensurePdfJs();
 }
 
 function _fileToBase64(file) {
@@ -169,11 +144,39 @@ function _downloadBase64Pdf(base64, filename) {
 }
 
 function _getSwapParts(container) {
-  const swap = container.querySelector('#pdf-tools-swap');
-  const cardView = container.querySelector('#pdf-tools-card-view');
-  let viewer = container.querySelector('#rotate-viewer');
+  let target = container || document.getElementById('explore-section') || document.body;
+  let swap = target.querySelector('#pdf-tools-swap');
+  let cardView = target.querySelector('#pdf-tools-card-view');
 
-  if (swap && !viewer) {
+  if (!swap) {
+    const explore = document.getElementById('explore-section');
+    if (explore) {
+      target = explore;
+      swap = explore.querySelector('#pdf-tools-swap');
+      cardView = explore.querySelector('#pdf-tools-card-view');
+    }
+  }
+
+  if (!swap) {
+    swap = document.createElement('div');
+    swap.id = 'pdf-tools-swap';
+    swap.className = 'pdf-tools-swap';
+    target.appendChild(swap);
+  }
+
+  if (!cardView) {
+    cardView = swap.querySelector('#pdf-tools-card-view');
+    if (!cardView) {
+      cardView = document.createElement('div');
+      cardView.id = 'pdf-tools-card-view';
+      cardView.className = 'pdf-tools-card-view';
+      swap.appendChild(cardView);
+    }
+  }
+
+  let viewer = target.querySelector('#rotate-viewer') || swap.querySelector('#rotate-viewer');
+
+  if (!viewer) {
     viewer = document.createElement('div');
     viewer.id = 'rotate-viewer';
     viewer.className = 'rotate-viewer';
@@ -468,6 +471,7 @@ function _rotateAll(delta, viewer) {
 }
 
 async function _renderPage(pdfDoc, pageNumber, viewer, token) {
+  if (!pdfDoc || token !== _renderToken) return;
   const page = await pdfDoc.getPage(pageNumber);
   if (token !== _renderToken) return;
 
@@ -487,6 +491,9 @@ async function _renderPage(pdfDoc, pageNumber, viewer, token) {
   const skeleton = stage.querySelector('.rotate-thumb-skeleton');
   if (skeleton) skeleton.remove();
 
+  const existingCanvas = stage.querySelector('canvas');
+  if (existingCanvas) existingCanvas.remove();
+
   const overlay = stage.querySelector('.rotate-deleted-overlay');
   if (overlay) {
     stage.insertBefore(canvas, overlay);
@@ -501,26 +508,49 @@ async function _renderPage(pdfDoc, pageNumber, viewer, token) {
   }
 }
 
+async function _renderThumbnailsQueue(viewer, token) {
+  const pdfDoc = _pdfDoc;
+  if (!pdfDoc) return;
+  const numPages = pdfDoc.numPages;
+
+  const BATCH_SIZE = 4;
+  for (let i = 1; i <= numPages; i += BATCH_SIZE) {
+    if (token !== _renderToken) return;
+    const batch = [];
+    for (let p = i; p < i + BATCH_SIZE && p <= numPages; p += 1) {
+      batch.push(
+        _renderPage(pdfDoc, p, viewer, token).catch(() => {
+          const card = viewer.querySelector(`.rotate-page-card[data-page-index="${p - 1}"]`);
+          const stage = card && card.querySelector('.rotate-thumb-stage');
+          if (stage && !stage.querySelector('canvas')) {
+            stage.innerHTML = '<span class="rotate-empty-state">Preview failed</span>';
+          }
+        })
+      );
+    }
+    await Promise.all(batch);
+  }
+}
+
 async function _loadPdfIntoViewer(container, file) {
-  const { viewer } = _getSwapParts(container);
+  const targetContainer = container || document.getElementById('explore-section') || document.body;
+  const { viewer } = _getSwapParts(targetContainer);
   if (!viewer) return;
 
   _selectedFile = file;
   _pdfDoc = null;
   _rotations = [];
   _deletedPages.clear();
-  _activeContainer = container;
+  _activeContainer = targetContainer;
   _firstPageThumbShown = false;
   _renderToken += 1;
   const token = _renderToken;
 
-  _showViewer(container);
+  _showViewer(targetContainer);
   _showLoading(viewer, file);
 
   try {
-    const pdfjsLib = await _ensurePdfJs();
-    const buffer = await file.arrayBuffer();
-    const pdfDoc = await pdfjsLib.getDocument({ data: buffer }).promise;
+    const pdfDoc = await loadPdfDocument(file);
     if (token !== _renderToken) return;
 
     _pdfDoc = pdfDoc;
@@ -534,14 +564,7 @@ async function _loadPdfIntoViewer(container, file) {
     if (searchInput) searchInput.value = '';
 
     _buildPageCards(viewer, pdfDoc.numPages);
-
-    for (let pageNumber = 1; pageNumber <= pdfDoc.numPages; pageNumber += 1) {
-      _renderPage(pdfDoc, pageNumber, viewer, token).catch(() => {
-        const card = viewer.querySelector(`.rotate-page-card[data-page-index="${pageNumber - 1}"]`);
-        const stage = card && card.querySelector('.rotate-thumb-stage');
-        if (stage) stage.innerHTML = '<span class="rotate-empty-state">Preview failed</span>';
-      });
-    }
+    _renderThumbnailsQueue(viewer, token);
   } catch (err) {
     viewer.querySelector('.rotate-grid').innerHTML = `
       <div class="rotate-empty-state">Could not preview this PDF.</div>`;
@@ -691,7 +714,7 @@ export function handleRotateFilePicked(file) {
     return;
   }
 
-  const container = document.getElementById('explore-tools-content') || document.body;
+  const container = document.getElementById('explore-section') || document.body;
   _loadPdfIntoViewer(container, file);
 }
 

@@ -21,12 +21,10 @@ import {
   showError,
   escHtml,
 } from '../../../shared/progress.js';
+import { getOfflinePdfInfo } from '../../../shared/pdfRenderer.js';
 
 const BACKEND = 'http://127.0.0.1:8000';
 const TCEO_THUMBNAIL_SRC = '../assets/fileimage.png';
-
-// ─── MODULE STATE ──────────────────────────────────────────────────────────────
-
 let _encryptFile      = null;
 let _encryptBaseName  = '';
 let _encryptFileSize  = 0;
@@ -881,6 +879,15 @@ export async function handleEncryptFilePicked(file) {
     console.error('Check encryption failed:', err);
   }
 
+  // -- Offline fallback when backend is unreachable --
+  if (!thumbUri) {
+    try {
+      const offlineInfo = await getOfflinePdfInfo(file, 0.5);
+      pageCount = offlineInfo.pageCount || pageCount || 1;
+      thumbUri  = offlineInfo.thumbnail || null;
+    } catch (_) {}
+  }
+
   _encInfo          = encInfo;
   _thumbDataUri     = thumbUri;
   _encryptPageCount = pageCount;
@@ -895,7 +902,7 @@ export async function handleEncryptFilePicked(file) {
   _showSettingsPanel(pageCount, encInfo, color);
 }
 
-// ─── SUBMISSION FUNCTIONS ──────────────────────────────────────────────────────
+// --- SUBMISSION FUNCTIONS -------------------------------------------------------
 
 async function _submitEncrypt(opts) {
   const {

@@ -20,6 +20,7 @@ import {
   showDownload,
   showError,
 } from '../../../shared/progress.js';
+import { getOfflinePdfInfo } from '../../../shared/pdfRenderer.js';
 
 const BACKEND = 'http://127.0.0.1:8000';
 
@@ -253,23 +254,35 @@ export async function handleSplitFilePicked(file) {
   const fd2 = new FormData();
   fd2.append('file', file);
 
-  let pageCount, thumbnailDataUri;
+  let pageCount = null;
+  let thumbnailDataUri = null;
   try {
     const [countRes, thumbRes] = await Promise.all([
-      fetch(`${BACKEND}/api/pdf/page-count`, { method: 'POST', body: fd1 }),
-      fetch(`${BACKEND}/api/pdf/thumbnail`,  { method: 'POST', body: fd2 }),
+      fetch(`${BACKEND}/api/pdf/page-count`, { method: 'POST', body: fd1 }).catch(() => null),
+      fetch(`${BACKEND}/api/pdf/thumbnail`,  { method: 'POST', body: fd2 }).catch(() => null),
     ]);
-    const countJson = await countRes.json();
-    if (!countRes.ok) throw new Error(countJson.detail || `Server error ${countRes.status}`);
-    pageCount = countJson.page_count;
 
-    if (thumbRes.ok) {
-      const thumbJson = await thumbRes.json();
-      thumbnailDataUri = thumbJson.thumbnail || null;
+    if (countRes && countRes.ok) {
+      const countJson = await countRes.json();
+      pageCount = countJson.page_count;
+      if (thumbRes && thumbRes.ok) {
+        const thumbJson = await thumbRes.json();
+        thumbnailDataUri = thumbJson.thumbnail || null;
+      }
     }
   } catch (err) {
-    showError(zone, `Could not read PDF: ${err.message}`);
-    return;
+    pageCount = null;
+  }
+
+  if (!pageCount) {
+    try {
+      const offlineInfo = await getOfflinePdfInfo(file, 0.5);
+      pageCount = offlineInfo.pageCount || 1;
+      thumbnailDataUri = offlineInfo.thumbnail || null;
+    } catch (offlineErr) {
+      showError(zone, `Could not read PDF: ${offlineErr.message}`);
+      return;
+    }
   }
 
   // Reset zone to tool-selected idle state (remove scan bar)
