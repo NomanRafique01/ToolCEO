@@ -17,11 +17,11 @@
 
 'use strict';
 
-const { app, BrowserWindow, ipcMain, dialog } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, nativeImage } = require('electron');
 const path      = require('path');
 const fs        = require('fs');
 const os        = require('os');
-const { spawn, execFile, exec } = require('child_process');
+const { spawn, execFile, execFileSync } = require('child_process');
 
 // ─── CONSTANTS ─────────────────────────────────────────────────────────────────
 
@@ -29,9 +29,15 @@ const TCEO_EXT          = '.tceo';
 const TCEO_MIME         = 'application/x-tceo';
 const TCEO_PROG_ID      = 'ToolCEO.VaultFile';
 const TCEO_FILE_DESC    = 'ToolCEO Vault File';
+const IS_WIN            = process.platform === 'win32';
+const IS_MAC            = process.platform === 'darwin';
+const IS_LINUX          = process.platform === 'linux';
 
 const RESOURCES_DIR     = path.join(__dirname, '..', 'resources');
-const ICON_SRC_PNG      = path.join(__dirname, '..', 'assets', 'icon.png');
+const TCEO_FILE_ICON_RELATIVE = path.join('assets', 'icons', 'fileicon.ico');
+const TCEO_FILE_ICON_PNG_RELATIVE = path.join('assets', 'icons', 'fileicon.png');
+const TCEO_ICON_SOURCE_RELATIVE = path.join('assets', 'fileimage.png');
+const APP_ICON_PNG_RELATIVE = path.join('assets', 'icon.png');
 const TCEO_ICON_ICO     = path.join(RESOURCES_DIR, 'tceo-file-icon.ico');   // Windows
 const TCEO_ICON_PNG     = path.join(RESOURCES_DIR, 'tceo-file-icon.png');   // Linux / macOS
 
@@ -43,6 +49,8 @@ const LINUX_APPS_DIR    = path.join(XDG_DATA_HOME, 'applications');
 const LINUX_MIME_FILE   = path.join(LINUX_MIME_DIR, 'application-x-tceo.xml');
 const LINUX_DESKTOP     = path.join(LINUX_APPS_DIR, 'toolceo.desktop');
 const LINUX_ICON_DEST   = path.join(XDG_DATA_HOME, 'icons', 'hicolor', '256x256', 'apps', 'toolceo.png');
+const LINUX_MIME_ICON_DIR = path.join(XDG_DATA_HOME, 'icons', 'hicolor', '256x256', 'mimetypes');
+const LINUX_MIME_ICON_DEST = path.join(LINUX_MIME_ICON_DIR, 'application-x-tceo.png');
 
 // ─── STATE ─────────────────────────────────────────────────────────────────────
 
@@ -145,9 +153,11 @@ function sendVaultFileOpen(filePath) {
  * This is non-blocking / best-effort — failures are logged and swallowed.
  */
 async function ensureVaultIcons() {
-  const needIco = process.platform === 'win32' && !fs.existsSync(TCEO_ICON_ICO);
-  const needPng = (process.platform === 'linux' || process.platform === 'darwin')
-                  && !fs.existsSync(TCEO_ICON_PNG);
+  const sourcePath = getBundledAssetPath(TCEO_ICON_SOURCE_RELATIVE);
+  const generatedIcoPath = getBundledAssetPath(TCEO_FILE_ICON_RELATIVE);
+  const generatedPngPath = getBundledAssetPath(TCEO_FILE_ICON_PNG_RELATIVE);
+  const needIco = IS_WIN && !fs.existsSync(TCEO_ICON_ICO);
+  const needPng = (IS_LINUX || IS_MAC) && !fs.existsSync(TCEO_ICON_PNG);
 
   if (!needIco && !needPng) return;
 
@@ -156,31 +166,64 @@ async function ensureVaultIcons() {
       fs.mkdirSync(RESOURCES_DIR, { recursive: true });
     }
 
-    const jimpPkg = require('jimp');
-    const Jimp    = jimpPkg.Jimp || jimpPkg;
-    const img     = await Jimp.read(ICON_SRC_PNG);
-    img.resize({ w: 256, h: 256 });
-
     if (needIco) {
-      if (typeof img.writeAsync === 'function') {
-        await img.writeAsync(TCEO_ICON_ICO);
+      if (fs.existsSync(generatedIcoPath)) {
+        fs.copyFileSync(generatedIcoPath, TCEO_ICON_ICO);
       } else {
-        await img.write(TCEO_ICON_ICO);
+        await writeMultiSizeIco(sourcePath, TCEO_ICON_ICO);
       }
       console.log('[tceo-icon] Windows icon generated:', TCEO_ICON_ICO);
     }
 
     if (needPng) {
-      if (typeof img.writeAsync === 'function') {
-        await img.writeAsync(TCEO_ICON_PNG);
+      if (fs.existsSync(generatedPngPath)) {
+        fs.copyFileSync(generatedPngPath, TCEO_ICON_PNG);
       } else {
-        await img.write(TCEO_ICON_PNG);
+        const sharp = require('sharp');
+        await sharp(sourcePath)
+          .resize(1024, 1024, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+          .png()
+          .toFile(TCEO_ICON_PNG);
       }
       console.log('[tceo-icon] PNG icon generated:', TCEO_ICON_PNG);
     }
   } catch (err) {
     console.warn('[tceo-icon] Icon generation skipped:', err.message);
   }
+}
+
+async function writeMultiSizeIco(sourcePath, targetPath) {
+  const sharp = require('sharp');
+  const sizes = [16, 24, 32, 48, 64, 128, 256];
+  const images = await Promise.all(sizes.map(async (size) => ({
+    size,
+    data: await sharp(sourcePath)
+      .resize(size, size, { fit: 'contain', background: { r: 0, g: 0, b: 0, alpha: 0 } })
+      .png()
+      .toBuffer(),
+  })));
+  const headerSize = 6 + images.length * 16;
+  const header = Buffer.alloc(headerSize);
+
+  header.writeUInt16LE(0, 0);
+  header.writeUInt16LE(1, 2);
+  header.writeUInt16LE(images.length, 4);
+
+  let offset = headerSize;
+  images.forEach((image, index) => {
+    const entry = 6 + index * 16;
+    header[entry] = image.size === 256 ? 0 : image.size;
+    header[entry + 1] = image.size === 256 ? 0 : image.size;
+    header[entry + 2] = 0;
+    header[entry + 3] = 0;
+    header.writeUInt16LE(1, entry + 4);
+    header.writeUInt16LE(32, entry + 6);
+    header.writeUInt32LE(image.data.length, entry + 8);
+    header.writeUInt32LE(offset, entry + 12);
+    offset += image.data.length;
+  });
+
+  fs.writeFileSync(targetPath, Buffer.concat([header, ...images.map((image) => image.data)]));
 }
 
 // ─── PLATFORM FILE ASSOCIATION HELPERS ────────────────────────────────────────
@@ -192,6 +235,8 @@ async function ensureVaultIcons() {
  * All keys go to HKEY_CURRENT_USER — no elevation required.
  */
 function regSet(keyPath, valueName, type, data) {
+  if (!IS_WIN) return Promise.resolve();
+
   return new Promise((resolve) => {
     const isDefault = valueName === '(Default)';
     // Build the argument list:
@@ -211,7 +256,35 @@ function regSet(keyPath, valueName, type, data) {
   });
 }
 
+function getTceoFileIconPath() {
+  if (app.isPackaged) {
+    const packagedIcon = path.join(process.resourcesPath, TCEO_FILE_ICON_RELATIVE);
+    if (fs.existsSync(packagedIcon)) return packagedIcon;
+  }
+  const devIcon = path.join(__dirname, '..', TCEO_FILE_ICON_RELATIVE);
+  if (fs.existsSync(devIcon)) return devIcon;
+  return TCEO_ICON_ICO;
+}
+
+function getBundledAssetPath(relativePath) {
+  const appPath = app.getAppPath();
+  const appAsset = path.join(appPath, relativePath);
+  if (fs.existsSync(appAsset)) return appAsset;
+  return path.join(__dirname, '..', relativePath);
+}
+
+function getTceoRasterIconPath() {
+  if (fs.existsSync(TCEO_ICON_PNG)) return TCEO_ICON_PNG;
+  const generatedPng = getBundledAssetPath(TCEO_FILE_ICON_PNG_RELATIVE);
+  if (fs.existsSync(generatedPng)) return generatedPng;
+  const sourcePng = getBundledAssetPath(TCEO_ICON_SOURCE_RELATIVE);
+  if (fs.existsSync(sourcePng)) return sourcePng;
+  return getBundledAssetPath(APP_ICON_PNG_RELATIVE);
+}
+
 async function registerWindowsFileAssociation() {
+  if (!IS_WIN) return;
+
   const exePath  = process.execPath;
 
   // In dev mode the command must be:  "electron.exe" "c:\path\to\ToolCEO" "%1"
@@ -220,31 +293,84 @@ async function registerWindowsFileAssociation() {
   const appArg  = app.isPackaged ? '' : `"${path.join(__dirname, '..')}" `;
   const openCmd = `"${exePath}" ${appArg}"%1"`;
 
-  const iconPath = fs.existsSync(TCEO_ICON_ICO)
-    ? `${TCEO_ICON_ICO},0`
-    : `${exePath},0`;
   const hkcu     = 'HKCU\\Software\\Classes';
 
   await Promise.all([
     // Map .tceo → ProgID
     regSet(`${hkcu}\\.tceo`,                                    '(Default)',    'REG_SZ', TCEO_PROG_ID),
     regSet(`${hkcu}\\.tceo`,                                    'Content Type','REG_SZ', TCEO_MIME),
+    regSet(`${hkcu}\\.tceo\\OpenWithProgids`,                   TCEO_PROG_ID,   'REG_NONE', ''),
 
     // ProgID display name
     regSet(`${hkcu}\\${TCEO_PROG_ID}`,                          '(Default)',    'REG_SZ', TCEO_FILE_DESC),
-
-    // File icon
-    regSet(`${hkcu}\\${TCEO_PROG_ID}\\DefaultIcon`,             '(Default)',    'REG_SZ', iconPath),
 
     // Open verb
     regSet(`${hkcu}\\${TCEO_PROG_ID}\\shell\\open`,             '(Default)',    'REG_SZ', 'Open with ToolCEO'),
     regSet(`${hkcu}\\${TCEO_PROG_ID}\\shell\\open\\command`,    '(Default)',    'REG_SZ', openCmd),
   ]);
 
-  // Tell Explorer to refresh file icons (best-effort, no admin needed)
-  execFile('ie4uinit', ['-show'], { windowsHide: true }, () => {});
+  try {
+    const iconPath = getTceoFileIconPath();
+    execFileSync(
+      'reg',
+      ['add', `HKCU\\Software\\Classes\\${TCEO_PROG_ID}\\DefaultIcon`, '/ve', '/t', 'REG_SZ', '/d', `"${iconPath}",0`, '/f'],
+      { stdio: 'ignore', windowsHide: true }
+    );
+    refreshWindowsShellIcons();
+  } catch (err) {
+    console.log('Icon registration skipped:', err.message);
+  }
 
   console.log('[tceo-assoc] Windows file association registered. openCmd:', openCmd);
+}
+
+function psSingleQuote(value) {
+  return String(value).replace(/'/g, "''");
+}
+
+function refreshWindowsShellIcons(filePath) {
+  if (!IS_WIN) return;
+
+  try {
+    execFileSync('ie4uinit.exe', ['-show'], { stdio: 'ignore', windowsHide: true });
+  } catch (_) {}
+
+  const desktopPath = app.isReady() ? app.getPath('desktop') : '';
+  const fileCall = filePath
+    ? `[ShellNotify]::Path(0x00002000, 0x0005, '${psSingleQuote(filePath)}', $null);`
+    : '';
+  const desktopCall = desktopPath
+    ? `[ShellNotify]::Path(0x00001000, 0x0005, '${psSingleQuote(desktopPath)}', $null);`
+    : '';
+  const script = `
+Add-Type @"
+using System;
+using System.Runtime.InteropServices;
+public static class ShellNotify {
+  [DllImport("shell32.dll", CharSet = CharSet.Unicode, EntryPoint = "SHChangeNotify")]
+  public static extern void Path(int eventId, uint flags, string item1, string item2);
+  [DllImport("shell32.dll", EntryPoint = "SHChangeNotify")]
+  public static extern void IdList(int eventId, uint flags, IntPtr item1, IntPtr item2);
+}
+"@
+[ShellNotify]::IdList(0x08000000, 0, [IntPtr]::Zero, [IntPtr]::Zero);
+${fileCall}
+${desktopCall}
+`;
+
+  execFile(
+    'powershell.exe',
+    ['-NoProfile', '-ExecutionPolicy', 'Bypass', '-Command', script],
+    { windowsHide: true, timeout: 5000 },
+    () => {}
+  );
+}
+
+function notifySavedFile(filePath) {
+  if (filePath && path.extname(filePath).toLowerCase() === TCEO_EXT) {
+    refreshWindowsShellIcons(filePath);
+  }
+  return filePath;
 }
 
 // ── Linux ─────────────────────────────────────────────────────────────────────
@@ -262,16 +388,44 @@ async function registerWindowsFileAssociation() {
  *  6. Run `update-desktop-database ~/.local/share/applications`
  */
 async function registerLinuxFileAssociation() {
+  if (!IS_LINUX) return;
+
   const exePath   = process.execPath;
 
   // Icon: prefer generated PNG, fall back to source PNG
-  const iconSrc   = fs.existsSync(TCEO_ICON_PNG) ? TCEO_ICON_PNG : ICON_SRC_PNG;
+  const iconSrc   = getTceoRasterIconPath();
+
+  try {
+    const sharp = require('sharp');
+    fs.mkdirSync(LINUX_MIME_ICON_DIR, { recursive: true });
+    fs.mkdirSync(path.dirname(LINUX_ICON_DEST), { recursive: true });
+    await sharp(iconSrc)
+      .resize(256, 256)
+      .png()
+      .toFile(LINUX_MIME_ICON_DEST);
+    await sharp(iconSrc)
+      .resize(256, 256)
+      .png()
+      .toFile(LINUX_ICON_DEST);
+  } catch (err) {
+    try {
+      const image = nativeImage.createFromPath(iconSrc).resize({ width: 256, height: 256 });
+      if (image.isEmpty()) throw new Error('PNG could not be decoded');
+      fs.mkdirSync(LINUX_MIME_ICON_DIR, { recursive: true });
+      fs.mkdirSync(path.dirname(LINUX_ICON_DEST), { recursive: true });
+      fs.writeFileSync(LINUX_MIME_ICON_DEST, image.toPNG());
+      fs.writeFileSync(LINUX_ICON_DEST, image.toPNG());
+    } catch (fallbackErr) {
+      console.log('Icon registration skipped:', fallbackErr.message || err.message);
+    }
+  }
 
   // ── 1. MIME type XML ─────────────────────────────────────────────────────
   const mimeXml = `<?xml version="1.0" encoding="UTF-8"?>
 <mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
   <mime-type type="${TCEO_MIME}">
     <comment>${TCEO_FILE_DESC}</comment>
+    <icon name="application-x-tceo"/>
     <glob pattern="*${TCEO_EXT}"/>
     <magic priority="80">
       <match type="string" offset="0" value="TCEO"/>
@@ -287,11 +441,6 @@ async function registerLinuxFileAssociation() {
 
   // ── 3. Install icon ──────────────────────────────────────────────────────
   ensureDir(path.dirname(LINUX_ICON_DEST));
-  try {
-    fs.copyFileSync(iconSrc, LINUX_ICON_DEST);
-  } catch (err) {
-    console.warn('[tceo-assoc] Linux icon copy failed:', err.message);
-  }
 
   // ── 4. .desktop file ────────────────────────────────────────────────────
   const desktop = [
@@ -317,6 +466,12 @@ async function registerLinuxFileAssociation() {
   // ── 6. Refresh applications index ────────────────────────────────────────
   await runCmd('update-desktop-database', [LINUX_APPS_DIR]);
 
+  try {
+    execFileSync('update-icon-caches', [path.join(XDG_DATA_HOME, 'icons', 'hicolor')], { stdio: 'ignore' });
+  } catch (err) {
+    console.log('Icon registration skipped:', err.message);
+  }
+
   console.log('[tceo-assoc] Linux file association registered.');
 }
 
@@ -328,6 +483,8 @@ async function registerLinuxFileAssociation() {
 // or the `duti` CLI tool.
 
 async function registerMacosFileAssociation() {
+  if (!IS_MAC) return;
+
   // In dev mode: use `duti` if available to set the default handler.
   // `duti` is a lightweight open-source CLI: https://github.com/moretension/duti
   // Install via: brew install duti
@@ -382,9 +539,9 @@ function runCmd(cmd, args) {
  */
 async function registerFileAssociation() {
   try {
-    if (process.platform === 'win32')  await registerWindowsFileAssociation();
-    if (process.platform === 'linux')  await registerLinuxFileAssociation();
-    if (process.platform === 'darwin') await registerMacosFileAssociation();
+    if (IS_WIN)   await registerWindowsFileAssociation();
+    if (IS_LINUX) await registerLinuxFileAssociation();
+    if (IS_MAC)   await registerMacosFileAssociation();
   } catch (err) {
     console.warn('[tceo-assoc] File association registration failed:', err.message);
   }
@@ -394,7 +551,7 @@ async function registerFileAssociation() {
 
 function startBackend() {
   const backendDir = path.join(__dirname, '..', 'backend');
-  const pythonCmd  = process.platform === 'win32' ? 'python' : 'python3';
+  const pythonCmd  = IS_WIN ? 'python.exe' : 'python3';
 
   backendProcess = spawn(
     pythonCmd,
@@ -483,7 +640,7 @@ app.whenReady().then(async () => {
     const buffer = Buffer.from(base64Data, 'base64');
     try {
       fs.writeFileSync(filePath, buffer);
-      return filePath;
+      return notifySavedFile(filePath);
     } catch (_err) {
       // Try incrementing the filename if the target is locked
       const dir  = path.dirname(filePath);
@@ -491,11 +648,11 @@ app.whenReady().then(async () => {
       const base = path.basename(filePath, fext);
       for (let i = 1; i < 100; i++) {
         const alt = path.join(dir, `${base} (${i})${fext}`);
-        try { fs.writeFileSync(alt, buffer); return alt; } catch (_) {}
+        try { fs.writeFileSync(alt, buffer); return notifySavedFile(alt); } catch (_) {}
       }
       const fallback = path.join(dir, `${base}_${Date.now()}${fext}`);
       fs.writeFileSync(fallback, buffer);
-      return fallback;
+      return notifySavedFile(fallback);
     }
   });
 
@@ -599,7 +756,7 @@ app.whenReady().then(async () => {
 // ─── CLEANUP ──────────────────────────────────────────────────────────────────
 
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') app.quit();
+  if (!IS_MAC) app.quit();
 });
 
 app.on('will-quit', () => {

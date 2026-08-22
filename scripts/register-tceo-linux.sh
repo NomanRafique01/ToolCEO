@@ -32,6 +32,12 @@ EXEC_CMD="\"${EXEC_PATH}\" \"${PROJECT_DIR}\" %f"
 
 ICON_PATH="${PROJECT_DIR}/resources/tceo-file-icon.png"
 if [ ! -f "$ICON_PATH" ]; then
+  ICON_PATH="${PROJECT_DIR}/assets/icons/fileicon.png"
+fi
+if [ ! -f "$ICON_PATH" ]; then
+  ICON_PATH="${PROJECT_DIR}/assets/fileimage.png"
+fi
+if [ ! -f "$ICON_PATH" ]; then
   ICON_PATH="${PROJECT_DIR}/assets/icon.png"
 fi
 
@@ -39,6 +45,7 @@ XDG_DATA="${XDG_DATA_HOME:-$HOME/.local/share}"
 MIME_DIR="$XDG_DATA/mime/packages"
 APPS_DIR="$XDG_DATA/applications"
 ICON_DIR="$XDG_DATA/icons/hicolor/256x256/apps"
+MIME_ICON_DIR="$XDG_DATA/icons/hicolor/256x256/mimetypes"
 
 echo "→ Registering ToolCEO .tceo file association..."
 
@@ -49,6 +56,7 @@ cat > "$MIME_DIR/application-x-tceo.xml" << 'EOF'
 <mime-info xmlns="http://www.freedesktop.org/standards/shared-mime-info">
   <mime-type type="application/x-tceo">
     <comment>ToolCEO Vault File</comment>
+    <icon name="application-x-tceo"/>
     <glob pattern="*.tceo"/>
     <magic priority="80">
       <match type="string" offset="0" value="TCEO"/>
@@ -68,7 +76,9 @@ fi
 
 # ── 3. Install icon ───────────────────────────────────────────────────────────
 mkdir -p "$ICON_DIR"
+mkdir -p "$MIME_ICON_DIR"
 cp "$ICON_PATH" "$ICON_DIR/toolceo.png"
+cp "$ICON_PATH" "$MIME_ICON_DIR/application-x-tceo.png"
 echo "  ✓ Icon installed → $ICON_DIR/toolceo.png"
 
 # ── 4. .desktop file ─────────────────────────────────────────────────────────

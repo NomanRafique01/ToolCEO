@@ -5,14 +5,21 @@
   "main": "electron/main.js",
   "scripts": {
     "start": "electron .",
-    "build:win":   "electron-builder --win",
-    "build:mac":   "electron-builder --mac",
+    "icons:file": "node scripts/generate-file-icons.js",
+    "prebuild:win": "npm run icons:file",
+    "prebuild:mac": "npm run icons:file",
+    "prebuild:linux": "npm run icons:file",
+    "build:win": "electron-builder --win",
+    "build:mac": "electron-builder --mac",
     "build:linux": "electron-builder --linux"
   },
   "devDependencies": {
     "electron": "latest",
     "electron-builder": "^24.0.0",
     "jimp": "^1.6.1"
+  },
+  "dependencies": {
+    "sharp": "^0.33.5"
   },
   "build": {
     "appId": "com.toolceo.app",
@@ -24,8 +31,31 @@
     "files": [
       "electron/**/*",
       "frontend/**/*",
+      "backend/**/*",
       "assets/**/*",
       "resources/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "assets/icons/fileicon.ico",
+        "to": "assets/icons/fileicon.ico"
+      },
+      {
+        "from": "assets/icons/fileicon.png",
+        "to": "assets/icons/fileicon.png"
+      },
+      {
+        "from": "assets/icons/fileicon.icns",
+        "to": "assets/icons/fileicon.icns"
+      },
+      {
+        "from": "assets/fileimage.png",
+        "to": "assets/fileimage.png"
+      },
+      {
+        "from": "assets/icon.png",
+        "to": "assets/icon.png"
+      }
     ],
     "fileAssociations": [
       {
@@ -33,39 +63,70 @@
         "name": "ToolCEO Vault File",
         "description": "ToolCEO encrypted vault container",
         "mimeType": "application/x-tceo",
-        "icon": "resources/tceo-file-icon",
+        "icon": "assets/icons/fileicon.ico",
         "role": "Editor",
         "isPackage": false
       }
     ],
     "win": {
       "target": "nsis",
-      "icon": "assets/icon.png"
+      "icon": "assets/icon.png",
+      "fileAssociations": [
+        {
+          "ext": "tceo",
+          "name": "ToolCEO Vault File",
+          "description": "ToolCEO Encrypted Vault File",
+          "mimeType": "application/x-tceo",
+          "icon": "assets/icons/fileicon.ico",
+          "role": "Editor"
+        }
+      ]
     },
     "mac": {
       "target": "dmg",
       "icon": "assets/icon.png",
       "category": "public.app-category.productivity",
+      "fileAssociations": [
+        {
+          "ext": "tceo",
+          "name": "ToolCEO Vault File",
+          "description": "ToolCEO Encrypted Vault File",
+          "icon": "assets/icons/fileicon.icns",
+          "role": "Editor"
+        }
+      ],
       "extendInfo": {
         "CFBundleDocumentTypes": [
           {
-            "CFBundleTypeExtensions": ["tceo"],
-            "CFBundleTypeIconFile": "tceo-file-icon",
-            "CFBundleTypeMIMETypes": ["application/x-tceo"],
+            "CFBundleTypeExtensions": [
+              "tceo"
+            ],
+            "CFBundleTypeIconFile": "fileicon",
+            "CFBundleTypeMIMETypes": [
+              "application/x-tceo"
+            ],
             "CFBundleTypeName": "ToolCEO Vault File",
             "CFBundleTypeRole": "Editor",
             "LSHandlerRank": "Owner",
-            "LSItemContentTypes": ["com.toolceo.vaultfile"]
+            "LSItemContentTypes": [
+              "com.toolceo.vaultfile"
+            ]
           }
         ],
         "UTExportedTypeDeclarations": [
           {
             "UTTypeIdentifier": "com.toolceo.vaultfile",
             "UTTypeDescription": "ToolCEO Vault File",
-            "UTTypeConformsTo": ["public.data"],
+            "UTTypeConformsTo": [
+              "public.data"
+            ],
             "UTTypeTagSpecification": {
-              "public.filename-extension": ["tceo"],
-              "public.mime-type": ["application/x-tceo"]
+              "public.filename-extension": [
+                "tceo"
+              ],
+              "public.mime-type": [
+                "application/x-tceo"
+              ]
             }
           }
         ]
@@ -74,8 +135,20 @@
     "linux": {
       "target": "AppImage",
       "icon": "assets/icon.png",
-      "category": "Office",
-      "mimeTypes": ["application/x-tceo"],
+      "category": "Utility",
+      "fileAssociations": [
+        {
+          "ext": "tceo",
+          "name": "ToolCEO Vault File",
+          "description": "ToolCEO Encrypted Vault File",
+          "mimeType": "application/x-tceo",
+          "icon": "assets/icons/fileicon.png",
+          "role": "Editor"
+        }
+      ],
+      "mimeTypes": [
+        "application/x-tceo"
+      ],
       "desktop": {
         "MimeType": "application/x-tceo;"
       }
