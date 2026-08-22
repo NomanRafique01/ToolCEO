@@ -12,11 +12,13 @@ watermark text (same as CSS left/top % + translate(-50%, -50%)).
 from __future__ import annotations
 
 import base64
+import io
 from dataclasses import dataclass
 from typing import Optional
 
 import fitz  # PyMuPDF
 import jobs as job_store
+from PIL import Image
 
 
 # Values MUST be PyMuPDF Base-14 short names (see fitz.Base14_fontdict).
@@ -43,15 +45,18 @@ FONT_MAP = {
 
 @dataclass
 class WatermarkOptions:
+    mode: str = "text"
     text: str = "CONFIDENTIAL"
     font_family: str = "helv"
-    font_size: float = 36.0
+    font_size: float = 48.0
     color: str = "#FF0000"
     opacity: float = 0.5
     angle: float = -45.0
     spacing: float = 0.0
     x_pct: float = 50.0
     y_pct: float = 50.0
+    signature_data_url: str = ""
+    sign_width_pct: float = 34.0
 
 
 def _parse_color(hex_str: str) -> tuple[float, float, float]:
@@ -159,6 +164,63 @@ def _insert_centered_watermark(
     )
 
 
+def _prepare_signature_png(data_url: str, opacity: float, angle: float) -> tuple[bytes, float, float]:
+    raw = (data_url or "").strip()
+    if not raw:
+        raise ValueError("Signature image is empty.")
+    if "," in raw and raw.lower().startswith("data:image/"):
+        raw = raw.split(",", 1)[1]
+    try:
+        image_bytes = base64.b64decode(raw, validate=True)
+    except Exception as exc:
+        raise ValueError("Signature image could not be decoded.") from exc
+
+    try:
+        image = Image.open(io.BytesIO(image_bytes)).convert("RGBA")
+    except Exception as exc:
+        raise ValueError(f"Signature image could not be opened: {exc}") from exc
+
+    alpha_factor = max(0.05, min(1.0, float(opacity)))
+    if alpha_factor < 0.999:
+        r, g, b, alpha = image.split()
+        alpha = alpha.point(lambda px: int(px * alpha_factor))
+        image = Image.merge("RGBA", (r, g, b, alpha))
+
+    if abs(float(angle)) > 0.01:
+        # CSS positive rotation is clockwise; Pillow positive rotation is counter-clockwise.
+        image = image.rotate(-float(angle), expand=True, resample=Image.Resampling.BICUBIC)
+
+    out = io.BytesIO()
+    image.save(out, format="PNG")
+    return out.getvalue(), float(image.width), float(image.height)
+
+
+def _insert_centered_signature(
+    page: fitz.Page,
+    image_bytes: bytes,
+    image_width: float,
+    image_height: float,
+    x_pct: float,
+    y_pct: float,
+    width_pct: float,
+) -> None:
+    rect = page.rect
+    cx = (max(0.0, min(100.0, x_pct)) / 100.0) * rect.width
+    cy = (max(0.0, min(100.0, y_pct)) / 100.0) * rect.height
+
+    width = rect.width * (max(8.0, min(85.0, width_pct)) / 100.0)
+    aspect = image_height / image_width if image_width else 0.34
+    height = max(12.0, width * aspect)
+    target = fitz.Rect(cx - width / 2.0, cy - height / 2.0, cx + width / 2.0, cy + height / 2.0)
+
+    page.insert_image(
+        target,
+        stream=image_bytes,
+        keep_proportion=True,
+        overlay=True,
+    )
+
+
 def get_pdf_info(raw_bytes: bytes, password: Optional[str] = None) -> dict:
     """
     Synchronous preview helper. Returns page count, original file size,
@@ -225,28 +287,51 @@ def apply_watermark(
     font_size = max(6.0, min(200.0, float(opts.font_size)))
     angle = float(opts.angle)
     spacing = float(opts.spacing or 0.0)
-    text = (opts.text or "WATERMARK").strip() or "WATERMARK"
+    mode = (opts.mode or "text").strip().lower()
+    text = (opts.text or "").strip()
     x_pct = float(opts.x_pct)
     y_pct = float(opts.y_pct)
+    sign_bytes = b""
+    sign_width = 0.0
+    sign_height = 0.0
+    sign_width_pct = float(opts.sign_width_pct or 34.0)
+
+    if mode == "sign":
+        sign_bytes, sign_width, sign_height = _prepare_signature_png(opts.signature_data_url, opacity, angle)
+    else:
+        text = text or "WATERMARK"
 
     if job_id:
         job_store.set_progress(job_id, 15)
 
     for idx, page in enumerate(doc):
         try:
-            _insert_centered_watermark(
-                page,
-                text=text,
-                font_name=font_name,
-                font_size=font_size,
-                rgb=rgb,
-                opacity=opacity,
-                angle=angle,
-                spacing=spacing,
-                x_pct=x_pct,
-                y_pct=y_pct,
-            )
+            if mode == "sign":
+                _insert_centered_signature(
+                    page,
+                    image_bytes=sign_bytes,
+                    image_width=sign_width,
+                    image_height=sign_height,
+                    x_pct=x_pct,
+                    y_pct=y_pct,
+                    width_pct=sign_width_pct,
+                )
+            else:
+                _insert_centered_watermark(
+                    page,
+                    text=text,
+                    font_name=font_name,
+                    font_size=font_size,
+                    rgb=rgb,
+                    opacity=opacity,
+                    angle=angle,
+                    spacing=spacing,
+                    x_pct=x_pct,
+                    y_pct=y_pct,
+                )
         except Exception:
+            if mode == "sign":
+                raise
             # Last-resort: plain centered insert with Base-14 Helvetica
             safe_font = "helv"
             rect = page.rect

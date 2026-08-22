@@ -42,15 +42,18 @@ let _pageHeight  = 842;  // PDF page height in points
 let _activeContainer = null;
 
 const WM_DEFAULTS = {
-  text:        'CONFIDENTIAL',
+  mode:        'text',
+  text:        '',
   font_family: 'helv',
-  font_size:   87,
+  font_size:   48,
   color:       '#CC0000',
   opacity:     0.73,
   angle:       -45,
   spacing:     0,
   x_pct:       50,
   y_pct:       50,
+  signature_data_url: '',
+  sign_width_pct: 34,
 };
 
 let _opts = { ...WM_DEFAULTS };
@@ -107,8 +110,14 @@ function _syncDraggableLabel(viewer) {
   const pageW = _pageWidth > 0 ? _pageWidth : 595;
   const scale = _previewWidthPx(viewer) / pageW;
   const displaySize = Math.max(8, Math.round(_opts.font_size * scale));
+  const hasSign = _opts.mode === 'sign' && _opts.signature_data_url;
+  const hasText = (_opts.text || '').trim().length > 0;
 
-  labelEl.textContent         = _opts.text || 'WATERMARK';
+  labelEl.classList.toggle('wm-draggable-label--empty', !hasSign && !hasText);
+  labelEl.classList.toggle('wm-draggable-label--sign', !!hasSign);
+  labelEl.innerHTML           = hasSign
+    ? `<img class="wm-sign-preview-img" src="${_opts.signature_data_url}" alt="Signature" draggable="false" />${_rotateHandleHTML()}`
+    : `${_esc(_opts.text || '')}${_rotateHandleHTML()}`;
   labelEl.style.fontFamily    = _fontFamilyCss(_opts.font_family);
   labelEl.style.fontSize      = `${displaySize}px`;
   labelEl.style.fontWeight    = '700';
@@ -118,6 +127,22 @@ function _syncDraggableLabel(viewer) {
   labelEl.style.left          = `${_opts.x_pct}%`;
   labelEl.style.top           = `${_opts.y_pct}%`;
   labelEl.style.transform     = `translate(-50%, -50%) rotate(${_opts.angle}deg)`;
+
+  if (hasSign) {
+    labelEl.style.width = `${Math.max(12, Math.min(70, _opts.sign_width_pct))}%`;
+  } else {
+    labelEl.style.width = '';
+  }
+}
+
+function _rotateHandleHTML() {
+  return `
+    <button class="wm-rotate-handle" type="button" title="Rotate" aria-label="Rotate watermark">
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+        <path d="M21 12a9 9 0 1 1-2.64-6.36"/>
+        <path d="M21 3v6h-6"/>
+      </svg>
+    </button>`;
 }
 
 // ─── SWAP PARTS (mirrors rotate.js _getSwapParts) ─────────────────────────────
@@ -127,13 +152,13 @@ function _getSwapParts(container) {
   const cardView = container.querySelector('#pdf-tools-card-view');
   let   viewer   = container.querySelector('#wm-viewer');
 
-  // Rebuild if missing preview / custom color, or outdated event wiring
+  // Rebuild if missing preview / signature panel, or outdated event wiring
   if (
     viewer &&
     (
       !viewer.querySelector('.wm-preview-col') ||
-      !viewer.querySelector('#wm-color-hex') ||
-      viewer.dataset.wmVer !== '4'
+      !viewer.querySelector('#wm-add-sign-btn') ||
+      viewer.dataset.wmVer !== '6'
     )
   ) {
     viewer.remove();
@@ -144,7 +169,7 @@ function _getSwapParts(container) {
     viewer = document.createElement('div');
     viewer.id        = 'wm-viewer';
     viewer.className = 'wm-viewer';
-    viewer.dataset.wmVer = '4';
+    viewer.dataset.wmVer = '6';
     viewer.innerHTML = _buildViewerHTML();
     swap.appendChild(viewer);
 
@@ -181,7 +206,7 @@ function _buildViewerHTML() {
             <rect x="3" y="3" width="18" height="18" rx="2" stroke="currentColor" stroke-width="2"/>
             <text x="7" y="17" font-size="10" font-weight="800" fill="currentColor" font-family="sans-serif">W</text>
           </svg>
-          Apply Watermark
+          Apply &amp; Save
         </button>
       </div>
     </div>
@@ -195,14 +220,14 @@ function _buildViewerHTML() {
           <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
             <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
           </svg>
-          Preview &nbsp;·&nbsp; Drag Watermark to Position
+          Preview &nbsp;·&nbsp; Drag Text or Sign to Position
         </div>
 
         <div class="wm-frame-glow">
           <div class="wm-frame-container" id="wm-frame-container">
             <img class="wm-hd-img" id="wm-hd-img" src="" alt="HD PDF Page 1" />
             <div class="wm-draggable-label" id="wm-draggable-label"
-                 style="left:50%;top:50%;">CONFIDENTIAL</div>
+                 style="left:50%;top:50%;"></div>
             <div class="wm-position-badge" id="wm-pos-badge">50% · 50%</div>
           </div>
         </div>
@@ -211,7 +236,7 @@ function _buildViewerHTML() {
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
             <path d="M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M12 12v.01"/>
           </svg>
-          Click &amp; drag the watermark text to set position
+          Click &amp; drag the text or signature to set position
         </div>
       </div>
 
@@ -224,7 +249,7 @@ function _buildViewerHTML() {
               <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M4 7h16M4 12h10M4 17h6"/></svg>
               Watermark Text
             </div>
-            <input type="text" class="wm-text-input" id="wm-text" value="CONFIDENTIAL"
+            <input type="text" class="wm-text-input" id="wm-text" value=""
                    placeholder="Type watermark text…" maxlength="80" spellcheck="false" />
             <div class="wm-presets-row">
               <button class="wm-preset-badge" data-text="CONFIDENTIAL">CONFIDENTIAL</button>
@@ -254,10 +279,10 @@ function _buildViewerHTML() {
               </div>
               <div class="wm-control-group">
                 <label class="wm-label">Font Size
-                  <span class="wm-label-val" id="wm-size-val">87px</span>
+                  <span class="wm-label-val" id="wm-size-val">48px</span>
                 </label>
                 <input type="range" class="wm-slider" id="wm-size"
-                       min="10" max="120" value="87" />
+                       min="10" max="120" value="48" />
               </div>
             </div>
           </div>
@@ -278,26 +303,6 @@ function _buildViewerHTML() {
               <span class="wm-swatch" data-color="#9333EA" style="background:#9333EA" title="Purple"></span>
               <span class="wm-swatch" data-color="#EA580C" style="background:#EA580C" title="Orange"></span>
               <span class="wm-swatch" data-color="#FFFFFF" style="background:#FFFFFF;box-shadow:0 0 0 1.5px #CBD5E1 inset" title="White"></span>
-            </div>
-          </div>
-
-          <div class="wm-divider"></div>
-
-          <div class="wm-section">
-            <div class="wm-section-title">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/><circle cx="12" cy="12" r="4"/></svg>
-              Custom Color
-            </div>
-            <div class="wm-custom-color-row">
-              <div class="wm-color-swatch-wrap wm-color-swatch-wrap--lg" title="Pick any color">
-                <div class="wm-color-preview" id="wm-color-preview" style="background:#CC0000"></div>
-                <input type="color" class="wm-color-picker" id="wm-color" value="#CC0000" />
-              </div>
-              <div class="wm-custom-color-meta">
-                <label class="wm-label" for="wm-color-hex">Hex Color</label>
-                <input type="text" class="wm-text-input wm-color-hex" id="wm-color-hex"
-                       value="#CC0000" maxlength="7" spellcheck="false" placeholder="#RRGGBB" />
-              </div>
             </div>
           </div>
 
@@ -330,27 +335,74 @@ function _buildViewerHTML() {
 
           <div class="wm-section">
             <div class="wm-section-title">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M21 21H3v-4l14-14"/></svg>
-              Rotation Angle
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M12 2v4M12 18v4M4.93 4.93l2.83 2.83M16.24 16.24l2.83 2.83M2 12h4M18 12h4M4.93 19.07l2.83-2.83M16.24 7.76l2.83-2.83"/><circle cx="12" cy="12" r="4"/></svg>
+              Add Sign
             </div>
-            <label class="wm-label">
-              Angle
-              <span class="wm-label-val" id="wm-angle-val">-45°</span>
-            </label>
-            <input type="range" class="wm-slider" id="wm-angle"
-                   min="-180" max="180" value="-45" />
-            <div class="wm-angle-presets">
-              <button class="wm-angle-btn active" data-angle="-45">-45°</button>
-              <button class="wm-angle-btn" data-angle="0">Flat (0°)</button>
-              <button class="wm-angle-btn" data-angle="45">45°</button>
-              <button class="wm-angle-btn" data-angle="90">90°</button>
-              <button class="wm-angle-btn" data-angle="-90">-90°</button>
+            <div class="wm-add-sign-card">
+              <button type="button" class="wm-add-sign-btn" id="wm-add-sign-btn">
+                <span class="wm-add-sign-icon">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+                    <path d="M12 20h9"/>
+                    <path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z"/>
+                  </svg>
+                </span>
+                <span>
+                  <strong>Add Sign</strong>
+                  <small>Draw a signature and drag it onto the page</small>
+                </span>
+              </button>
+              <div class="wm-sign-status" id="wm-sign-status">No signature added</div>
+              <label class="wm-label">
+                Sign Size
+                <span class="wm-label-val" id="wm-sign-size-val">34%</span>
+              </label>
+              <input type="range" class="wm-slider" id="wm-sign-size"
+                     min="12" max="70" value="34" />
             </div>
           </div>
 
         </div>
       </div>
 
+    </div>
+
+    <div class="wm-sign-modal" id="wm-sign-modal" aria-hidden="true">
+      <div class="wm-sign-modal-backdrop" data-close-sign></div>
+      <div class="wm-sign-dialog" role="dialog" aria-modal="true" aria-labelledby="wm-sign-title">
+        <div class="wm-sign-dialog-head">
+          <div>
+            <h3 id="wm-sign-title">Design Signature</h3>
+            <p>Create a clean transparent signature for this PDF.</p>
+          </div>
+          <button type="button" class="wm-sign-close" data-close-sign aria-label="Close signature designer">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4">
+              <path d="M18 6 6 18M6 6l12 12"/>
+            </svg>
+          </button>
+        </div>
+        <div class="wm-sign-tools">
+          <label class="wm-sign-tool">
+            <span>Name helper</span>
+            <input type="text" class="wm-text-input" id="wm-sign-name" placeholder="Type name, then draw or insert" maxlength="48" spellcheck="false" />
+          </label>
+          <label class="wm-sign-tool wm-sign-tool--compact">
+            <span>Ink</span>
+            <input type="color" id="wm-sign-color" value="#000000" />
+          </label>
+          <label class="wm-sign-tool">
+            <span>Stroke <b id="wm-sign-stroke-val">3px</b></span>
+            <input type="range" class="wm-slider" id="wm-sign-stroke" min="1" max="9" value="3" />
+          </label>
+        </div>
+        <div class="wm-sign-canvas-wrap">
+          <canvas id="wm-sign-canvas" width="760" height="260"></canvas>
+        </div>
+        <div class="wm-sign-actions">
+          <button type="button" class="wm-sign-secondary" id="wm-sign-type-btn">Insert Typed Name</button>
+          <button type="button" class="wm-sign-secondary" id="wm-sign-clear-btn">Clear</button>
+          <button type="button" class="wm-sign-primary" id="wm-sign-insert-btn">Insert Signature</button>
+        </div>
+      </div>
     </div>
   `;
 }
@@ -395,19 +447,52 @@ function _wireViewerEvents(viewer) {
   }
 
   let dragging = false;
+  let rotating = false;
+
+  function _setAngleFromClient(clientX, clientY) {
+    const rect = labelEl.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const cx = rect.left + rect.width / 2;
+    const cy = rect.top + rect.height / 2;
+    const angle = Math.atan2(clientY - cy, clientX - cx) * (180 / Math.PI);
+    _opts.angle = parseFloat(angle.toFixed(1));
+    _syncDraggableLabel(viewer);
+  }
+
+  function _isRotateHandle(target) {
+    return !!target.closest?.('.wm-rotate-handle');
+  }
 
   labelEl.addEventListener('mousedown', (e) => {
+    if (_isRotateHandle(e.target)) return;
     dragging = true;
     labelEl.classList.add('dragging');
     e.preventDefault();
   });
 
+  labelEl.addEventListener('mousedown', (e) => {
+    if (!_isRotateHandle(e.target)) return;
+    rotating = true;
+    labelEl.classList.add('rotating');
+    _setAngleFromClient(e.clientX, e.clientY);
+    e.preventDefault();
+    e.stopPropagation();
+  });
+
   window.addEventListener('mousemove', (e) => {
+    if (rotating) {
+      _setAngleFromClient(e.clientX, e.clientY);
+      return;
+    }
     if (!dragging) return;
     _setPosFromClient(e.clientX, e.clientY);
   });
 
   window.addEventListener('mouseup', () => {
+    if (rotating) {
+      rotating = false;
+      labelEl.classList.remove('rotating');
+    }
     if (dragging) {
       dragging = false;
       labelEl.classList.remove('dragging');
@@ -415,18 +500,38 @@ function _wireViewerEvents(viewer) {
   });
 
   labelEl.addEventListener('touchstart', (e) => {
+    if (_isRotateHandle(e.target)) return;
     dragging = true;
     labelEl.classList.add('dragging');
     e.preventDefault();
   }, { passive: false });
 
+  labelEl.addEventListener('touchstart', (e) => {
+    if (!_isRotateHandle(e.target)) return;
+    const t = e.touches[0];
+    rotating = true;
+    labelEl.classList.add('rotating');
+    _setAngleFromClient(t.clientX, t.clientY);
+    e.preventDefault();
+    e.stopPropagation();
+  }, { passive: false });
+
   window.addEventListener('touchmove', (e) => {
+    if (rotating) {
+      const t = e.touches[0];
+      _setAngleFromClient(t.clientX, t.clientY);
+      return;
+    }
     if (!dragging) return;
     const t = e.touches[0];
     _setPosFromClient(t.clientX, t.clientY);
   }, { passive: false });
 
   window.addEventListener('touchend', () => {
+    if (rotating) {
+      rotating = false;
+      labelEl.classList.remove('rotating');
+    }
     if (dragging) {
       dragging = false;
       labelEl.classList.remove('dragging');
@@ -444,8 +549,8 @@ function _wireViewerEvents(viewer) {
   const opacVal     = viewer.querySelector('#wm-opacity-val');
   const spaceSlider = viewer.querySelector('#wm-space');
   const spaceVal    = viewer.querySelector('#wm-space-val');
-  const angleSlider = viewer.querySelector('#wm-angle');
-  const angleVal    = viewer.querySelector('#wm-angle-val');
+  const signSize    = viewer.querySelector('#wm-sign-size');
+  const signSizeVal = viewer.querySelector('#wm-sign-size-val');
 
   function _setColor(hex, fromPicker = false) {
     const cleaned = String(hex || '').trim();
@@ -473,12 +578,14 @@ function _wireViewerEvents(viewer) {
     });
   }
   textInput.addEventListener('input', (e) => {
+    _opts.mode = 'text';
     _opts.text = e.target.value;
     _refreshLabel();
   });
 
   viewer.querySelectorAll('.wm-preset-badge').forEach((btn) => {
     btn.addEventListener('click', () => {
+      _opts.mode = 'text';
       _opts.text = btn.dataset.text;
       textInput.value = _opts.text;
       _refreshLabel();
@@ -497,10 +604,12 @@ function _wireViewerEvents(viewer) {
     _refreshLabel();
   });
 
-  colorInput.addEventListener('input', (e) => {
-    _setColor(e.target.value, true);
-    _clearSwatchActive(viewer);
-  });
+  if (colorInput) {
+    colorInput.addEventListener('input', (e) => {
+      _setColor(e.target.value, true);
+      _clearSwatchActive(viewer);
+    });
+  }
 
   if (colorHex) {
     colorHex.addEventListener('input', (e) => {
@@ -532,6 +641,17 @@ function _wireViewerEvents(viewer) {
     });
   });
 
+  if (signSize) {
+    signSize.addEventListener('input', (e) => {
+      _opts.sign_width_pct = parseFloat(e.target.value);
+      if (signSizeVal) signSizeVal.textContent = `${_opts.sign_width_pct}%`;
+      _updateSliderFill(signSize, 12, 70);
+      _refreshLabel();
+    });
+  }
+
+  _wireSignatureModal(viewer, _refreshLabel);
+
   opacSlider.addEventListener('input', (e) => {
     const pct = parseInt(e.target.value, 10);
     _opts.opacity = pct / 100.0;
@@ -547,41 +667,133 @@ function _wireViewerEvents(viewer) {
     _refreshLabel();
   });
 
-  angleSlider.addEventListener('input', (e) => {
-    _opts.angle = parseFloat(e.target.value);
-    angleVal.textContent = `${_opts.angle}°`;
-    _updateSliderFill(angleSlider, -180, 180);
-    _syncAngleBtns(viewer);
-    _refreshLabel();
-  });
-
-  viewer.querySelectorAll('.wm-angle-btn').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      const angle = parseFloat(btn.dataset.angle);
-      _opts.angle = angle;
-      angleSlider.value = angle;
-      angleVal.textContent = `${angle}°`;
-      _updateSliderFill(angleSlider, -180, 180);
-      _syncAngleBtns(viewer);
-      _refreshLabel();
-    });
-  });
-
   _updateSliderFill(sizeSlider, 10, 120);
   _updateSliderFill(opacSlider, 5, 100);
   _updateSliderFill(spaceSlider, -2, 24);
-  _updateSliderFill(angleSlider, -180, 180);
+  if (signSize) _updateSliderFill(signSize, 12, 70);
+}
+
+function _wireSignatureModal(viewer, refreshLabel) {
+  const openBtn = viewer.querySelector('#wm-add-sign-btn');
+  const modal = viewer.querySelector('#wm-sign-modal');
+  const canvas = viewer.querySelector('#wm-sign-canvas');
+  if (!openBtn || !modal || !canvas) return;
+
+  const ctx = canvas.getContext('2d');
+  const colorInput = viewer.querySelector('#wm-sign-color');
+  const strokeInput = viewer.querySelector('#wm-sign-stroke');
+  const strokeVal = viewer.querySelector('#wm-sign-stroke-val');
+  const nameInput = viewer.querySelector('#wm-sign-name');
+  const clearBtn = viewer.querySelector('#wm-sign-clear-btn');
+  const typeBtn = viewer.querySelector('#wm-sign-type-btn');
+  const insertBtn = viewer.querySelector('#wm-sign-insert-btn');
+  const status = viewer.querySelector('#wm-sign-status');
+  let drawing = false;
+  let hasInk = false;
+
+  function openModal() {
+    modal.classList.add('wm-sign-modal--open');
+    modal.setAttribute('aria-hidden', 'false');
+    _clearSignatureCanvas(ctx, canvas);
+  }
+
+  function closeModal() {
+    modal.classList.remove('wm-sign-modal--open');
+    modal.setAttribute('aria-hidden', 'true');
+  }
+
+  function canvasPoint(evt) {
+    const source = evt.touches ? evt.touches[0] : evt;
+    const rect = canvas.getBoundingClientRect();
+    return {
+      x: ((source.clientX - rect.left) / rect.width) * canvas.width,
+      y: ((source.clientY - rect.top) / rect.height) * canvas.height,
+    };
+  }
+
+  function begin(evt) {
+    drawing = true;
+    hasInk = true;
+    const p = canvasPoint(evt);
+    ctx.beginPath();
+    ctx.moveTo(p.x, p.y);
+    evt.preventDefault();
+  }
+
+  function move(evt) {
+    if (!drawing) return;
+    const p = canvasPoint(evt);
+    ctx.lineTo(p.x, p.y);
+    ctx.strokeStyle = colorInput?.value || '#000000';
+    ctx.lineWidth = parseFloat(strokeInput?.value || '3');
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+    ctx.stroke();
+    evt.preventDefault();
+  }
+
+  function end() {
+    drawing = false;
+  }
+
+  openBtn.addEventListener('click', openModal);
+  modal.querySelectorAll('[data-close-sign]').forEach((el) => el.addEventListener('click', closeModal));
+  canvas.addEventListener('mousedown', begin);
+  canvas.addEventListener('mousemove', move);
+  window.addEventListener('mouseup', end);
+  canvas.addEventListener('touchstart', begin, { passive: false });
+  canvas.addEventListener('touchmove', move, { passive: false });
+  window.addEventListener('touchend', end);
+
+  if (strokeInput) {
+    strokeInput.addEventListener('input', () => {
+      if (strokeVal) strokeVal.textContent = `${strokeInput.value}px`;
+      _updateSliderFill(strokeInput, 1, 9);
+    });
+    _updateSliderFill(strokeInput, 1, 9);
+  }
+
+  clearBtn?.addEventListener('click', () => {
+    hasInk = false;
+    _clearSignatureCanvas(ctx, canvas);
+  });
+
+  typeBtn?.addEventListener('click', () => {
+    const name = (nameInput?.value || '').trim();
+    if (!name) return;
+    _clearSignatureCanvas(ctx, canvas);
+    ctx.fillStyle = colorInput?.value || '#000000';
+    ctx.font = 'italic 86px "Times New Roman", Georgia, serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(name, canvas.width / 2, canvas.height / 2 + 10, canvas.width - 80);
+    hasInk = true;
+  });
+
+  insertBtn?.addEventListener('click', () => {
+    if (!hasInk) {
+      pushNotification({ type: 'warning', message: 'Please draw or insert a signature first.' });
+      return;
+    }
+    _opts.mode = 'sign';
+    _opts.signature_data_url = canvas.toDataURL('image/png');
+    _opts.text = '';
+    _opts.angle = 0;
+    const textInput = viewer.querySelector('#wm-text');
+    if (textInput) textInput.value = '';
+    if (status) status.textContent = 'Signature ready - drag it on the page';
+    refreshLabel();
+    closeModal();
+  });
+}
+
+function _clearSignatureCanvas(ctx, canvas) {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
 }
 
 function _updateSliderFill(slider, min, max) {
   const pct = ((parseFloat(slider.value) - min) / (max - min)) * 100;
   slider.style.setProperty('--pct', `${Math.max(0, Math.min(100, pct))}%`);
-}
-
-function _syncAngleBtns(viewer) {
-  viewer.querySelectorAll('.wm-angle-btn').forEach((b) => {
-    b.classList.toggle('active', parseFloat(b.dataset.angle) === _opts.angle);
-  });
 }
 
 function _clearSwatchActive(viewer) {
@@ -668,10 +880,11 @@ function _populateViewer(viewer) {
   const opacVal     = viewer.querySelector('#wm-opacity-val');
   const spaceSlider = viewer.querySelector('#wm-space');
   const spaceVal    = viewer.querySelector('#wm-space-val');
-  const angleSlider = viewer.querySelector('#wm-angle');
-  const angleVal    = viewer.querySelector('#wm-angle-val');
   const labelEl     = viewer.querySelector('#wm-draggable-label');
   const posBadge    = viewer.querySelector('#wm-pos-badge');
+  const signSize    = viewer.querySelector('#wm-sign-size');
+  const signSizeVal = viewer.querySelector('#wm-sign-size-val');
+  const signStatus  = viewer.querySelector('#wm-sign-status');
 
   if (textInput)  textInput.value = _opts.text;
   if (fontSelect) fontSelect.value = _opts.font_family;
@@ -696,12 +909,12 @@ function _populateViewer(viewer) {
     _updateSliderFill(spaceSlider, -2, 24);
   }
   if (spaceVal) spaceVal.textContent = `${_opts.spacing}px`;
-  if (angleSlider) {
-    angleSlider.value = _opts.angle;
-    _updateSliderFill(angleSlider, -180, 180);
+  if (signSize) {
+    signSize.value = _opts.sign_width_pct;
+    _updateSliderFill(signSize, 12, 70);
   }
-  if (angleVal) angleVal.textContent = `${_opts.angle}°`;
-  _syncAngleBtns(viewer);
+  if (signSizeVal) signSizeVal.textContent = `${_opts.sign_width_pct}%`;
+  if (signStatus) signStatus.textContent = 'No signature added';
   if (posBadge) posBadge.textContent = `${Math.round(_opts.x_pct)}% · ${Math.round(_opts.y_pct)}%`;
 
   if (labelEl) {
@@ -818,7 +1031,7 @@ function _collectOptsFromViewer(viewer) {
   const colorHex    = viewer?.querySelector('#wm-color-hex');
   const opacSlider  = viewer?.querySelector('#wm-opacity');
   const spaceSlider = viewer?.querySelector('#wm-space');
-  const angleSlider = viewer?.querySelector('#wm-angle');
+  const signSize    = viewer?.querySelector('#wm-sign-size');
 
   let color = (colorInput?.value || colorHex?.value || _opts.color || '#CC0000').trim();
   if (color && !color.startsWith('#')) color = `#${color}`;
@@ -826,15 +1039,18 @@ function _collectOptsFromViewer(viewer) {
   const opacityPct = opacSlider ? parseFloat(opacSlider.value) : Math.round((_opts.opacity ?? 0.73) * 100);
 
   return {
-    text:        (textInput?.value ?? _opts.text ?? 'CONFIDENTIAL').trim() || 'CONFIDENTIAL',
+    mode:        _opts.mode === 'sign' && _opts.signature_data_url ? 'sign' : 'text',
+    text:        (textInput?.value ?? _opts.text ?? '').trim(),
     font_family: fontSelect?.value || _opts.font_family || 'helv',
-    font_size:   parseFloat(sizeSlider?.value ?? _opts.font_size ?? 87),
+    font_size:   parseFloat(sizeSlider?.value ?? _opts.font_size ?? 48),
     color:       /^#[0-9A-Fa-f]{6}$/i.test(color) ? color.toUpperCase() : (_opts.color || '#CC0000'),
     opacity:     Math.max(0.05, Math.min(1, opacityPct / 100)),
-    angle:       parseFloat(angleSlider?.value ?? _opts.angle ?? -45),
+    angle:       Number.isFinite(_opts.angle) ? _opts.angle : -45,
     spacing:     parseFloat(spaceSlider?.value ?? _opts.spacing ?? 0),
     x_pct:       Number.isFinite(_opts.x_pct) ? _opts.x_pct : 50,
     y_pct:       Number.isFinite(_opts.y_pct) ? _opts.y_pct : 50,
+    signature_data_url: _opts.signature_data_url || '',
+    sign_width_pct: parseFloat(signSize?.value ?? _opts.sign_width_pct ?? 34),
   };
 }
 
@@ -856,16 +1072,24 @@ async function _submitWatermark(file, opts, outputFilename) {
 
   // Normalize once — never use || for numeric fields (0° / 0% must stay 0)
   const payload = {
-    text:        (opts.text || 'CONFIDENTIAL').trim() || 'CONFIDENTIAL',
+    mode:        opts.mode === 'sign' && opts.signature_data_url ? 'sign' : 'text',
+    text:        (opts.text || '').trim(),
     font_family: opts.font_family || 'helv',
-    font_size:   _formNum(opts.font_size, 87),
+    font_size:   _formNum(opts.font_size, 48),
     color:       opts.color || '#CC0000',
     opacity:     _formNum(opts.opacity, 0.73),
     angle:       _formNum(opts.angle, -45),
     spacing:     _formNum(opts.spacing, 0),
     x_pct:       _formNum(opts.x_pct, 50),
     y_pct:       _formNum(opts.y_pct, 50),
+    signature_data_url: opts.signature_data_url || '',
+    sign_width_pct: _formNum(opts.sign_width_pct, 34),
   };
+
+  if (payload.mode === 'text' && !payload.text) {
+    pushNotification({ type: 'warning', message: 'Add watermark text or create a signature first.' });
+    return;
+  }
 
   // Close the editor view first — shows drop zone progress
   _closeViewer(_activeContainer);
@@ -884,6 +1108,7 @@ async function _submitWatermark(file, opts, outputFilename) {
   const fd = new FormData();
   fd.append('file', file);
   fd.append('text',            payload.text);
+  fd.append('mode',            payload.mode);
   fd.append('font_family',     payload.font_family);
   fd.append('font_size',       String(payload.font_size));
   fd.append('color',           payload.color);
@@ -892,6 +1117,8 @@ async function _submitWatermark(file, opts, outputFilename) {
   fd.append('spacing',         String(payload.spacing));
   fd.append('x_pct',           String(payload.x_pct));
   fd.append('y_pct',           String(payload.y_pct));
+  fd.append('signature_data_url', payload.signature_data_url);
+  fd.append('sign_width_pct',  String(payload.sign_width_pct));
   fd.append('output_filename', outputFilename);
 
   showProgress(zone, 10, color, 'Applying Watermark…');

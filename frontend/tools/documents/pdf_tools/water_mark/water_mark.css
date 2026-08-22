@@ -16,6 +16,8 @@
   --wm-border-soft: rgba(56, 189, 248, 0.16);
   --wm-text:        #E8F6FE;
   --wm-text-dim:    rgba(186, 230, 253, 0.72);
+  font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+  letter-spacing: 0;
 }
 
 /* ─── HIDE CARDS & FEATURES STRIP WHEN VIEWER IS OPEN ─── */
@@ -98,11 +100,12 @@ body.has-wm-viewer .features-strip {
   border-radius: 8px;
   color: var(--wm-color-3);
   font-size: 12.5px;
-  font-weight: 600;
+  font-family: inherit;
+  font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
   white-space: nowrap;
-  letter-spacing: 0.01em;
+  letter-spacing: 0;
 }
 
 .wm-back-btn:hover {
@@ -121,7 +124,7 @@ body.has-wm-viewer .features-strip {
 
 .wm-file-name {
   font-size: 14px;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--wm-text);
   white-space: nowrap;
   overflow: hidden;
@@ -149,12 +152,13 @@ body.has-wm-viewer .features-strip {
   border: none;
   border-radius: 9px;
   color: #FFFFFF;
-  font-size: 13.5px;
-  font-weight: 700;
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 500;
   cursor: pointer;
   box-shadow: 0 4px 16px rgba(56, 189, 248, 0.38);
   transition: all 0.2s ease;
-  letter-spacing: 0.02em;
+  letter-spacing: 0;
   white-space: nowrap;
 }
 
@@ -189,6 +193,7 @@ body.has-wm-viewer .features-strip {
   border: none;
   color: #BAE6FD;
   font-size: 13px;
+  font-family: inherit;
   outline: none;
   width: 180px;
 }
@@ -201,7 +206,7 @@ body.has-wm-viewer .features-strip {
   padding: 0 12px 0 0;
   font-size: 13px;
   color: rgba(56, 189, 248, 0.65);
-  font-weight: 600;
+  font-weight: 500;
 }
 
 /* ─── EDITOR BODY (2-column) ─── */
@@ -234,10 +239,10 @@ body.has-wm-viewer .features-strip {
   gap: 8px;
   margin-bottom: 18px;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--wm-color);
   text-transform: uppercase;
-  letter-spacing: 0.1em;
+  letter-spacing: 0;
   align-self: flex-start;
 }
 
@@ -288,8 +293,66 @@ body.has-wm-viewer .features-strip {
   touch-action: none;
   transform: translate(-50%, -50%);
   border-radius: 3px;
-  transition: box-shadow 0.15s ease;
+  transition: box-shadow 0.15s ease, transform 0.08s linear;
   text-shadow: 0 1px 4px rgba(0,0,0,0.25);
+}
+
+.wm-draggable-label--empty {
+  display: none;
+}
+
+.wm-draggable-label--sign {
+  padding: 0;
+  min-width: 90px;
+  min-height: 34px;
+  text-shadow: none;
+  line-height: 0;
+}
+
+.wm-sign-preview-img {
+  display: block;
+  width: 100%;
+  height: auto;
+  pointer-events: none;
+  filter: drop-shadow(0 2px 3px rgba(0,0,0,0.18));
+}
+
+.wm-rotate-handle {
+  position: absolute;
+  right: -18px;
+  bottom: -18px;
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 1px solid rgba(56, 189, 248, 0.72);
+  background: rgba(8, 47, 73, 0.92);
+  color: #7DD3FC;
+  cursor: grab;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.28), 0 0 0 3px rgba(56, 189, 248, 0.12);
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(0.92);
+  transition: opacity 0.15s ease, transform 0.15s ease, background 0.15s ease;
+}
+
+.wm-draggable-label:hover .wm-rotate-handle,
+.wm-draggable-label.dragging .wm-rotate-handle,
+.wm-draggable-label.rotating .wm-rotate-handle {
+  opacity: 1;
+  pointer-events: auto;
+  transform: scale(1);
+}
+
+.wm-rotate-handle:hover,
+.wm-draggable-label.rotating .wm-rotate-handle {
+  background: rgba(14, 116, 144, 0.96);
+  color: #E8F6FE;
+}
+
+.wm-draggable-label.rotating .wm-rotate-handle {
+  cursor: grabbing;
 }
 
 .wm-draggable-label::after {
@@ -327,7 +390,7 @@ body.has-wm-viewer .features-strip {
   border-radius: 6px;
   padding: 3px 9px;
   font-size: 10.5px;
-  font-family: 'Courier New', monospace;
+  font-family: inherit;
   color: #38BDF8;
   pointer-events: none;
   backdrop-filter: blur(6px);
@@ -337,7 +400,7 @@ body.has-wm-viewer .features-strip {
   margin-top: 14px;
   font-size: 11.5px;
   color: rgba(148, 198, 230, 0.55);
-  font-style: italic;
+  font-style: normal;
   display: flex;
   align-items: center;
   gap: 6px;
@@ -398,9 +461,9 @@ body.has-wm-viewer .features-strip {
 
 .wm-section-title {
   font-size: 10.5px;
-  font-weight: 800;
+  font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.12em;
+  letter-spacing: 0;
   color: var(--wm-color);
   display: flex;
   align-items: center;
@@ -416,19 +479,19 @@ body.has-wm-viewer .features-strip {
 
 .wm-label {
   font-size: 11.5px;
-  font-weight: 600;
+  font-weight: 500;
   color: var(--wm-text-dim);
   display: flex;
   justify-content: space-between;
   align-items: center;
   margin-bottom: 5px;
-  letter-spacing: 0.01em;
+  letter-spacing: 0;
 }
 
 .wm-label-val {
-  font-family: 'Courier New', monospace;
+  font-family: inherit;
   font-size: 10.5px;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--wm-color);
   background: rgba(56, 189, 248, 0.14);
   padding: 2px 7px;
@@ -444,11 +507,12 @@ body.has-wm-viewer .features-strip {
   border-radius: 9px;
   color: #BAE6FD;
   font-size: 13.5px;
-  font-weight: 600;
+  font-family: inherit;
+  font-weight: 500;
   outline: none;
   transition: border-color 0.2s, box-shadow 0.2s, background 0.2s;
   box-sizing: border-box;
-  letter-spacing: 0.02em;
+  letter-spacing: 0;
 }
 
 .wm-text-input::placeholder {
@@ -473,13 +537,14 @@ body.has-wm-viewer .features-strip {
   border: 1px solid rgba(56, 189, 248, 0.22);
   color: var(--wm-color-3);
   font-size: 10px;
-  font-weight: 700;
+  font-family: inherit;
+  font-weight: 500;
   padding: 4px 10px;
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.15s ease;
   white-space: nowrap;
-  letter-spacing: 0.05em;
+  letter-spacing: 0;
   text-transform: uppercase;
 }
 
@@ -510,6 +575,7 @@ body.has-wm-viewer .features-strip {
   border-radius: 8px;
   color: #BAE6FD;
   font-size: 12px;
+  font-family: inherit;
   outline: none;
   cursor: pointer;
   appearance: none;
@@ -587,8 +653,8 @@ body.has-wm-viewer .features-strip {
 }
 
 .wm-color-hex {
-  font-family: 'Courier New', monospace;
-  letter-spacing: 0.06em;
+  font-family: inherit;
+  letter-spacing: 0;
   text-transform: uppercase;
 }
 
@@ -634,6 +700,226 @@ body.has-wm-viewer .features-strip {
   pointer-events: none;
 }
 
+.wm-add-sign-card {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.wm-add-sign-btn {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 13px 14px;
+  background: linear-gradient(135deg, rgba(56, 189, 248, 0.17), rgba(14, 165, 233, 0.10));
+  border: 1px solid rgba(56, 189, 248, 0.34);
+  border-radius: 10px;
+  color: var(--wm-text);
+  font-family: inherit;
+  cursor: pointer;
+  text-align: left;
+  transition: transform 0.18s ease, border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.wm-add-sign-btn:hover {
+  transform: translateY(-1px);
+  border-color: rgba(125, 211, 252, 0.72);
+  box-shadow: 0 8px 24px rgba(56, 189, 248, 0.16);
+}
+
+.wm-add-sign-icon {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 9px;
+  background: rgba(56, 189, 248, 0.16);
+  border: 1px solid rgba(56, 189, 248, 0.28);
+  color: var(--wm-color);
+  flex-shrink: 0;
+}
+
+.wm-add-sign-btn strong,
+.wm-add-sign-btn small {
+  display: block;
+}
+
+.wm-add-sign-btn strong {
+  font-size: 13.5px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.wm-add-sign-btn small,
+.wm-sign-status {
+  margin-top: 3px;
+  color: var(--wm-text-dim);
+  font-size: 11px;
+  line-height: 1.35;
+}
+
+.wm-sign-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+}
+
+.wm-sign-modal--open {
+  display: flex;
+}
+
+.wm-sign-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(2, 18, 28, 0.72);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+
+.wm-sign-dialog {
+  position: relative;
+  width: min(820px, 96vw);
+  background:
+    linear-gradient(160deg, rgba(8, 47, 73, 0.98), rgba(12, 74, 110, 0.95)),
+    rgba(14, 165, 233, 0.14);
+  border: 1px solid rgba(125, 211, 252, 0.28);
+  border-radius: 14px;
+  box-shadow: 0 24px 90px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255,255,255,0.08);
+  overflow: hidden;
+  font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+  letter-spacing: 0;
+}
+
+.wm-sign-dialog-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  padding: 20px 22px 16px;
+  border-bottom: 1px solid rgba(56, 189, 248, 0.18);
+}
+
+.wm-sign-dialog-head h3 {
+  margin: 0;
+  color: var(--wm-text);
+  font-size: 20px;
+  font-weight: 500;
+  letter-spacing: 0;
+}
+
+.wm-sign-dialog-head p {
+  margin: 4px 0 0;
+  color: var(--wm-text-dim);
+  font-size: 12.5px;
+}
+
+.wm-sign-close {
+  display: grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  background: rgba(56, 189, 248, 0.10);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 8px;
+  color: var(--wm-color-3);
+  cursor: pointer;
+  font-family: inherit;
+}
+
+.wm-sign-tools {
+  display: grid;
+  grid-template-columns: 1fr 78px 180px;
+  gap: 12px;
+  padding: 16px 22px 12px;
+}
+
+.wm-sign-tool {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  color: var(--wm-text-dim);
+  font-size: 11px;
+  font-weight: 500;
+}
+
+.wm-sign-tool--compact input {
+  width: 100%;
+  height: 42px;
+  padding: 0;
+  background: transparent;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+.wm-sign-canvas-wrap {
+  position: relative;
+  margin: 0 22px;
+  padding: 12px;
+  background:
+    linear-gradient(45deg, rgba(226, 232, 240, 0.08) 25%, transparent 25%),
+    linear-gradient(-45deg, rgba(226, 232, 240, 0.08) 25%, transparent 25%),
+    linear-gradient(45deg, transparent 75%, rgba(226, 232, 240, 0.08) 75%),
+    linear-gradient(-45deg, transparent 75%, rgba(226, 232, 240, 0.08) 75%),
+    rgba(255, 255, 255, 0.96);
+  background-position: 0 0, 0 10px, 10px -10px, -10px 0;
+  background-size: 20px 20px;
+  border: 1px solid rgba(125, 211, 252, 0.24);
+  border-radius: 12px;
+}
+
+.wm-sign-canvas-wrap::after {
+  content: '';
+  position: absolute;
+  left: 58px;
+  right: 58px;
+  bottom: 54px;
+  border-bottom: 2px dashed rgba(14, 165, 233, 0.25);
+  pointer-events: none;
+}
+
+.wm-sign-canvas-wrap canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  cursor: crosshair;
+  touch-action: none;
+}
+
+.wm-sign-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding: 16px 22px 22px;
+}
+
+.wm-sign-secondary,
+.wm-sign-primary {
+  border-radius: 8px;
+  padding: 9px 14px;
+  font-size: 12.5px;
+  font-family: inherit;
+  font-weight: 500;
+  cursor: pointer;
+}
+
+.wm-sign-secondary {
+  color: var(--wm-color-3);
+  background: rgba(56, 189, 248, 0.09);
+  border: 1px solid rgba(56, 189, 248, 0.24);
+}
+
+.wm-sign-primary {
+  color: #fff;
+  background: linear-gradient(135deg, #38BDF8, #0EA5E9);
+  border: none;
+  box-shadow: 0 8px 22px rgba(56, 189, 248, 0.28);
+}
+
 .wm-swatches {
   display: flex;
   gap: 5px;
@@ -660,39 +946,6 @@ body.has-wm-viewer .features-strip {
   border-color: #38BDF8;
   transform: scale(1.22);
   box-shadow: 0 0 0 2.5px rgba(56,189,248,0.55);
-}
-
-.wm-angle-presets {
-  display: flex;
-  gap: 5px;
-  flex-wrap: wrap;
-}
-
-.wm-angle-btn {
-  padding: 5px 11px;
-  background: rgba(56, 189, 248, 0.07);
-  border: 1px solid rgba(56, 189, 248, 0.2);
-  color: var(--wm-color-3);
-  font-size: 11px;
-  font-weight: 700;
-  border-radius: 7px;
-  cursor: pointer;
-  transition: all 0.15s ease;
-  letter-spacing: 0.03em;
-}
-
-.wm-angle-btn:hover {
-  background: rgba(56, 189, 248, 0.18);
-  border-color: rgba(56, 189, 248, 0.45);
-  color: var(--wm-text);
-  box-shadow: 0 0 8px rgba(56, 189, 248, 0.15);
-}
-
-.wm-angle-btn.active {
-  background: rgba(56, 189, 248, 0.25);
-  border-color: #38BDF8;
-  color: var(--wm-text);
-  box-shadow: 0 0 12px rgba(56, 189, 248, 0.25);
 }
 
 .wm-divider {
@@ -734,5 +987,28 @@ body.has-wm-viewer .features-strip {
 
   .wm-grid-2 {
     grid-template-columns: 1fr;
+  }
+
+  .wm-sign-modal {
+    padding: 12px;
+  }
+
+  .wm-sign-tools {
+    grid-template-columns: 1fr;
+    padding: 14px;
+  }
+
+  .wm-sign-dialog-head,
+  .wm-sign-actions {
+    padding-left: 14px;
+    padding-right: 14px;
+  }
+
+  .wm-sign-canvas-wrap {
+    margin: 0 14px;
+  }
+
+  .wm-sign-actions {
+    flex-wrap: wrap;
   }
 }

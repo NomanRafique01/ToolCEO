@@ -127,8 +127,8 @@ const PDF_TOOLS = [
   },
   {
     id: 'watermark',
-    label: 'Watermark',
-    desc: 'Add text or image watermarks',
+    label: 'WaterMark/Add Sign Tool',
+    desc: 'Add text watermarks or signatures',
     tag: 'Tool',
     color: '#38BDF8',
     bg: 'rgba(56,189,248,0.15)',

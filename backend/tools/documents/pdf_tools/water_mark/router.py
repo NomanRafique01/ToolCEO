@@ -101,15 +101,18 @@ async def pdf_watermark_info(
 )
 async def pdf_watermark_process(
     file: UploadFile = File(...),
-    text: str = Form("CONFIDENTIAL"),
+    mode: str = Form("text"),
+    text: str = Form(""),
     font_family: str = Form("helv"),
-    font_size: float = Form(36.0),
+    font_size: float = Form(48.0),
     color: str = Form("#FF0000"),
     opacity: float = Form(0.5),
     angle: float = Form(-45.0),
     spacing: float = Form(0.0),
     x_pct: float = Form(50.0),
     y_pct: float = Form(50.0),
+    signature_data_url: str = Form(""),
+    sign_width_pct: float = Form(34.0),
     password: Optional[str] = Form(None),
     output_filename: Optional[str] = Form(None),
 ):
@@ -117,6 +120,7 @@ async def pdf_watermark_process(
     raw = await _read(file)
 
     opts = WatermarkOptions(
+        mode=mode,
         text=text,
         font_family=font_family,
         font_size=font_size,
@@ -126,6 +130,8 @@ async def pdf_watermark_process(
         spacing=spacing,
         x_pct=x_pct,
         y_pct=y_pct,
+        signature_data_url=signature_data_url,
+        sign_width_pct=sign_width_pct,
     )
 
     out_name = (output_filename or "watermarked").strip()
