@@ -125,33 +125,6 @@ const PDF_TOOLS = [
     </svg>`,
   },
   {
-    id: 'editor',
-    label: 'Edit PDF',
-    desc: 'Prompt-based PDF editing workspace',
-    tag: 'Tool',
-    color: '#00E5C0',
-    bg: 'rgba(0,229,192,0.15)',
-    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
-      <rect x="2" y="1.5" width="10" height="13" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
-      <path d="M8 1.5l4 4H8V1.5Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
-      <path d="M4.5 10.5l.6-2 4.7-4.7a1.2 1.2 0 0 1 1.7 1.7L6.8 10.2l-2.3.3Z" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/>
-      <path d="M9.1 4.5l1.7 1.7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
-    </svg>`,
-  },
-  {
-    id: 'watermark',
-    label: 'WaterMark/Add Sign Tool',
-    desc: 'Add text watermarks or signatures',
-    tag: 'Tool',
-    color: '#38BDF8',
-    bg: 'rgba(56,189,248,0.15)',
-    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
-      <rect x="2" y="2" width="12" height="12" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
-      <text x="3.5" y="11.5" font-size="7" font-weight="700" fill="currentColor" opacity="0.5" font-family="sans-serif">W</text>
-      <line x1="2" y1="2" x2="14" y2="14" stroke="currentColor" stroke-width="0.8" stroke-linecap="round" opacity="0.35"/>
-    </svg>`,
-  },
-  {
     id: 'extractor',
     label: 'Extract Images',
     desc: 'Pull embedded images out of PDFs',
@@ -164,6 +137,33 @@ const PDF_TOOLS = [
       <rect x="5" y="6" width="9" height="7" rx="1.2" stroke="currentColor" stroke-width="1.3"/>
       <circle cx="8" cy="8.3" r="0.9" stroke="currentColor" stroke-width="1"/>
       <path d="M5 12l2.4-2.4 1.8 1.8 1.4-1.4L14 12" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`,
+  },
+  {
+    id: 'watermark',
+    label: 'WaterMark/Add Sign Pdf',
+    desc: 'Add text watermarks or signatures',
+    tag: 'Tool',
+    color: '#38BDF8',
+    bg: 'rgba(56,189,248,0.15)',
+    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+      <rect x="2" y="2" width="12" height="12" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+      <text x="3.5" y="11.5" font-size="7" font-weight="700" fill="currentColor" opacity="0.5" font-family="sans-serif">W</text>
+      <line x1="2" y1="2" x2="14" y2="14" stroke="currentColor" stroke-width="0.8" stroke-linecap="round" opacity="0.35"/>
+    </svg>`,
+  },
+  {
+    id: 'editor',
+    label: 'Edit PDF',
+    desc: 'Prompt-based PDF editing workspace',
+    tag: 'Tool',
+    color: '#00E5C0',
+    bg: 'rgba(0,229,192,0.15)',
+    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+      <rect x="2" y="1.5" width="10" height="13" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M8 1.5l4 4H8V1.5Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      <path d="M4.5 10.5l.6-2 4.7-4.7a1.2 1.2 0 0 1 1.7 1.7L6.8 10.2l-2.3.3Z" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M9.1 4.5l1.7 1.7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
     </svg>`,
   },
 ];
