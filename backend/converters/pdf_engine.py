@@ -6,12 +6,10 @@ Depends on: PyMuPDF (fitz), pytesseract, Pillow
 from __future__ import annotations
 
 import io
-import os
-import tempfile
-from pathlib import Path
 from typing import Optional
 
 import fitz  # PyMuPDF
+from platform_tools import find_tesseract, install_message
 
 
 # ---------------------------------------------------------------------------
@@ -296,6 +294,11 @@ def ocr_pdf(data: bytes, language: str = "eng", dpi: int = 300) -> str:
             "pytesseract and Pillow are required for OCR. "
             "Install them: pip install pytesseract Pillow"
         ) from exc
+
+    tesseract_cmd = find_tesseract()
+    if not tesseract_cmd:
+        raise RuntimeError(install_message("tesseract"))
+    pytesseract.pytesseract.tesseract_cmd = tesseract_cmd
 
     doc = _open_bytes(data)
     all_text: list[str] = []

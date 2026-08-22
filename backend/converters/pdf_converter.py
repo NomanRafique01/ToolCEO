@@ -10,7 +10,6 @@ External tools required (must be on PATH):
 from __future__ import annotations
 
 import io
-import os
 import shutil
 import subprocess
 import tempfile
@@ -19,6 +18,12 @@ from pathlib import Path
 from typing import Callable
 
 import fitz  # PyMuPDF
+from platform_tools import (
+    find_libreoffice,
+    find_pandoc,
+    install_message,
+    require_binary,
+)
 
 
 # ---------------------------------------------------------------------------
@@ -27,6 +32,12 @@ import fitz  # PyMuPDF
 
 def _which(cmd: str) -> str:
     """Return full path of *cmd* or raise RuntimeError if not found."""
+    if cmd == "pandoc":
+        path = find_pandoc()
+        if path is None:
+            raise RuntimeError(install_message("pandoc"))
+        return path
+
     path = shutil.which(cmd)
     if path is None:
         raise RuntimeError(
@@ -52,15 +63,7 @@ def _run(args: list[str], cwd: str | None = None) -> None:
 
 
 def _soffice() -> str:
-    # LibreOffice may be installed as 'soffice' or 'libreoffice'
-    for name in ("soffice", "libreoffice"):
-        p = shutil.which(name)
-        if p:
-            return p
-    raise RuntimeError(
-        "LibreOffice (soffice / libreoffice) was not found on PATH. "
-        "Install LibreOffice and ensure it is on your system PATH."
-    )
+    return require_binary("libreoffice", find_libreoffice())
 
 
 def _with_tmp(suffix: str, data: bytes, fn: Callable[[Path], bytes]) -> bytes:

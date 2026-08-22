@@ -33,9 +33,18 @@ import {
   removeRotatePanel,
 } from '../tools/documents/pdf_tools/rotate/rotate.js';
 import {
+  handleEditorFilePicked,
+  insertImageIntoActiveEditor,
+  removeEditorPanel,
+} from '../tools/documents/pdf_tools/editor/editor.js';
+import {
   handleWatermarkFilePicked,
   removeWatermarkPanel,
 } from '../tools/documents/pdf_tools/water_mark/water_mark.js';
+import {
+  handleExtractorFilePicked,
+  removeExtractorPanel,
+} from '../tools/documents/pdf_tools/extractor/extractor.js';
 
 const BACKEND = 'http://127.0.0.1:8000';
 
@@ -62,7 +71,7 @@ const ENDPOINT_MAP = {
 // ─── WARNING NOTIFICATIONS ──────────────────────────────────────────────────
 
 const PDF_TOOL_IDS = new Set([
-  'merge', 'split', 'compress', 'rotate', 'encrypt', 'watermark', 'ocr', 'metadata',
+  'merge', 'split', 'compress', 'rotate', 'editor', 'encrypt', 'watermark', 'extractor', 'metadata',
   'pdf-docx', 'pdf-html', 'pdf-txt', 'pdf-images'
 ]);
 
@@ -103,7 +112,7 @@ const DEFAULT_SUB   = 'or click to browse';
 const DEFAULT_PRIV  = 'Your files never leave your device.';
 const DEFAULT_TITLE = 'Welcome back, CEO';
 const DEFAULT_HINT  = 'Drag anywhere';
-const DEFAULT_SUBT  = 'The all-in-one offline file converter for Windows.';
+const DEFAULT_SUBT  = 'The all-in-one offline file converter for Windows, macOS, and Linux.';
 
 // ─── HERO + DROP ZONE MORPH ───────────────────────────────────────────────────
 
@@ -152,7 +161,9 @@ function _updateDropZone(tool) {
     removeCompressPanel();
     removeEncryptPanel();
     removeRotatePanel();
+    removeEditorPanel();
     removeWatermarkPanel();
+    removeExtractorPanel();
 
     const mainEl   = zone.querySelector('.drop-main-text');
     const subEl    = zone.querySelector('.drop-browse');
@@ -181,7 +192,9 @@ function _updateDropZone(tool) {
   removeCompressPanel();     // hide previous compress settings panel if tool changed
   removeEncryptPanel();      // hide previous encrypt settings panel if tool changed
   removeRotatePanel();       // hide previous rotate thumbnail if tool changed
+  removeEditorPanel();       // hide previous edit PDF placeholder panel if tool changed
   removeWatermarkPanel();    // hide previous watermark editor panel if tool changed
+  removeExtractorPanel();    // hide previous extractor page picker if tool changed
 
   zone.style.setProperty('--dz-color', color);
   zone.style.setProperty('--dz-bg', bg);
@@ -569,7 +582,9 @@ function _resetAfterSave(zone) {
     removeCompressPanel();
     removeEncryptPanel();
     removeRotatePanel();
+    removeEditorPanel();
     removeWatermarkPanel();
+    removeExtractorPanel();
     const tool = getActiveTool();
     if (tool) _updateDropZone(tool);
   }, 1800);
@@ -635,7 +650,9 @@ function _showDownload(zone, filename, jobId, color) {
       removeCompressPanel();
       removeEncryptPanel();
       removeRotatePanel();
+      removeEditorPanel();
       removeWatermarkPanel();
+      removeExtractorPanel();
       const tool = getActiveTool();
       if (tool) _updateDropZone(tool);
     });
@@ -824,9 +841,20 @@ async function _submitFile(files) {
     return;
   }
 
+  if (tool.id === 'editor') {
+    handleEditorFilePicked(files[0]);
+    return;
+  }
+
   // Watermark tool has its own HD editor frame flow — delegated to the watermark module
   if (tool.id === 'watermark') {
     handleWatermarkFilePicked(files[0]);
+    return;
+  }
+
+  // Extract Images has its own visual page-selection flow
+  if (tool.id === 'extractor') {
+    handleExtractorFilePicked(files[0]);
     return;
   }
 
@@ -952,7 +980,7 @@ async function _handlePasteFromClipboard() {
   try {
     const files = [];
 
-    // Method 1: Electron IPC (Reads Windows Explorer copied files or clipboard image directly)
+    // Method 1: Electron IPC (reads OS-copied files or clipboard images directly)
     if (window.toolceo && window.toolceo.readClipboardFile) {
       const result = await window.toolceo.readClipboardFile();
       if (result.ok && result.buffer) {
@@ -1003,6 +1031,15 @@ async function _handlePasteFromClipboard() {
     }
 
     if (files.length > 0) {
+      if (tool.id === 'editor' && files[0]?.type?.startsWith('image/') && insertImageIntoActiveEditor(files[0])) {
+        pushNotification({
+          type: 'info',
+          message: 'Image Pasted',
+          detail: 'Image added to the current PDF page.',
+        });
+        return;
+      }
+
       pushNotification({
         type: 'info',
         message: 'File Pasted from Clipboard',
@@ -1052,6 +1089,10 @@ export function initDropZone() {
       removeMergePanel();
       removeCompressPanel();
       removeEncryptPanel();
+      removeRotatePanel();
+      removeEditorPanel();
+      removeWatermarkPanel();
+      removeExtractorPanel();
       const tool = getActiveTool();
       if (tool) _updateDropZone(tool);
     }
@@ -1079,6 +1120,14 @@ export function initDropZone() {
     if (e.clipboardData && e.clipboardData.files && e.clipboardData.files.length > 0) {
       e.preventDefault();
       const files = Array.from(e.clipboardData.files);
+      if (tool.id === 'editor' && files[0]?.type?.startsWith('image/') && insertImageIntoActiveEditor(files[0])) {
+        pushNotification({
+          type: 'info',
+          message: 'Image Pasted',
+          detail: 'Image added to the current PDF page.',
+        });
+        return;
+      }
       pushNotification({
         type: 'info',
         message: 'File Pasted from Clipboard',
@@ -1098,6 +1147,14 @@ export function initDropZone() {
       }
       if (files.length > 0) {
         e.preventDefault();
+        if (tool.id === 'editor' && files[0]?.type?.startsWith('image/') && insertImageIntoActiveEditor(files[0])) {
+          pushNotification({
+            type: 'info',
+            message: 'Image Pasted',
+            detail: 'Image added to the current PDF page.',
+          });
+          return;
+        }
         pushNotification({
           type: 'info',
           message: 'File Pasted from Clipboard',
@@ -1119,7 +1176,7 @@ export function initDropZone() {
       '.dz-download-wrap, .dz-error-wrap, .dz-pdf-thumb-remove, ' +
       '.dz-merge-card-remove, .dz-merge-add-btn, .merge-queue-panel, .split-info-panel, ' +
       '.compress-settings-panel, .dz-compress-thumb-remove, .cmp-panel, ' +
-      '.encrypt-settings-panel, .dz-encrypt-thumb-remove, .enc-panel, .dz-paste-btn'
+      '.encrypt-settings-panel, .dz-encrypt-thumb-remove, .enc-panel, .extractor-info-panel, .dz-editor-thumb-remove, .dz-paste-btn'
     )) return;
     if (!getActiveTool()) { showNoToolWarning(); return; }
     // If already processing, scanning, done, or a file thumbnail is currently loaded, do not open file window
@@ -1145,7 +1202,7 @@ export function initDropZone() {
       fileInput.accept   = '.pdf,.tceo,application/pdf,application/octet-stream';
     } else {
       fileInput.multiple = false;
-      fileInput.accept   = '*/*';
+      fileInput.accept   = PDF_TOOL_IDS.has(tool.id) ? '.pdf,application/pdf' : '*/*';
     }
     fileInput.click();
   });

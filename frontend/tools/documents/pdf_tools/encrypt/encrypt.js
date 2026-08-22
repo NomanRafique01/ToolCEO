@@ -23,6 +23,7 @@ import {
 } from '../../../shared/progress.js';
 
 const BACKEND = 'http://127.0.0.1:8000';
+const TCEO_THUMBNAIL_SRC = '../assets/fileimage.png';
 
 // ─── MODULE STATE ──────────────────────────────────────────────────────────────
 
@@ -77,14 +78,7 @@ function _showEncryptThumb(zone, file, color, dataUri) {
   const thumbContent = dataUri
     ? `<img class="dz-encrypt-thumb-img" src="${dataUri}" alt="PDF preview" draggable="false" />`
     : (_isTceo
-        ? `<svg class="dz-encrypt-thumb-icon" viewBox="0 0 90 116" xmlns="http://www.w3.org/2000/svg">
-            <rect x="0" y="0" width="90" height="116" rx="6" fill="var(--bg-card)"/>
-            <polygon points="62,0 90,28 62,28" fill="color-mix(in srgb, ${color} 20%, var(--bg-card))"/>
-            <polyline points="62,0 62,28 90,28" fill="none" stroke="color-mix(in srgb, ${color} 40%, transparent)" stroke-width="1"/>
-            <path d="M45 38 L65 48 V64 C65 76 45 88 45 88 C45 88 25 76 25 64 V48 Z" fill="none" stroke="${color}" stroke-width="2.5" stroke-linejoin="round"/>
-            <path d="M45 54 V64 M45 70 V71" stroke="${color}" stroke-width="2.5" stroke-linecap="round"/>
-            <text x="45" y="102" font-family="Arial,sans-serif" font-size="10" font-weight="bold" fill="${color}" text-anchor="middle">.TCEO</text>
-          </svg>`
+        ? `<img class="dz-encrypt-thumb-img dz-encrypt-thumb-img--tceo" src="${TCEO_THUMBNAIL_SRC}" alt="ToolCEO Vault file" draggable="false" />`
         : `<svg class="dz-encrypt-thumb-icon" viewBox="0 0 90 116" xmlns="http://www.w3.org/2000/svg">
             <rect x="0" y="0" width="90" height="116" fill="#ffffff"/>
             <polygon points="62,0 90,28 62,28" fill="#e0e0e0"/>
@@ -100,7 +94,7 @@ function _showEncryptThumb(zone, file, color, dataUri) {
   wrap.className = 'dz-encrypt-thumb-wrap';
   wrap.innerHTML = `
     <div class="dz-encrypt-thumb-card">
-      <div class="dz-encrypt-thumb-frame" style="border:2px solid ${color};box-shadow:0 4px 18px rgba(0,0,0,0.45)">
+      <div class="dz-encrypt-thumb-frame ${_isTceo ? 'dz-encrypt-thumb-frame--tceo' : ''}" style="border:2px solid ${color};box-shadow:0 4px 18px rgba(0,0,0,0.45)">
         ${thumbContent}
       </div>
       <button class="dz-encrypt-thumb-remove" title="Remove file"
@@ -1042,7 +1036,7 @@ async function _submitDecrypt(opts) {
 
     if (!res.ok) {
       const json = await res.json().catch(() => ({}));
-      const errMsg = json.message || 'Incorrect password or file is invalid.';
+      const errMsg = (json.message || 'Incorrect password.').replace(/\s+or\s+.*$/i, '');
 
       clearBgJob(true);
 
@@ -1217,6 +1211,10 @@ async function _submitVaultUnlock(opts) {
   const passInput = panel ? panel.querySelector('#vlt-pass') : null;
   const errEl     = panel ? panel.querySelector('#vlt-field-error') : null;
   const submitBtn = panel ? panel.querySelector('#enc-submit-btn') : null;
+  const restoreVaultThumb = () => {
+    resetZoneContent(zone);
+    _showEncryptThumb(zone, file, color, null);
+  };
 
   if (errEl) { errEl.style.display = 'none'; errEl.textContent = ''; }
   if (passInput) { passInput.classList.remove('enc-input--error'); }
@@ -1232,15 +1230,13 @@ async function _submitVaultUnlock(opts) {
 
   setBgJob({ jobId: null, tool, filename: outName, progress: 15, state: 'running', sse: null });
   syncBgJobBar();
+  showProgress(zone, 15, color, 'Unlocking Vault...');
 
   const fd = new FormData();
   fd.append('file', file);
   fd.append('password', password);
 
   try {
-    const bgMid = getBgJob();
-    if (bgMid) { bgMid.progress = 50; syncBgJobBar(); }
-
     const res = await fetch(`${BACKEND}/api/pdf/vault-unlock`, {
       method: 'POST',
       body: fd,
@@ -1248,9 +1244,10 @@ async function _submitVaultUnlock(opts) {
 
     if (!res.ok) {
       const json = await res.json().catch(() => ({}));
-      const errMsg = json.message || 'Incorrect password or invalid vault file.';
+      const errMsg = (json.message || 'Incorrect password.').replace(/\s+or\s+.*$/i, '');
 
       clearBgJob(true);
+      restoreVaultThumb();
 
       if (submitBtn) {
         submitBtn.disabled = false;
@@ -1276,7 +1273,12 @@ async function _submitVaultUnlock(opts) {
       return;
     }
 
+    updateProgress(zone, 50, color);
+    const bgMid = getBgJob();
+    if (bgMid) { bgMid.progress = 50; syncBgJobBar(); }
+
     const blob = await res.blob();
+    updateProgress(zone, 100, color);
 
     const bgDone = getBgJob();
     if (bgDone) {
@@ -1308,6 +1310,7 @@ async function _submitVaultUnlock(opts) {
 
   } catch (err) {
     clearBgJob(true);
+    restoreVaultThumb();
     if (submitBtn) {
       submitBtn.disabled = false;
       submitBtn.innerHTML = origBtnText;

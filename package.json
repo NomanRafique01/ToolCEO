@@ -19,6 +19,7 @@
     "jimp": "^1.6.1"
   },
   "dependencies": {
+    "fabric": "^7.4.0",
     "sharp": "^0.33.5"
   },
   "build": {

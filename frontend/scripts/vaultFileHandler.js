@@ -2,7 +2,7 @@
  * frontend/scripts/vaultFileHandler.js
  *
  * Handles the 'vault-file-open' IPC event sent by the Electron main process
- * when a .tceo file is double-clicked in Windows Explorer (or passed via CLI).
+ * when a .tceo file is opened from the OS file manager (or passed via CLI).
  *
  * Flow when a .tceo file open is received:
  *  1. Navigate sidebar to "Documents"

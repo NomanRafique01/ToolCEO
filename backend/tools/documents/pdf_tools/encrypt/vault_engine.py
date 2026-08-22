@@ -171,7 +171,7 @@ def unlock_vault_pdf(file_bytes: bytes, password: str) -> bytes:
 
     if not hmac.compare_digest(computed_checksum, expected_checksum):
         # Per security rules: do not leak tampered details on unlock, return wrong_password
-        raise ValueError("wrong_password:Incorrect password or file is invalid")
+        raise ValueError("wrong_password:Incorrect password")
 
     offset = len(MAGIC_HEADER)
     version = file_bytes[offset]
@@ -198,7 +198,7 @@ def unlock_vault_pdf(file_bytes: bytes, password: str) -> bytes:
     encrypted_payload = file_bytes[offset : offset + payload_len]
 
     if len(encrypted_payload) != payload_len:
-        raise ValueError("wrong_password:Incorrect password or file is invalid")
+        raise ValueError("wrong_password:Incorrect password")
 
     # Derive AES key
     key = hashlib.pbkdf2_hmac("sha256", password.encode("utf-8"), salt, PBKDF2_ITERATIONS, 32)
@@ -208,13 +208,13 @@ def unlock_vault_pdf(file_bytes: bytes, password: str) -> bytes:
         padded = _aes_cbc_decrypt(key, iv, encrypted_payload)
         compressed_payload = _unpad_pkcs7(padded)
     except Exception:
-        raise ValueError("wrong_password:Incorrect password or file is invalid")
+        raise ValueError("wrong_password:Incorrect password")
 
     # Decompress zlib
     try:
         interleaved = zlib.decompress(compressed_payload)
     except Exception:
-        raise ValueError("wrong_password:Incorrect password or file is invalid")
+        raise ValueError("wrong_password:Incorrect password")
 
     # Reverse noise interleaving
     restored_scrambled = bytearray()
@@ -226,14 +226,14 @@ def unlock_vault_pdf(file_bytes: bytes, password: str) -> bytes:
             restored_scrambled.extend(block)
 
     if len(restored_scrambled) < 8:
-        raise ValueError("wrong_password:Incorrect password or file is invalid")
+        raise ValueError("wrong_password:Incorrect password")
 
     # Restore original PDF header (%PDF-1.7)
     restored_scrambled[0:8] = DEFAULT_PDF_HEADER
     recovered_pdf = bytes(restored_scrambled)
 
     if not recovered_pdf.startswith(b"%PDF-"):
-        raise ValueError("wrong_password:Incorrect password or file is invalid")
+        raise ValueError("wrong_password:Incorrect password")
 
     return recovered_pdf
 

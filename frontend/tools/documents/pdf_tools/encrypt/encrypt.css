@@ -55,6 +55,15 @@
   background: #fff;
 }
 
+.dz-encrypt-thumb-frame--tceo {
+  width: 128px;
+  height: 128px;
+  background: transparent;
+  border: none !important;
+  box-shadow: none !important;
+  overflow: visible;
+}
+
 .dz-encrypt-thumb-img {
   width: 100%;
   height: 100%;
@@ -63,6 +72,12 @@
   border-radius: 4px;
   image-rendering: -webkit-optimize-contrast;
   image-rendering: high-quality;
+}
+
+.dz-encrypt-thumb-img--tceo {
+  object-fit: contain;
+  padding: 0;
+  background: transparent;
 }
 
 .dz-encrypt-thumb-icon {

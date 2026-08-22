@@ -126,6 +126,20 @@ const PDF_TOOLS = [
     </svg>`,
   },
   {
+    id: 'editor',
+    label: 'Edit PDF',
+    desc: 'Prompt-based PDF editing workspace',
+    tag: 'Tool',
+    color: '#00E5C0',
+    bg: 'rgba(0,229,192,0.15)',
+    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+      <rect x="2" y="1.5" width="10" height="13" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M8 1.5l4 4H8V1.5Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      <path d="M4.5 10.5l.6-2 4.7-4.7a1.2 1.2 0 0 1 1.7 1.7L6.8 10.2l-2.3.3Z" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M9.1 4.5l1.7 1.7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+    </svg>`,
+  },
+  {
     id: 'watermark',
     label: 'WaterMark/Add Sign Tool',
     desc: 'Add text watermarks or signatures',
@@ -139,35 +153,18 @@ const PDF_TOOLS = [
     </svg>`,
   },
   {
-    id: 'ocr',
-    label: 'OCR PDF',
-    desc: 'Extract text from scanned PDFs',
+    id: 'extractor',
+    label: 'Extract Images',
+    desc: 'Pull embedded images out of PDFs',
     tag: 'Tool',
     color: '#F472B6',
     bg: 'rgba(244,114,182,0.15)',
     icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
-      <rect x="1" y="4" width="8" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
-      <line x1="3" y1="7" x2="7" y2="7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
-      <line x1="3" y1="9" x2="6" y2="9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
-      <path d="M11 5h3M11 8h3M11 11h2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-      <path d="M9.5 4.5l1 1.5-1 1.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>`,
-  },
-  {
-    id: 'metadata',
-    label: 'PDF Metadata',
-    desc: 'View and edit PDF properties',
-    tag: 'Tool',
-    color: '#2DD4BF',
-    bg: 'rgba(45,212,191,0.15)',
-    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
-      <rect x="2" y="1" width="12" height="14" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
-      <line x1="5" y1="5" x2="11" y2="5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
-      <line x1="5" y1="7.5" x2="11" y2="7.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
-      <line x1="5" y1="10" x2="8" y2="10" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
-      <circle cx="11" cy="11.5" r="2.5" stroke="currentColor" stroke-width="1.2"/>
-      <line x1="11" y1="10.8" x2="11" y2="11.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-      <circle cx="11" cy="10" r="0.5" fill="currentColor"/>
+      <rect x="2" y="2" width="9" height="12" rx="1.4" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M8 2l3 3H8V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      <rect x="5" y="6" width="9" height="7" rx="1.2" stroke="currentColor" stroke-width="1.3"/>
+      <circle cx="8" cy="8.3" r="0.9" stroke="currentColor" stroke-width="1"/>
+      <path d="M5 12l2.4-2.4 1.8 1.8 1.4-1.4L14 12" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
     </svg>`,
   },
 ];
