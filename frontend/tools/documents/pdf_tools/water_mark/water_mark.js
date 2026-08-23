@@ -1045,11 +1045,6 @@ async function _loadPdfIntoViewer(container, file) {
       _populateViewer(viewer);
     }
 
-    pushNotification({
-      type: 'info',
-      message: 'PDF Loaded',
-      detail: `${file.name} (${_wmPageCount} page${_wmPageCount === 1 ? '' : 's'}) ready for watermark.`,
-    });
   } catch (err) {
     if (zone) showError(zone, `Could not read PDF: ${err.message}`);
     pushNotification({

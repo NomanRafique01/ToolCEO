@@ -172,8 +172,26 @@ const PDF_TOOLS = [
 
 const PDF_CONVERSIONS = [
   {
-    id: 'pdf-docx',
-    label: 'PDF → DOCX',
+    id: 'pdf-excel',
+    label: 'PDF → Excel',
+    desc: 'Extract tables from PDF into spreadsheet',
+    tag: 'Convert',
+    color: '#34D399',
+    bg: 'rgba(52,211,153,0.15)',
+    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+      <rect x="1" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M4 2l3 3H4V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      <path d="M7 9l2 1.5L7 12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="9" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <line x1="9" y1="5" x2="15" y2="5" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+      <line x1="9" y1="7" x2="15" y2="7" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+      <line x1="11" y1="5" x2="11" y2="9" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+      <line x1="13" y1="5" x2="13" y2="9" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+    </svg>`,
+  },
+  {
+    id: 'pdf-word',
+    label: 'PDF → Word',
     desc: 'Convert PDF to editable Word',
     tag: 'Convert',
     color: '#60A5FA',
@@ -250,6 +268,22 @@ const PDF_CONVERSIONS = [
       <rect x="9" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
       <path d="M12 2l3 3h-3V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
       <line x1="11" y1="7" x2="13" y2="7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+    </svg>`,
+  },
+  {
+    id: 'pdf-ppt',
+    label: 'PDF → PPT',
+    desc: 'Convert PDF to PowerPoint slides',
+    tag: 'Convert',
+    color: '#F97316',
+    bg: 'rgba(249,115,22,0.15)',
+    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+      <rect x="1" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M4 2l3 3H4V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      <path d="M7 9l2 1.5L7 12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="9" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M11 5h2a1 1 0 0 1 0 2h-2V5Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      <line x1="11" y1="8" x2="11" y2="9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
     </svg>`,
   },
   {

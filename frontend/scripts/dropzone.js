@@ -45,6 +45,22 @@ import {
   handleExtractorFilePicked,
   removeExtractorPanel,
 } from '../tools/documents/pdf_tools/extractor/extractor.js';
+import {
+  handlePdfWordFilePicked,
+  removePdfWordPanel,
+} from '../tools/documents/pdf_convertor/pdf_word/pdf_word.js';
+import {
+  handlePdfExcelFilePicked,
+  removePdfExcelPanel,
+} from '../tools/documents/pdf_convertor/pdf_excel/pdf_excel.js';
+import {
+  handlePdfHtmlFilePicked,
+  removePdfHtmlPanel,
+} from '../tools/documents/pdf_convertor/pdf_html/pdf_html.js';
+import {
+  handlePdfTxtFilePicked,
+  removePdfTxtPanel,
+} from '../tools/documents/pdf_convertor/pdf_txt/pdf_txt.js';
 
 const BACKEND = 'http://127.0.0.1:8000';
 
@@ -66,13 +82,14 @@ const ENDPOINT_MAP = {
   'pdf-images' : { url: `${BACKEND}/api/convert/pdf-to-images`, multi: false },
   'docx-pdf'   : { url: `${BACKEND}/api/convert/docx-to-pdf`,   multi: false },
   'images-pdf' : { url: `${BACKEND}/api/convert/images-to-pdf`, multi: true  },
+  'pdf-ppt'    : { url: `${BACKEND}/api/convert/pdf-to-ppt`,    multi: false },
 };
 
 // ─── WARNING NOTIFICATIONS ──────────────────────────────────────────────────
 
 const PDF_TOOL_IDS = new Set([
   'merge', 'split', 'compress', 'rotate', 'editor', 'encrypt', 'watermark', 'extractor', 'metadata',
-  'pdf-docx', 'pdf-html', 'pdf-txt', 'pdf-images'
+  'pdf-docx', 'pdf-html', 'pdf-txt', 'pdf-images', 'pdf-word', 'pdf-excel'
 ]);
 
 export function showNoToolWarning() {
@@ -164,6 +181,10 @@ function _updateDropZone(tool) {
     removeEditorPanel();
     removeWatermarkPanel();
     removeExtractorPanel();
+    removePdfWordPanel();
+    removePdfExcelPanel();
+    removePdfHtmlPanel();
+    removePdfTxtPanel();
 
     const mainEl   = zone.querySelector('.drop-main-text');
     const subEl    = zone.querySelector('.drop-browse');
@@ -195,6 +216,10 @@ function _updateDropZone(tool) {
   removeEditorPanel();       // hide previous edit PDF placeholder panel if tool changed
   removeWatermarkPanel();    // hide previous watermark editor panel if tool changed
   removeExtractorPanel();    // hide previous extractor page picker if tool changed
+  removePdfWordPanel();      // hide previous PDF→Word settings panel if tool changed
+  removePdfExcelPanel();     // hide previous PDF→Excel settings panel if tool changed
+  removePdfHtmlPanel();      // hide previous PDF→HTML settings panel if tool changed
+  removePdfTxtPanel();       // hide previous PDF→TXT settings panel if tool changed
 
   zone.style.setProperty('--dz-color', color);
   zone.style.setProperty('--dz-bg', bg);
@@ -492,11 +517,14 @@ async function _dlPanelSave(jobId, filename, color, panel) {
 /** Remove any progress / download / error overlay from inside the zone. */
 function _resetZoneContent(zone) {
   zone.querySelectorAll(
-    '.dz-progress-wrap, .dz-download-wrap, .dz-error-wrap, .dz-pdf-thumb-wrap'
+    '.dz-progress-wrap, .dz-download-wrap, .dz-error-wrap, .dz-pdf-thumb-wrap, ' +
+    '.dz-pdf-word-thumb-wrap, .dz-pdf-excel-thumb-wrap, .dz-pdf-html-thumb-wrap, .dz-pdf-txt-thumb-wrap'
   ).forEach((el) => el.remove());
   zone.classList.remove(
     'dz-state-processing', 'dz-state-done', 'dz-state-error',
-    'dz-state-scanning',   'dz-has-thumb'
+    'dz-state-scanning',   'dz-has-thumb',
+    'dz-has-pdf-word-thumb', 'dz-has-pdf-excel-thumb',
+    'dz-has-pdf-html-thumb', 'dz-has-pdf-txt-thumb'
   );
 }
 
@@ -585,6 +613,10 @@ function _resetAfterSave(zone) {
     removeEditorPanel();
     removeWatermarkPanel();
     removeExtractorPanel();
+    removePdfWordPanel();
+    removePdfExcelPanel();
+    removePdfHtmlPanel();
+    removePdfTxtPanel();
     const tool = getActiveTool();
     if (tool) _updateDropZone(tool);
   }, 1800);
@@ -653,6 +685,10 @@ function _showDownload(zone, filename, jobId, color) {
       removeEditorPanel();
       removeWatermarkPanel();
       removeExtractorPanel();
+      removePdfWordPanel();
+      removePdfExcelPanel();
+      removePdfHtmlPanel();
+      removePdfTxtPanel();
       const tool = getActiveTool();
       if (tool) _updateDropZone(tool);
     });
@@ -855,6 +891,30 @@ async function _submitFile(files) {
   // Extract Images has its own visual page-selection flow
   if (tool.id === 'extractor') {
     handleExtractorFilePicked(files[0]);
+    return;
+  }
+
+  // PDF → Word converter has its own settings-panel flow
+  if (tool.id === 'pdf-word') {
+    handlePdfWordFilePicked(files[0]);
+    return;
+  }
+
+  // PDF → Excel converter has its own settings-panel flow
+  if (tool.id === 'pdf-excel') {
+    handlePdfExcelFilePicked(files[0]);
+    return;
+  }
+
+  // PDF → HTML converter has its own settings-panel flow
+  if (tool.id === 'pdf-html') {
+    handlePdfHtmlFilePicked(files[0]);
+    return;
+  }
+
+  // PDF → TXT extractor has its own settings-panel flow
+  if (tool.id === 'pdf-txt') {
+    handlePdfTxtFilePicked(files[0]);
     return;
   }
 
@@ -1093,6 +1153,10 @@ export function initDropZone() {
       removeEditorPanel();
       removeWatermarkPanel();
       removeExtractorPanel();
+      removePdfWordPanel();
+      removePdfExcelPanel();
+      removePdfHtmlPanel();
+      removePdfTxtPanel();
       const tool = getActiveTool();
       if (tool) _updateDropZone(tool);
     }
@@ -1176,7 +1240,8 @@ export function initDropZone() {
       '.dz-download-wrap, .dz-error-wrap, .dz-pdf-thumb-remove, ' +
       '.dz-merge-card-remove, .dz-merge-add-btn, .merge-queue-panel, .split-info-panel, ' +
       '.compress-settings-panel, .dz-compress-thumb-remove, .cmp-panel, ' +
-      '.encrypt-settings-panel, .dz-encrypt-thumb-remove, .enc-panel, .extractor-info-panel, .dz-editor-thumb-remove, .dz-paste-btn'
+      '.encrypt-settings-panel, .dz-encrypt-thumb-remove, .enc-panel, .extractor-info-panel, .dz-editor-thumb-remove, .dz-paste-btn, ' +
+      '.dz-pdf-word-thumb-wrap, .dz-pdf-excel-thumb-wrap, .dz-pdf-html-thumb-wrap, .dz-pdf-txt-thumb-wrap'
     )) return;
     if (!getActiveTool()) { showNoToolWarning(); return; }
     // If already processing, scanning, done, or a file thumbnail is currently loaded, do not open file window
@@ -1188,6 +1253,10 @@ export function initDropZone() {
       dropZone.classList.contains('dz-has-compress-thumb') ||
       dropZone.classList.contains('dz-has-encrypt-thumb') ||
       dropZone.classList.contains('dz-has-merge-thumbs') ||
+      dropZone.classList.contains('dz-has-pdf-word-thumb') ||
+      dropZone.classList.contains('dz-has-pdf-excel-thumb') ||
+      dropZone.classList.contains('dz-has-pdf-html-thumb') ||
+      dropZone.classList.contains('dz-has-pdf-txt-thumb') ||
       dropZone.querySelector('.dz-pdf-thumb-wrap, .dz-compress-thumb-wrap, .dz-encrypt-thumb-wrap, .dz-merge-thumb-strip')
     ) {
       return;

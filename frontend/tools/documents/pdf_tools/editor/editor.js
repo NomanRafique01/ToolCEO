@@ -401,7 +401,6 @@ function _showViewer(container, color) {
   setTimeout(() => {
     cardView.classList.add('extractor-hidden');
     viewer.classList.add('extractor-viewer--visible');
-    _scrollToViewer(viewer);
   }, 300);
 }
 
@@ -691,6 +690,16 @@ async function _loadPdfIntoViewer(container, file) {
   activeViewer.querySelector('.extractor-page-count').textContent =
     `${_pageCount} page${_pageCount === 1 ? '' : 's'} ready to edit`;
   _buildPageCards(activeViewer, _pages);
+
+  // Wait for the viewer transition (300 ms) + two animation frames so the
+  // full page-card grid has been laid out before we scroll to it.
+  setTimeout(() => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        _scrollToViewer(activeViewer);
+      });
+    });
+  }, 320);
 
   _pdfLoadPromise = (_pdfDoc ? Promise.resolve(_pdfDoc) : loadPdfDocument(file))
     .then((doc) => {

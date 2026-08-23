@@ -1,0 +1,111 @@
+/* ─────────────────────────────────────────────────────────────
+   tools/documents/pdf_convertor/pdf_html/pdf_html.css
+   Styles for the PDF → HTML Converter tool.
+   Mirrors pdf_word.css exactly — only class-name prefixes differ.
+   The shared .pw-panel, .pw-header, .pw-actions etc. styles are
+   already defined in pdf_word.css (loaded globally); this file
+   only adds the thumb-specific rules for this tool.
+   ───────────────────────────────────────────────────────────── */
+
+:root {
+  --pw-color: #FB923C;   /* orange — matches the PDF → HTML card */
+}
+
+/* ─── DROP ZONE: HAS-PDF-HTML-THUMB STATE ────────────────────────────────────── */
+
+.drop-zone.dz-has-pdf-html-thumb {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+.drop-zone.dz-has-pdf-html-thumb .drop-icon,
+.drop-zone.dz-has-pdf-html-thumb .drop-main-text,
+.drop-zone.dz-has-pdf-html-thumb .drop-browse,
+.drop-zone.dz-has-pdf-html-thumb .dz-paste-btn,
+.drop-zone.dz-has-pdf-html-thumb .drop-private {
+  display: none !important;
+}
+
+/* ─── PDF THUMBNAIL (inside drop zone) ──────────────────────────────────── */
+
+.dz-pdf-html-thumb-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.dz-pdf-html-thumb-card {
+  position: relative;
+  display: inline-block;
+}
+
+.dz-pdf-html-thumb-frame {
+  width: 90px;
+  height: 116px;
+  border-radius: 6px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+}
+
+.dz-pdf-html-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 4px;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: high-quality;
+}
+
+.dz-pdf-html-thumb-icon {
+  width: 90px;
+  height: 116px;
+  display: block;
+}
+
+.dz-pdf-html-thumb-remove {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--bg-surface);
+  border: 1.5px solid color-mix(in srgb, var(--pw-color, #FB923C) 50%, var(--border));
+  color: var(--pw-color, #FB923C);
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 130ms ease;
+}
+
+.dz-pdf-html-thumb-remove:hover {
+  background: color-mix(in srgb, var(--pw-color, #FB923C) 15%, var(--bg-surface));
+}
+
+.dz-pdf-html-thumb-name {
+  font-size: 12px;
+  color: var(--text-muted);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.dz-pdf-html-thumb-size {
+  font-size: 11px;
+  color: color-mix(in srgb, var(--pw-color, #FB923C) 90%, transparent);
+  background: color-mix(in srgb, var(--pw-color, #FB923C) 10%, transparent);
+  border-radius: 10px;
+  padding: 1px 7px;
+  line-height: 1.5;
+}

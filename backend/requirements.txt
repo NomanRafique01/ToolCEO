@@ -8,3 +8,9 @@ fonttools
 pikepdf
 pycryptodome
 cryptography
+pdfplumber
+pdfminer.six
+pandas
+openpyxl
+beautifulsoup4
+lxml

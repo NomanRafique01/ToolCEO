@@ -13,6 +13,11 @@ from tools.documents.pdf_tools.rotate.router      import router as rotate_router
 from tools.documents.pdf_tools.editor.router      import router as editor_router
 from tools.documents.pdf_tools.water_mark.router   import router as watermark_router
 from tools.documents.pdf_tools.extractor.router   import router as extractor_router
+# PDF Convertor tools
+from tools.documents.pdf_convertor.pdf_word.router  import router as pdf_word_router
+from tools.documents.pdf_convertor.pdf_excel.router import router as pdf_excel_router
+from tools.documents.pdf_convertor.pdf_html.router  import router as pdf_html_router
+from tools.documents.pdf_convertor.pdf_txt.router   import router as pdf_txt_router
 
 app = FastAPI(title="ToolCEO Backend")
 
@@ -55,5 +60,13 @@ app.include_router(sse_router, prefix="/api")
 app.include_router(merger_router, prefix="/api")
 # Compressor tool — owns /api/pdf/compressor/info and /api/pdf/compressor/compress
 app.include_router(compressor_router, prefix="/api")
+# PDF → Word converter — owns /api/pdf/word/info and /api/pdf/word/convert
+app.include_router(pdf_word_router,  prefix="/api")
+# PDF → Excel converter — owns /api/pdf/excel/info and /api/pdf/excel/convert
+app.include_router(pdf_excel_router, prefix="/api")
+# PDF → HTML converter — owns /api/pdf/html/info and /api/pdf/html/convert
+app.include_router(pdf_html_router,  prefix="/api")
+# PDF → TXT extractor — owns /api/pdf/txt/info and /api/pdf/txt/convert
+app.include_router(pdf_txt_router,   prefix="/api")
 
 
