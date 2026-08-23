@@ -5,7 +5,7 @@
  *
  * Navigation flow:
  *   Ebooks (sidebar / explore card)
- *     → renderEbookFormats()          — 6 format cards (PDF, EPUB, MOBI, FB2, TXT, RTF)
+ *     → renderEbookFormats()          — 7 format cards (PDF, EPUB, MOBI, FB2, TXT, RTF, AZW3)
  *       → renderEbookConversions()    — conversion cards for the chosen format
  */
 
@@ -23,6 +23,7 @@ const FORMAT_THEME = {
   fb2:  { color: '#10B981', bg: 'rgba(16,185,129,0.15)'  },
   txt:  { color: '#A78BFA', bg: 'rgba(167,139,250,0.15)' },
   rtf:  { color: '#FBBF24', bg: 'rgba(251,191,36,0.15)'  },
+  azw3: { color: '#38BDF8', bg: 'rgba(56,189,248,0.15)'  },
 };
 
 // ─── FORMAT PICKER CARDS (top-level Ebooks panel) ─────────────────────────────
@@ -103,6 +104,20 @@ const EBOOK_FORMATS = [
       <line x1="4" y1="6"   x2="10" y2="6"   stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
       <line x1="4" y1="8.5" x2="9"  y2="8.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
       <line x1="4" y1="11"  x2="6"  y2="11"  stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+    </svg>`,
+  },
+  {
+    id: 'ebook-azw3',
+    fmt: 'azw3',
+    label: 'AZW3',
+    desc: 'Amazon Kindle Format 8 (KF8)',
+    ...FORMAT_THEME.azw3,
+    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+      <rect x="2" y="1" width="9" height="13" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M5 1v13" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+      <path d="M7 4l2 4-2 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <circle cx="13" cy="7.5" r="2" stroke="currentColor" stroke-width="1.2"/>
+      <line x1="13" y1="10.5" x2="13" y2="13" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
     </svg>`,
   },
 ];
@@ -187,6 +202,20 @@ const CONVERSIONS = {
         <line x1="10.5" y1="9"   x2="11.5" y2="9"   stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
       </svg>`,
     },
+    {
+      id: 'pdf-azw3',
+      label: 'PDF → AZW3',
+      desc: 'Convert PDF to Kindle AZW3 (KF8)',
+      tag: 'Convert',
+      icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+        <rect x="1" y="2" width="5" height="7" rx="1" stroke="currentColor" stroke-width="1.3"/>
+        <path d="M3.5 2l2.5 2.5H3.5V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+        <path d="M6 8l2 1.5L6 11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="9" y="2" width="6" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+        <path d="M11 2v9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+        <path d="M12 4.5l1.5 3-1.5 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`,
+    },
   ],
 
   // ── EPUB → * ──────────────────────────────────────────────────────────────
@@ -261,6 +290,20 @@ const CONVERSIONS = {
         <line x1="10.5" y1="5"   x2="13.5" y2="5"   stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
         <line x1="10.5" y1="7"   x2="13"   y2="7"   stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
         <line x1="10.5" y1="9"   x2="11.5" y2="9"   stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+      </svg>`,
+    },
+    {
+      id: 'epub-azw3',
+      label: 'EPUB → AZW3',
+      desc: 'Convert EPUB to Kindle AZW3 (KF8)',
+      tag: 'Convert',
+      icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+        <rect x="1" y="2" width="6" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+        <path d="M3 2v9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+        <path d="M7 8l2 1.5L7 11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="9" y="2" width="6" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+        <path d="M11 2v9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+        <path d="M12 4.5l1.5 3-1.5 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>`,
     },
   ],
@@ -345,6 +388,21 @@ const CONVERSIONS = {
         <line x1="10.5" y1="9"   x2="11.5" y2="9"   stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
       </svg>`,
     },
+    {
+      id: 'mobi-azw3',
+      label: 'MOBI → AZW3',
+      desc: 'Convert Kindle MOBI to AZW3 (KF8)',
+      tag: 'Convert',
+      icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+        <rect x="1" y="2" width="6" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+        <path d="M3 2v9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+        <path d="M4.5 5l1 2-1 2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M7 8l2 1.5L7 11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="9" y="2" width="6" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+        <path d="M11 2v9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+        <path d="M12 4.5l1.5 3-1.5 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`,
+    },
   ],
 
   // ── FB2 → * ───────────────────────────────────────────────────────────────
@@ -425,6 +483,21 @@ const CONVERSIONS = {
         <line x1="10.5" y1="5"   x2="13.5" y2="5"   stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
         <line x1="10.5" y1="7"   x2="13"   y2="7"   stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
         <line x1="10.5" y1="9"   x2="11.5" y2="9"   stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+      </svg>`,
+    },
+    {
+      id: 'fb2-azw3',
+      label: 'FB2 → AZW3',
+      desc: 'Convert FictionBook 2 to Kindle AZW3',
+      tag: 'Convert',
+      icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+        <rect x="1" y="2" width="6" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+        <path d="M3 2v9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+        <text x="4" y="9" font-size="4.5" font-weight="700" fill="currentColor" font-family="sans-serif">fb</text>
+        <path d="M7 8l2 1.5L7 11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="9" y="2" width="6" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+        <path d="M11 2v9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+        <path d="M12 4.5l1.5 3-1.5 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>`,
     },
   ],
@@ -510,6 +583,21 @@ const CONVERSIONS = {
         <line x1="10.5" y1="9"   x2="11.5" y2="9"   stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
       </svg>`,
     },
+    {
+      id: 'txt-azw3',
+      label: 'TXT → AZW3',
+      desc: 'Convert plain text to Kindle AZW3',
+      tag: 'Convert',
+      icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+        <rect x="1" y="2" width="6" height="9" rx="1" stroke="currentColor" stroke-width="1.3"/>
+        <line x1="2.5" y1="5"   x2="5.5" y2="5"   stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+        <line x1="2.5" y1="7"   x2="5.5" y2="7"   stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+        <path d="M7 8l2 1.5L7 11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="9" y="2" width="6" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+        <path d="M11 2v9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+        <path d="M12 4.5l1.5 3-1.5 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`,
+    },
   ],
 
   // ── RTF → * ───────────────────────────────────────────────────────────────
@@ -590,6 +678,118 @@ const CONVERSIONS = {
         <line x1="9" y1="4"   x2="15" y2="4"   stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
         <line x1="9" y1="6.5" x2="15" y2="6.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
         <line x1="9" y1="9"   x2="13" y2="9"   stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+      </svg>`,
+    },
+    {
+      id: 'rtf-azw3',
+      label: 'RTF → AZW3',
+      desc: 'Convert Rich Text Format to Kindle AZW3',
+      tag: 'Convert',
+      icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+        <rect x="1" y="2" width="6" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+        <line x1="2.5" y1="4.5" x2="5.5" y2="4.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+        <line x1="2.5" y1="6.5" x2="5"   y2="6.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+        <path d="M7 8l2 1.5L7 11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="9" y="2" width="6" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+        <path d="M11 2v9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+        <path d="M12 4.5l1.5 3-1.5 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`,
+    },
+  ],
+
+  // ── AZW3 → * ──────────────────────────────────────────────────────────────
+  azw3: [
+    {
+      id: 'azw3-pdf',
+      label: 'AZW3 → PDF',
+      desc: 'Convert Kindle AZW3 to PDF',
+      tag: 'Convert',
+      icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+        <rect x="1" y="2" width="6" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+        <path d="M3 2v9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+        <path d="M4 4.5l1.5 3-1.5 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M7 8l2 1.5L7 11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="9" y="2" width="6" height="9" rx="1" stroke="currentColor" stroke-width="1.3"/>
+        <path d="M12 2l3 3h-3V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+        <line x1="10" y1="7" x2="13" y2="7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+        <line x1="10" y1="9" x2="12" y2="9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+      </svg>`,
+    },
+    {
+      id: 'azw3-epub',
+      label: 'AZW3 → EPUB',
+      desc: 'Convert Kindle AZW3 to EPUB',
+      tag: 'Convert',
+      icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+        <rect x="1" y="2" width="6" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+        <path d="M3 2v9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+        <path d="M4 4.5l1.5 3-1.5 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M7 8l2 1.5L7 11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="9" y="2" width="6" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+        <path d="M11 2v9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+        <line x1="12" y1="5" x2="14" y2="5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+        <line x1="12" y1="7" x2="14" y2="7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+      </svg>`,
+    },
+    {
+      id: 'azw3-mobi',
+      label: 'AZW3 → MOBI',
+      desc: 'Convert Kindle AZW3 to legacy MOBI',
+      tag: 'Convert',
+      icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+        <rect x="1" y="2" width="6" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+        <path d="M3 2v9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+        <path d="M4 4.5l1.5 3-1.5 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M7 8l2 1.5L7 11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="9" y="2" width="6" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+        <path d="M11 2v9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+        <path d="M12.5 5l1 2-1 2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>`,
+    },
+    {
+      id: 'azw3-fb2',
+      label: 'AZW3 → FB2',
+      desc: 'Convert Kindle AZW3 to FictionBook 2',
+      tag: 'Convert',
+      icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+        <rect x="1" y="2" width="6" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+        <path d="M3 2v9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+        <path d="M4 4.5l1.5 3-1.5 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M7 8l2 1.5L7 11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="9" y="2" width="6" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+        <path d="M11 2v9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+        <text x="12" y="9" font-size="4.5" font-weight="700" fill="currentColor" font-family="sans-serif">fb</text>
+      </svg>`,
+    },
+    {
+      id: 'azw3-txt',
+      label: 'AZW3 → TXT',
+      desc: 'Extract plain text from Kindle AZW3',
+      tag: 'Convert',
+      icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+        <rect x="1" y="2" width="6" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+        <path d="M3 2v9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+        <path d="M4 4.5l1.5 3-1.5 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M7 8l2 1.5L7 11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+        <line x1="9" y1="4"   x2="15" y2="4"   stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+        <line x1="9" y1="6.5" x2="15" y2="6.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+        <line x1="9" y1="9"   x2="13" y2="9"   stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+      </svg>`,
+    },
+    {
+      id: 'azw3-rtf',
+      label: 'AZW3 → RTF',
+      desc: 'Convert Kindle AZW3 to Rich Text Format',
+      tag: 'Convert',
+      icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+        <rect x="1" y="2" width="6" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+        <path d="M3 2v9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+        <path d="M4 4.5l1.5 3-1.5 3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M7 8l2 1.5L7 11" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+        <rect x="9" y="2" width="6" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+        <line x1="10.5" y1="5"   x2="13.5" y2="5"   stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+        <line x1="10.5" y1="7"   x2="13"   y2="7"   stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+        <line x1="10.5" y1="9"   x2="11.5" y2="9"   stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
       </svg>`,
     },
   ],
