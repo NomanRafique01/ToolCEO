@@ -12,7 +12,7 @@
  * inner content changes.
  */
 
-import { renderDocumentFormats } from './documents.js';
+import { renderDocumentFormats, renderEbookFormats } from './documents.js';
 import { renderAudioFormats }    from './audio.js';
 import { setActiveTool }         from './toolstate.js';
 
@@ -21,6 +21,7 @@ import { setActiveTool }         from './toolstate.js';
 const CATEGORY_RENDERERS = {
   Documents : renderDocumentFormats,
   Audio     : renderAudioFormats,
+  Ebooks    : renderEbookFormats,
 };
 
 // The original "Explore Tools" grid HTML is captured once on first load so we
