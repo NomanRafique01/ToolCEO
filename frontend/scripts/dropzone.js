@@ -1293,6 +1293,7 @@ export function initDropZone() {
       dropZone.classList.contains('dz-has-pdf-excel-thumb') ||
       dropZone.classList.contains('dz-has-pdf-html-thumb') ||
       dropZone.classList.contains('dz-has-pdf-txt-thumb') ||
+      dropZone.classList.contains('dz-has-imgpdf-thumbs') ||
       dropZone.querySelector('.dz-pdf-thumb-wrap, .dz-compress-thumb-wrap, .dz-encrypt-thumb-wrap, .dz-merge-thumb-strip')
     ) {
       return;
@@ -1302,6 +1303,9 @@ export function initDropZone() {
     if (tool && tool.id === 'merge') {
       fileInput.multiple = true;
       fileInput.accept   = '.pdf,application/pdf';
+    } else if (tool && tool.id === 'images-pdf') {
+      fileInput.multiple = true;
+      fileInput.accept   = 'image/*';
     } else if (tool && tool.id === 'encrypt') {
       fileInput.multiple = false;
       fileInput.accept   = '.pdf,.tceo,application/pdf,application/octet-stream';
@@ -1343,6 +1347,7 @@ export function initDropZone() {
       dropZone.classList.contains('dz-has-compress-thumb') ||
       dropZone.classList.contains('dz-has-encrypt-thumb') ||
       dropZone.classList.contains('dz-has-merge-thumbs') ||
+      dropZone.classList.contains('dz-has-imgpdf-thumbs') ||
       dropZone.querySelector('.dz-pdf-thumb-wrap, .dz-compress-thumb-wrap, .dz-encrypt-thumb-wrap, .dz-merge-thumb-strip')
     ) {
       return;

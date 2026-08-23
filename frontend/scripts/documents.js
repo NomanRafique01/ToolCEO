@@ -254,23 +254,6 @@ const PDF_CONVERSIONS = [
     </svg>`,
   },
   {
-    id: 'docx-pdf',
-    label: 'DOCX → PDF',
-    desc: 'Convert Word document to PDF',
-    tag: 'Convert',
-    color: '#FBBF24',
-    bg: 'rgba(251,191,36,0.15)',
-    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
-      <rect x="1" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
-      <line x1="3" y1="6" x2="5" y2="6" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
-      <line x1="3" y1="8" x2="5" y2="8" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
-      <path d="M7 9l2 1.5L7 12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
-      <rect x="9" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
-      <path d="M12 2l3 3h-3V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
-      <line x1="11" y1="7" x2="13" y2="7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
-    </svg>`,
-  },
-  {
     id: 'pdf-ppt',
     label: 'PDF → PPT',
     desc: 'Convert PDF to PowerPoint slides',
