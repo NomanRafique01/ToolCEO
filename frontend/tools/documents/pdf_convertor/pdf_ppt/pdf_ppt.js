@@ -149,18 +149,6 @@ function _showSettingsPanel(pageCount, fileSize, color) {
       </button>
     </div>
 
-    <!-- ── INFO BOX ─────────────────────────────────────────────────── -->
-    <div class="pw-info-box">
-      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-        <circle cx="8" cy="8" r="6.5" stroke="${color}" stroke-width="1.2"/>
-        <line x1="8" y1="7" x2="8" y2="12" stroke="${color}" stroke-width="1.4" stroke-linecap="round"/>
-        <circle cx="8" cy="5" r="0.75" fill="${color}"/>
-      </svg>
-      <span>Each PDF page becomes a full-bleed PowerPoint slide rendered at high resolution.
-      Slide dimensions are matched to the page aspect ratio (16:9, 4:3, or exact fit).
-      100% offline — no cloud, no internet required.</span>
-    </div>
-
     <!-- ── ACTIONS ROW ──────────────────────────────────────────────── -->
     <div class="pw-actions">
       <input class="pw-filename-input" id="pw-ppt-filename-input"

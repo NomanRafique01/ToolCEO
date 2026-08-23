@@ -18,7 +18,9 @@ from tools.documents.pdf_convertor.pdf_word.router  import router as pdf_word_ro
 from tools.documents.pdf_convertor.pdf_excel.router import router as pdf_excel_router
 from tools.documents.pdf_convertor.pdf_html.router  import router as pdf_html_router
 from tools.documents.pdf_convertor.pdf_txt.router   import router as pdf_txt_router
-from tools.documents.pdf_convertor.pdf_ppt.router   import router as pdf_ppt_router
+from tools.documents.pdf_convertor.pdf_ppt.router    import router as pdf_ppt_router
+from tools.documents.pdf_convertor.pdf_images.router import router as pdf_images_router
+from tools.documents.pdf_convertor.images_pdf.router import router as images_pdf_router
 
 app = FastAPI(title="ToolCEO Backend")
 
@@ -70,6 +72,10 @@ app.include_router(pdf_html_router,  prefix="/api")
 # PDF → TXT extractor — owns /api/pdf/txt/info and /api/pdf/txt/convert
 app.include_router(pdf_txt_router,   prefix="/api")
 # PDF → PPT converter — owns /api/pdf/ppt/info and /api/pdf/ppt/convert
-app.include_router(pdf_ppt_router,   prefix="/api")
+app.include_router(pdf_ppt_router,    prefix="/api")
+# PDF → Images converter — owns /api/pdf/images/info and /api/pdf/images/convert
+app.include_router(pdf_images_router, prefix="/api")
+# Images → PDF converter — owns /api/images/pdf/convert
+app.include_router(images_pdf_router, prefix="/api")
 
 

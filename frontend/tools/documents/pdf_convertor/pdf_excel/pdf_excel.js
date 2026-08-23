@@ -151,17 +151,6 @@ function _showSettingsPanel(pageCount, fileSize, color) {
       </button>
     </div>
 
-    <!-- ── INFO BOX ─────────────────────────────────────────────────── -->
-    <div class="pe-info-box">
-      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-        <circle cx="8" cy="8" r="6.5" stroke="${color}" stroke-width="1.2"/>
-        <line x1="8" y1="7" x2="8" y2="12" stroke="${color}" stroke-width="1.4" stroke-linecap="round"/>
-        <circle cx="8" cy="5" r="0.75" fill="${color}"/>
-      </svg>
-      <span>Tables are extracted from each page. Bordered and whitespace-aligned tables are
-      both supported. Numeric values are preserved as numbers. Scanned pages require OCR.</span>
-    </div>
-
     <!-- ── ACTIONS ROW ──────────────────────────────────────────────── -->
     <div class="pe-actions">
       <input class="pe-filename-input" id="pe-filename-input"

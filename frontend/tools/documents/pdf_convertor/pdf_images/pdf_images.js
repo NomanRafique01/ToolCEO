@@ -1,13 +1,12 @@
 /**
- * tools/documents/pdf_convertor/pdf_html/pdf_html.js
+ * tools/documents/pdf_convertor/pdf_images/pdf_images.js
  *
- * PDF → HTML Converter — single-file flow.
- * Mirrors pdf_word.js exactly — identical UX, same progress/download/error
- * system.  Only class names, endpoint paths, and file extension differ.
+ * PDF → Images Converter — single-file flow.
+ * User drops a PDF; every page is rendered to PNG and delivered as a ZIP.
  *
  * Exports:
- *   handlePdfHtmlFilePicked(file)  – call when a file is chosen
- *   removePdfHtmlPanel()           – teardown on tool change / reset
+ *   handlePdfImagesFilePicked(file)  – call when a file is chosen
+ *   removePdfImagesPanel()           – teardown on tool change / reset
  */
 
 import { getActiveTool, setBgJob, getBgJob, syncBgJobBar, clearBgJob } from '../../../../scripts/toolstate.js';
@@ -26,9 +25,9 @@ const BACKEND = 'http://127.0.0.1:8000';
 
 // ─── MODULE STATE ──────────────────────────────────────────────────────────────
 
-let _pdfHtmlFile     = null;
-let _pdfHtmlBaseName = '';
-let _pdfHtmlPageCount = 1;
+let _pdfImagesFile      = null;
+let _pdfImagesBaseName  = '';
+let _pdfImagesPageCount = 1;
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 
@@ -46,32 +45,32 @@ function _fmt(bytes) {
 
 // ─── PUBLIC: TEARDOWN ─────────────────────────────────────────────────────────
 
-export function removePdfHtmlPanel() {
-  const panel = document.getElementById('pdf-html-settings-panel');
+export function removePdfImagesPanel() {
+  const panel = document.getElementById('pdf-images-settings-panel');
   if (panel) panel.remove();
 
   const zone = document.getElementById('drop-zone');
   if (zone) {
-    const thumb = zone.querySelector('.dz-pdf-html-thumb-wrap');
+    const thumb = zone.querySelector('.dz-pdf-images-thumb-wrap');
     if (thumb) thumb.remove();
-    zone.classList.remove('dz-has-pdf-html-thumb');
+    zone.classList.remove('dz-has-pdf-images-thumb');
   }
 
-  _pdfHtmlFile      = null;
-  _pdfHtmlBaseName  = '';
-  _pdfHtmlPageCount = 1;
+  _pdfImagesFile      = null;
+  _pdfImagesBaseName  = '';
+  _pdfImagesPageCount = 1;
 }
 
 // ─── THUMBNAIL (inside drop zone) ─────────────────────────────────────────────
 
 function _showThumb(zone, file, color, dataUri) {
-  const old = zone.querySelector('.dz-pdf-html-thumb-wrap');
+  const old = zone.querySelector('.dz-pdf-images-thumb-wrap');
   if (old) old.remove();
 
   const thumbContent = dataUri
-    ? `<img class="dz-pdf-html-thumb-img" src="${dataUri}"
+    ? `<img class="dz-pdf-images-thumb-img" src="${dataUri}"
              alt="PDF preview" draggable="false" />`
-    : `<svg class="dz-pdf-html-thumb-icon" viewBox="0 0 90 116"
+    : `<svg class="dz-pdf-images-thumb-icon" viewBox="0 0 90 116"
             xmlns="http://www.w3.org/2000/svg">
         <rect x="0" y="0" width="90" height="116" fill="#ffffff"/>
         <polygon points="62,0 90,28 62,28" fill="#e0e0e0"/>
@@ -86,24 +85,24 @@ function _showThumb(zone, file, color, dataUri) {
       </svg>`;
 
   const wrap = document.createElement('div');
-  wrap.className = 'dz-pdf-html-thumb-wrap';
+  wrap.className = 'dz-pdf-images-thumb-wrap';
   wrap.innerHTML = `
-    <div class="dz-pdf-html-thumb-card">
-      <div class="dz-pdf-html-thumb-frame" style="border:2px solid ${color};box-shadow:0 4px 18px rgba(0,0,0,0.45)">
+    <div class="dz-pdf-images-thumb-card">
+      <div class="dz-pdf-images-thumb-frame" style="border:2px solid ${color};box-shadow:0 4px 18px rgba(0,0,0,0.45)">
         ${thumbContent}
       </div>
-      <button class="dz-pdf-html-thumb-remove" title="Remove file"
-              style="--pw-color:${color}" aria-label="Remove file">&#x2715;</button>
+      <button class="dz-pdf-images-thumb-remove" title="Remove file"
+              style="--pi-color:${color}" aria-label="Remove file">&#x2715;</button>
     </div>
-    <span class="dz-pdf-html-thumb-name">${_esc(file.name)}</span>
-    <span class="dz-pdf-html-thumb-size">${_fmt(file.size)}</span>`;
+    <span class="dz-pdf-images-thumb-name">${_esc(file.name)}</span>
+    <span class="dz-pdf-images-thumb-size">${_fmt(file.size)}</span>`;
 
-  zone.classList.add('dz-has-pdf-html-thumb');
+  zone.classList.add('dz-has-pdf-images-thumb');
   zone.appendChild(wrap);
 
-  wrap.querySelector('.dz-pdf-html-thumb-remove').addEventListener('click', (e) => {
+  wrap.querySelector('.dz-pdf-images-thumb-remove').addEventListener('click', (e) => {
     e.stopPropagation();
-    removePdfHtmlPanel();
+    removePdfImagesPanel();
     resetZoneContent(zone);
     import('../../../../scripts/dropzone.js').then(({ _updateDropZoneForTool }) => {
       const t = getActiveTool();
@@ -115,14 +114,14 @@ function _showThumb(zone, file, color, dataUri) {
 // ─── SETTINGS PANEL ───────────────────────────────────────────────────────────
 
 function _showSettingsPanel(pageCount, fileSize, color) {
-  const existing = document.getElementById('pdf-html-settings-panel');
+  const existing = document.getElementById('pdf-images-settings-panel');
   if (existing) existing.remove();
 
   const heroCard = document.querySelector('.hero-card');
   if (!heroCard) return;
 
   const panel = document.createElement('div');
-  panel.id        = 'pdf-html-settings-panel';
+  panel.id        = 'pdf-images-settings-panel';
   panel.className = 'pw-panel';
   panel.style.setProperty('--pw-color', color);
 
@@ -134,43 +133,45 @@ function _showSettingsPanel(pageCount, fileSize, color) {
           <rect x="1" y="2" width="6" height="8" rx="1" stroke="${color}" stroke-width="1.3"/>
           <path d="M4 2l3 3H4V2Z" stroke="${color}" stroke-width="1.1" stroke-linejoin="round"/>
           <path d="M7 9l2 1.5L7 12" stroke="${color}" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M10 4l-1.5 2.5L10 9" stroke="${color}" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M13 4l1.5 2.5L13 9" stroke="${color}" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
-          <line x1="11" y1="3.5" x2="12" y2="9.5" stroke="${color}" stroke-width="1.1" stroke-linecap="round"/>
+          <rect x="9" y="3" width="6" height="6" rx="1" stroke="${color}" stroke-width="1.3"/>
+          <circle cx="11" cy="5.5" r="0.9" stroke="${color}" stroke-width="1"/>
+          <path d="M9 8l2-2 2 2 1-1 1 1" stroke="${color}" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
         <span class="pw-header-text">
           <strong>${pageCount}</strong> page${pageCount !== 1 ? 's' : ''}
           &nbsp;·&nbsp;
           <strong>${_fmt(fileSize)}</strong>
+          &nbsp;·&nbsp;
+          <strong>${pageCount}</strong> PNG${pageCount !== 1 ? 's' : ''} in ZIP
         </span>
       </span>
-      <button class="pw-change-btn" id="pw-html-change-btn" title="Pick a different file">
+      <button class="pw-change-btn" id="pw-images-change-btn" title="Pick a different file">
         Change file
       </button>
     </div>
 
     <!-- ── ACTIONS ROW ──────────────────────────────────────────────── -->
     <div class="pw-actions">
-      <input class="pw-filename-input" id="pw-html-filename-input"
+      <input class="pw-filename-input" id="pw-images-filename-input"
              type="text" placeholder="Output filename (optional)"
              maxlength="120" spellcheck="false"/>
-      <span class="pw-filename-ext">.html</span>
-      <button class="pw-submit-btn" id="pw-html-submit-btn">Convert to HTML</button>
+      <span class="pw-filename-ext">.zip</span>
+      <button class="pw-submit-btn" id="pw-images-submit-btn">Convert to Images</button>
     </div>`;
 
   heroCard.appendChild(panel);
   requestAnimationFrame(() => panel.classList.add('pw-panel--visible'));
 
   // ── Default filename ──────────────────────────────────────────────────────
-  const filenameInput = panel.querySelector('#pw-html-filename-input');
-  if (filenameInput && _pdfHtmlBaseName) {
-    filenameInput.value = `${_pdfHtmlBaseName}`;
+  const filenameInput = panel.querySelector('#pw-images-filename-input');
+  if (filenameInput && _pdfImagesBaseName) {
+    filenameInput.value = `${_pdfImagesBaseName}_images`;
   }
 
   // ── "Change file" button ──────────────────────────────────────────────────
-  panel.querySelector('#pw-html-change-btn').addEventListener('click', () => {
+  panel.querySelector('#pw-images-change-btn').addEventListener('click', () => {
     const tool = getActiveTool();
-    removePdfHtmlPanel();
+    removePdfImagesPanel();
     const zone = document.getElementById('drop-zone');
     resetZoneContent(zone);
     if (tool) {
@@ -180,20 +181,20 @@ function _showSettingsPanel(pageCount, fileSize, color) {
     }
   });
 
-  // ── "Convert to HTML" button ──────────────────────────────────────────────
-  panel.querySelector('#pw-html-submit-btn').addEventListener('click', () => {
-    if (!_pdfHtmlFile) return;
-    const nameEl  = panel.querySelector('#pw-html-filename-input');
-    const outName = (nameEl ? nameEl.value.trim() : '') || _pdfHtmlBaseName;
+  // ── "Convert to Images" button ────────────────────────────────────────────
+  panel.querySelector('#pw-images-submit-btn').addEventListener('click', () => {
+    if (!_pdfImagesFile) return;
+    const nameEl  = panel.querySelector('#pw-images-filename-input');
+    const outName = (nameEl ? nameEl.value.trim() : '') || `${_pdfImagesBaseName}_images`;
     const main    = document.getElementById('main-content');
     if (main) main.scrollTop = 0;
-    _submitConvert(_pdfHtmlFile, outName);
+    _submitConvert(_pdfImagesFile, outName);
   });
 }
 
 // ─── SCAN FLOW ────────────────────────────────────────────────────────────────
 
-export async function handlePdfHtmlFilePicked(file) {
+export async function handlePdfImagesFilePicked(file) {
   if (!file || !(file.name.toLowerCase().endsWith('.pdf') || file.type === 'application/pdf')) {
     pushNotification({
       type: 'warning',
@@ -203,10 +204,10 @@ export async function handlePdfHtmlFilePicked(file) {
   }
 
   const tool  = getActiveTool();
-  const color = tool ? (tool.color || '#FB923C') : '#FB923C';
+  const color = tool ? (tool.color || '#34D399') : '#34D399';
   const zone  = document.getElementById('drop-zone');
 
-  removePdfHtmlPanel();
+  removePdfImagesPanel();
   showScanProgress(zone, color);
 
   const fd = new FormData();
@@ -218,7 +219,7 @@ export async function handlePdfHtmlFilePicked(file) {
   let loaded    = false;
 
   try {
-    const res = await fetch(`${BACKEND}/api/pdf/html/info`, { method: 'POST', body: fd }).catch(() => null);
+    const res = await fetch(`${BACKEND}/api/pdf/images/info`, { method: 'POST', body: fd }).catch(() => null);
     if (res && res.ok) {
       const json = await res.json();
       pageCount  = json.page_count  || 1;
@@ -243,9 +244,9 @@ export async function handlePdfHtmlFilePicked(file) {
 
   resetZoneContent(zone);
 
-  _pdfHtmlFile      = file;
-  _pdfHtmlBaseName  = file.name.replace(/\.[^.]+$/, '');
-  _pdfHtmlPageCount = pageCount;
+  _pdfImagesFile      = file;
+  _pdfImagesBaseName  = file.name.replace(/\.[^.]+$/, '');
+  _pdfImagesPageCount = pageCount;
 
   _showThumb(zone, file, color, thumbnail);
   _showSettingsPanel(pageCount, fileSize, color);
@@ -258,14 +259,13 @@ async function _submitConvert(file, outputFilename) {
   if (!tool) return;
 
   const zone  = document.getElementById('drop-zone');
-  const color = tool.color || '#FB923C';
+  const color = tool.color || '#34D399';
 
-  // Remove thumbnail + settings immediately; show progress ring only
-  const panel = document.getElementById('pdf-html-settings-panel');
+  const panel = document.getElementById('pdf-images-settings-panel');
   if (panel) panel.remove();
-  const thumb = zone ? zone.querySelector('.dz-pdf-html-thumb-wrap') : null;
+  const thumb = zone ? zone.querySelector('.dz-pdf-images-thumb-wrap') : null;
   if (thumb) thumb.remove();
-  if (zone)  zone.classList.remove('dz-has-pdf-html-thumb');
+  if (zone)  zone.classList.remove('dz-has-pdf-images-thumb');
 
   const fd = new FormData();
   fd.append('file', file);
@@ -273,12 +273,12 @@ async function _submitConvert(file, outputFilename) {
 
   showProgress(zone, 9, color, 'Converting…');
 
-  const earlyFilename = `${_pdfHtmlBaseName || outputFilename}.html`;
+  const earlyFilename = `${_pdfImagesBaseName || outputFilename}_images.zip`;
   setBgJob({ jobId: null, tool, filename: earlyFilename, progress: 5, state: 'submitting', sse: null });
 
   let jobId;
   try {
-    const res  = await fetch(`${BACKEND}/api/pdf/html/convert`, { method: 'POST', body: fd });
+    const res  = await fetch(`${BACKEND}/api/pdf/images/convert`, { method: 'POST', body: fd });
     const json = await res.json();
     if (!res.ok) {
       const detail = json.detail;
@@ -294,7 +294,6 @@ async function _submitConvert(file, outputFilename) {
     return;
   }
 
-  // ── SSE progress ────────────────────────────────────────────────────────────
   const sse   = new EventSource(`${BACKEND}/api/progress/${jobId}`);
   let lastPct = 0;
 
@@ -326,10 +325,10 @@ async function _submitConvert(file, outputFilename) {
 
     if (state === 'done') {
       updateProgress(zone, 100, color);
-      removePdfHtmlPanel();
+      removePdfImagesPanel();
       const dlName = data.filename || earlyFilename;
       const onReset = () => {
-        removePdfHtmlPanel();
+        removePdfImagesPanel();
         const activeTool = getActiveTool();
         if (activeTool) {
           import('../../../../scripts/dropzone.js').then(({ _updateDropZoneForTool }) => {
