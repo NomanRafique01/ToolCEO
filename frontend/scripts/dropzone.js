@@ -61,6 +61,10 @@ import {
   handlePdfTxtFilePicked,
   removePdfTxtPanel,
 } from '../tools/documents/pdf_convertor/pdf_txt/pdf_txt.js';
+import {
+  handlePdfPptFilePicked,
+  removePdfPptPanel,
+} from '../tools/documents/pdf_convertor/pdf_ppt/pdf_ppt.js';
 
 const BACKEND = 'http://127.0.0.1:8000';
 
@@ -89,7 +93,7 @@ const ENDPOINT_MAP = {
 
 const PDF_TOOL_IDS = new Set([
   'merge', 'split', 'compress', 'rotate', 'editor', 'encrypt', 'watermark', 'extractor', 'metadata',
-  'pdf-docx', 'pdf-html', 'pdf-txt', 'pdf-images', 'pdf-word', 'pdf-excel'
+  'pdf-docx', 'pdf-html', 'pdf-txt', 'pdf-images', 'pdf-word', 'pdf-excel', 'pdf-ppt'
 ]);
 
 export function showNoToolWarning() {
@@ -185,6 +189,7 @@ function _updateDropZone(tool) {
     removePdfExcelPanel();
     removePdfHtmlPanel();
     removePdfTxtPanel();
+    removePdfPptPanel();
 
     const mainEl   = zone.querySelector('.drop-main-text');
     const subEl    = zone.querySelector('.drop-browse');
@@ -220,6 +225,7 @@ function _updateDropZone(tool) {
   removePdfExcelPanel();     // hide previous PDF→Excel settings panel if tool changed
   removePdfHtmlPanel();      // hide previous PDF→HTML settings panel if tool changed
   removePdfTxtPanel();       // hide previous PDF→TXT settings panel if tool changed
+  removePdfPptPanel();       // hide previous PDF→PPT settings panel if tool changed
 
   zone.style.setProperty('--dz-color', color);
   zone.style.setProperty('--dz-bg', bg);
@@ -915,6 +921,12 @@ async function _submitFile(files) {
   // PDF → TXT extractor has its own settings-panel flow
   if (tool.id === 'pdf-txt') {
     handlePdfTxtFilePicked(files[0]);
+    return;
+  }
+
+  // PDF → PPT converter has its own settings-panel flow
+  if (tool.id === 'pdf-ppt') {
+    handlePdfPptFilePicked(files[0]);
     return;
   }
 
