@@ -204,7 +204,7 @@ export async function handlePdfImagesFilePicked(file) {
   }
 
   const tool  = getActiveTool();
-  const color = tool ? (tool.color || '#34D399') : '#34D399';
+  const color = tool ? (tool.color || '#EAB308') : '#EAB308';
   const zone  = document.getElementById('drop-zone');
 
   removePdfImagesPanel();
@@ -259,7 +259,7 @@ async function _submitConvert(file, outputFilename) {
   if (!tool) return;
 
   const zone  = document.getElementById('drop-zone');
-  const color = tool.color || '#34D399';
+  const color = tool.color || '#EAB308';
 
   const panel = document.getElementById('pdf-images-settings-panel');
   if (panel) panel.remove();

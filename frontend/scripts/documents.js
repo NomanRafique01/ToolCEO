@@ -306,8 +306,8 @@ const PDF_CONVERSIONS = [
 const DOC_FORMATS = [
   {
     id: 'pdf',
-    label: 'PDF',
-    desc: 'Portable Document Format',
+    label: 'PDF Tools',
+    desc: 'Tools & conversions for PDF',
     ext: '.pdf',
     color: '#FF6B6B',
     bg: 'rgba(255,107,107,0.15)',
@@ -376,20 +376,6 @@ const DOC_FORMATS = [
     </svg>`,
   },
   {
-    id: 'rtf',
-    label: 'RTF',
-    desc: 'Rich Text Format',
-    ext: '.rtf',
-    color: '#FBBF24',
-    bg: 'rgba(251,191,36,0.15)',
-    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
-      <rect x="2" y="1" width="10" height="13" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
-      <line x1="4" y1="6"   x2="10" y2="6"   stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-      <line x1="4" y1="8.5" x2="9"  y2="8.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
-      <line x1="4" y1="11"  x2="6"  y2="11"  stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
-    </svg>`,
-  },
-  {
     id: 'odt',
     label: 'ODT',
     desc: 'OpenDocument Text',
@@ -417,112 +403,6 @@ const DOC_FORMATS = [
       <line x1="10" y1="6"  x2="10" y2="12" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
       <line x1="4"  y1="8"  x2="10" y2="8"  stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
       <line x1="4"  y1="10" x2="10" y2="10" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
-    </svg>`,
-  },
-  {
-    id: 'ebooks',
-    label: 'eBooks',
-    desc: 'EPUB, MOBI, FB2, AZW & more',
-    ext: null,
-    tag: 'Open',
-    color: '#FBBF24',
-    bg: 'rgba(251,191,36,0.15)',
-    isEbookEntry: true,
-    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
-      <rect x="2" y="1" width="9" height="13" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
-      <path d="M5 1v13" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
-      <path d="M11 3l2 1.5L11 6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-      <line x1="6" y1="5"  x2="9" y2="5"  stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
-      <line x1="6" y1="7"  x2="9" y2="7"  stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
-      <line x1="6" y1="9"  x2="8" y2="9"  stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
-    </svg>`,
-  },
-];
-
-// ─── EBOOK FORMAT CARDS ───────────────────────────────────────────────────────
-
-const EBOOK_FORMATS = [
-  {
-    id: 'ebook-pdf',
-    label: 'PDF',
-    desc: 'Portable Document Format eBook',
-    tag: 'Tool',
-    color: '#FF6B6B',
-    bg: 'rgba(255,107,107,0.15)',
-    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
-      <rect x="2" y="1" width="10" height="13" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
-      <path d="M8 1l4 4H8V1Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
-      <line x1="4" y1="8"  x2="10" y2="8"  stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
-      <line x1="4" y1="10" x2="8"  y2="10" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
-    </svg>`,
-  },
-  {
-    id: 'ebook-epub',
-    label: 'EPUB',
-    desc: 'Standard eBook format for all readers',
-    tag: 'Tool',
-    color: '#8B5CF6',
-    bg: 'rgba(139,92,246,0.15)',
-    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
-      <rect x="2" y="1" width="9" height="13" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
-      <path d="M5 1v13" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
-      <line x1="6" y1="5" x2="9" y2="5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
-      <line x1="6" y1="7" x2="9" y2="7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
-      <line x1="6" y1="9" x2="8" y2="9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
-    </svg>`,
-  },
-  {
-    id: 'ebook-mobi',
-    label: 'MOBI',
-    desc: 'Amazon Kindle legacy eBook format',
-    tag: 'Tool',
-    color: '#F59E0B',
-    bg: 'rgba(245,158,11,0.15)',
-    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
-      <rect x="2" y="1" width="9" height="13" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
-      <path d="M5 1v13" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
-      <path d="M7 5l1.5 2.5L7 10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
-    </svg>`,
-  },
-  {
-    id: 'ebook-fb2',
-    label: 'FB2',
-    desc: 'FictionBook 2 — popular in Eastern Europe',
-    tag: 'Tool',
-    color: '#10B981',
-    bg: 'rgba(16,185,129,0.15)',
-    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
-      <rect x="2" y="1" width="9" height="13" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
-      <path d="M5 1v13" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
-      <text x="6.5" y="10" font-size="6" font-weight="700" fill="currentColor" font-family="sans-serif">fb</text>
-    </svg>`,
-  },
-  {
-    id: 'ebook-txt',
-    label: 'TXT',
-    desc: 'Plain text eBook',
-    tag: 'Tool',
-    color: '#A78BFA',
-    bg: 'rgba(167,139,250,0.15)',
-    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
-      <rect x="2" y="1" width="10" height="13" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
-      <line x1="4" y1="6"  x2="10" y2="6"  stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
-      <line x1="4" y1="8"  x2="10" y2="8"  stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
-      <line x1="4" y1="10" x2="7"  y2="10" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
-    </svg>`,
-  },
-  {
-    id: 'ebook-rtf',
-    label: 'RTF',
-    desc: 'Rich Text Format eBook',
-    tag: 'Tool',
-    color: '#FBBF24',
-    bg: 'rgba(251,191,36,0.15)',
-    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
-      <rect x="2" y="1" width="10" height="13" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
-      <line x1="4" y1="6"   x2="10" y2="6"   stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
-      <line x1="4" y1="8.5" x2="9"  y2="8.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
-      <line x1="4" y1="11"  x2="6"  y2="11"  stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
     </svg>`,
   },
 ];
@@ -653,7 +533,7 @@ export function renderDocumentFormats(container, activateNav) {
 
     <div class="fmt-grid">
       ${DOC_FORMATS.map((f) => {
-        const extra = f.isPdfEntry ? 'fmt-card--pdf-entry' : f.isEbookEntry ? 'fmt-card--ebook-entry' : '';
+        const extra = f.isPdfEntry ? 'fmt-card--pdf-entry' : '';
         return cardHTML(f, extra);
       }).join('')}
     </div>
@@ -672,75 +552,13 @@ export function renderDocumentFormats(container, activateNav) {
     });
   }
 
-  // eBooks card → eBooks panel (back button should return to Documents)
-  const ebookCard = container.querySelector('.fmt-card--ebook-entry');
-  if (ebookCard) {
-    ebookCard.addEventListener('click', () => {
-      renderEbookFormats(container, activateNav, 'Documents');
-    });
-  }
-
   // Other format card selection highlight + tool-state update
-  container.querySelectorAll('.fmt-card:not(.fmt-card--pdf-entry):not(.fmt-card--ebook-entry)').forEach((card) => {
+  container.querySelectorAll('.fmt-card:not(.fmt-card--pdf-entry)').forEach((card) => {
     card.addEventListener('click', () => {
       container.querySelectorAll('.fmt-card').forEach((c) => c.classList.remove('selected'));
       card.classList.add('selected');
 
       const item = DOC_FORMATS.find((f) => f.id === card.dataset.id);
-      if (item) {
-        const { mainText, subText } = _dropTextFor(item);
-        setActiveTool({
-          id: item.id, label: item.label, mainText, subText,
-          icon: item.icon, color: item.color, bg: item.bg,
-          tag: item.tag,
-        });
-        _scrollToDropZone();
-      }
-    });
-  });
-}
-
-// ─── EBOOK PANEL ──────────────────────────────────────────────────────────────
-
-export function renderEbookFormats(container, activateNav, backTo = 'Dashboard') {
-  const crumbs = backTo === 'Documents'
-    ? ['Dashboard', 'Documents', 'eBooks']
-    : ['Dashboard', 'eBooks'];
-  setBreadcrumb(crumbs);
-  container.innerHTML = `
-    <div class="explore-header">
-      <button class="fmt-back-btn" title="Back">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.6"
-            stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
-      <div class="fmt-category-icon" style="background:rgba(251,191,36,0.15);color:#FBBF24">
-        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
-          <path d="M8 13s-4-2-7-2V3c3 0 7 2 7 2s4-2 7-2v8c-3 0-7 2-7 2Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
-          <line x1="8" y1="5" x2="8" y2="13" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
-        </svg>
-      </div>
-      <span class="explore-title">eBooks — Choose Format</span>
-    </div>
-
-    <div class="fmt-grid">
-      ${EBOOK_FORMATS.map((f) => cardHTML(f)).join('')}
-    </div>
-  `;
-
-  // Back → previous panel
-  container.querySelector('.fmt-back-btn').addEventListener('click', () => {
-    activateNav(backTo);
-  });
-
-  // Card selection + tool-state update
-  container.querySelectorAll('.fmt-card').forEach((card) => {
-    card.addEventListener('click', () => {
-      container.querySelectorAll('.fmt-card').forEach((c) => c.classList.remove('selected'));
-      card.classList.add('selected');
-
-      const item = EBOOK_FORMATS.find((f) => f.id === card.dataset.id);
       if (item) {
         const { mainText, subText } = _dropTextFor(item);
         setActiveTool({

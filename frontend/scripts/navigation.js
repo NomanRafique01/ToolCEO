@@ -12,7 +12,8 @@
  * inner content changes.
  */
 
-import { renderDocumentFormats, renderEbookFormats } from './documents.js';
+import { renderDocumentFormats } from './documents.js';
+import { renderEbookFormats }    from './ebooks.js';
 import { renderAudioFormats }    from './audio.js';
 import { setActiveTool }         from './toolstate.js';
 
