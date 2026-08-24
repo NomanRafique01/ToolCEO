@@ -1,0 +1,225 @@
+/* ─────────────────────────────────────────────────────────────
+   tools/ebooks/shared/ebook_base.css
+   Shared styles for ALL eBook conversion tools.
+   Mirrors pdf_word.css / pdf_excel.css exactly — one file
+   replaces 37 individual CSS files.
+   CSS custom property --eb-color is set per-tool at runtime.
+   ───────────────────────────────────────────────────────────── */
+
+/* ─── CSS CUSTOM PROPERTY DEFAULTS ────────────────────────────────────────── */
+
+:root {
+  --eb-color: #8B5CF6;
+}
+
+/* ─── DROP ZONE: HAS-EBOOK-THUMB STATE ──────────────────────────────────────── */
+
+.drop-zone.dz-has-ebook-thumb {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+.drop-zone.dz-has-ebook-thumb .drop-icon,
+.drop-zone.dz-has-ebook-thumb .drop-main-text,
+.drop-zone.dz-has-ebook-thumb .drop-browse,
+.drop-zone.dz-has-ebook-thumb .dz-paste-btn,
+.drop-zone.dz-has-ebook-thumb .drop-private {
+  display: none !important;
+}
+
+/* ─── EBOOK THUMBNAIL (inside drop zone) ─────────────────────────────────── */
+
+.dz-ebook-thumb-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.dz-ebook-thumb-card {
+  position: relative;
+  display: inline-block;
+}
+
+.dz-ebook-thumb-frame {
+  width: 90px;
+  height: 116px;
+  border-radius: 6px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+}
+
+.dz-ebook-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  border-radius: 4px;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: high-quality;
+}
+
+.dz-ebook-thumb-icon {
+  width: 90px;
+  height: 116px;
+  display: block;
+}
+
+.dz-ebook-thumb-remove {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--bg-surface);
+  border: 1.5px solid color-mix(in srgb, var(--eb-color, #8B5CF6) 50%, var(--border));
+  color: var(--eb-color, #8B5CF6);
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 130ms ease;
+}
+
+.dz-ebook-thumb-remove:hover {
+  background: color-mix(in srgb, var(--eb-color, #8B5CF6) 15%, var(--bg-surface));
+}
+
+.dz-ebook-thumb-name {
+  font-size: 12px;
+  color: var(--text-muted);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.dz-ebook-thumb-size {
+  font-size: 11px;
+  color: color-mix(in srgb, var(--eb-color, #8B5CF6) 90%, transparent);
+  background: color-mix(in srgb, var(--eb-color, #8B5CF6) 10%, transparent);
+  border-radius: 10px;
+  padding: 1px 7px;
+  line-height: 1.5;
+}
+
+/* ─── SETTINGS PANEL ─────────────────────────────────────────────────────── */
+
+.eb-panel {
+  margin-top: 14px;
+  background: var(--bg-surface);
+  border: 1px solid color-mix(in srgb, var(--eb-color, #8B5CF6) 28%, var(--border));
+  border-radius: 14px;
+  padding: 16px 18px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 220ms ease, transform 220ms ease;
+}
+
+.eb-panel--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.eb-panel--submitting {
+  pointer-events: none;
+  opacity: 0.5;
+}
+
+/* ── Panel header ── */
+
+.eb-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.eb-header-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.eb-header-text strong {
+  color: var(--text-primary);
+}
+
+.eb-change-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: border-color 120ms ease, color 120ms ease;
+}
+
+.eb-change-btn:hover {
+  border-color: var(--eb-color, #8B5CF6);
+  color: var(--eb-color, #8B5CF6);
+}
+
+/* ─── ACTIONS ROW ────────────────────────────────────────────────────────── */
+
+.eb-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.eb-filename-input {
+  flex: 1;
+  min-width: 120px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 6px 10px;
+  font-size: 13px;
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 130ms ease;
+}
+
+.eb-filename-input:focus {
+  border-color: var(--eb-color, #8B5CF6);
+}
+
+.eb-filename-ext {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-left: -4px;
+}
+
+.eb-submit-btn {
+  background: var(--eb-color, #8B5CF6);
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 7px 18px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: filter 150ms ease;
+  white-space: nowrap;
+}
+
+.eb-submit-btn:hover {
+  filter: brightness(1.1);
+}

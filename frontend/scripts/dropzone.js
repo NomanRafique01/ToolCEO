@@ -74,6 +74,86 @@ import {
   removeImagesPdfPanel,
 } from '../tools/documents/pdf_convertor/images_pdf/images_pdf.js';
 
+// ── eBook conversion tools — all share one base, each file is a thin wrapper ──
+import { handleEbook_pdf_epub_FilePicked,  removeEbook_pdf_epub_Panel  } from '../tools/ebooks/pdf/pdf_epub.js';
+import { handleEbook_pdf_mobi_FilePicked,  removeEbook_pdf_mobi_Panel  } from '../tools/ebooks/pdf/pdf_mobi.js';
+import { handleEbook_pdf_azw3_FilePicked,  removeEbook_pdf_azw3_Panel  } from '../tools/ebooks/pdf/pdf_azw3.js';
+import { handleEbook_pdf_fb2_FilePicked,   removeEbook_pdf_fb2_Panel   } from '../tools/ebooks/pdf/pdf_fb2.js';
+import { handleEbook_pdf_txt_FilePicked,   removeEbook_pdf_txt_Panel   } from '../tools/ebooks/pdf/pdf_txt.js';
+import { handleEbook_pdf_rtf_FilePicked,   removeEbook_pdf_rtf_Panel   } from '../tools/ebooks/pdf/pdf_rtf.js';
+import { handleEbook_epub_pdf_FilePicked,  removeEbook_epub_pdf_Panel  } from '../tools/ebooks/epub/epub_pdf.js';
+import { handleEbook_epub_mobi_FilePicked, removeEbook_epub_mobi_Panel } from '../tools/ebooks/epub/epub_mobi.js';
+import { handleEbook_epub_azw3_FilePicked, removeEbook_epub_azw3_Panel } from '../tools/ebooks/epub/epub_azw3.js';
+import { handleEbook_epub_fb2_FilePicked,  removeEbook_epub_fb2_Panel  } from '../tools/ebooks/epub/epub_fb2.js';
+import { handleEbook_epub_txt_FilePicked,  removeEbook_epub_txt_Panel  } from '../tools/ebooks/epub/epub_txt.js';
+import { handleEbook_epub_rtf_FilePicked,  removeEbook_epub_rtf_Panel  } from '../tools/ebooks/epub/epub_rtf.js';
+import { handleEbook_mobi_pdf_FilePicked,  removeEbook_mobi_pdf_Panel  } from '../tools/ebooks/mobi/mobi_pdf.js';
+import { handleEbook_mobi_epub_FilePicked, removeEbook_mobi_epub_Panel } from '../tools/ebooks/mobi/mobi_epub.js';
+import { handleEbook_mobi_azw3_FilePicked, removeEbook_mobi_azw3_Panel } from '../tools/ebooks/mobi/mobi_azw3.js';
+import { handleEbook_mobi_fb2_FilePicked,  removeEbook_mobi_fb2_Panel  } from '../tools/ebooks/mobi/mobi_fb2.js';
+import { handleEbook_mobi_txt_FilePicked,  removeEbook_mobi_txt_Panel  } from '../tools/ebooks/mobi/mobi_txt.js';
+import { handleEbook_mobi_rtf_FilePicked,  removeEbook_mobi_rtf_Panel  } from '../tools/ebooks/mobi/mobi_rtf.js';
+import { handleEbook_azw3_pdf_FilePicked,  removeEbook_azw3_pdf_Panel  } from '../tools/ebooks/azw3/azw3_pdf.js';
+import { handleEbook_azw3_epub_FilePicked, removeEbook_azw3_epub_Panel } from '../tools/ebooks/azw3/azw3_epub.js';
+import { handleEbook_azw3_mobi_FilePicked, removeEbook_azw3_mobi_Panel } from '../tools/ebooks/azw3/azw3_mobi.js';
+import { handleEbook_azw3_fb2_FilePicked,  removeEbook_azw3_fb2_Panel  } from '../tools/ebooks/azw3/azw3_fb2.js';
+import { handleEbook_azw3_txt_FilePicked,  removeEbook_azw3_txt_Panel  } from '../tools/ebooks/azw3/azw3_txt.js';
+import { handleEbook_azw3_rtf_FilePicked,  removeEbook_azw3_rtf_Panel  } from '../tools/ebooks/azw3/azw3_rtf.js';
+import { handleEbook_fb2_pdf_FilePicked,   removeEbook_fb2_pdf_Panel   } from '../tools/ebooks/fb2/fb2_pdf.js';
+import { handleEbook_fb2_epub_FilePicked,  removeEbook_fb2_epub_Panel  } from '../tools/ebooks/fb2/fb2_epub.js';
+import { handleEbook_fb2_mobi_FilePicked,  removeEbook_fb2_mobi_Panel  } from '../tools/ebooks/fb2/fb2_mobi.js';
+import { handleEbook_fb2_txt_FilePicked,   removeEbook_fb2_txt_Panel   } from '../tools/ebooks/fb2/fb2_txt.js';
+import { handleEbook_fb2_rtf_FilePicked,   removeEbook_fb2_rtf_Panel   } from '../tools/ebooks/fb2/fb2_rtf.js';
+import { handleEbook_txt_pdf_FilePicked,   removeEbook_txt_pdf_Panel   } from '../tools/ebooks/txt/txt_pdf.js';
+import { handleEbook_txt_epub_FilePicked,  removeEbook_txt_epub_Panel  } from '../tools/ebooks/txt/txt_epub.js';
+import { handleEbook_txt_mobi_FilePicked,  removeEbook_txt_mobi_Panel  } from '../tools/ebooks/txt/txt_mobi.js';
+import { handleEbook_txt_rtf_FilePicked,   removeEbook_txt_rtf_Panel   } from '../tools/ebooks/txt/txt_rtf.js';
+import { handleEbook_rtf_pdf_FilePicked,   removeEbook_rtf_pdf_Panel   } from '../tools/ebooks/rtf/rtf_pdf.js';
+import { handleEbook_rtf_epub_FilePicked,  removeEbook_rtf_epub_Panel  } from '../tools/ebooks/rtf/rtf_epub.js';
+import { handleEbook_rtf_mobi_FilePicked,  removeEbook_rtf_mobi_Panel  } from '../tools/ebooks/rtf/rtf_mobi.js';
+import { handleEbook_rtf_txt_FilePicked,   removeEbook_rtf_txt_Panel   } from '../tools/ebooks/rtf/rtf_txt.js';
+
+// Lookup table: tool id → { handler, remover }
+const _EBOOK_TOOLS = {
+  'pdf-epub' : { h: handleEbook_pdf_epub_FilePicked,  r: removeEbook_pdf_epub_Panel  },
+  'pdf-mobi' : { h: handleEbook_pdf_mobi_FilePicked,  r: removeEbook_pdf_mobi_Panel  },
+  'pdf-azw3' : { h: handleEbook_pdf_azw3_FilePicked,  r: removeEbook_pdf_azw3_Panel  },
+  'pdf-fb2'  : { h: handleEbook_pdf_fb2_FilePicked,   r: removeEbook_pdf_fb2_Panel   },
+  'pdf-txt'  : { h: handleEbook_pdf_txt_FilePicked,   r: removeEbook_pdf_txt_Panel   },
+  'pdf-rtf'  : { h: handleEbook_pdf_rtf_FilePicked,   r: removeEbook_pdf_rtf_Panel   },
+  'epub-pdf' : { h: handleEbook_epub_pdf_FilePicked,  r: removeEbook_epub_pdf_Panel  },
+  'epub-mobi': { h: handleEbook_epub_mobi_FilePicked, r: removeEbook_epub_mobi_Panel },
+  'epub-azw3': { h: handleEbook_epub_azw3_FilePicked, r: removeEbook_epub_azw3_Panel },
+  'epub-fb2' : { h: handleEbook_epub_fb2_FilePicked,  r: removeEbook_epub_fb2_Panel  },
+  'epub-txt' : { h: handleEbook_epub_txt_FilePicked,  r: removeEbook_epub_txt_Panel  },
+  'epub-rtf' : { h: handleEbook_epub_rtf_FilePicked,  r: removeEbook_epub_rtf_Panel  },
+  'mobi-pdf' : { h: handleEbook_mobi_pdf_FilePicked,  r: removeEbook_mobi_pdf_Panel  },
+  'mobi-epub': { h: handleEbook_mobi_epub_FilePicked, r: removeEbook_mobi_epub_Panel },
+  'mobi-azw3': { h: handleEbook_mobi_azw3_FilePicked, r: removeEbook_mobi_azw3_Panel },
+  'mobi-fb2' : { h: handleEbook_mobi_fb2_FilePicked,  r: removeEbook_mobi_fb2_Panel  },
+  'mobi-txt' : { h: handleEbook_mobi_txt_FilePicked,  r: removeEbook_mobi_txt_Panel  },
+  'mobi-rtf' : { h: handleEbook_mobi_rtf_FilePicked,  r: removeEbook_mobi_rtf_Panel  },
+  'azw3-pdf' : { h: handleEbook_azw3_pdf_FilePicked,  r: removeEbook_azw3_pdf_Panel  },
+  'azw3-epub': { h: handleEbook_azw3_epub_FilePicked, r: removeEbook_azw3_epub_Panel },
+  'azw3-mobi': { h: handleEbook_azw3_mobi_FilePicked, r: removeEbook_azw3_mobi_Panel },
+  'azw3-fb2' : { h: handleEbook_azw3_fb2_FilePicked,  r: removeEbook_azw3_fb2_Panel  },
+  'azw3-txt' : { h: handleEbook_azw3_txt_FilePicked,  r: removeEbook_azw3_txt_Panel  },
+  'azw3-rtf' : { h: handleEbook_azw3_rtf_FilePicked,  r: removeEbook_azw3_rtf_Panel  },
+  'fb2-pdf'  : { h: handleEbook_fb2_pdf_FilePicked,   r: removeEbook_fb2_pdf_Panel   },
+  'fb2-epub' : { h: handleEbook_fb2_epub_FilePicked,  r: removeEbook_fb2_epub_Panel  },
+  'fb2-mobi' : { h: handleEbook_fb2_mobi_FilePicked,  r: removeEbook_fb2_mobi_Panel  },
+  'fb2-txt'  : { h: handleEbook_fb2_txt_FilePicked,   r: removeEbook_fb2_txt_Panel   },
+  'fb2-rtf'  : { h: handleEbook_fb2_rtf_FilePicked,   r: removeEbook_fb2_rtf_Panel   },
+  'txt-pdf'  : { h: handleEbook_txt_pdf_FilePicked,   r: removeEbook_txt_pdf_Panel   },
+  'txt-epub' : { h: handleEbook_txt_epub_FilePicked,  r: removeEbook_txt_epub_Panel  },
+  'txt-mobi' : { h: handleEbook_txt_mobi_FilePicked,  r: removeEbook_txt_mobi_Panel  },
+  'txt-rtf'  : { h: handleEbook_txt_rtf_FilePicked,   r: removeEbook_txt_rtf_Panel   },
+  'rtf-pdf'  : { h: handleEbook_rtf_pdf_FilePicked,   r: removeEbook_rtf_pdf_Panel   },
+  'rtf-epub' : { h: handleEbook_rtf_epub_FilePicked,  r: removeEbook_rtf_epub_Panel  },
+  'rtf-mobi' : { h: handleEbook_rtf_mobi_FilePicked,  r: removeEbook_rtf_mobi_Panel  },
+  'rtf-txt'  : { h: handleEbook_rtf_txt_FilePicked,   r: removeEbook_rtf_txt_Panel   },
+};
+
 const BACKEND = 'http://127.0.0.1:8000';
 
 // ─── ENDPOINT MAP ─────────────────────────────────────────────────────────────
@@ -200,6 +280,8 @@ function _updateDropZone(tool) {
     removePdfPptPanel();
     removePdfImagesPanel();
     removeImagesPdfPanel();
+    // Clean up any active ebook panel
+    Object.values(_EBOOK_TOOLS).forEach(({ r }) => r());
 
     const mainEl   = zone.querySelector('.drop-main-text');
     const subEl    = zone.querySelector('.drop-browse');
@@ -238,6 +320,8 @@ function _updateDropZone(tool) {
   removePdfPptPanel();       // hide previous PDF→PPT settings panel if tool changed
   removePdfImagesPanel();    // hide previous PDF→Images settings panel if tool changed
   removeImagesPdfPanel();    // hide previous Images→PDF queue panel if tool changed
+  // Clean up any active ebook panel when switching tools
+  Object.values(_EBOOK_TOOLS).forEach(({ r }) => r());
 
   zone.style.setProperty('--dz-color', color);
   zone.style.setProperty('--dz-bg', bg);
@@ -951,6 +1035,12 @@ async function _submitFile(files) {
   // Images → PDF converter has its own multi-image queue flow
   if (tool.id === 'images-pdf') {
     handleImagesPdfFilesPicked(files);
+    return;
+  }
+
+  // eBook conversion tools — dispatch via lookup table
+  if (_EBOOK_TOOLS[tool.id]) {
+    _EBOOK_TOOLS[tool.id].h(files[0]);
     return;
   }
 

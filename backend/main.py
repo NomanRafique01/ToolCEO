@@ -21,6 +21,8 @@ from tools.documents.pdf_convertor.pdf_txt.router   import router as pdf_txt_rou
 from tools.documents.pdf_convertor.pdf_ppt.router    import router as pdf_ppt_router
 from tools.documents.pdf_convertor.pdf_images.router import router as pdf_images_router
 from tools.documents.pdf_convertor.images_pdf.router import router as images_pdf_router
+# eBook conversion — single router backed by utils/calibre_engine.py
+from tools.ebooks.router import router as ebooks_router
 
 app = FastAPI(title="ToolCEO Backend")
 
@@ -77,5 +79,7 @@ app.include_router(pdf_ppt_router,    prefix="/api")
 app.include_router(pdf_images_router, prefix="/api")
 # Images → PDF converter — owns /api/images/pdf/convert
 app.include_router(images_pdf_router, prefix="/api")
+# eBook converter — owns /api/ebooks/convert
+app.include_router(ebooks_router, prefix="/api")
 
 

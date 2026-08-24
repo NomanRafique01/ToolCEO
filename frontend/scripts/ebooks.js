@@ -32,7 +32,7 @@ const EBOOK_FORMATS = [
   {
     id: 'ebook-pdf',
     fmt: 'pdf',
-    label: 'PDF',
+    label: 'PDF Tools',
     desc: 'Portable Document Format eBook',
     ...FORMAT_THEME.pdf,
     icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
@@ -45,7 +45,7 @@ const EBOOK_FORMATS = [
   {
     id: 'ebook-epub',
     fmt: 'epub',
-    label: 'EPUB',
+    label: 'EPUB Tools',
     desc: 'Standard eBook format for all readers',
     ...FORMAT_THEME.epub,
     icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
@@ -59,7 +59,7 @@ const EBOOK_FORMATS = [
   {
     id: 'ebook-mobi',
     fmt: 'mobi',
-    label: 'MOBI',
+    label: 'MOBI Tools',
     desc: 'Amazon Kindle legacy eBook format',
     ...FORMAT_THEME.mobi,
     icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
@@ -71,7 +71,7 @@ const EBOOK_FORMATS = [
   {
     id: 'ebook-fb2',
     fmt: 'fb2',
-    label: 'FB2',
+    label: 'FB2 Tools',
     desc: 'FictionBook 2 — popular in Eastern Europe',
     ...FORMAT_THEME.fb2,
     icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
@@ -83,7 +83,7 @@ const EBOOK_FORMATS = [
   {
     id: 'ebook-txt',
     fmt: 'txt',
-    label: 'TXT',
+    label: 'TXT Tools',
     desc: 'Plain text eBook',
     ...FORMAT_THEME.txt,
     icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
@@ -96,7 +96,7 @@ const EBOOK_FORMATS = [
   {
     id: 'ebook-rtf',
     fmt: 'rtf',
-    label: 'RTF',
+    label: 'RTF Tools',
     desc: 'Rich Text Format eBook',
     ...FORMAT_THEME.rtf,
     icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
@@ -109,7 +109,7 @@ const EBOOK_FORMATS = [
   {
     id: 'ebook-azw3',
     fmt: 'azw3',
-    label: 'AZW3',
+    label: 'AZW3 Tools',
     desc: 'Amazon Kindle Format 8 (KF8)',
     ...FORMAT_THEME.azw3,
     icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
@@ -840,8 +840,13 @@ function renderEbookConversions(container, activateNav, fmtKey) {
   const cards = CONVERSIONS[fmtKey] || [];
   const theme = FORMAT_THEME[fmtKey];
 
-  // Apply the source format's color to every conversion card
-  const themedCards = cards.map((c) => ({ ...c, color: theme.color, bg: theme.bg }));
+  // Apply each card's *target* format color so sub-cards are visually distinct.
+  // Card ids are shaped like "src-target" (e.g. "pdf-epub", "epub-mobi").
+  const themedCards = cards.map((c) => {
+    const targetFmt = c.id.split('-').slice(1).join('-'); // handles "azw3" etc.
+    const targetTheme = FORMAT_THEME[targetFmt] || theme;
+    return { ...c, color: targetTheme.color, bg: targetTheme.bg };
+  });
 
   setBreadcrumb(['Dashboard', 'eBooks', fmt.label]);
 

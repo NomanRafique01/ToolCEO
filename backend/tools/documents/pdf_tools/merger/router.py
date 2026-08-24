@@ -74,7 +74,9 @@ def _run_job(
     """Execute *fn(*args)* in a thread-pool worker, updating job progress."""
     try:
         job_store.set_progress(job_id, 10)
-        result = fn(*args)
+        with job_store.smooth_progress(job_id, 10, 95):
+            result = fn(*args)
+        job_store.set_progress(job_id, 95)
         job_store.set_done(job_id, result, filename, media_type)
     except ValueError as exc:
         # Engine raises ValueError for bad passwords / too few files etc.

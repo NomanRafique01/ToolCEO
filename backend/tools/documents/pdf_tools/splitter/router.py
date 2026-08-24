@@ -14,7 +14,6 @@ Each async endpoint:
 
 from __future__ import annotations
 
-import asyncio
 from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 
@@ -43,15 +42,14 @@ async def _read(upload: UploadFile) -> bytes:
 
 def _run_job(job_id: str, fn, *args, filename: str, media_type: str = "application/pdf"):
     """Execute fn(*args) in the thread pool, updating job progress."""
-    loop = asyncio.new_event_loop()
     try:
         job_store.set_progress(job_id, 10)
-        result = fn(*args)
+        with job_store.smooth_progress(job_id, 10, 95):
+            result = fn(*args)
+        job_store.set_progress(job_id, 95)
         job_store.set_done(job_id, result, filename, media_type)
     except Exception as exc:
         job_store.set_error(job_id, str(exc))
-    finally:
-        loop.close()
 
 
 def _submit(job_id: str, fn, *args, filename: str, media_type: str = "application/pdf"):
