@@ -82,6 +82,14 @@ import { handleDocxOdtFilePicked,  removeDocxOdtPanel  } from '../tools/document
 import { handleDocxEpubFilePicked, removeDocxEpubPanel } from '../tools/documents/docx_convertor/docx_epub.js';
 import { handleDocxMdFilePicked,   removeDocxMdPanel   } from '../tools/documents/docx_convertor/docx_md.js';
 
+// ── PPTX conversion tools — all share one base, each file is a thin wrapper ──
+import { handlePptxPdfFilePicked,    removePptxPdfPanel    } from '../tools/documents/pptx_convertor/pptx_pdf.js';
+import { handlePptxHtmlFilePicked,   removePptxHtmlPanel   } from '../tools/documents/pptx_convertor/pptx_html.js';
+import { handlePptxImagesFilePicked, removePptxImagesPanel } from '../tools/documents/pptx_convertor/pptx_images.js';
+import { handlePptxOdpFilePicked,    removePptxOdpPanel    } from '../tools/documents/pptx_convertor/pptx_odp.js';
+import { handlePptxTxtFilePicked,    removePptxTxtPanel    } from '../tools/documents/pptx_convertor/pptx_txt.js';
+import { handlePptxRepairFilePicked, removePptxRepairPanel } from '../tools/documents/pptx_convertor/pptx_repair.js';
+
 // ── eBook conversion tools — all share one base, each file is a thin wrapper ──
 import { handleEbook_pdf_epub_FilePicked,  removeEbook_pdf_epub_Panel  } from '../tools/ebooks/pdf/pdf_epub.js';
 import { handleEbook_pdf_mobi_FilePicked,  removeEbook_pdf_mobi_Panel  } from '../tools/ebooks/pdf/pdf_mobi.js';
@@ -290,6 +298,9 @@ function _updateDropZone(tool) {
     // Clean up any active DOCX conversion panel
     removeDocxPdfPanel(); removeDocxHtmlPanel(); removeDocxTxtPanel();
     removeDocxOdtPanel(); removeDocxEpubPanel(); removeDocxMdPanel();
+    // Clean up any active PPTX conversion panel
+    removePptxPdfPanel(); removePptxHtmlPanel(); removePptxImagesPanel();
+    removePptxOdpPanel(); removePptxTxtPanel(); removePptxRepairPanel();
     // Clean up any active ebook panel
     Object.values(_EBOOK_TOOLS).forEach(({ r }) => r());
 
@@ -333,6 +344,9 @@ function _updateDropZone(tool) {
   // Clean up any active DOCX conversion panel when switching tools
   removeDocxPdfPanel(); removeDocxHtmlPanel(); removeDocxTxtPanel();
   removeDocxOdtPanel(); removeDocxEpubPanel(); removeDocxMdPanel();
+  // Clean up any active PPTX conversion panel when switching tools
+  removePptxPdfPanel(); removePptxHtmlPanel(); removePptxImagesPanel();
+  removePptxOdpPanel(); removePptxTxtPanel(); removePptxRepairPanel();
   // Clean up any active ebook panel when switching tools
   Object.values(_EBOOK_TOOLS).forEach(({ r }) => r());
 
@@ -1058,6 +1072,14 @@ async function _submitFile(files) {
   if (tool.id === 'docx-odt')  { handleDocxOdtFilePicked(files[0]);  return; }
   if (tool.id === 'docx-epub') { handleDocxEpubFilePicked(files[0]); return; }
   if (tool.id === 'docx-md')   { handleDocxMdFilePicked(files[0]);   return; }
+
+  // PPTX conversion tools — dispatch by tool id
+  if (tool.id === 'pptx-pdf')    { handlePptxPdfFilePicked(files[0]);    return; }
+  if (tool.id === 'pptx-html')   { handlePptxHtmlFilePicked(files[0]);   return; }
+  if (tool.id === 'pptx-images') { handlePptxImagesFilePicked(files[0]); return; }
+  if (tool.id === 'pptx-odp')    { handlePptxOdpFilePicked(files[0]);    return; }
+  if (tool.id === 'pptx-txt')    { handlePptxTxtFilePicked(files[0]);    return; }
+  if (tool.id === 'pptx-repair') { handlePptxRepairFilePicked(files[0]); return; }
 
   // eBook conversion tools — dispatch via lookup table
   if (_EBOOK_TOOLS[tool.id]) {

@@ -1,0 +1,30 @@
+/* ─────────────────────────────────────────────────────────────
+   tools/documents/pptx_convertor/pptx_convertor.css
+   Thumbnail + drop-zone state styles for all PPTX conversion tools.
+   Mirrors docx_convertor.css but scoped to dz-has-pptx-thumb.
+   ───────────────────────────────────────────────────────────── */
+
+/* ─── DROP ZONE: HAS-PPTX-THUMB STATE ───────────────────────────────────────── */
+
+.drop-zone.dz-has-pptx-thumb {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+.drop-zone.dz-has-pptx-thumb .drop-icon,
+.drop-zone.dz-has-pptx-thumb .drop-main-text,
+.drop-zone.dz-has-pptx-thumb .drop-browse,
+.drop-zone.dz-has-pptx-thumb .dz-paste-btn,
+.drop-zone.dz-has-pptx-thumb .drop-private {
+  display: none !important;
+}
+
+/* ─── PPTX THUMBNAIL (inside drop zone) ──────────────────────────────────── */
+
+.dz-pptx-thumb-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
