@@ -113,6 +113,7 @@ function _showThumb(zone, file, color) {
 
   const wrap = document.createElement('div');
   wrap.className = 'dz-docx-thumb-wrap';
+  wrap.style.setProperty('--dc-color', color);
   wrap.innerHTML = `
     <div class="dz-docx-thumb-card">
       <div class="dz-docx-thumb-frame" style="border:2px solid ${color};box-shadow:0 4px 18px rgba(0,0,0,0.45)">
@@ -130,7 +131,7 @@ function _showThumb(zone, file, color) {
         </svg>
       </div>
       <button class="dz-docx-thumb-remove" title="Remove file"
-              style="--dc-color:${color}" aria-label="Remove file">&#x2715;</button>
+              aria-label="Remove file">&#x2715;</button>
     </div>
     <span class="dz-docx-thumb-name">${_esc(file.name)}</span>
     <span class="dz-docx-thumb-size">${_fmt(file.size)}</span>`;

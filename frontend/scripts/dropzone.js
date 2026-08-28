@@ -88,6 +88,15 @@ import { handleXlsxCsvFilePicked,  removeXlsxCsvPanel  } from '../tools/document
 import { handleXlsxJsonFilePicked, removeXlsxJsonPanel } from '../tools/documents/xlsx_convertor/xlsx_json.js';
 import { handleXlsxHtmlFilePicked, removeXlsxHtmlPanel } from '../tools/documents/xlsx_convertor/xlsx_html.js';
 import { handleXlsxOdsFilePicked,  removeXlsxOdsPanel  } from '../tools/documents/xlsx_convertor/xlsx_ods.js';
+// ── TXT conversion tools — all share one base, each file is a thin wrapper ──
+import { handleTxtPdfFilePicked,  removeTxtPdfPanel  } from '../tools/documents/txt_convertor/txt_pdf.js';
+import { handleTxtDocxFilePicked, removeTxtDocxPanel } from '../tools/documents/txt_convertor/txt_docx.js';
+import { handleTxtHtmlFilePicked, removeTxtHtmlPanel } from '../tools/documents/txt_convertor/txt_html.js';
+import { handleTxtMdFilePicked,   removeTxtMdPanel   } from '../tools/documents/txt_convertor/txt_md.js';
+import { handleTxtEpubFilePicked, removeTxtEpubPanel } from '../tools/documents/txt_convertor/txt_epub.js';
+import { handleTxtOdtFilePicked,  removeTxtOdtPanel  } from '../tools/documents/txt_convertor/txt_odt.js';
+import { handleTxtRtfFilePicked,  removeTxtRtfPanel  } from '../tools/documents/txt_convertor/txt_rtf.js';
+
 // ── PPTX conversion tools — all share one base, each file is a thin wrapper ──
 import { handlePptxPdfFilePicked,    removePptxPdfPanel    } from '../tools/documents/pptx_convertor/pptx_pdf.js';
 import { handlePptxHtmlFilePicked,   removePptxHtmlPanel   } from '../tools/documents/pptx_convertor/pptx_html.js';
@@ -310,6 +319,9 @@ function _updateDropZone(tool) {
     // Clean up any active PPTX conversion panel
     removePptxPdfPanel(); removePptxHtmlPanel(); removePptxImagesPanel();
     removePptxOdpPanel(); removePptxTxtPanel(); removePptxRepairPanel();
+    // Clean up any active TXT conversion panel
+    removeTxtPdfPanel(); removeTxtDocxPanel(); removeTxtHtmlPanel();
+    removeTxtMdPanel(); removeTxtEpubPanel(); removeTxtOdtPanel(); removeTxtRtfPanel();
     // Clean up any active ebook panel
     Object.values(_EBOOK_TOOLS).forEach(({ r }) => r());
 
@@ -359,6 +371,9 @@ function _updateDropZone(tool) {
   // Clean up any active PPTX conversion panel when switching tools
   removePptxPdfPanel(); removePptxHtmlPanel(); removePptxImagesPanel();
   removePptxOdpPanel(); removePptxTxtPanel(); removePptxRepairPanel();
+  // Clean up any active TXT conversion panel when switching tools
+  removeTxtPdfPanel(); removeTxtDocxPanel(); removeTxtHtmlPanel();
+  removeTxtMdPanel(); removeTxtEpubPanel(); removeTxtOdtPanel(); removeTxtRtfPanel();
   // Clean up any active ebook panel when switching tools
   Object.values(_EBOOK_TOOLS).forEach(({ r }) => r());
 
@@ -1099,6 +1114,15 @@ async function _submitFile(files) {
   if (tool.id === 'xlsx-json') { handleXlsxJsonFilePicked(files[0]); return; }
   if (tool.id === 'xlsx-html') { handleXlsxHtmlFilePicked(files[0]); return; }
   if (tool.id === 'xlsx-ods')  { handleXlsxOdsFilePicked(files[0]);  return; }
+
+  // TXT conversion tools — dispatch by tool id
+  if (tool.id === 'txt-pdf')  { handleTxtPdfFilePicked(files[0]);  return; }
+  if (tool.id === 'txt-docx') { handleTxtDocxFilePicked(files[0]); return; }
+  if (tool.id === 'txt-html') { handleTxtHtmlFilePicked(files[0]); return; }
+  if (tool.id === 'txt-md')   { handleTxtMdFilePicked(files[0]);   return; }
+  if (tool.id === 'txt-epub') { handleTxtEpubFilePicked(files[0]); return; }
+  if (tool.id === 'txt-odt')  { handleTxtOdtFilePicked(files[0]);  return; }
+  if (tool.id === 'txt-rtf')  { handleTxtRtfFilePicked(files[0]);  return; }
 
   // eBook conversion tools — dispatch via lookup table
   if (_EBOOK_TOOLS[tool.id]) {

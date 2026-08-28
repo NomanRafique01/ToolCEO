@@ -29,6 +29,8 @@ from tools.documents.docx_convertor.router import router as docx_convertor_route
 from tools.documents.pptx_convertor.router import router as pptx_convertor_router
 # XLSX conversion tools — single router (6 targets: pdf, csv, html, ods, txt, json)
 from tools.documents.xlsx_convertor.router import router as xlsx_convertor_router
+# TXT conversion tools — single router (7 targets: pdf, docx, html, md, epub, odt, rtf)
+from tools.documents.txt_convertor.router import router as txt_convertor_router
 
 app = FastAPI(title="ToolCEO Backend")
 
@@ -93,5 +95,7 @@ app.include_router(docx_convertor_router, prefix="/api")
 app.include_router(pptx_convertor_router, prefix="/api")
 # XLSX converter — owns /api/xlsx/{target}/convert
 app.include_router(xlsx_convertor_router, prefix="/api")
+# TXT converter — owns /api/txt/{target}/convert
+app.include_router(txt_convertor_router, prefix="/api")
 
 

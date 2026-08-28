@@ -43,14 +43,15 @@ export function escHtml(str) {
 export function resetZoneContent(zone) {
   if (!zone) return;
   zone.querySelectorAll(
-    '.dz-progress-wrap, .dz-download-wrap, .dz-error-wrap, .dz-pdf-thumb-wrap, .dz-compress-thumb-wrap, .dz-encrypt-thumb-wrap, .dz-merge-thumb-strip, .dz-pdf-word-thumb-wrap, .dz-pdf-excel-thumb-wrap, .dz-pdf-html-thumb-wrap, .dz-pdf-txt-thumb-wrap, .dz-ebook-thumb-wrap, .dz-docx-thumb-wrap, .dz-pptx-thumb-wrap, .dz-xlsx-thumb-wrap'
+    '.dz-progress-wrap, .dz-download-wrap, .dz-error-wrap, .dz-pdf-thumb-wrap, .dz-compress-thumb-wrap, .dz-encrypt-thumb-wrap, .dz-merge-thumb-strip, .dz-pdf-word-thumb-wrap, .dz-pdf-excel-thumb-wrap, .dz-pdf-html-thumb-wrap, .dz-pdf-txt-thumb-wrap, .dz-ebook-thumb-wrap, .dz-docx-thumb-wrap, .dz-pptx-thumb-wrap, .dz-xlsx-thumb-wrap, .dz-txt-thumb-wrap'
   ).forEach((el) => el.remove());
   zone.classList.remove(
     'dz-state-processing', 'dz-state-done', 'dz-state-error',
     'dz-state-scanning',   'dz-has-thumb',  'dz-has-compress-thumb',
     'dz-has-encrypt-thumb', 'dz-has-merge-thumbs', 'dz-has-pdf-word-thumb',
     'dz-has-pdf-excel-thumb', 'dz-has-pdf-html-thumb', 'dz-has-pdf-txt-thumb',
-    'dz-has-ebook-thumb', 'dz-has-docx-thumb', 'dz-has-pptx-thumb', 'dz-has-xlsx-thumb'
+    'dz-has-ebook-thumb', 'dz-has-docx-thumb', 'dz-has-pptx-thumb', 'dz-has-xlsx-thumb',
+    'dz-has-txt-thumb'
   );
 }
 

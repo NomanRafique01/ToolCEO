@@ -87,13 +87,14 @@ function _showThumb(zone, file, color, dataUri) {
 
   const wrap = document.createElement('div');
   wrap.className = 'dz-pdf-excel-thumb-wrap';
+  wrap.style.setProperty('--pe-color', color);
   wrap.innerHTML = `
     <div class="dz-pdf-excel-thumb-card">
       <div class="dz-pdf-excel-thumb-frame" style="border:2px solid ${color};box-shadow:0 4px 18px rgba(0,0,0,0.45)">
         ${thumbContent}
       </div>
       <button class="dz-pdf-excel-thumb-remove" title="Remove file"
-              style="--pe-color:${color}" aria-label="Remove file">&#x2715;</button>
+              aria-label="Remove file">&#x2715;</button>
     </div>
     <span class="dz-pdf-excel-thumb-name">${_esc(file.name)}</span>
     <span class="dz-pdf-excel-thumb-size">${_fmt(file.size)}</span>`;

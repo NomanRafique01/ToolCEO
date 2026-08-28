@@ -163,7 +163,7 @@ function _buildThumbCard(item, idx, color) {
     </div>
     <span class="dz-imgpdf-card-name" title="${_escHtml(item.file.name)}">${_escHtml(shortName)}</span>
     <button class="dz-imgpdf-card-remove" title="Remove this image"
-            style="--imgpdf-color:${color}" aria-label="Remove ${_escHtml(item.file.name)}">&#x2715;</button>`;
+            aria-label="Remove ${_escHtml(item.file.name)}">&#x2715;</button>`;
 
   card.querySelector('.dz-imgpdf-card-remove').addEventListener('click', (e) => {
     e.stopPropagation();

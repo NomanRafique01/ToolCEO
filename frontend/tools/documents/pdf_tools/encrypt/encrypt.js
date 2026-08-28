@@ -90,13 +90,14 @@ function _showEncryptThumb(zone, file, color, dataUri) {
 
   const wrap = document.createElement('div');
   wrap.className = 'dz-encrypt-thumb-wrap';
+  wrap.style.setProperty('--enc-color', color);
   wrap.innerHTML = `
     <div class="dz-encrypt-thumb-card">
       <div class="dz-encrypt-thumb-frame ${_isTceo ? 'dz-encrypt-thumb-frame--tceo' : ''}" style="border:2px solid ${color};box-shadow:0 4px 18px rgba(0,0,0,0.45)">
         ${thumbContent}
       </div>
       <button class="dz-encrypt-thumb-remove" title="Remove file"
-              style="--enc-color:${color}" aria-label="Remove file">&#x2715;</button>
+              aria-label="Remove file">&#x2715;</button>
     </div>
     <span class="dz-encrypt-thumb-name">${escHtml(file.name)}</span>
     <span class="dz-encrypt-thumb-size">${_fmt(file.size)}</span>`;

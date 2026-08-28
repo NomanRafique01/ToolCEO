@@ -33,6 +33,7 @@ import {
   showDownload,
   showError,
 } from '../../shared/progress.js';
+import { getPptxThumbnail } from '../../shared/pptxThumb.js';
 
 const BACKEND = 'http://127.0.0.1:8000';
 
@@ -102,38 +103,44 @@ export function removePptxPanel() {
 
 // ─── THUMBNAIL (inside drop zone) ─────────────────────────────────────────────
 
-function _showThumb(zone, file, color) {
+function _showThumb(zone, file, color, dataUri) {
   const old = zone.querySelector('.dz-pptx-thumb-wrap');
   if (old) old.remove();
 
+  // Show real slide thumbnail if available, else SVG fallback (same size as DOCX: 90×116)
+  const thumbContent = dataUri
+    ? `<img class="dz-pptx-thumb-img" src="${dataUri}" alt="Slide 1 preview" draggable="false" />`
+    : `<svg class="dz-pptx-thumb-icon" viewBox="0 0 90 116" xmlns="http://www.w3.org/2000/svg">
+        <rect x="0" y="0" width="90" height="116" fill="#ffffff"/>
+        <polygon points="62,0 90,28 62,28" fill="#e0e0e0"/>
+        <polyline points="62,0 62,28 90,28" fill="none" stroke="#cccccc" stroke-width="1"/>
+        <rect x="0" y="42" width="90" height="26" fill="${color}"/>
+        <text x="45" y="60" font-family="Arial,sans-serif" font-size="12"
+              font-weight="bold" fill="#ffffff"
+              text-anchor="middle" dominant-baseline="middle">PPTX</text>
+        <rect x="12" y="80" width="40" height="28" rx="2" fill="none" stroke="#dddddd" stroke-width="1.5"/>
+        <line x1="12" y1="89" x2="52" y2="89" stroke="#eeeeee" stroke-width="1"/>
+        <line x1="22" y1="80" x2="22" y2="108" stroke="#eeeeee" stroke-width="1"/>
+      </svg>`;
+
   const wrap = document.createElement('div');
   wrap.className = 'dz-pptx-thumb-wrap';
+  wrap.style.setProperty('--pc-color', color);
   wrap.innerHTML = `
-    <div class="dz-docx-thumb-card">
-      <div class="dz-docx-thumb-frame" style="border:2px solid ${color};box-shadow:0 4px 18px rgba(0,0,0,0.45)">
-        <svg class="dz-docx-thumb-icon" viewBox="0 0 90 116" xmlns="http://www.w3.org/2000/svg">
-          <rect x="0" y="0" width="90" height="116" fill="#ffffff"/>
-          <polygon points="62,0 90,28 62,28" fill="#e0e0e0"/>
-          <polyline points="62,0 62,28 90,28" fill="none" stroke="#cccccc" stroke-width="1"/>
-          <rect x="0" y="42" width="90" height="26" fill="${color}"/>
-          <text x="45" y="60" font-family="Arial,sans-serif" font-size="12"
-                font-weight="bold" fill="#ffffff"
-                text-anchor="middle" dominant-baseline="middle">PPTX</text>
-          <rect x="12" y="80" width="40" height="28" rx="2" fill="none" stroke="#dddddd" stroke-width="1.5"/>
-          <line x1="12" y1="89" x2="52" y2="89" stroke="#eeeeee" stroke-width="1"/>
-          <line x1="22" y1="80" x2="22" y2="108" stroke="#eeeeee" stroke-width="1"/>
-        </svg>
+    <div class="dz-pptx-thumb-card">
+      <div class="dz-pptx-thumb-frame" style="border:2px solid ${color};box-shadow:0 4px 18px rgba(0,0,0,0.45)">
+        ${thumbContent}
       </div>
-      <button class="dz-docx-thumb-remove" title="Remove file"
-              style="--dc-color:${color}" aria-label="Remove file">&#x2715;</button>
+      <button class="dz-pptx-thumb-remove" title="Remove file"
+              aria-label="Remove file">&#x2715;</button>
     </div>
-    <span class="dz-docx-thumb-name">${_esc(file.name)}</span>
-    <span class="dz-docx-thumb-size">${_fmt(file.size)}</span>`;
+    <span class="dz-pptx-thumb-name">${_esc(file.name)}</span>
+    <span class="dz-pptx-thumb-size">${_fmt(file.size)}</span>`;
 
   zone.classList.add('dz-has-pptx-thumb');
   zone.appendChild(wrap);
 
-  wrap.querySelector('.dz-docx-thumb-remove').addEventListener('click', (e) => {
+  wrap.querySelector('.dz-pptx-thumb-remove').addEventListener('click', (e) => {
     e.stopPropagation();
     removePptxPanel();
     resetZoneContent(zone);
@@ -238,12 +245,15 @@ export async function handlePptxFilePicked(file, toolId) {
 
   showScanProgress(zone, color);
 
-  // Brief simulated scan — PPTX has no thumbnail capability
-  await new Promise((r) => setTimeout(r, 400));
+  // Extract the embedded thumbnail from the PPTX ZIP client-side
+  let thumbnail = null;
+  try {
+    thumbnail = await getPptxThumbnail(file);
+  } catch (_) { /* leave null — fallback SVG will be used */ }
 
   resetZoneContent(zone);
 
-  _showThumb(zone, file, color);
+  _showThumb(zone, file, color, thumbnail);
   _showSettingsPanel(file.size, color);
 }
 

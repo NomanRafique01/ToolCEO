@@ -277,6 +277,73 @@ if (!file || !file.name.toLowerCase().endsWith('.<src>')) {
 }
 ```
 
+### ⚠️ Color Consistency Rule — MUST follow in every base JS
+
+Every drop-zone UI element (thumbnail, size badge, remove button, progress ring, download card, settings panel) **must always use the active tool's color** — never a hardcoded fallback that bleeds in from a CSS `:root` default.
+
+**The Rule:** Set the tool color CSS variable on the outermost **`wrap` element** so that every child inherits it via CSS custom property inheritance. Do NOT set it only on a child element (e.g. the remove button), because sibling elements such as the size badge will then fall back to the `:root` default and show the wrong color.
+
+```js
+// ✅ CORRECT — set on wrap so ALL children inherit it
+const wrap = document.createElement('div');
+wrap.className = 'dz-<src>-thumb-wrap';
+wrap.style.setProperty('--<src>-color', color);   // ← set here, not on the button
+wrap.innerHTML = `
+  <div class="dz-<src>-thumb-card">
+    <div class="dz-<src>-thumb-frame" style="border:2px solid ${color};...">
+      ${thumbContent}
+    </div>
+    <button class="dz-<src>-thumb-remove" aria-label="Remove file">&#x2715;</button>
+  </div>
+  <span class="dz-<src>-thumb-name">${_esc(file.name)}</span>
+  <span class="dz-<src>-thumb-size">${_fmt(file.size)}</span>`;
+
+// ❌ WRONG — only the button gets the right color; size badge falls back to :root default
+wrap.innerHTML = `
+  ...
+  <button class="dz-<src>-thumb-remove"
+          style="--<src>-color:${color}">&#x2715;</button>   <!-- ← wrong placement -->
+  ...
+  <span class="dz-<src>-thumb-size">...</span>`;   <!-- inherits :root default, wrong color! -->
+```
+
+The same rule applies for queue-card-style tools (merger, images_pdf): set the CSS variable on the **card** element with `card.style.setProperty('--<family>-color', color)` — not on the remove button inside the card.
+
+**Settings panel:** call `panel.style.setProperty('--pw-color', color)` on the `panel` element so all `.pw-*` children (submit button, input focus ring, border) inherit the per-tool color correctly.
+
+**Color source:** always read the color from `getActiveTool()`, never hardcode it:
+```js
+const tool  = getActiveTool();
+const color = tool ? (tool.color || '<safe-fallback>') : '<safe-fallback>';
+```
+The fallback value should be a neutral colour (e.g. `#00E5C0`) — it is only reached if a file is somehow dropped before any tool is selected, which the dispatch guard in `dropzone.js` prevents.
+
+**CSS custom property naming convention:**
+
+| Family | CSS variable | `:root` default |
+|---|---|---|
+| DOCX | `--dc-color` | `#60A5FA` |
+| PPTX | `--pc-color` | `#FB923C` |
+| XLSX | `--xc-color` | `#34D399` |
+| TXT  | `--tc-color` | `#A78BFA` |
+| ebook | `--eb-color` | `#8B5CF6` |
+| PDF→Word/HTML/TXT/PPT | `--pw-color` | tool-specific |
+| PDF→Excel | `--pe-color` | `#34D399` |
+| PDF→Images | `--pi-color` | `#EAB308` |
+| Compressor | `--cmp-color` | `#A855F7` |
+| Encrypt | `--enc-color` | `#FBBF24` |
+| Merger | `--merge-color` | `#FF6B6B` |
+| Images→PDF | `--imgpdf-color` | `#F472B6` |
+| PDF tools (split/rotate/watermark/editor/extractor) | `--thumb-color` | `#E8924A` (button only, no size badge) |
+
+When adding a **new** family, pick a new variable name following the pattern `--<abbrev>-color` and declare it in the family's CSS file:
+```css
+:root {
+  --<abbrev>-color: <neutral-fallback-hex>;
+}
+```
+Then set it on `wrap.style.setProperty('--<abbrev>-color', color)` — never on a child element.
+
 ---
 
 ## Step 7 — Frontend: Thin Wrappers (one per target)
@@ -379,3 +446,6 @@ All Python `ast.parse` calls must print `OK`. Every target must appear in the dr
 | Using new CSS classes in the settings panel | Reuse `pw-panel`, `pw-header`, `pw-actions`, `pw-submit-btn` — they already exist |
 | Hardcoding binary paths in engine.py | Always use `platform_tools.find_libreoffice()` / `find_pandoc()` |
 | Forgetting to update `documents.css` for new entry card | Add `::after { display:none }` alongside existing entry card rules |
+| Setting CSS color variable on the remove **button** instead of the **wrap** | Move `style.setProperty('--<x>-color', color)` to the `wrap` element — sibling elements like the size badge are outside the button and inherit from `:root` otherwise |
+| Using wrong CSS variable name (copy-paste from another convertor) | Check the family's `.css` file to see which variable name is used — XLSX=`--xc-color`, TXT=`--tc-color`, etc. Using `--dc-color` (DOCX) in an XLSX tool silently breaks the color at runtime |
+| Hardcoding a specific tool's color as the fallback in `handleXxxFilePicked` | Use `tool ? (tool.color \|\| '#00E5C0') : '#00E5C0'` — the fallback is only a safety net; the real value always comes from `getActiveTool()` |

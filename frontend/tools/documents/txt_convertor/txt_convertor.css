@@ -1,33 +1,33 @@
 /* ─────────────────────────────────────────────────────────────
-   tools/documents/pptx_convertor/pptx_convertor.css
-   Thumbnail + drop-zone state styles for all PPTX conversion tools.
-   Mirrors pdf_word.css pattern — shows real slide preview image.
+   tools/documents/txt_convertor/txt_convertor.css
+   Thumbnail + drop-zone state styles for all TXT conversion tools.
+   Mirrors docx_convertor.css but scoped to dz-has-txt-thumb.
    ───────────────────────────────────────────────────────────── */
 
 /* ─── CSS CUSTOM PROPERTY DEFAULTS ────────────────────────────────────────── */
 
 :root {
-  --pc-color: #FB923C;
+  --tc-color: #A78BFA;
 }
 
-/* ─── DROP ZONE: HAS-PPTX-THUMB STATE ───────────────────────────────────────── */
+/* ─── DROP ZONE: HAS-TXT-THUMB STATE ───────────────────────────────────────── */
 
-.drop-zone.dz-has-pptx-thumb {
+.drop-zone.dz-has-txt-thumb {
   padding-top: 12px;
   padding-bottom: 12px;
 }
 
-.drop-zone.dz-has-pptx-thumb .drop-icon,
-.drop-zone.dz-has-pptx-thumb .drop-main-text,
-.drop-zone.dz-has-pptx-thumb .drop-browse,
-.drop-zone.dz-has-pptx-thumb .dz-paste-btn,
-.drop-zone.dz-has-pptx-thumb .drop-private {
+.drop-zone.dz-has-txt-thumb .drop-icon,
+.drop-zone.dz-has-txt-thumb .drop-main-text,
+.drop-zone.dz-has-txt-thumb .drop-browse,
+.drop-zone.dz-has-txt-thumb .dz-paste-btn,
+.drop-zone.dz-has-txt-thumb .drop-private {
   display: none !important;
 }
 
-/* ─── PPTX THUMBNAIL (inside drop zone) ──────────────────────────────────── */
+/* ─── TXT THUMBNAIL (inside drop zone) ──────────────────────────────────── */
 
-.dz-pptx-thumb-wrap {
+.dz-txt-thumb-wrap {
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -35,12 +35,12 @@
   width: 100%;
 }
 
-.dz-pptx-thumb-card {
+.dz-txt-thumb-card {
   position: relative;
   display: inline-block;
 }
 
-.dz-pptx-thumb-frame {
+.dz-txt-thumb-frame {
   width: 90px;
   height: 116px;
   border-radius: 6px;
@@ -51,23 +51,13 @@
   background: #fff;
 }
 
-.dz-pptx-thumb-img {
-  width: 100%;
-  height: 100%;
-  object-fit: cover;
-  display: block;
-  border-radius: 4px;
-  image-rendering: -webkit-optimize-contrast;
-  image-rendering: high-quality;
-}
-
-.dz-pptx-thumb-icon {
+.dz-txt-thumb-icon {
   width: 90px;
   height: 116px;
   display: block;
 }
 
-.dz-pptx-thumb-remove {
+.dz-txt-thumb-remove {
   position: absolute;
   top: -8px;
   right: -8px;
@@ -75,8 +65,8 @@
   height: 22px;
   border-radius: 50%;
   background: var(--bg-surface);
-  border: 1.5px solid color-mix(in srgb, var(--pc-color, #FB923C) 50%, var(--border));
-  color: var(--pc-color, #FB923C);
+  border: 1.5px solid color-mix(in srgb, var(--tc-color, #A78BFA) 50%, var(--border));
+  color: var(--tc-color, #A78BFA);
   font-size: 11px;
   line-height: 1;
   cursor: pointer;
@@ -86,11 +76,11 @@
   transition: background 130ms ease;
 }
 
-.dz-pptx-thumb-remove:hover {
-  background: color-mix(in srgb, var(--pc-color, #FB923C) 15%, var(--bg-surface));
+.dz-txt-thumb-remove:hover {
+  background: color-mix(in srgb, var(--tc-color, #A78BFA) 15%, var(--bg-surface));
 }
 
-.dz-pptx-thumb-name {
+.dz-txt-thumb-name {
   font-size: 12px;
   color: var(--text-muted);
   max-width: 200px;
@@ -100,10 +90,10 @@
   text-align: center;
 }
 
-.dz-pptx-thumb-size {
+.dz-txt-thumb-size {
   font-size: 11px;
-  color: color-mix(in srgb, var(--pc-color, #FB923C) 90%, transparent);
-  background: color-mix(in srgb, var(--pc-color, #FB923C) 10%, transparent);
+  color: color-mix(in srgb, var(--tc-color, #A78BFA) 90%, transparent);
+  background: color-mix(in srgb, var(--tc-color, #A78BFA) 10%, transparent);
   border-radius: 10px;
   padding: 1px 7px;
   line-height: 1.5;

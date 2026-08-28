@@ -1,18 +1,27 @@
 /**
- * tools/ebooks/shared/ebook_base.js
+ * tools/documents/txt_convertor/txt_convertor.js
  *
- * Single shared base for every eBook conversion tool.
- * All UI logic lives here — individual tool files are thin wrappers
- * that call handleEbookFilePicked(file, toolId) and removeEbookPanel().
+ * Shared base for all 7 TXT conversion tools.
+ * All UI logic lives here — individual tool files are thin wrappers that call
+ * handleTxtFilePicked(file, toolId) and removeTxtPanel().
  *
- * Flow (mirrors pdf_word.js / pdf_excel.js pattern exactly):
+ * Flow (identical to docx_convertor.js pattern):
  *   1. File picked  → showScanProgress (indeterminate ring)
- *   2. File loaded  → thumbnail in drop zone + settings panel below hero card
+ *   2. File ready   → thumbnail in drop zone + settings panel below hero card
  *   3. Submit       → showProgress (SSE-driven ring) → showDownload
  *
+ * Tool IDs and their backend routes:
+ *   txt-pdf   → POST /api/txt/pdf/convert
+ *   txt-docx  → POST /api/txt/docx/convert
+ *   txt-html  → POST /api/txt/html/convert
+ *   txt-md    → POST /api/txt/md/convert
+ *   txt-epub  → POST /api/txt/epub/convert
+ *   txt-odt   → POST /api/txt/odt/convert
+ *   txt-rtf   → POST /api/txt/rtf/convert
+ *
  * Exports:
- *   handleEbookFilePicked(file, toolId)  – call when a file is chosen
- *   removeEbookPanel()                   – teardown on tool change / reset
+ *   handleTxtFilePicked(file, toolId)  – call when a file is chosen
+ *   removeTxtPanel()                   – teardown on tool change / reset
  */
 
 import { getActiveTool, setBgJob, getBgJob, syncBgJobBar, clearBgJob } from '../../../scripts/toolstate.js';
@@ -25,26 +34,38 @@ import {
   showDownload,
   showError,
 } from '../../shared/progress.js';
-import { getOfflinePdfInfo } from '../../shared/pdfRenderer.js';
 
 const BACKEND = 'http://127.0.0.1:8000';
 
-// Accepted file extensions for each source format
-const FORMAT_EXTS = {
-  pdf:  ['.pdf'],
-  epub: ['.epub'],
-  mobi: ['.mobi'],
-  azw3: ['.azw3'],
-  fb2:  ['.fb2'],
-  txt:  ['.txt'],
-  rtf:  ['.rtf'],
+// ─── TARGET-FORMAT METADATA ───────────────────────────────────────────────────
+
+/** Map tool-id → target extension (without leading dot) */
+const _TARGET_EXT = {
+  'txt-pdf':  'pdf',
+  'txt-docx': 'docx',
+  'txt-html': 'html',
+  'txt-md':   'md',
+  'txt-epub': 'epub',
+  'txt-odt':  'odt',
+  'txt-rtf':  'rtf',
+};
+
+/** Map tool-id → backend sub-path segment */
+const _ROUTE = {
+  'txt-pdf':  'pdf',
+  'txt-docx': 'docx',
+  'txt-html': 'html',
+  'txt-md':   'md',
+  'txt-epub': 'epub',
+  'txt-odt':  'odt',
+  'txt-rtf':  'rtf',
 };
 
 // ─── MODULE STATE ──────────────────────────────────────────────────────────────
 
-let _ebookFile     = null;
-let _ebookBaseName = '';
-let _ebookToolId   = '';   // e.g. "pdf-epub"
+let _txtFile     = null;
+let _txtBaseName = '';
+let _txtToolId   = '';   // e.g. "txt-pdf"
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 
@@ -60,87 +81,65 @@ function _fmt(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
 
-/** Extract source format from tool id, e.g. "pdf-epub" → "pdf" */
-function _srcFmt(toolId) {
-  return toolId.split('-')[0];
-}
-
-/** Extract target format from tool id, e.g. "pdf-epub" → "epub" */
-function _dstFmt(toolId) {
-  return toolId.split('-').slice(1).join('-');
-}
-
-/** True if the file's extension matches the expected source format */
-function _validExt(file, toolId) {
-  const src  = _srcFmt(toolId);
-  const exts = FORMAT_EXTS[src] || [];
-  const name = (file.name || '').toLowerCase();
-  return exts.some((e) => name.endsWith(e));
+function _targetExt(toolId) {
+  return _TARGET_EXT[toolId] || 'out';
 }
 
 // ─── PUBLIC: TEARDOWN ─────────────────────────────────────────────────────────
 
-export function removeEbookPanel() {
-  const panel = document.getElementById('ebook-settings-panel');
+export function removeTxtPanel() {
+  const panel = document.getElementById('txt-settings-panel');
   if (panel) panel.remove();
 
   const zone = document.getElementById('drop-zone');
   if (zone) {
-    const thumb = zone.querySelector('.dz-ebook-thumb-wrap');
+    const thumb = zone.querySelector('.dz-txt-thumb-wrap');
     if (thumb) thumb.remove();
-    zone.classList.remove('dz-has-ebook-thumb');
+    zone.classList.remove('dz-has-txt-thumb');
   }
 
-  _ebookFile     = null;
-  _ebookBaseName = '';
-  _ebookToolId   = '';
+  _txtFile     = null;
+  _txtBaseName = '';
+  _txtToolId   = '';
 }
 
 // ─── THUMBNAIL (inside drop zone) ─────────────────────────────────────────────
 
-function _showThumb(zone, file, color, dataUri) {
-  const old = zone.querySelector('.dz-ebook-thumb-wrap');
+function _showThumb(zone, file, color) {
+  const old = zone.querySelector('.dz-txt-thumb-wrap');
   if (old) old.remove();
 
-  const src = _srcFmt(_ebookToolId).toUpperCase();
-
-  const thumbContent = dataUri
-    ? `<img class="dz-ebook-thumb-img" src="${dataUri}"
-             alt="File preview" draggable="false" />`
-    : `<svg class="dz-ebook-thumb-icon" viewBox="0 0 90 116"
-            xmlns="http://www.w3.org/2000/svg">
-        <rect x="0" y="0" width="90" height="116" fill="#ffffff"/>
-        <polygon points="62,0 90,28 62,28" fill="#e0e0e0"/>
-        <polyline points="62,0 62,28 90,28" fill="none" stroke="#cccccc" stroke-width="1"/>
-        <rect x="0" y="42" width="90" height="26" fill="${color}"/>
-        <text x="45" y="60" font-family="Arial,sans-serif" font-size="14"
-              font-weight="bold" fill="#ffffff"
-              text-anchor="middle" dominant-baseline="middle">${src}</text>
-        <line x1="12" y1="80" x2="78" y2="80" stroke="#dddddd" stroke-width="2" stroke-linecap="round"/>
-        <line x1="12" y1="89" x2="78" y2="89" stroke="#dddddd" stroke-width="2" stroke-linecap="round"/>
-        <line x1="12" y1="98" x2="55" y2="98" stroke="#dddddd" stroke-width="2" stroke-linecap="round"/>
-      </svg>`;
-
   const wrap = document.createElement('div');
-  wrap.className = 'dz-ebook-thumb-wrap';
-  wrap.style.setProperty('--eb-color', color);
+  wrap.className = 'dz-txt-thumb-wrap';
+  wrap.style.setProperty('--tc-color', color);
   wrap.innerHTML = `
-    <div class="dz-ebook-thumb-card">
-      <div class="dz-ebook-thumb-frame" style="border:2px solid ${color};box-shadow:0 4px 18px rgba(0,0,0,0.45)">
-        ${thumbContent}
+    <div class="dz-txt-thumb-card">
+      <div class="dz-txt-thumb-frame" style="border:2px solid ${color};box-shadow:0 4px 18px rgba(0,0,0,0.45)">
+        <svg class="dz-txt-thumb-icon" viewBox="0 0 90 116" xmlns="http://www.w3.org/2000/svg">
+          <rect x="0" y="0" width="90" height="116" fill="#ffffff"/>
+          <polygon points="62,0 90,28 62,28" fill="#e0e0e0"/>
+          <polyline points="62,0 62,28 90,28" fill="none" stroke="#cccccc" stroke-width="1"/>
+          <rect x="0" y="42" width="90" height="26" fill="${color}"/>
+          <text x="45" y="60" font-family="Arial,sans-serif" font-size="12"
+                font-weight="bold" fill="#ffffff"
+                text-anchor="middle" dominant-baseline="middle">TXT</text>
+          <line x1="12" y1="80" x2="78" y2="80" stroke="#dddddd" stroke-width="2" stroke-linecap="round"/>
+          <line x1="12" y1="89" x2="78" y2="89" stroke="#dddddd" stroke-width="2" stroke-linecap="round"/>
+          <line x1="12" y1="98" x2="55" y2="98" stroke="#dddddd" stroke-width="2" stroke-linecap="round"/>
+        </svg>
       </div>
-      <button class="dz-ebook-thumb-remove" title="Remove file"
+      <button class="dz-txt-thumb-remove" title="Remove file"
               aria-label="Remove file">&#x2715;</button>
     </div>
-    <span class="dz-ebook-thumb-name">${_esc(file.name)}</span>
-    <span class="dz-ebook-thumb-size">${_fmt(file.size)}</span>`;
+    <span class="dz-txt-thumb-name">${_esc(file.name)}</span>
+    <span class="dz-txt-thumb-size">${_fmt(file.size)}</span>`;
 
-  zone.classList.add('dz-has-ebook-thumb');
+  zone.classList.add('dz-has-txt-thumb');
   zone.appendChild(wrap);
 
-  wrap.querySelector('.dz-ebook-thumb-remove').addEventListener('click', (e) => {
+  wrap.querySelector('.dz-txt-thumb-remove').addEventListener('click', (e) => {
     e.stopPropagation();
-    removeEbookPanel();
+    removeTxtPanel();
     resetZoneContent(zone);
     import('../../../scripts/dropzone.js').then(({ _updateDropZoneForTool }) => {
       const t = getActiveTool();
@@ -152,56 +151,56 @@ function _showThumb(zone, file, color, dataUri) {
 // ─── SETTINGS PANEL ───────────────────────────────────────────────────────────
 
 function _showSettingsPanel(fileSize, color) {
-  const existing = document.getElementById('ebook-settings-panel');
+  const existing = document.getElementById('txt-settings-panel');
   if (existing) existing.remove();
 
   const heroCard = document.querySelector('.hero-card');
   if (!heroCard) return;
 
-  const dst    = _dstFmt(_ebookToolId).toUpperCase();
-  const label  = getActiveTool() ? getActiveTool().label : `Convert to ${dst}`;
+  const ext   = _targetExt(_txtToolId);
+  const label = getActiveTool() ? getActiveTool().label : `Convert to ${ext.toUpperCase()}`;
 
   const panel = document.createElement('div');
-  panel.id        = 'ebook-settings-panel';
-  panel.className = 'eb-panel';
-  panel.style.setProperty('--eb-color', color);
+  panel.id        = 'txt-settings-panel';
+  panel.className = 'pw-panel';
+  panel.style.setProperty('--pw-color', color);
 
   panel.innerHTML = `
     <!-- ── PANEL HEADER ──────────────────────────────────────────────── -->
-    <div class="eb-header">
-      <span class="eb-header-badge">
+    <div class="pw-header">
+      <span class="pw-header-badge">
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-          <path d="M8 13s-4-2-7-2V3c3 0 7 2 7 2s4-2 7-2v8c-3 0-7 2-7 2Z"
-            stroke="${color}" stroke-width="1.3" stroke-linejoin="round"/>
-          <line x1="8" y1="5" x2="8" y2="13" stroke="${color}" stroke-width="1.1" stroke-linecap="round"/>
+          <rect x="2" y="1" width="10" height="13" rx="1.5" stroke="${color}" stroke-width="1.3"/>
+          <line x1="4" y1="6"  x2="10" y2="6"  stroke="${color}" stroke-width="1.1" stroke-linecap="round"/>
+          <line x1="4" y1="8"  x2="10" y2="8"  stroke="${color}" stroke-width="1.1" stroke-linecap="round"/>
+          <line x1="4" y1="10" x2="7"  y2="10" stroke="${color}" stroke-width="1.1" stroke-linecap="round"/>
         </svg>
-        <span class="eb-header-text">
+        <span class="pw-header-text">
           <strong>${_fmt(fileSize)}</strong>
         </span>
       </span>
-      <button class="eb-change-btn" id="eb-change-btn" title="Pick a different file">
+      <button class="pw-change-btn" id="tc-change-btn" title="Pick a different file">
         Change file
       </button>
     </div>
 
     <!-- ── ACTIONS ROW ──────────────────────────────────────────────── -->
-    <div class="eb-actions">
-      <input class="eb-filename-input" id="eb-filename-input"
+    <div class="pw-actions">
+      <input class="pw-filename-input" id="tc-filename-input"
              type="text" placeholder="Output filename (optional)"
-             maxlength="120" spellcheck="false"/>
-      <span class="eb-filename-ext">.${_dstFmt(_ebookToolId)}</span>
-      <button class="eb-submit-btn" id="eb-submit-btn">${label}</button>
+             maxlength="120" spellcheck="false"
+             value="${_esc(_txtBaseName)}"/>
+      <span class="pw-filename-ext">.${ext}</span>
+      <button class="pw-submit-btn" id="tc-submit-btn">${label}</button>
     </div>`;
 
   heroCard.appendChild(panel);
-  requestAnimationFrame(() => panel.classList.add('eb-panel--visible'));
+  requestAnimationFrame(() => panel.classList.add('pw-panel--visible'));
 
-  const filenameInput = panel.querySelector('#eb-filename-input');
-  if (filenameInput && _ebookBaseName) filenameInput.value = _ebookBaseName;
-
-  panel.querySelector('#eb-change-btn').addEventListener('click', () => {
+  // ── "Change file" button ────────────────────────────────────────────────────
+  panel.querySelector('#tc-change-btn').addEventListener('click', () => {
     const tool = getActiveTool();
-    removeEbookPanel();
+    removeTxtPanel();
     const zone = document.getElementById('drop-zone');
     resetZoneContent(zone);
     if (tool) {
@@ -211,53 +210,45 @@ function _showSettingsPanel(fileSize, color) {
     }
   });
 
-  panel.querySelector('#eb-submit-btn').addEventListener('click', () => {
-    if (!_ebookFile) return;
-    const nameEl  = panel.querySelector('#eb-filename-input');
-    const outName = (nameEl ? nameEl.value.trim() : '') || _ebookBaseName;
+  // ── "Convert" button ────────────────────────────────────────────────────────
+  panel.querySelector('#tc-submit-btn').addEventListener('click', () => {
+    if (!_txtFile) return;
+    const nameEl  = panel.querySelector('#tc-filename-input');
+    const outName = (nameEl ? nameEl.value.trim() : '') || _txtBaseName;
     document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'smooth' });
-    _submitConvert(_ebookFile, outName);
+    _submitConvert(_txtFile, outName);
   });
 }
 
 // ─── FILE PICKED (PUBLIC ENTRY POINT) ─────────────────────────────────────────
 
-export async function handleEbookFilePicked(file, toolId) {
-  if (!file || !_validExt(file, toolId)) {
-    const src = _srcFmt(toolId).toUpperCase();
+export async function handleTxtFilePicked(file, toolId) {
+  if (!file || !file.name.toLowerCase().endsWith('.txt')) {
     pushNotification({
       type: 'warning',
-      message: `Invalid File Format. Please select a valid ${src} file.`,
+      message: 'Invalid File Format. Please select a valid TXT file.',
     });
     return;
   }
 
   const tool  = getActiveTool();
-  const color = tool ? (tool.color || '#8B5CF6') : '#8B5CF6';
+  const color = tool ? (tool.color || '#A78BFA') : '#A78BFA';
   const zone  = document.getElementById('drop-zone');
 
-  _ebookToolId = toolId;
-  removeEbookPanel();
+  removeTxtPanel();
+
+  _txtToolId   = toolId;
+  _txtFile     = file;
+  _txtBaseName = file.name.replace(/\.[^.]+$/, '');
+
   showScanProgress(zone, color);
 
-  // For PDFs try to get thumbnail; for other formats skip backend info call
-  let thumbnail = null;
-  const isPdf   = _srcFmt(toolId) === 'pdf';
-
-  if (isPdf) {
-    try {
-      const offlineInfo = await getOfflinePdfInfo(file, 0.5);
-      thumbnail = offlineInfo.thumbnail || null;
-    } catch (_) { /* non-critical */ }
-  }
+  // Brief simulated scan — TXT has no thumbnail capability
+  await new Promise((r) => setTimeout(r, 400));
 
   resetZoneContent(zone);
 
-  _ebookFile     = file;
-  _ebookBaseName = file.name.replace(/\.[^.]+$/, '');
-  _ebookToolId   = toolId;
-
-  _showThumb(zone, file, color, thumbnail);
+  _showThumb(zone, file, color);
   _showSettingsPanel(file.size, color);
 }
 
@@ -268,29 +259,29 @@ async function _submitConvert(file, outputFilename) {
   if (!tool) return;
 
   const zone  = document.getElementById('drop-zone');
-  const color = tool.color || '#8B5CF6';
-  const dst   = _dstFmt(_ebookToolId);
+  const color = tool.color || '#A78BFA';
 
   // Remove thumbnail + settings; show progress ring
-  const panel = document.getElementById('ebook-settings-panel');
+  const panel = document.getElementById('txt-settings-panel');
   if (panel) panel.remove();
-  const thumb = zone ? zone.querySelector('.dz-ebook-thumb-wrap') : null;
+  const thumb = zone ? zone.querySelector('.dz-txt-thumb-wrap') : null;
   if (thumb) thumb.remove();
-  if (zone)  zone.classList.remove('dz-has-ebook-thumb');
+  if (zone)  zone.classList.remove('dz-has-txt-thumb');
+
+  const ext        = _targetExt(_txtToolId);
+  const route      = _ROUTE[_txtToolId];
+  const earlyName  = `${_txtBaseName || outputFilename}.${ext}`;
 
   const fd = new FormData();
   fd.append('file', file);
-  fd.append('target_format', dst);
   fd.append('output_filename', outputFilename);
 
   showProgress(zone, 10, color, 'Converting…');
-
-  const earlyFilename = `${_ebookBaseName || outputFilename}.${dst}`;
-  setBgJob({ jobId: null, tool, filename: earlyFilename, progress: 5, state: 'submitting', sse: null });
+  setBgJob({ jobId: null, tool, filename: earlyName, progress: 5, state: 'submitting', sse: null });
 
   let jobId;
   try {
-    const res  = await fetch(`${BACKEND}/api/ebooks/convert`, { method: 'POST', body: fd });
+    const res  = await fetch(`${BACKEND}/api/txt/${route}/convert`, { method: 'POST', body: fd });
     const json = await res.json();
     if (!res.ok) {
       const detail = json.detail;
@@ -310,7 +301,7 @@ async function _submitConvert(file, outputFilename) {
   const sse   = new EventSource(`${BACKEND}/api/progress/${jobId}`);
   let lastPct = 0;
 
-  setBgJob({ jobId, tool, filename: earlyFilename, progress: 10, state: 'running', sse });
+  setBgJob({ jobId, tool, filename: earlyName, progress: 10, state: 'running', sse });
 
   sse.onmessage = (event) => {
     let data;
@@ -330,10 +321,7 @@ async function _submitConvert(file, outputFilename) {
     }
 
     if (state === 'running' || state === 'pending') {
-      // Allow up to 98% while still running — the backend's staged milestones
-      // go up to 95, so clamping at 90 would freeze the bar for the final
-      // packaging stage.  We reserve 99-100 for the done transition.
-      updateProgress(zone, Math.max(10, Math.min(98, pct)), color);
+      updateProgress(zone, Math.max(10, Math.min(90, pct)), color);
       return;
     }
 
@@ -341,10 +329,10 @@ async function _submitConvert(file, outputFilename) {
 
     if (state === 'done') {
       updateProgress(zone, 100, color);
-      removeEbookPanel();
-      const dlName = data.filename || earlyFilename;
+      removeTxtPanel();
+      const dlName = data.filename || earlyName;
       const onReset = () => {
-        removeEbookPanel();
+        removeTxtPanel();
         const activeTool = getActiveTool();
         if (activeTool) {
           import('../../../scripts/dropzone.js').then(({ _updateDropZoneForTool }) => {

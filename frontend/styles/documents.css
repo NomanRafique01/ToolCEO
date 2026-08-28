@@ -127,7 +127,8 @@
 .fmt-card--pdf-entry::after,
 .fmt-card--docx-entry::after,
 .fmt-card--xlsx-entry::after,
-.fmt-card--pptx-entry::after {
+.fmt-card--pptx-entry::after,
+.fmt-card--txt-entry::after {
   display: none !important;
 }
 

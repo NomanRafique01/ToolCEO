@@ -87,13 +87,14 @@ function _showCompressThumb(zone, file, color, dataUri) {
 
   const wrap = document.createElement('div');
   wrap.className = 'dz-compress-thumb-wrap';
+  wrap.style.setProperty('--cmp-color', color);
   wrap.innerHTML = `
     <div class="dz-compress-thumb-card">
       <div class="dz-compress-thumb-frame" style="border:2px solid ${color};box-shadow:0 4px 18px rgba(0,0,0,0.45)">
         ${thumbContent}
       </div>
       <button class="dz-compress-thumb-remove" title="Remove file"
-              style="--cmp-color:${color}" aria-label="Remove file">&#x2715;</button>
+              aria-label="Remove file">&#x2715;</button>
     </div>
     <span class="dz-compress-thumb-name">${_esc(file.name)}</span>
     <span class="dz-compress-thumb-size">${_fmt(file.size)}</span>`;

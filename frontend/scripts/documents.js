@@ -793,6 +793,196 @@ export function renderDocxTools(container, activateNav) {
 
 // ─── DOCUMENT FORMAT CARDS (main Documents panel) ─────────────────────────────
 
+// ─────────────────────────────────────────────────────────────────────────────
+
+const TXT_CONVERSIONS = [
+  {
+    id: 'txt-pdf',
+    label: 'TXT to PDF',
+    desc: 'Convert TXT to PDF',
+    ext: '.pdf',
+    tag: 'Convert',
+    color: '#FF6B6B',
+    bg: 'rgba(255,107,107,0.15)',
+    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+      <rect x="1" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M4 2l3 3H4V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      <path d="M7 9l2 1.5L7 12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="9" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M12 2l3 3h-3V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      <line x1="11" y1="7" x2="13" y2="7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+      <line x1="11" y1="9" x2="13" y2="9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+    </svg>`,
+  },
+  {
+    id: 'txt-docx',
+    label: 'TXT to DOCX',
+    desc: 'Convert TXT to DOCX',
+    ext: '.docx',
+    tag: 'Convert',
+    color: '#60A5FA',
+    bg: 'rgba(96,165,250,0.15)',
+    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+      <rect x="1" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M4 2l3 3H4V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      <path d="M7 9l2 1.5L7 12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="9" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M12 2l3 3h-3V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      <line x1="10.5" y1="7" x2="13.5" y2="7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+      <line x1="10.5" y1="9" x2="13.5" y2="9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+    </svg>`,
+  },
+  {
+    id: 'txt-html',
+    label: 'TXT to HTML',
+    desc: 'Convert TXT to HTML',
+    ext: '.html',
+    tag: 'Convert',
+    color: '#FB923C',
+    bg: 'rgba(251,146,60,0.15)',
+    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+      <rect x="1" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M4 2l3 3H4V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      <path d="M7 9l2 1.5L7 12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M10 4l-1.5 2.5L10 9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M13 4l1.5 2.5L13 9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <line x1="11" y1="3.5" x2="12" y2="9.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+    </svg>`,
+  },
+  {
+    id: 'txt-md',
+    label: 'TXT to Markdown',
+    desc: 'Convert TXT to Markdown',
+    ext: '.md',
+    tag: 'Convert',
+    color: '#34D399',
+    bg: 'rgba(52,211,153,0.15)',
+    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+      <rect x="1" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M4 2l3 3H4V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      <path d="M7 9l2 1.5L7 12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="9" y="10" font-family="monospace" font-size="7" fill="currentColor">#</text>
+      <line x1="12" y1="6" x2="15" y2="6" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+      <line x1="12" y1="8.5" x2="14" y2="8.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+    </svg>`,
+  },
+  {
+    id: 'txt-epub',
+    label: 'TXT to EPUB',
+    desc: 'Convert TXT to EPUB',
+    ext: '.epub',
+    tag: 'Convert',
+    color: '#FBBF24',
+    bg: 'rgba(251,191,36,0.15)',
+    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+      <rect x="1" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M4 2l3 3H4V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      <path d="M7 9l2 1.5L7 12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="9" y="2" width="6" height="10" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <line x1="11" y1="5" x2="13" y2="5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+      <line x1="11" y1="7" x2="13" y2="7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+      <line x1="11" y1="9" x2="12" y2="9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+    </svg>`,
+  },
+  {
+    id: 'txt-odt',
+    label: 'TXT to ODT',
+    desc: 'Convert TXT to ODT',
+    ext: '.odt',
+    tag: 'Convert',
+    color: '#2DD4BF',
+    bg: 'rgba(45,212,191,0.15)',
+    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+      <rect x="1" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M4 2l3 3H4V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      <path d="M7 9l2 1.5L7 12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="9" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M12 2l3 3h-3V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      <line x1="10.5" y1="7" x2="13.5" y2="7" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+      <line x1="10.5" y1="9" x2="13.5" y2="9" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+    </svg>`,
+  },
+  {
+    id: 'txt-rtf',
+    label: 'TXT to RTF',
+    desc: 'Convert TXT to RTF',
+    ext: '.rtf',
+    tag: 'Convert',
+    color: '#7C5CD8',
+    bg: 'rgba(124,92,216,0.15)',
+    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+      <rect x="1" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M4 2l3 3H4V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      <path d="M7 9l2 1.5L7 12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="9" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M12 2l3 3h-3V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      <line x1="10.5" y1="6" x2="13.5" y2="6" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+      <line x1="10.5" y1="8" x2="12.5" y2="8" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+    </svg>`,
+  },
+];
+
+// ─── TXT TOOLS PANEL ─────────────────────────────────────────────────────────
+
+export function renderTxtTools(container, activateNav) {
+  setBreadcrumb(['Dashboard', 'Documents', 'TXT']);
+  container.innerHTML = `
+    <div class="explore-header">
+      <button class="fmt-back-btn" title="Back to Documents">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.6"
+            stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <div class="fmt-category-icon" style="background:rgba(167,139,250,0.15);color:#A78BFA">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <rect x="2" y="1" width="10" height="13" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+          <line x1="4" y1="6"  x2="10" y2="6"  stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+          <line x1="4" y1="8"  x2="10" y2="8"  stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+          <line x1="4" y1="10" x2="7"  y2="10" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <span class="explore-title">TXT — Conversions</span>
+    </div>
+
+    <div class="pdf-zone-label">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" class="pdf-zone-icon">
+        <path d="M3 8h10M10 5l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      TXT Conversions
+    </div>
+    <div class="fmt-grid">
+      ${TXT_CONVERSIONS.map((t) => cardHTML(t)).join('')}
+    </div>
+  `;
+
+  // Back → Documents panel
+  container.querySelector('.fmt-back-btn').addEventListener('click', () => {
+    activateNav('Documents');
+  });
+
+  // Card selection highlight + tool-state update
+  container.querySelectorAll('.fmt-card').forEach((card) => {
+    card.addEventListener('click', () => {
+      container.querySelectorAll('.fmt-card').forEach((c) => c.classList.remove('selected'));
+      card.classList.add('selected');
+
+      const item = TXT_CONVERSIONS.find((t) => t.id === card.dataset.id);
+      if (item) {
+        const { mainText, subText } = _dropTextFor(item);
+        setActiveTool({
+          id: item.id, label: item.label, mainText, subText,
+          icon: item.icon, color: item.color, bg: item.bg,
+          tag: item.tag,
+        });
+        _scrollToDropZone();
+      }
+    });
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 const DOC_FORMATS = [
   {
     id: 'pdf',
@@ -861,6 +1051,7 @@ const DOC_FORMATS = [
     ext: '.txt',
     color: '#A78BFA',
     bg: 'rgba(167,139,250,0.15)',
+    isTxtEntry: true,
     icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
       <rect x="2" y="1" width="10" height="13" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
       <line x1="4" y1="6"  x2="10" y2="6"  stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
@@ -1031,6 +1222,7 @@ export function renderDocumentFormats(container, activateNav) {
         else if (f.isDocxEntry) extra = 'fmt-card--docx-entry';
         else if (f.isXlsxEntry) extra = 'fmt-card--xlsx-entry';
         else if (f.isPptxEntry) extra = 'fmt-card--pptx-entry';
+        else if (f.isTxtEntry)  extra = 'fmt-card--txt-entry';
         return cardHTML(f, extra);
       }).join('')}
     </div>
@@ -1073,8 +1265,16 @@ export function renderDocumentFormats(container, activateNav) {
     });
   }
 
+  // TXT card → TXT conversions panel
+  const txtCard = container.querySelector('.fmt-card--txt-entry');
+  if (txtCard) {
+    txtCard.addEventListener('click', () => {
+      renderTxtTools(container, activateNav);
+    });
+  }
+
   // Other format card selection highlight + tool-state update
-  container.querySelectorAll('.fmt-card:not(.fmt-card--pdf-entry):not(.fmt-card--docx-entry):not(.fmt-card--xlsx-entry):not(.fmt-card--pptx-entry)').forEach((card) => {
+  container.querySelectorAll('.fmt-card:not(.fmt-card--pdf-entry):not(.fmt-card--docx-entry):not(.fmt-card--xlsx-entry):not(.fmt-card--pptx-entry):not(.fmt-card--txt-entry)').forEach((card) => {
     card.addEventListener('click', () => {
       container.querySelectorAll('.fmt-card').forEach((c) => c.classList.remove('selected'));
       card.classList.add('selected');

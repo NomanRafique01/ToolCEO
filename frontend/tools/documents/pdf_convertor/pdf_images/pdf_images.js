@@ -86,13 +86,14 @@ function _showThumb(zone, file, color, dataUri) {
 
   const wrap = document.createElement('div');
   wrap.className = 'dz-pdf-images-thumb-wrap';
+  wrap.style.setProperty('--pi-color', color);
   wrap.innerHTML = `
     <div class="dz-pdf-images-thumb-card">
       <div class="dz-pdf-images-thumb-frame" style="border:2px solid ${color};box-shadow:0 4px 18px rgba(0,0,0,0.45)">
         ${thumbContent}
       </div>
       <button class="dz-pdf-images-thumb-remove" title="Remove file"
-              style="--pi-color:${color}" aria-label="Remove file">&#x2715;</button>
+              aria-label="Remove file">&#x2715;</button>
     </div>
     <span class="dz-pdf-images-thumb-name">${_esc(file.name)}</span>
     <span class="dz-pdf-images-thumb-size">${_fmt(file.size)}</span>`;

@@ -159,7 +159,7 @@ function _buildThumbCard(item, idx, color) {
     <span class="dz-merge-card-name" title="${_escHtml(item.file.name)}">${_escHtml(shortName)}</span>
     <span class="dz-merge-page-count">${item.pageCount} pg</span>
     <button class="dz-merge-card-remove" title="Remove this file"
-            style="--merge-color:${color}" aria-label="Remove ${_escHtml(item.file.name)}">&#x2715;</button>`;
+            aria-label="Remove ${_escHtml(item.file.name)}">&#x2715;</button>`;
 
   // Remove button
   card.querySelector('.dz-merge-card-remove').addEventListener('click', (e) => {
