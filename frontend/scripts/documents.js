@@ -469,6 +469,162 @@ export function renderPptxTools(container, activateNav) {
 
 // ─────────────────────────────────────────────────────────────────────────────
 
+// ─────────────────────────────────────────────────────────────────────────────
+
+const XLSX_CONVERSIONS = [
+  {
+    id: 'xlsx-pdf',
+    label: 'XLSX to PDF',
+    desc: 'Convert XLSX to PDF',
+    ext: '.pdf',
+    tag: 'Convert',
+    color: '#FF6B6B',
+    bg: 'rgba(255,107,107,0.15)',
+    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+      <rect x="1" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M4 2l3 3H4V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      <path d="M7 9l2 1.5L7 12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="9" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M12 2l3 3h-3V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      <line x1="11" y1="7" x2="13" y2="7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+      <line x1="11" y1="9" x2="13" y2="9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+    </svg>`,
+  },
+  {
+    id: 'xlsx-csv',
+    label: 'XLSX to CSV',
+    desc: 'Convert XLSX to CSV',
+    ext: '.csv',
+    tag: 'Convert',
+    color: '#84CC16',
+    bg: 'rgba(132,204,22,0.15)',
+    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+      <rect x="1" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M4 2l3 3H4V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      <path d="M7 9l2 1.5L7 12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <line x1="10" y1="5" x2="15" y2="5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+      <line x1="10" y1="7" x2="15" y2="7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+      <line x1="10" y1="9" x2="15" y2="9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+      <line x1="10" y1="5" x2="10" y2="9" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+      <line x1="12.5" y1="5" x2="12.5" y2="9" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+    </svg>`,
+  },
+  {
+    id: 'xlsx-json',
+    label: 'XLSX to JSON',
+    desc: 'Convert XLSX to JSON (all sheets)',
+    ext: '.json',
+    tag: 'Convert',
+    color: '#FBBF24',
+    bg: 'rgba(251,191,36,0.15)',
+    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+      <rect x="1" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M4 2l3 3H4V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      <path d="M7 9l2 1.5L7 12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M10 4.5c-.6 0-1 .4-1 1v1c0 .6-.4 1-1 1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+      <path d="M13 4.5c.6 0 1 .4 1 1v1c0 .6.4 1 1 1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+      <path d="M10 11c-.6 0-1-.4-1-1V9c0-.6-.4-1-1-1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+      <path d="M13 11c.6 0 1-.4 1-1V9c0-.6.4-1 1-1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+    </svg>`,
+  },
+  {
+    id: 'xlsx-html',
+    label: 'XLSX to HTML',
+    desc: 'Convert XLSX to HTML',
+    ext: '.html',
+    tag: 'Convert',
+    color: '#FB923C',
+    bg: 'rgba(251,146,60,0.15)',
+    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+      <rect x="1" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M4 2l3 3H4V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      <path d="M7 9l2 1.5L7 12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M10 4l-1.5 2.5L10 9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M13 4l1.5 2.5L13 9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <line x1="11" y1="3.5" x2="12" y2="9.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+    </svg>`,
+  },
+  {
+    id: 'xlsx-ods',
+    label: 'XLSX to ODS',
+    desc: 'Convert XLSX to ODS (LibreOffice Calc)',
+    ext: '.ods',
+    tag: 'Convert',
+    color: '#2DD4BF',
+    bg: 'rgba(45,212,191,0.15)',
+    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+      <rect x="1" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M4 2l3 3H4V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      <path d="M7 9l2 1.5L7 12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="9" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M12 2l3 3h-3V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      <line x1="10.5" y1="7" x2="13.5" y2="7" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+      <line x1="10.5" y1="9" x2="13.5" y2="9" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+    </svg>`,
+  },
+];
+
+// ─── XLSX TOOLS PANEL ────────────────────────────────────────────────────────
+
+export function renderXlsxTools(container, activateNav) {
+  setBreadcrumb(['Dashboard', 'Documents', 'XLSX']);
+  container.innerHTML = `
+    <div class="explore-header">
+      <button class="fmt-back-btn" title="Back to Documents">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.6"
+            stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <div class="fmt-category-icon" style="background:rgba(52,211,153,0.15);color:#34D399">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <rect x="2" y="1" width="10" height="13" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+          <path d="M8 1l4 4H8V1Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+          <line x1="4" y1="7" x2="10" y2="11" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+          <line x1="10" y1="7" x2="4" y2="11" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <span class="explore-title">XLSX — Conversions</span>
+    </div>
+
+    <div class="pdf-zone-label">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" class="pdf-zone-icon">
+        <path d="M3 8h10M10 5l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      XLSX Conversions
+    </div>
+    <div class="fmt-grid">
+      ${XLSX_CONVERSIONS.map((t) => cardHTML(t)).join('')}
+    </div>
+  `;
+
+  // Back → Documents panel
+  container.querySelector('.fmt-back-btn').addEventListener('click', () => {
+    activateNav('Documents');
+  });
+
+  // Card selection highlight + tool-state update
+  container.querySelectorAll('.fmt-card').forEach((card) => {
+    card.addEventListener('click', () => {
+      container.querySelectorAll('.fmt-card').forEach((c) => c.classList.remove('selected'));
+      card.classList.add('selected');
+
+      const item = XLSX_CONVERSIONS.find((t) => t.id === card.dataset.id);
+      if (item) {
+        const { mainText, subText } = _dropTextFor(item);
+        setActiveTool({
+          id: item.id, label: item.label, mainText, subText,
+          icon: item.icon, color: item.color, bg: item.bg,
+          tag: item.tag,
+        });
+        _scrollToDropZone();
+      }
+    });
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
 const DOCX_CONVERSIONS = [
   {
     id: 'docx-pdf',
@@ -676,6 +832,7 @@ const DOC_FORMATS = [
     ext: '.xlsx',
     color: '#34D399',
     bg: 'rgba(52,211,153,0.15)',
+    isXlsxEntry: true,
     icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
       <rect x="2" y="1" width="10" height="13" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
       <path d="M8 1l4 4H8V1Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
@@ -872,6 +1029,7 @@ export function renderDocumentFormats(container, activateNav) {
         let extra = '';
         if (f.isPdfEntry)  extra = 'fmt-card--pdf-entry';
         else if (f.isDocxEntry) extra = 'fmt-card--docx-entry';
+        else if (f.isXlsxEntry) extra = 'fmt-card--xlsx-entry';
         else if (f.isPptxEntry) extra = 'fmt-card--pptx-entry';
         return cardHTML(f, extra);
       }).join('')}
@@ -899,6 +1057,14 @@ export function renderDocumentFormats(container, activateNav) {
     });
   }
 
+  // XLSX card → XLSX conversions panel
+  const xlsxCard = container.querySelector('.fmt-card--xlsx-entry');
+  if (xlsxCard) {
+    xlsxCard.addEventListener('click', () => {
+      renderXlsxTools(container, activateNav);
+    });
+  }
+
   // PPTX card → PPTX conversions panel
   const pptxCard = container.querySelector('.fmt-card--pptx-entry');
   if (pptxCard) {
@@ -908,7 +1074,7 @@ export function renderDocumentFormats(container, activateNav) {
   }
 
   // Other format card selection highlight + tool-state update
-  container.querySelectorAll('.fmt-card:not(.fmt-card--pdf-entry):not(.fmt-card--docx-entry):not(.fmt-card--pptx-entry)').forEach((card) => {
+  container.querySelectorAll('.fmt-card:not(.fmt-card--pdf-entry):not(.fmt-card--docx-entry):not(.fmt-card--xlsx-entry):not(.fmt-card--pptx-entry)').forEach((card) => {
     card.addEventListener('click', () => {
       container.querySelectorAll('.fmt-card').forEach((c) => c.classList.remove('selected'));
       card.classList.add('selected');

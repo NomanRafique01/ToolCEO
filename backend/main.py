@@ -27,6 +27,8 @@ from tools.ebooks.router import router as ebooks_router
 from tools.documents.docx_convertor.router import router as docx_convertor_router
 # PPTX conversion tools — single router (6 targets: pdf, html, images, odp, txt, pptx/repair)
 from tools.documents.pptx_convertor.router import router as pptx_convertor_router
+# XLSX conversion tools — single router (6 targets: pdf, csv, html, ods, txt, json)
+from tools.documents.xlsx_convertor.router import router as xlsx_convertor_router
 
 app = FastAPI(title="ToolCEO Backend")
 
@@ -89,5 +91,7 @@ app.include_router(ebooks_router, prefix="/api")
 app.include_router(docx_convertor_router, prefix="/api")
 # PPTX converter — owns /api/pptx/{target}/convert
 app.include_router(pptx_convertor_router, prefix="/api")
+# XLSX converter — owns /api/xlsx/{target}/convert
+app.include_router(xlsx_convertor_router, prefix="/api")
 
 

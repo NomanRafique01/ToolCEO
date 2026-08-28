@@ -1,0 +1,100 @@
+/* ─────────────────────────────────────────────────────────────
+   tools/documents/xlsx_convertor/xlsx_convertor.css
+   Thumbnail + drop-zone state styles for all XLSX conversion tools.
+   Mirrors docx_convertor.css but scoped to dz-has-xlsx-thumb.
+   ───────────────────────────────────────────────────────────── */
+
+/* ─── CSS CUSTOM PROPERTY DEFAULTS ────────────────────────────────────────── */
+
+:root {
+  --xc-color: #34D399;
+}
+
+/* ─── DROP ZONE: HAS-XLSX-THUMB STATE ───────────────────────────────────────── */
+
+.drop-zone.dz-has-xlsx-thumb {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+.drop-zone.dz-has-xlsx-thumb .drop-icon,
+.drop-zone.dz-has-xlsx-thumb .drop-main-text,
+.drop-zone.dz-has-xlsx-thumb .drop-browse,
+.drop-zone.dz-has-xlsx-thumb .dz-paste-btn,
+.drop-zone.dz-has-xlsx-thumb .drop-private {
+  display: none !important;
+}
+
+/* ─── XLSX THUMBNAIL (inside drop zone) ──────────────────────────────────── */
+
+.dz-xlsx-thumb-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.dz-xlsx-thumb-card {
+  position: relative;
+  display: inline-block;
+}
+
+.dz-xlsx-thumb-frame {
+  width: 90px;
+  height: 116px;
+  border-radius: 6px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+}
+
+.dz-xlsx-thumb-icon {
+  width: 90px;
+  height: 116px;
+  display: block;
+}
+
+.dz-xlsx-thumb-remove {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--bg-surface);
+  border: 1.5px solid color-mix(in srgb, var(--xc-color, #34D399) 50%, var(--border));
+  color: var(--xc-color, #34D399);
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 130ms ease;
+}
+
+.dz-xlsx-thumb-remove:hover {
+  background: color-mix(in srgb, var(--xc-color, #34D399) 15%, var(--bg-surface));
+}
+
+.dz-xlsx-thumb-name {
+  font-size: 12px;
+  color: var(--text-muted);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.dz-xlsx-thumb-size {
+  font-size: 11px;
+  color: color-mix(in srgb, var(--xc-color, #34D399) 90%, transparent);
+  background: color-mix(in srgb, var(--xc-color, #34D399) 10%, transparent);
+  border-radius: 10px;
+  padding: 1px 7px;
+  line-height: 1.5;
+}

@@ -126,6 +126,7 @@
 
 .fmt-card--pdf-entry::after,
 .fmt-card--docx-entry::after,
+.fmt-card--xlsx-entry::after,
 .fmt-card--pptx-entry::after {
   display: none !important;
 }
