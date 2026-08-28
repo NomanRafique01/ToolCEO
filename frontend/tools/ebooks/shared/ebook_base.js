@@ -329,7 +329,10 @@ async function _submitConvert(file, outputFilename) {
     }
 
     if (state === 'running' || state === 'pending') {
-      updateProgress(zone, Math.max(10, Math.min(90, pct)), color);
+      // Allow up to 98% while still running — the backend's staged milestones
+      // go up to 95, so clamping at 90 would freeze the bar for the final
+      // packaging stage.  We reserve 99-100 for the done transition.
+      updateProgress(zone, Math.max(10, Math.min(98, pct)), color);
       return;
     }
 

@@ -301,6 +301,340 @@ const PDF_CONVERSIONS = [
   },
 ];
 
+// ─── DOCX CONVERSION CARDS ────────────────────────────────────────────────────
+
+// ─── PPTX CONVERSIONS ────────────────────────────────────────────────────────
+
+const PPTX_CONVERSIONS = [
+  {
+    id: 'pptx-pdf',
+    label: 'PPTX to PDF',
+    desc: 'Convert PPTX to PDF',
+    ext: '.pdf',
+    tag: 'Convert',
+    color: '#FF6B6B',
+    bg: 'rgba(255,107,107,0.15)',
+    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+      <rect x="1" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M4 2l3 3H4V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      <path d="M7 9l2 1.5L7 12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="9" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M12 2l3 3h-3V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      <line x1="11" y1="7" x2="13" y2="7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+      <line x1="11" y1="9" x2="13" y2="9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+    </svg>`,
+  },
+  {
+    id: 'pptx-html',
+    label: 'PPTX to HTML',
+    desc: 'Convert PPTX to HTML',
+    ext: '.html',
+    tag: 'Convert',
+    color: '#FB923C',
+    bg: 'rgba(251,146,60,0.15)',
+    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+      <rect x="1" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M4 2l3 3H4V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      <path d="M7 9l2 1.5L7 12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M10 4l-1.5 2.5L10 9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M13 4l1.5 2.5L13 9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <line x1="11" y1="3.5" x2="12" y2="9.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+    </svg>`,
+  },
+  {
+    id: 'pptx-images',
+    label: 'PPTX to Images',
+    desc: 'Convert each slide to PNG (delivered as ZIP)',
+    ext: '.zip',
+    tag: 'Convert',
+    color: '#F472B6',
+    bg: 'rgba(244,114,182,0.15)',
+    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+      <rect x="1" y="3" width="8" height="7" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <circle cx="3.5" cy="5.5" r="0.9" fill="currentColor"/>
+      <path d="M1 8l2.5-2.5L6 8l2-1.5 1 1" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="7" y="6" width="8" height="7" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <circle cx="9.5" cy="8.5" r="0.9" fill="currentColor"/>
+      <path d="M7 11l2.5-2.5L12 11l1-0.8 1 0.8" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`,
+  },
+  {
+    id: 'pptx-odp',
+    label: 'PPTX to ODP',
+    desc: 'Convert PPTX to ODP (LibreOffice Impress)',
+    ext: '.odp',
+    tag: 'Convert',
+    color: '#2DD4BF',
+    bg: 'rgba(45,212,191,0.15)',
+    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+      <rect x="1" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M4 2l3 3H4V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      <path d="M7 9l2 1.5L7 12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="9" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M12 2l3 3h-3V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      <rect x="10.5" y="6" width="3" height="2.5" rx="0.6" stroke="currentColor" stroke-width="1"/>
+    </svg>`,
+  },
+  {
+    id: 'pptx-txt',
+    label: 'PPTX to TXT',
+    desc: 'Extract text from PPTX',
+    ext: '.txt',
+    tag: 'Convert',
+    color: '#A78BFA',
+    bg: 'rgba(167,139,250,0.15)',
+    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+      <rect x="1" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M4 2l3 3H4V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      <path d="M7 9l2 1.5L7 12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <line x1="10" y1="5" x2="15" y2="5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+      <line x1="10" y1="7.5" x2="15" y2="7.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+      <line x1="10" y1="10" x2="13" y2="10" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+    </svg>`,
+  },
+  {
+    id: 'pptx-repair',
+    label: 'PPTX Repair',
+    desc: 'Repair and compress PPTX via re-save',
+    ext: '.pptx',
+    tag: 'Repair',
+    color: '#60A5FA',
+    bg: 'rgba(96,165,250,0.15)',
+    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+      <rect x="2" y="1" width="10" height="13" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M8 1l4 4H8V1Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+      <rect x="4" y="7" width="5" height="3.5" rx="1" stroke="currentColor" stroke-width="1.1"/>
+      <path d="M11 8.5l1.5-1.5 1 1L12 9.5" stroke="currentColor" stroke-width="1" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`,
+  },
+];
+
+// ─── PPTX TOOLS PANEL ────────────────────────────────────────────────────────
+
+export function renderPptxTools(container, activateNav) {
+  setBreadcrumb(['Dashboard', 'Documents', 'PPTX']);
+  container.innerHTML = `
+    <div class="explore-header">
+      <button class="fmt-back-btn" title="Back to Documents">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.6"
+            stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <div class="fmt-category-icon" style="background:rgba(251,146,60,0.15);color:#FB923C">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <rect x="2" y="1" width="10" height="13" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+          <path d="M8 1l4 4H8V1Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+          <rect x="4" y="7" width="5" height="3.5" rx="1" stroke="currentColor" stroke-width="1.1"/>
+        </svg>
+      </div>
+      <span class="explore-title">PPTX — Conversions</span>
+    </div>
+
+    <div class="pdf-zone-label">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" class="pdf-zone-icon">
+        <path d="M3 8h10M10 5l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      PPTX Conversions
+    </div>
+    <div class="fmt-grid">
+      ${PPTX_CONVERSIONS.map((t) => cardHTML(t)).join('')}
+    </div>
+  `;
+
+  // Back → Documents panel
+  container.querySelector('.fmt-back-btn').addEventListener('click', () => {
+    activateNav('Documents');
+  });
+
+  // Card selection highlight + tool-state update
+  container.querySelectorAll('.fmt-card').forEach((card) => {
+    card.addEventListener('click', () => {
+      container.querySelectorAll('.fmt-card').forEach((c) => c.classList.remove('selected'));
+      card.classList.add('selected');
+
+      const item = PPTX_CONVERSIONS.find((t) => t.id === card.dataset.id);
+      if (item) {
+        const { mainText, subText } = _dropTextFor(item);
+        setActiveTool({
+          id: item.id, label: item.label, mainText, subText,
+          icon: item.icon, color: item.color, bg: item.bg,
+          tag: item.tag,
+        });
+        _scrollToDropZone();
+      }
+    });
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+
+const DOCX_CONVERSIONS = [
+  {
+    id: 'docx-pdf',
+    label: 'DOCX to PDF',
+    desc: 'Convert DOCX to PDF',
+    ext: '.pdf',
+    tag: 'Convert',
+    color: '#FF6B6B',
+    bg: 'rgba(255,107,107,0.15)',
+    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+      <rect x="1" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M4 2l3 3H4V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      <path d="M7 9l2 1.5L7 12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="9" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M12 2l3 3h-3V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      <line x1="11" y1="7" x2="13" y2="7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+      <line x1="11" y1="9" x2="13" y2="9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+    </svg>`,
+  },
+  {
+    id: 'docx-html',
+    label: 'DOCX to HTML',
+    desc: 'Convert DOCX to HTML',
+    ext: '.html',
+    tag: 'Convert',
+    color: '#FB923C',
+    bg: 'rgba(251,146,60,0.15)',
+    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+      <rect x="1" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M4 2l3 3H4V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      <path d="M7 9l2 1.5L7 12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M10 4l-1.5 2.5L10 9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M13 4l1.5 2.5L13 9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <line x1="11" y1="3.5" x2="12" y2="9.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+    </svg>`,
+  },
+  {
+    id: 'docx-txt',
+    label: 'DOCX to TXT',
+    desc: 'Convert DOCX to TXT',
+    ext: '.txt',
+    tag: 'Convert',
+    color: '#A78BFA',
+    bg: 'rgba(167,139,250,0.15)',
+    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+      <rect x="1" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M4 2l3 3H4V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      <path d="M7 9l2 1.5L7 12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <line x1="10" y1="5" x2="15" y2="5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+      <line x1="10" y1="7.5" x2="15" y2="7.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+      <line x1="10" y1="10" x2="13" y2="10" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+    </svg>`,
+  },
+  {
+    id: 'docx-odt',
+    label: 'DOCX to ODT',
+    desc: 'Convert DOCX to ODT',
+    ext: '.odt',
+    tag: 'Convert',
+    color: '#2DD4BF',
+    bg: 'rgba(45,212,191,0.15)',
+    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+      <rect x="1" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M4 2l3 3H4V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      <path d="M7 9l2 1.5L7 12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="9" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M12 2l3 3h-3V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      <line x1="11" y1="7" x2="13" y2="7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+      <line x1="11" y1="9" x2="13" y2="9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+    </svg>`,
+  },
+  {
+    id: 'docx-epub',
+    label: 'DOCX to EPUB',
+    desc: 'Convert DOCX to EPUB',
+    ext: '.epub',
+    tag: 'Convert',
+    color: '#FBBF24',
+    bg: 'rgba(251,191,36,0.15)',
+    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+      <rect x="1" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M4 2l3 3H4V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      <path d="M7 9l2 1.5L7 12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M12 2s-2.5 1-2.5 4.5S12 11 12 11s2.5-1 2.5-4.5S12 2 12 2Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+      <line x1="9.5" y1="6.5" x2="14.5" y2="6.5" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+    </svg>`,
+  },
+  {
+    id: 'docx-md',
+    label: 'DOCX to Markdown',
+    desc: 'Convert DOCX to Markdown',
+    ext: '.md',
+    tag: 'Convert',
+    color: '#34D399',
+    bg: 'rgba(52,211,153,0.15)',
+    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+      <rect x="1" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M4 2l3 3H4V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      <path d="M7 9l2 1.5L7 12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <line x1="10" y1="4" x2="10" y2="10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+      <path d="M10 4l2 3 2-3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <line x1="14" y1="4" x2="14" y2="10" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+    </svg>`,
+  },
+];
+
+// ─── DOCX TOOLS PANEL ────────────────────────────────────────────────────────
+
+export function renderDocxTools(container, activateNav) {
+  setBreadcrumb(['Dashboard', 'Documents', 'DOCX']);
+  container.innerHTML = `
+    <div class="explore-header">
+      <button class="fmt-back-btn" title="Back to Documents">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.6"
+            stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <div class="fmt-category-icon" style="background:rgba(96,165,250,0.15);color:#60A5FA">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <rect x="2" y="1" width="10" height="13" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+          <path d="M8 1l4 4H8V1Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
+          <line x1="4" y1="7"  x2="10" y2="7"  stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+          <line x1="4" y1="9"  x2="10" y2="9"  stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+          <line x1="4" y1="11" x2="7"  y2="11" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <span class="explore-title">DOCX — Conversions</span>
+    </div>
+
+    <div class="pdf-zone-label">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" class="pdf-zone-icon">
+        <path d="M3 8h10M10 5l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      DOCX Conversions
+    </div>
+    <div class="fmt-grid">
+      ${DOCX_CONVERSIONS.map((t) => cardHTML(t)).join('')}
+    </div>
+  `;
+
+  // Back → Documents panel
+  container.querySelector('.fmt-back-btn').addEventListener('click', () => {
+    activateNav('Documents');
+  });
+
+  // Card selection highlight + tool-state update
+  container.querySelectorAll('.fmt-card').forEach((card) => {
+    card.addEventListener('click', () => {
+      container.querySelectorAll('.fmt-card').forEach((c) => c.classList.remove('selected'));
+      card.classList.add('selected');
+
+      const item = DOCX_CONVERSIONS.find((t) => t.id === card.dataset.id);
+      if (item) {
+        const { mainText, subText } = _dropTextFor(item);
+        setActiveTool({
+          id: item.id, label: item.label, mainText, subText,
+          icon: item.icon, color: item.color, bg: item.bg,
+          tag: item.tag,
+        });
+        _scrollToDropZone();
+      }
+    });
+  });
+}
+
 // ─── DOCUMENT FORMAT CARDS (main Documents panel) ─────────────────────────────
 
 const DOC_FORMATS = [
@@ -326,6 +660,7 @@ const DOC_FORMATS = [
     ext: '.docx',
     color: '#60A5FA',
     bg: 'rgba(96,165,250,0.15)',
+    isDocxEntry: true,
     icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
       <rect x="2" y="1" width="10" height="13" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
       <path d="M8 1l4 4H8V1Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
@@ -355,6 +690,7 @@ const DOC_FORMATS = [
     ext: '.pptx',
     color: '#FB923C',
     bg: 'rgba(251,146,60,0.15)',
+    isPptxEntry: true,
     icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
       <rect x="2" y="1" width="10" height="13" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
       <path d="M8 1l4 4H8V1Z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/>
@@ -533,7 +869,10 @@ export function renderDocumentFormats(container, activateNav) {
 
     <div class="fmt-grid">
       ${DOC_FORMATS.map((f) => {
-        const extra = f.isPdfEntry ? 'fmt-card--pdf-entry' : '';
+        let extra = '';
+        if (f.isPdfEntry)  extra = 'fmt-card--pdf-entry';
+        else if (f.isDocxEntry) extra = 'fmt-card--docx-entry';
+        else if (f.isPptxEntry) extra = 'fmt-card--pptx-entry';
         return cardHTML(f, extra);
       }).join('')}
     </div>
@@ -552,8 +891,24 @@ export function renderDocumentFormats(container, activateNav) {
     });
   }
 
+  // DOCX card → DOCX conversions panel
+  const docxCard = container.querySelector('.fmt-card--docx-entry');
+  if (docxCard) {
+    docxCard.addEventListener('click', () => {
+      renderDocxTools(container, activateNav);
+    });
+  }
+
+  // PPTX card → PPTX conversions panel
+  const pptxCard = container.querySelector('.fmt-card--pptx-entry');
+  if (pptxCard) {
+    pptxCard.addEventListener('click', () => {
+      renderPptxTools(container, activateNav);
+    });
+  }
+
   // Other format card selection highlight + tool-state update
-  container.querySelectorAll('.fmt-card:not(.fmt-card--pdf-entry)').forEach((card) => {
+  container.querySelectorAll('.fmt-card:not(.fmt-card--pdf-entry):not(.fmt-card--docx-entry):not(.fmt-card--pptx-entry)').forEach((card) => {
     card.addEventListener('click', () => {
       container.querySelectorAll('.fmt-card').forEach((c) => c.classList.remove('selected'));
       card.classList.add('selected');

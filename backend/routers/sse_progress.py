@@ -59,6 +59,17 @@ async def stream_progress(job_id: str):
 @router.get("/download/{job_id}")
 def download_result(job_id: str):
     """Return the finished file bytes for a completed job."""
+    try:
+        return _do_download(job_id)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        import logging
+        logging.getLogger(__name__).exception("download_result(%s) failed", job_id)
+        raise HTTPException(status_code=500, detail=f"Download error: {exc}") from exc
+
+
+def _do_download(job_id: str):
     job = get_job(job_id)
     if job is None or job.state != "done" or job.result is None:
         raise HTTPException(status_code=404, detail="Job not ready or not found.")
@@ -66,8 +77,26 @@ def download_result(job_id: str):
     if "." not in filename.rsplit("/", 1)[-1].rsplit("\\", 1)[-1]:
         filename += ".zip" if job.media_type == "application/zip" else ".pdf"
     media_type = job.media_type or "application/pdf"
+
+    # Build a safe Content-Disposition header.
+    # The simple `filename="..."` form breaks if the name contains quotes,
+    # backslashes, or non-ASCII characters (common with user-supplied filenames).
+    # We provide both the ASCII-safe fallback and the RFC 5987 encoded form so
+    # all browsers and download managers accept it correctly.
+    try:
+        # ASCII-only: safe to use in the plain filename="" token.
+        ascii_name = filename.encode("ascii").decode("ascii")
+        # Strip any embedded double-quotes that would break the header value.
+        ascii_name = ascii_name.replace('"', "").replace("\\", "")
+        content_disposition = f'attachment; filename="{ascii_name}"'
+    except (UnicodeEncodeError, UnicodeDecodeError):
+        # Non-ASCII filename: use RFC 5987 percent-encoding.
+        from urllib.parse import quote
+        encoded = quote(filename, safe="")
+        content_disposition = f"attachment; filename*=UTF-8''{encoded}"
+
     return Response(
-        content=job.result,
+        content=bytes(job.result),   # ensure plain bytes, not memoryview/bytearray
         media_type=media_type,
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        headers={"Content-Disposition": content_disposition},
     )

@@ -122,9 +122,11 @@
   flex-shrink: 0;
 }
 
-/* ─── PDF entry card — subtle drill-down hint ────────────── */
+/* ─── PDF / DOCX entry cards — suppress drill-down hint ─── */
 
-.fmt-card--pdf-entry::after {
+.fmt-card--pdf-entry::after,
+.fmt-card--docx-entry::after,
+.fmt-card--pptx-entry::after {
   display: none !important;
 }
 

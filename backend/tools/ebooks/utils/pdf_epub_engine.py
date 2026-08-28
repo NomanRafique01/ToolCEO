@@ -59,7 +59,9 @@ _SUBSUP_SIZE_RATIO = 0.92
 _H_SIZE_MULTIPLIER = 1.18
 
 # Left-indent delta (pts) that constitutes one level of list nesting.
-_LIST_INDENT_STEP = 12.0
+# Using 8.0 instead of 12.0 so that narrowly-indented nested items (common
+# in PDFs that indent child items by ~9–10 pts) are not collapsed onto level 0.
+_LIST_INDENT_STEP = 8.0
 
 # Monospace font name fragments (case-insensitive).
 _MONO_FONTS = (
@@ -94,17 +96,20 @@ _BLOCKQUOTE_PAGE_FRAC = 0.15
 # is considered a running header or footer and should be excluded.
 _HEADER_FOOTER_MARGIN = 50.0  # pts
 
-# Glyph-corruption substitution map: some PDF fonts encode arrows and other
-# symbols as ligature sequences that pdfminer/PyMuPDF extract as wrong chars.
+# Glyph-corruption substitution map: PDF fonts sometimes encode ligatures as
+# single Unicode private-use or ligature codepoints that must be expanded back
+# to their plain ASCII equivalents before any further processing.
 # Applied as a post-processing step on every assembled span text.
-# fix: arrow and special character encoding
+# fix: ligature map
 _GLYPH_CORRUPTION_MAP: Dict[str, str] = {
-    "\ufb01": "\u2192",   # ﬁ (fi ligature) → → RIGHT ARROW
-    "\ufb02": "\u2190",   # ﬂ (fl ligature) → ← LEFT ARROW
-    "fi":     "\u2192",   # literal two-char sequence → →
-    "fl":     "\u2190",   # literal two-char sequence → ←
-    "\uf0e0": "\u2192",   # Symbol-font private-use → →
-    "\uf0e1": "\u2190",   # Symbol-font private-use → ←
+    "\ufb01": "fi",    # ﬁ  fi-ligature  → fi   # fix: ligature map
+    "\ufb02": "fl",    # ﬂ  fl-ligature  → fl   # fix: ligature map
+    "\ufb03": "ffi",   # ﬃ  ffi-ligature → ffi  # fix: ligature map
+    "\ufb04": "ffl",   # ﬄ  ffl-ligature → ffl  # fix: ligature map
+    "\ufb00": "ff",    # ﬀ  ff-ligature  → ff   # fix: ligature map
+    "\ufb05": "st",    # ﬅ  st-ligature  → st   # fix: ligature map
+    "\uf0e0": "\u2192",   # Symbol-font private-use → → RIGHT ARROW
+    "\uf0e1": "\u2190",   # Symbol-font private-use → ← LEFT ARROW
     "\uf0ae": "\u2192",   # Wingdings arrow right
     "\uf0ac": "\u2190",   # Wingdings arrow left
 }
@@ -484,6 +489,13 @@ def _detect_list_prefix(text: str) -> Tuple[bool, bool, str, int]:
     or ordered prefix + following whitespace).  This is used by the span-level
     prefix stripper so it can remove exactly the right characters from the
     first span without affecting subsequent spans.
+
+    Bug-fix (numbered list ordering): when the ordered prefix occupies the
+    ENTIRE text (e.g. the PDF emits "1." as its own rawdict span before the
+    item text span) stripped_text will be empty.  We still return is_ordered=True
+    so the caller can classify this block as an ordered-list sentinel and let
+    _merge_list_continuations attach the following paragraph as the item body.
+    prefix_len is returned as the full consumed length in that case.
     """
     stripped = text.lstrip()
     leading = len(text) - len(stripped)   # how many chars were lstripped
@@ -853,34 +865,56 @@ def _parse_page(page_plumber, page_fitz, doc_fitz,
                 sub_span = sup_span = False
                 smaller_span = False   # plain font-size reduction, no shift
                 if font_size < body_size * _SUBSUP_SIZE_RATIO and not mono:
-                    # Coordinate system: PyMuPDF uses top-down (y=0 at page top,
-                    # y increases downward).  line_top and line_bot are computed
-                    # as page_height − bbox_y, which FLIPS to a bottom-up system
-                    # where LARGER values = HIGHER on the page.
+                    # Coordinate system: PyMuPDF rawdict spans do NOT carry an
+                    # "origin" key — that field exists on individual chars only.
+                    # We derive the vertical position from the span's bbox.
                     #
-                    # baseline_y_td = page_height − sp_origin[1]:
-                    #   superscript: baseline raised (higher on page) →
-                    #       sp_origin[1] smaller → baseline_y_td LARGER
-                    #       → baseline_y_td > mid_y
-                    #   subscript: baseline lowered (lower on page) →
-                    #       sp_origin[1] larger → baseline_y_td SMALLER
-                    #       → baseline_y_td < mid_y
-                    sp_origin = span_dict.get("origin", None)
-                    if sp_origin:
-                        baseline_y_td = page_height - sp_origin[1]
-                        mid_y = (line_top + line_bot) / 2
-                        # Require a meaningful vertical shift (> 4% line-height)
-                        # before we promote to sup/sub.  ReportLab renders sub/sup
-                        # at ~9% shift relative to line height; 4% provides margin
-                        # for documents that render at slightly smaller offsets.
-                        if baseline_y_td > mid_y + line_h * 0.04:
-                            sup_span = True
-                        elif baseline_y_td < mid_y - line_h * 0.04:
-                            sub_span = True
-                        else:
-                            smaller_span = True   # size-only, no offset
+                    # PyMuPDF bbox is (x0, y0, x1, y1) with y increasing DOWNWARD
+                    # from the page top (y0 = top of glyph box, y1 = bottom).
+                    # line_top / line_bot are computed as page_height − bbox_y,
+                    # which FLIPS to a BOTTOM-UP system where LARGER values mean
+                    # HIGHER on the page:
+                    #   line_top = page_height − line_bbox[3]  (visual top → large)
+                    #   line_bot = page_height − line_bbox[1]  (visual bot → small)
+                    #
+                    # Applying the same flip to the span bbox:
+                    #   sp_hi = page_height − sp_bbox[1]  (visual top of span → large)
+                    #   sp_lo = page_height − sp_bbox[3]  (visual bot of span → small)
+                    #   sp_ctr = (sp_hi + sp_lo) / 2      (vertical centre of span)
+                    #
+                    # mid_y = (line_top + line_bot) / 2   (vertical centre of line)
+                    #
+                    # Decision: compare span's vertical CENTRE to the line's
+                    # vertical centre.  A threshold of 3% of line height avoids
+                    # false positives from minor rounding in the PDF renderer
+                    # while still catching typical sub/sup offsets (~9% shift):
+                    #
+                    #   superscript: span centre is ABOVE line centre →
+                    #       sp_ctr > mid_y + threshold
+                    #   subscript:   span centre is BELOW line centre →
+                    #       sp_ctr < mid_y − threshold
+                    #
+                    # Additionally, PyMuPDF sets flags bit 0 (value 1) for
+                    # superscript characters in some fonts — honour that as a
+                    # tiebreaker when the positional shift is ambiguous.
+                    sp_bbox_local = span_dict.get("bbox", line_bbox)
+                    # In our bottom-up flipped system:
+                    sp_hi  = page_height - sp_bbox_local[1]  # visual top (large = high)
+                    sp_lo  = page_height - sp_bbox_local[3]  # visual bottom (small = low)
+                    sp_ctr = (sp_hi + sp_lo) / 2
+                    mid_y  = (line_top + line_bot) / 2
+                    threshold = line_h * 0.03   # 3% of line height
+                    if sp_ctr > mid_y + threshold:
+                        # Span centre is above the line centre → superscript
+                        sup_span = True
+                    elif sp_ctr < mid_y - threshold:
+                        # Span centre is below the line centre → subscript
+                        sub_span = True
+                    elif bool(flags_val & 1):
+                        # PyMuPDF flags bit 0 = superscript marker
+                        sup_span = True
                     else:
-                        smaller_span = True
+                        smaller_span = True   # size-only, no offset
 
                 # Underline / strikethrough: check drawn lines vs span bbox.
                 # Strikethrough: only mark this span if the drawn rule's x-range
@@ -1021,10 +1055,13 @@ def _parse_page(page_plumber, page_fitz, doc_fitz,
             is_bold  = line_bold_count / max(line_total_count, 1) >= 0.6
 
             # --- Code block detection --- fix: code block preservation
-            # A line is a code line only when ALL spans are monospace AND the
-            # size is not below the sub/sup threshold relative to body text
-            # (sub/sup spans can also be in Courier for formulae).
-            if is_mono_line and avg_size >= body_size * _SUBSUP_SIZE_RATIO:
+            # A line is a code line only when ALL spans are monospace.
+            # The old size guard (avg_size >= body_size * _SUBSUP_SIZE_RATIO) is
+            # removed: code fonts are often typeset at 9–10pt in a 12pt document,
+            # which is below the sub/sup threshold.  Monospace spans are already
+            # excluded from sub/sup detection (see `not mono` guard above), so
+            # there is no ambiguity.
+            if is_mono_line:
                 text_blocks_with_y.append((line_top, Block(
                     kind="code",
                     spans=spans,
@@ -1093,7 +1130,21 @@ def _parse_page(page_plumber, page_fitz, doc_fitz,
                     spans = _strip_prefix_from_spans(spans, prefix_len)
 
                 if not spans or not _plain_text(spans).strip():
-                    # Empty after stripping — skip this "item".
+                    # Bug-fix (numbered list ordering + bullet collapse):
+                    # The prefix occupied the entire span — the item text will
+                    # arrive as the very next rawdict line (a "p" block).
+                    # Emit an empty sentinel li so _merge_list_continuations
+                    # can attach that next paragraph as the item body.
+                    # The sentinel carries ordered/x0 so ordering and indent
+                    # levels are preserved; it is never rendered if it stays
+                    # empty because _blocks_to_xhtml emits the spans verbatim.
+                    text_blocks_with_y.append((line_top, Block(
+                        kind="li",
+                        spans=[],
+                        ordered=is_ordered,
+                        x0=line_x0,
+                        page_no=page_no,
+                    )))
                     continue
 
                 text_blocks_with_y.append((line_top, Block(
@@ -1266,7 +1317,12 @@ def _merge_list_continuations(blocks: List[Block]) -> List[Block]:
             at_list_margin = (
                 min_li_x0 is not None and abs(blk.x0 - min_li_x0) < 4.0
             )
-            if not at_list_margin and blk.x0 >= prev.x0 - 4.0:
+            # Bug-fix (numbered list ordering + bullet collapse):
+            # An empty sentinel li (spans=[]) ALWAYS absorbs the next 'p' as its
+            # body, regardless of x0 position — the sentinel was emitted precisely
+            # because the prefix was a bare glyph/number with no text on that line.
+            sentinel = not bool(_plain_text(prev.spans).strip())
+            if sentinel or (not at_list_margin and blk.x0 >= prev.x0 - 4.0):
                 # Append as continuation text.
                 plain_prev = _plain_text(prev.spans).strip()
                 if prev.spans and plain_prev and not plain_prev.endswith(" "):
@@ -1298,15 +1354,19 @@ def _merge_adjacent_headings(blocks: List[Block]) -> List[Block]:
     by the PDF layout engine — both lines are classified as headings at the same
     level and should be joined into a single heading element.
 
-    Only merge when:
+    Only merge when ALL of the following hold:
     • Both blocks are the same heading kind (h1, h2, or h3).
     • There is no intervening non-heading block between them.
-    • The resulting plain text, when joined, forms a plausible single heading
-      (neither part ends with a sentence terminal like '.', '!', '?').
+    • The previous heading does NOT end with sentence-terminal punctuation.
+    • The combined plain text of both lines does NOT exceed 120 characters —
+      headings that would be longer than this are almost certainly two distinct
+      headings (e.g. a document title followed immediately by a section heading)
+      rather than a single heading wrapped across two PDF lines.
     """
     result: List[Block] = []
     _HEADING_KINDS = ("h1", "h2", "h3")
     _SENTENCE_END = re.compile(r'[.!?]\s*$')
+    _MAX_MERGED_LEN = 120   # characters — longer than this → keep as separate headings
 
     for blk in blocks:
         if (blk.kind in _HEADING_KINDS and
@@ -1314,8 +1374,11 @@ def _merge_adjacent_headings(blocks: List[Block]) -> List[Block]:
                 result[-1].kind == blk.kind):
             prev = result[-1]
             prev_plain = _plain_text(prev.spans).strip()
-            # Only merge if the previous heading does NOT end a sentence.
-            if not _SENTENCE_END.search(prev_plain):
+            cur_plain  = _plain_text(blk.spans).strip()
+            # Guard 1: previous heading must not end a sentence.
+            # Guard 2: the combined text must fit within a single-heading budget.
+            if (not _SENTENCE_END.search(prev_plain) and
+                    len(prev_plain) + 1 + len(cur_plain) <= _MAX_MERGED_LEN):
                 # Join with a single space.
                 if prev.spans and not prev_plain.endswith(" "):
                     prev.spans[-1].text += " "
@@ -1504,7 +1567,14 @@ def _blocks_to_xhtml(blocks: List[Block], img_dir_rel: str = "images") -> str:
                 lines.append(f"<{needed_tag}>")
                 list_stack.append([needed_tag, lvl])
 
-            lines.append(f"<li>{_spans_to_html(blk.spans)}</li>")
+            # Bug-fix (numbered list ordering + bullet collapse):
+            # A sentinel li (empty spans, body was merged by _merge_list_continuations)
+            # should still be emitted — if spans are empty at this point, the item
+            # was never followed by a continuation paragraph and the text is truly
+            # absent; skip it rather than emitting a bare <li></li>.
+            item_html = _spans_to_html(blk.spans)
+            if item_html:
+                lines.append(f"<li>{item_html}</li>")
 
         elif blk.kind == "table":
             lines.append("<table>")
@@ -1860,6 +1930,7 @@ def convert_pdf_to_epub(
     epub_path: str,
     title: str = "",
     cover_path: Optional[str] = None,
+    progress_cb=None,
 ) -> None:
     """
     Convert *pdf_path* to a semantically structured EPUB3 file at *epub_path*.
@@ -1874,15 +1945,34 @@ def convert_pdf_to_epub(
         Human-readable document title.  Defaults to the PDF filename stem.
     cover_path:
         Optional path to a JPEG cover image.
+    progress_cb:
+        Optional callable ``(pct: int) -> None`` called at key pipeline stages
+        so the caller can stream realistic progress to clients.  Values range
+        from 5 to 95; the caller is responsible for emitting 100 on completion.
+
+        Stage breakdown (approximate):
+          5  – job started / file opened
+         15  – font-size scan complete (Pass 1)
+         15→75 – per-page parsing (Pass 2, spread evenly across page count)
+         88  – HTML serialisation complete
+         95  – EPUB zip assembled and written
     """
     import pdfplumber
     import fitz  # PyMuPDF
+
+    def _cb(pct: int) -> None:
+        if callable(progress_cb):
+            try:
+                progress_cb(int(pct))
+            except Exception:
+                pass   # never let a callback error kill the conversion
 
     if not title:
         title = Path(pdf_path).stem
 
     _log.info("pdf_epub_engine: converting %s → %s", pdf_path, epub_path)
 
+    _cb(5)
     doc_fitz     = fitz.open(pdf_path)
     doc_plumber  = pdfplumber.open(pdf_path)
 
@@ -1894,11 +1984,16 @@ def convert_pdf_to_epub(
             "Font thresholds: body=%.1f  h3≥%.1f  h2≥%.1f  h1≥%.1f",
             body_size, h3_min, h2_min, h1_min,
         )
+        _cb(15)
 
         # Pass 2: parse each page into blocks.
+        # Progress advances evenly from 15 → 75 across all pages.
         all_blocks: List[Block] = []
         img_counter: List[int] = [0]
         heading_anchor_counter: Dict[str, int] = {}
+        total_pages = len(doc_plumber.pages)
+        _PAGE_START = 15
+        _PAGE_END   = 75
 
         for page_no, (page_pl, page_fz) in enumerate(
             zip(doc_plumber.pages, doc_fitz), start=1
@@ -1909,10 +2004,568 @@ def convert_pdf_to_epub(
                 img_counter, page_no, heading_anchor_counter,
             )
             all_blocks.extend(page_blocks)
+            # Emit per-page progress only when total_pages > 1 so single-page
+            # PDFs don't emit a flurry of identical callbacks.
+            if total_pages > 1:
+                page_pct = _PAGE_START + int(
+                    (_PAGE_END - _PAGE_START) * page_no / total_pages
+                )
+                _cb(page_pct)
 
-        # Pass 3: package into EPUB3.
+        _cb(75)
+
+        # Pass 3a: serialise blocks to XHTML (CPU-bound, measurable on large docs).
+        _cb(82)
+
+        # Pass 3b: package into EPUB3.
         _build_epub(all_blocks, title, epub_path, cover_path=cover_path)
+        _cb(95)
 
     finally:
         doc_fitz.close()
         doc_plumber.close()
+
+
+# ---------------------------------------------------------------------------
+# Public entry point — PDF → standalone HTML (for Calibre MOBI pipeline)
+# ---------------------------------------------------------------------------
+
+# Inline CSS that Calibre will carry into the MOBI output.  Mirrors the EPUB
+# stylesheet but uses properties that Calibre / KF8 can honour.
+_MOBI_HTML_CSS = """\
+body { font-family: Georgia, serif; font-size: 1em; line-height: 1.6; margin: 0 auto; max-width: 42em; padding: 1em 1.5em; }
+h1, h2, h3 { font-weight: bold; margin-top: 1.4em; margin-bottom: 0.4em; }
+h1 { font-size: 2em; } h2 { font-size: 1.5em; } h3 { font-size: 1.2em; }
+p { margin: 0.6em 0; }
+ul, ol { margin: 0.6em 0 0.6em 1.8em; } li { margin: 0.3em 0; }
+table { border-collapse: collapse; width: 100%; margin: 1em 0; }
+th, td { border: 1px solid #ccc; padding: 4px 8px; text-align: left; vertical-align: top; }
+th { background: #f4f4f4; font-weight: bold; }
+pre { background: #f8f8f8; border: 1px solid #ddd; font-family: "Courier New", Courier, monospace; font-size: 0.85em; line-height: 1.4; padding: 0.8em 1em; white-space: pre-wrap; }
+code { font-family: "Courier New", Courier, monospace; font-size: 0.85em; }
+blockquote { border-left: 3px solid #ccc; margin: 0.8em 0 0.8em 1.5em; padding: 0.4em 0 0.4em 1em; color: #555; font-style: italic; }
+.img-wrap { text-align: center; margin: 1em 0; }
+img { max-width: 100%; height: auto; }
+"""
+
+_HTML_TEMPLATE = """\
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<title>{title}</title>
+<style>{css}</style>
+</head>
+<body>
+{body}
+</body>
+</html>"""
+
+
+def convert_pdf_to_html(
+    pdf_path: str,
+    html_path: str,
+    title: str = "",
+    progress_cb=None,
+) -> None:
+    """
+    Convert *pdf_path* to a semantically structured standalone HTML file.
+
+    The HTML contains the same heading/table/code/list structure produced by
+    the EPUB engine, but packaged as a single file with inline CSS.  Intended
+    as an intermediate step for Calibre-based conversions (e.g. PDF → MOBI)
+    where the intermediate HTML provides far better structure than feeding the
+    raw PDF to Calibre directly.
+
+    Parameters
+    ----------
+    pdf_path:
+        Absolute path to the source PDF.
+    html_path:
+        Absolute path where the output .html will be written.
+    title:
+        Human-readable document title.
+    progress_cb:
+        Optional callable ``(pct: int) -> None`` (0–95 range).
+    """
+    import pdfplumber
+    import fitz  # PyMuPDF
+
+    def _cb(pct: int) -> None:
+        if callable(progress_cb):
+            try:
+                progress_cb(int(pct))
+            except Exception:
+                pass
+
+    if not title:
+        title = Path(pdf_path).stem
+
+    _log.info("pdf_epub_engine: converting %s → HTML intermediary %s", pdf_path, html_path)
+
+    _cb(5)
+    doc_fitz    = fitz.open(pdf_path)
+    doc_plumber = pdfplumber.open(pdf_path)
+
+    try:
+        all_sizes = _gather_font_sizes(doc_fitz)
+        body_size, h3_min, h2_min, h1_min = _compute_heading_thresholds(all_sizes)
+        _cb(15)
+
+        all_blocks: List[Block] = []
+        img_counter: List[int] = [0]
+        heading_anchor_counter: Dict[str, int] = {}
+        total_pages = len(doc_plumber.pages)
+        _PAGE_START, _PAGE_END = 15, 70
+
+        for page_no, (page_pl, page_fz) in enumerate(
+            zip(doc_plumber.pages, doc_fitz), start=1
+        ):
+            page_blocks = _parse_page(
+                page_pl, page_fz, doc_fitz,
+                body_size, h3_min, h2_min, h1_min,
+                img_counter, page_no, heading_anchor_counter,
+            )
+            all_blocks.extend(page_blocks)
+            if total_pages > 1:
+                _cb(_PAGE_START + int((_PAGE_END - _PAGE_START) * page_no / total_pages))
+
+        _cb(70)
+
+        # Images are embedded as base64 data URIs so the HTML is self-contained
+        # and Calibre does not need to resolve external paths.
+        import base64
+
+        def _img_src(blk: Block) -> str:
+            if not blk.img_data:
+                return ""
+            mime = "image/jpeg" if blk.img_ext in ("jpg", "jpeg") else f"image/{blk.img_ext}"
+            b64  = base64.b64encode(blk.img_data).decode("ascii")
+            return f"data:{mime};base64,{b64}"
+
+        # Patch the img_dir_rel parameter by overriding _blocks_to_xhtml output
+        # for images using data URIs.  We serialise via the standard function and
+        # then post-process the src attributes in the resulting HTML string.
+        body_html = _blocks_to_xhtml(all_blocks, img_dir_rel="__IMG_PLACEHOLDER__")
+        for blk in all_blocks:
+            if blk.kind == "img" and blk.img_data:
+                placeholder = f"__IMG_PLACEHOLDER__/{blk.img_id}.{blk.img_ext}"
+                body_html = body_html.replace(
+                    f'src="{placeholder}"', f'src="{_img_src(blk)}"'
+                )
+
+        html_content = _HTML_TEMPLATE.format(
+            title=_escape(title),
+            css=_MOBI_HTML_CSS,
+            body=body_html,
+        )
+        Path(html_path).write_text(html_content, encoding="utf-8")
+        _cb(90)
+
+    finally:
+        doc_fitz.close()
+        doc_plumber.close()
+
+    _log.info("HTML intermediary written to %s", html_path)
+
+
+# ---------------------------------------------------------------------------
+# Plain-text serialiser (for PDF → TXT)
+# ---------------------------------------------------------------------------
+
+def _table_to_txt(rows: List[List[Tuple[str, int, int]]], first_row_is_header: bool) -> str:
+    """
+    Render a table Block as a plain-text grid with ASCII borders.
+
+    Example output:
+
+        +----------+-----+----------+
+        | Name     | Age | City     |
+        +==========+=====+==========+
+        | Alice    |  30 | London   |
+        | Bob      |  25 | Paris    |
+        +----------+-----+----------+
+
+    Column widths are computed from the widest content in each column.
+    Cells that span multiple columns are honoured for width purposes but
+    are written across the merged cells without inner separators.
+
+    Parameters
+    ----------
+    rows:
+        Row data in the Block format: list of rows, each row being a list of
+        (cell_text, rowspan, colspan) tuples.
+    first_row_is_header:
+        When True the first row is separated from the rest with ``=`` instead
+        of ``-`` to visually distinguish the header.
+
+    Returns
+    -------
+    str
+        Multi-line string containing the rendered table (no trailing newline).
+    """
+    if not rows:
+        return ""
+
+    # ── Step 1: determine column count ──────────────────────────────────────
+    col_count = max(
+        sum(cspan for (_, _, cspan) in row) for row in rows
+    ) if rows else 0
+    if col_count == 0:
+        return ""
+
+    # ── Step 2: build a flat grid (row_idx, col_idx) → cell_text ─────────
+    # We expand colspan by repeating the cell text only in its first column
+    # slot; the subsequent slots get a special sentinel so we know they are
+    # "consumed" (we won't draw a cell border there).
+    _SPAN_CONT = "\x00"   # sentinel: this column slot is part of a wider cell
+
+    grid: List[List[str]] = []
+    for row in rows:
+        flat_row: List[str] = []
+        for (text, _rspan, cspan) in row:
+            flat_row.append(text)
+            for _ in range(cspan - 1):
+                flat_row.append(_SPAN_CONT)
+        # Pad to col_count if short (malformed table).
+        while len(flat_row) < col_count:
+            flat_row.append("")
+        grid.append(flat_row[:col_count])
+
+    # ── Step 3: compute column widths ───────────────────────────────────────
+    col_widths: List[int] = [0] * col_count
+    for row in grid:
+        for ci, cell in enumerate(row):
+            if cell != _SPAN_CONT:
+                col_widths[ci] = max(col_widths[ci], len(cell))
+    # Minimum column width of 3 so single-digit numbers have padding.
+    col_widths = [max(w, 3) for w in col_widths]
+
+    # ── Step 4: helper to render a horizontal rule ───────────────────────
+    def _hrule(fill: str = "-") -> str:
+        """Return a full-width horizontal rule using the given fill character."""
+        parts = ["+" + fill * (w + 2) for w in col_widths]
+        return "".join(parts) + "+"
+
+    # ── Step 5: render row by row ────────────────────────────────────────
+    lines: List[str] = [_hrule("-")]
+    for ri, row in enumerate(grid):
+        # Build the cell line.  Cells spanning multiple columns get the
+        # combined width: sum of their columns + 3*(cspan-1) for the
+        # inner borders that are swallowed.
+        cells_in_row = rows[ri] if ri < len(rows) else []
+        ci = 0
+        parts: List[str] = ["|"]
+        for (text, _rspan, cspan) in cells_in_row:
+            # Width = sum of spanned col widths + inner separators.
+            total_w = sum(col_widths[ci:ci + cspan]) + 3 * (cspan - 1)
+            # Left-pad single-digit/number-like content, otherwise left-align.
+            stripped = text.strip()
+            if stripped.lstrip("-").replace(".", "", 1).isdigit():
+                # Right-align numbers.
+                cell_str = stripped.rjust(total_w)
+            else:
+                cell_str = text.ljust(total_w)
+            parts.append(f" {cell_str} |")
+            ci += cspan
+        lines.append("".join(parts))
+
+        # Separator line.
+        if ri == 0 and first_row_is_header:
+            lines.append(_hrule("="))
+        elif ri < len(grid) - 1:
+            lines.append(_hrule("-"))
+    lines.append(_hrule("-"))
+
+    return "\n".join(lines)
+
+
+# Sentence-terminal punctuation that signals a hard paragraph break.
+_SENTENCE_TERMINALS = frozenset(".!?")
+
+# Max length (chars) of a line that is treated as a heading or short label —
+# lines at or below this that are all-caps or title-case are not merged.
+_HEADING_LINE_MAX = 60
+
+
+def _is_heading_line(line: str) -> bool:
+    """Return True when *line* looks like a standalone heading or label."""
+    s = line.strip()
+    if not s or len(s) > _HEADING_LINE_MAX:
+        return False
+    # All-uppercase (e.g. "CHAPTER ONE")
+    if s == s.upper() and any(c.isalpha() for c in s):
+        return True
+    # Title case: every significant word starts with a capital
+    words = s.split()
+    if len(words) >= 2 and all(w[0].isupper() for w in words if w[0].isalpha()):
+        return True
+    return False
+
+
+def _merge_text_lines(text: str) -> str:
+    """
+    Merge soft-wrapped lines in extracted PDF paragraph text.
+
+    PDF text extractors insert line breaks at PDF column boundaries, splitting
+    paragraphs mid-sentence.  This function rejoins those continuation lines.
+
+    Rules (applied per consecutive line pair):
+    * Blank lines are preserved as paragraph separators — never merged.
+    * Bullet lines (starting with ``•``) are never merged with adjacent lines.
+    * Short heading-like lines (all-caps or title-case, ≤ 60 chars) are not
+      merged.
+    * If the *previous* line ends with ``.``, ``!``, or ``?`` — keep as a
+      paragraph break (do not merge into the next line).
+    * All other line pairs are joined with a single space.
+    """
+    raw_lines = text.splitlines()
+    if len(raw_lines) <= 1:
+        return text
+
+    result: List[str] = [raw_lines[0]]
+    for line in raw_lines[1:]:
+        prev = result[-1]
+        prev_stripped = prev.rstrip()
+        line_stripped  = line.strip()
+
+        # Always keep blank lines as separators.
+        if not line_stripped or not prev_stripped:
+            result.append(line)
+            continue
+
+        # Never merge into or from a bullet line.
+        if line_stripped.startswith("•") or prev_stripped.lstrip().startswith("•"):
+            result.append(line)
+            continue
+
+        # Never merge a heading-like line.
+        if _is_heading_line(line_stripped) or _is_heading_line(prev_stripped):
+            result.append(line)
+            continue
+
+        # If the previous line ends a sentence, start a new paragraph.
+        if prev_stripped and prev_stripped[-1] in _SENTENCE_TERMINALS:
+            result.append(line)
+            continue
+
+        # Merge: join with a space (handle trailing space on prev already).
+        if prev_stripped.endswith(" "):
+            result[-1] = prev_stripped + line_stripped
+        else:
+            result[-1] = prev_stripped + " " + line_stripped
+
+    return "\n".join(result)
+
+
+def _blocks_to_txt(blocks: List[Block]) -> str:
+    """
+    Serialise a list of Block objects to a plain-text string.
+
+    Rendering rules
+    ---------------
+    * **h1** — underlined with ``=`` characters
+    * **h2** — underlined with ``-`` characters
+    * **h3** — prefixed with ``### ``
+    * **p** / **blockquote** — plain text paragraph, blank line above/below
+    * **code** — indented 4 spaces, blank line above/below
+    * **li** — ``  * `` (unordered) or ``  N. `` (ordered), nested indent
+    * **table** — rendered via :func:`_table_to_txt`
+    * **hr** — a line of ``-`` characters
+    * **img** — ``[image]`` placeholder
+
+    Post-processing applied to every text value before output:
+    * ``\\f`` (form feed) characters are stripped.
+    * Mid-sentence soft line-breaks (PDF column wrapping) are merged by
+      :func:`_merge_text_lines`.
+    """
+    out: List[str] = []
+
+    # Track ordered-list counters per indent level.
+    ol_counters: dict = {}
+    prev_li_indent: int = -1
+
+    def _flush_sep() -> None:
+        """Ensure there is exactly one blank line before the next element."""
+        if out and out[-1] != "":
+            out.append("")
+
+    for blk in blocks:
+        kind = blk.kind
+
+        # ── List items ───────────────────────────────────────────────────
+        if kind == "li":
+            lvl = blk.indent_level
+            indent = "  " * (lvl + 1)
+            # Reset OL counter when we jump to a shallower indent level.
+            if lvl < prev_li_indent:
+                for k in list(ol_counters.keys()):
+                    if k > lvl:
+                        del ol_counters[k]
+            prev_li_indent = lvl
+
+            if blk.ordered:
+                ol_counters[lvl] = ol_counters.get(lvl, 0) + 1
+                prefix = f"{ol_counters[lvl]}. "
+            else:
+                prefix = "* "
+
+            text = _plain_text(blk.spans).replace("\f", "").strip()
+            if text:
+                out.append(f"{indent}{prefix}{text}")
+            continue
+
+        # After a list, ensure a blank line before non-list content.
+        if kind != "li":
+            ol_counters.clear()
+            prev_li_indent = -1
+            _flush_sep()
+
+        # ── Headings ─────────────────────────────────────────────────────
+        if kind in ("h1", "h2", "h3"):
+            text = _plain_text(blk.spans).replace("\f", "").strip()
+            if not text:
+                continue
+            if kind == "h1":
+                out.append(text)
+                out.append("=" * len(text))
+            elif kind == "h2":
+                out.append(text)
+                out.append("-" * len(text))
+            else:  # h3
+                out.append(f"### {text}")
+            out.append("")
+
+        # ── Paragraphs & blockquotes ──────────────────────────────────────
+        elif kind in ("p", "blockquote"):
+            text = _plain_text(blk.spans).replace("\f", "").strip()
+            if text:
+                text = _merge_text_lines(text)
+                if kind == "blockquote":
+                    # Indent blockquotes with a leading "> ".
+                    out.extend(f"> {line}" for line in text.splitlines())
+                else:
+                    out.append(text)
+                out.append("")
+
+        # ── Code blocks ───────────────────────────────────────────────────
+        elif kind == "code":
+            code_text = "".join(s.text for s in blk.spans)
+            for line in code_text.splitlines():
+                out.append("    " + line)
+            out.append("")
+
+        # ── Tables ────────────────────────────────────────────────────────
+        elif kind == "table":
+            tbl = _table_to_txt(blk.rows, blk.first_row_is_header)
+            if tbl:
+                out.append(tbl)
+                out.append("")
+
+        # ── Horizontal rules ──────────────────────────────────────────────
+        elif kind == "hr":
+            out.append("-" * 72)
+            out.append("")
+
+        # ── Images ────────────────────────────────────────────────────────
+        elif kind == "img":
+            out.append("[image]")
+            out.append("")
+
+    # Strip trailing blank lines.
+    while out and out[-1] == "":
+        out.pop()
+
+    return "\n".join(out)
+
+
+# ---------------------------------------------------------------------------
+# Public entry point — PDF → plain text (preserves table layout)
+# ---------------------------------------------------------------------------
+
+def convert_pdf_to_txt(
+    pdf_path: str,
+    txt_path: str,
+    title: str = "",
+    progress_cb=None,
+) -> None:
+    """
+    Convert *pdf_path* to a plain-text file at *txt_path*.
+
+    Tables are rendered as ASCII grid tables so their layout is preserved.
+    Headings are underlined (H1 with ``=``, H2 with ``-``).  Code blocks are
+    indented 4 spaces.  All other content is emitted as plain text.
+
+    This function uses the same semantic extraction pipeline as
+    :func:`convert_pdf_to_epub` so structural elements are detected reliably
+    regardless of the PDF's internal encoding.
+
+    Parameters
+    ----------
+    pdf_path:
+        Absolute path to the source PDF.
+    txt_path:
+        Absolute path where the output ``.txt`` will be written.
+    title:
+        Human-readable document title.  Written as the first line when set.
+    progress_cb:
+        Optional callable ``(pct: int) -> None`` (values 5–95).
+    """
+    import pdfplumber
+    import fitz  # PyMuPDF
+
+    def _cb(pct: int) -> None:
+        if callable(progress_cb):
+            try:
+                progress_cb(int(pct))
+            except Exception:
+                pass
+
+    if not title:
+        title = Path(pdf_path).stem
+
+    _log.info("pdf_epub_engine: converting %s → TXT %s", pdf_path, txt_path)
+
+    _cb(5)
+    doc_fitz    = fitz.open(pdf_path)
+    doc_plumber = pdfplumber.open(pdf_path)
+
+    try:
+        # Pass 1: font-size scan.
+        all_sizes = _gather_font_sizes(doc_fitz)
+        body_size, h3_min, h2_min, h1_min = _compute_heading_thresholds(all_sizes)
+        _cb(15)
+
+        # Pass 2: parse each page into blocks.
+        all_blocks: List[Block] = []
+        img_counter: List[int] = [0]
+        heading_anchor_counter: Dict[str, int] = {}
+        total_pages = len(doc_plumber.pages)
+        _PAGE_START, _PAGE_END = 15, 75
+
+        for page_no, (page_pl, page_fz) in enumerate(
+            zip(doc_plumber.pages, doc_fitz), start=1
+        ):
+            page_blocks = _parse_page(
+                page_pl, page_fz, doc_fitz,
+                body_size, h3_min, h2_min, h1_min,
+                img_counter, page_no, heading_anchor_counter,
+            )
+            all_blocks.extend(page_blocks)
+            if total_pages > 1:
+                _cb(_PAGE_START + int((_PAGE_END - _PAGE_START) * page_no / total_pages))
+
+        _cb(75)
+
+        # Pass 3: serialise to plain text.
+        txt = _blocks_to_txt(all_blocks)
+        _cb(88)
+
+        Path(txt_path).write_text(txt, encoding="utf-8")
+        _cb(95)
+
+    finally:
+        doc_fitz.close()
+        doc_plumber.close()
+
+    _log.info("TXT written to %s", txt_path)

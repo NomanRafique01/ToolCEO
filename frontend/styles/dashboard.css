@@ -577,6 +577,22 @@
   display: flex;
 }
 
+/* Inline error shown inside the save card on download failure (preserves card
+   so the user can retry without re-converting). */
+.dz-save-inline-err {
+  width: 100%;
+  margin-top: 8px;
+  padding: 6px 10px;
+  border-radius: 6px;
+  background: rgba(248, 113, 113, 0.12);
+  border: 1px solid rgba(248, 113, 113, 0.35);
+  color: #f87171;
+  font-size: 11.5px;
+  line-height: 1.45;
+  text-align: center;
+  word-break: break-word;
+}
+
 /* ── Error ── */
 .dz-error-wrap {
   display: flex;

@@ -74,6 +74,14 @@ import {
   removeImagesPdfPanel,
 } from '../tools/documents/pdf_convertor/images_pdf/images_pdf.js';
 
+// ── DOCX conversion tools — all share one base, each file is a thin wrapper ──
+import { handleDocxPdfFilePicked,  removeDocxPdfPanel  } from '../tools/documents/docx_convertor/docx_pdf.js';
+import { handleDocxHtmlFilePicked, removeDocxHtmlPanel } from '../tools/documents/docx_convertor/docx_html.js';
+import { handleDocxTxtFilePicked,  removeDocxTxtPanel  } from '../tools/documents/docx_convertor/docx_txt.js';
+import { handleDocxOdtFilePicked,  removeDocxOdtPanel  } from '../tools/documents/docx_convertor/docx_odt.js';
+import { handleDocxEpubFilePicked, removeDocxEpubPanel } from '../tools/documents/docx_convertor/docx_epub.js';
+import { handleDocxMdFilePicked,   removeDocxMdPanel   } from '../tools/documents/docx_convertor/docx_md.js';
+
 // ── eBook conversion tools — all share one base, each file is a thin wrapper ──
 import { handleEbook_pdf_epub_FilePicked,  removeEbook_pdf_epub_Panel  } from '../tools/ebooks/pdf/pdf_epub.js';
 import { handleEbook_pdf_mobi_FilePicked,  removeEbook_pdf_mobi_Panel  } from '../tools/ebooks/pdf/pdf_mobi.js';
@@ -172,7 +180,6 @@ const ENDPOINT_MAP = {
   'pdf-html'   : { url: `${BACKEND}/api/convert/pdf-to-html`,   multi: false },
   'pdf-txt'    : { url: `${BACKEND}/api/convert/pdf-to-txt`,    multi: false },
   'pdf-images' : { url: `${BACKEND}/api/convert/pdf-to-images`, multi: false },
-  'docx-pdf'   : { url: `${BACKEND}/api/convert/docx-to-pdf`,   multi: false },
   'images-pdf' : { url: `${BACKEND}/api/convert/images-to-pdf`, multi: true  },
   'pdf-ppt'    : { url: `${BACKEND}/api/convert/pdf-to-ppt`,    multi: false },
 };
@@ -280,6 +287,9 @@ function _updateDropZone(tool) {
     removePdfPptPanel();
     removePdfImagesPanel();
     removeImagesPdfPanel();
+    // Clean up any active DOCX conversion panel
+    removeDocxPdfPanel(); removeDocxHtmlPanel(); removeDocxTxtPanel();
+    removeDocxOdtPanel(); removeDocxEpubPanel(); removeDocxMdPanel();
     // Clean up any active ebook panel
     Object.values(_EBOOK_TOOLS).forEach(({ r }) => r());
 
@@ -320,6 +330,9 @@ function _updateDropZone(tool) {
   removePdfPptPanel();       // hide previous PDF→PPT settings panel if tool changed
   removePdfImagesPanel();    // hide previous PDF→Images settings panel if tool changed
   removeImagesPdfPanel();    // hide previous Images→PDF queue panel if tool changed
+  // Clean up any active DOCX conversion panel when switching tools
+  removeDocxPdfPanel(); removeDocxHtmlPanel(); removeDocxTxtPanel();
+  removeDocxOdtPanel(); removeDocxEpubPanel(); removeDocxMdPanel();
   // Clean up any active ebook panel when switching tools
   Object.values(_EBOOK_TOOLS).forEach(({ r }) => r());
 
@@ -1037,6 +1050,14 @@ async function _submitFile(files) {
     handleImagesPdfFilesPicked(files);
     return;
   }
+
+  // DOCX conversion tools — dispatch by tool id
+  if (tool.id === 'docx-pdf')  { handleDocxPdfFilePicked(files[0]);  return; }
+  if (tool.id === 'docx-html') { handleDocxHtmlFilePicked(files[0]); return; }
+  if (tool.id === 'docx-txt')  { handleDocxTxtFilePicked(files[0]);  return; }
+  if (tool.id === 'docx-odt')  { handleDocxOdtFilePicked(files[0]);  return; }
+  if (tool.id === 'docx-epub') { handleDocxEpubFilePicked(files[0]); return; }
+  if (tool.id === 'docx-md')   { handleDocxMdFilePicked(files[0]);   return; }
 
   // eBook conversion tools — dispatch via lookup table
   if (_EBOOK_TOOLS[tool.id]) {

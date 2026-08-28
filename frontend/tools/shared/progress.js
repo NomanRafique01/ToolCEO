@@ -43,14 +43,14 @@ export function escHtml(str) {
 export function resetZoneContent(zone) {
   if (!zone) return;
   zone.querySelectorAll(
-    '.dz-progress-wrap, .dz-download-wrap, .dz-error-wrap, .dz-pdf-thumb-wrap, .dz-compress-thumb-wrap, .dz-encrypt-thumb-wrap, .dz-merge-thumb-strip, .dz-pdf-word-thumb-wrap, .dz-pdf-excel-thumb-wrap, .dz-pdf-html-thumb-wrap, .dz-pdf-txt-thumb-wrap, .dz-ebook-thumb-wrap'
+    '.dz-progress-wrap, .dz-download-wrap, .dz-error-wrap, .dz-pdf-thumb-wrap, .dz-compress-thumb-wrap, .dz-encrypt-thumb-wrap, .dz-merge-thumb-strip, .dz-pdf-word-thumb-wrap, .dz-pdf-excel-thumb-wrap, .dz-pdf-html-thumb-wrap, .dz-pdf-txt-thumb-wrap, .dz-ebook-thumb-wrap, .dz-docx-thumb-wrap'
   ).forEach((el) => el.remove());
   zone.classList.remove(
     'dz-state-processing', 'dz-state-done', 'dz-state-error',
     'dz-state-scanning',   'dz-has-thumb',  'dz-has-compress-thumb',
     'dz-has-encrypt-thumb', 'dz-has-merge-thumbs', 'dz-has-pdf-word-thumb',
     'dz-has-pdf-excel-thumb', 'dz-has-pdf-html-thumb', 'dz-has-pdf-txt-thumb',
-    'dz-has-ebook-thumb'
+    'dz-has-ebook-thumb', 'dz-has-docx-thumb'
   );
 }
 
@@ -201,15 +201,34 @@ export function showDownload(zone, filename, jobId, color, onReset) {
     });
   }
 
+  const _SAVE_BTN_INNER = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none"
+       style="display:inline;vertical-align:middle;margin-right:5px" aria-hidden="true">
+    <path d="M12 3v13M7 11l5 5 5-5" stroke="currentColor" stroke-width="2.2"
+          stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M5 20h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+  </svg>Save As…`;
+
   const btn = wrap.querySelector('.dz-save-btn');
   btn.addEventListener('click', async (e) => {
     e.stopPropagation();
     btn.disabled = true;
     btn.textContent = 'Saving…';
 
+    // Remove any previous inline error so the card looks clean on retry.
+    const prevErr = wrap.querySelector('.dz-save-inline-err');
+    if (prevErr) prevErr.remove();
+
     try {
       const res = await fetch(`${BACKEND}/api/download/${jobId}`);
-      if (!res.ok) throw new Error(`Download failed (${res.status})`);
+      if (!res.ok) {
+        // Read the server's error detail before throwing so we can show it.
+        let detail = `HTTP ${res.status}`;
+        try {
+          const body = await res.json();
+          detail = body.detail || body.error || detail;
+        } catch (_) { /* body wasn't JSON — use the status code */ }
+        throw new Error(detail);
+      }
 
       const blob      = await res.blob();
       const arrayBuf  = await blob.arrayBuffer();
@@ -230,12 +249,7 @@ export function showDownload(zone, filename, jobId, color, onReset) {
           resetAfterSave(zone, onReset);
         } else {
           btn.disabled = false;
-          btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-               style="display:inline;vertical-align:middle;margin-right:5px" aria-hidden="true">
-            <path d="M12 3v13M7 11l5 5 5-5" stroke="currentColor" stroke-width="2.2"
-                  stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M5 20h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
-          </svg>Save As…`;
+          btn.innerHTML = _SAVE_BTN_INNER;
         }
       } else {
         const url = URL.createObjectURL(blob);
@@ -248,9 +262,15 @@ export function showDownload(zone, filename, jobId, color, onReset) {
         resetAfterSave(zone, onReset);
       }
     } catch (err) {
+      // Restore the button so the user can retry without losing the card.
       btn.disabled = false;
-      btn.textContent = 'Save As…';
-      showError(zone, `Download failed: ${err.message}`);
+      btn.innerHTML = _SAVE_BTN_INNER;
+
+      // Show the error inline inside the card — don't nuke the whole card.
+      const errEl = document.createElement('div');
+      errEl.className = 'dz-save-inline-err';
+      errEl.textContent = `Save failed: ${err.message}`;
+      wrap.querySelector('.dz-save-card').appendChild(errEl);
     }
   });
 }
