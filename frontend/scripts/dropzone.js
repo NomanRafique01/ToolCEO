@@ -97,6 +97,15 @@ import { handleTxtEpubFilePicked, removeTxtEpubPanel } from '../tools/documents/
 import { handleTxtOdtFilePicked,  removeTxtOdtPanel  } from '../tools/documents/txt_convertor/txt_odt.js';
 import { handleTxtRtfFilePicked,  removeTxtRtfPanel  } from '../tools/documents/txt_convertor/txt_rtf.js';
 
+// ── ODT conversion tools — all share one base, each file is a thin wrapper ──
+import { handleOdtPdfFilePicked,  removeOdtPdfPanel  } from '../tools/documents/odt_convertor/odt_pdf.js';
+import { handleOdtDocxFilePicked, removeOdtDocxPanel } from '../tools/documents/odt_convertor/odt_docx.js';
+import { handleOdtHtmlFilePicked, removeOdtHtmlPanel } from '../tools/documents/odt_convertor/odt_html.js';
+import { handleOdtTxtFilePicked,  removeOdtTxtPanel  } from '../tools/documents/odt_convertor/odt_txt.js';
+import { handleOdtEpubFilePicked, removeOdtEpubPanel } from '../tools/documents/odt_convertor/odt_epub.js';
+import { handleOdtMdFilePicked,   removeOdtMdPanel   } from '../tools/documents/odt_convertor/odt_md.js';
+import { handleOdtRtfFilePicked,  removeOdtRtfPanel  } from '../tools/documents/odt_convertor/odt_rtf.js';
+
 // ── PPTX conversion tools — all share one base, each file is a thin wrapper ──
 import { handlePptxPdfFilePicked,    removePptxPdfPanel    } from '../tools/documents/pptx_convertor/pptx_pdf.js';
 import { handlePptxHtmlFilePicked,   removePptxHtmlPanel   } from '../tools/documents/pptx_convertor/pptx_html.js';
@@ -322,6 +331,9 @@ function _updateDropZone(tool) {
     // Clean up any active TXT conversion panel
     removeTxtPdfPanel(); removeTxtDocxPanel(); removeTxtHtmlPanel();
     removeTxtMdPanel(); removeTxtEpubPanel(); removeTxtOdtPanel(); removeTxtRtfPanel();
+    // Clean up any active ODT conversion panel
+    removeOdtPdfPanel(); removeOdtDocxPanel(); removeOdtHtmlPanel();
+    removeOdtTxtPanel(); removeOdtEpubPanel(); removeOdtMdPanel(); removeOdtRtfPanel();
     // Clean up any active ebook panel
     Object.values(_EBOOK_TOOLS).forEach(({ r }) => r());
 
@@ -374,6 +386,9 @@ function _updateDropZone(tool) {
   // Clean up any active TXT conversion panel when switching tools
   removeTxtPdfPanel(); removeTxtDocxPanel(); removeTxtHtmlPanel();
   removeTxtMdPanel(); removeTxtEpubPanel(); removeTxtOdtPanel(); removeTxtRtfPanel();
+  // Clean up any active ODT conversion panel when switching tools
+  removeOdtPdfPanel(); removeOdtDocxPanel(); removeOdtHtmlPanel();
+  removeOdtTxtPanel(); removeOdtEpubPanel(); removeOdtMdPanel(); removeOdtRtfPanel();
   // Clean up any active ebook panel when switching tools
   Object.values(_EBOOK_TOOLS).forEach(({ r }) => r());
 
@@ -1123,6 +1138,15 @@ async function _submitFile(files) {
   if (tool.id === 'txt-epub') { handleTxtEpubFilePicked(files[0]); return; }
   if (tool.id === 'txt-odt')  { handleTxtOdtFilePicked(files[0]);  return; }
   if (tool.id === 'txt-rtf')  { handleTxtRtfFilePicked(files[0]);  return; }
+
+  // ODT conversion tools — dispatch by tool id
+  if (tool.id === 'odt-pdf')  { handleOdtPdfFilePicked(files[0]);  return; }
+  if (tool.id === 'odt-docx') { handleOdtDocxFilePicked(files[0]); return; }
+  if (tool.id === 'odt-html') { handleOdtHtmlFilePicked(files[0]); return; }
+  if (tool.id === 'odt-txt')  { handleOdtTxtFilePicked(files[0]);  return; }
+  if (tool.id === 'odt-epub') { handleOdtEpubFilePicked(files[0]); return; }
+  if (tool.id === 'odt-md')   { handleOdtMdFilePicked(files[0]);   return; }
+  if (tool.id === 'odt-rtf')  { handleOdtRtfFilePicked(files[0]);  return; }
 
   // eBook conversion tools — dispatch via lookup table
   if (_EBOOK_TOOLS[tool.id]) {

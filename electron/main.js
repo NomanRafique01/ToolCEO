@@ -575,11 +575,13 @@ function waitForBackend(url, retries, delay, callback) {
 // ─── WINDOW CREATION ──────────────────────────────────────────────────────────
 
 function createWindow() {
+  const appIconPath = getBundledAssetPath(APP_ICON_PNG_RELATIVE);
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 750,
     minWidth: 1000,
     minHeight: 650,
+    icon: appIconPath,
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,

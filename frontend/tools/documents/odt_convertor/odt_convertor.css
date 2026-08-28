@@ -1,0 +1,100 @@
+/* ─────────────────────────────────────────────────────────────
+   tools/documents/odt_convertor/odt_convertor.css
+   Thumbnail styles for all ODT conversion tools.
+   CSS custom property --ot-color is set per-tool at runtime.
+   ───────────────────────────────────────────────────────────── */
+
+/* ─── CSS CUSTOM PROPERTY DEFAULTS ────────────────────────────────────────── */
+
+:root {
+  --ot-color: #2DD4BF;
+}
+
+/* ─── DROP ZONE: HAS-ODT-THUMB STATE ────────────────────────────────────────── */
+
+.drop-zone.dz-has-odt-thumb {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+.drop-zone.dz-has-odt-thumb .drop-icon,
+.drop-zone.dz-has-odt-thumb .drop-main-text,
+.drop-zone.dz-has-odt-thumb .drop-browse,
+.drop-zone.dz-has-odt-thumb .dz-paste-btn,
+.drop-zone.dz-has-odt-thumb .drop-private {
+  display: none !important;
+}
+
+/* ─── ODT THUMBNAIL (inside drop zone) ──────────────────────────────────── */
+
+.dz-odt-thumb-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  width: 100%;
+}
+
+.dz-odt-thumb-card {
+  position: relative;
+  display: inline-block;
+}
+
+.dz-odt-thumb-frame {
+  width: 90px;
+  height: 116px;
+  border-radius: 6px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #fff;
+}
+
+.dz-odt-thumb-icon {
+  width: 90px;
+  height: 116px;
+  display: block;
+}
+
+.dz-odt-thumb-remove {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--bg-surface);
+  border: 1.5px solid color-mix(in srgb, var(--ot-color, #2DD4BF) 50%, var(--border));
+  color: var(--ot-color, #2DD4BF);
+  font-size: 11px;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 130ms ease;
+}
+
+.dz-odt-thumb-remove:hover {
+  background: color-mix(in srgb, var(--ot-color, #2DD4BF) 15%, var(--bg-surface));
+}
+
+.dz-odt-thumb-name {
+  font-size: 12px;
+  color: var(--text-muted);
+  max-width: 200px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+}
+
+.dz-odt-thumb-size {
+  font-size: 11px;
+  color: color-mix(in srgb, var(--ot-color, #2DD4BF) 90%, transparent);
+  background: color-mix(in srgb, var(--ot-color, #2DD4BF) 10%, transparent);
+  border-radius: 10px;
+  padding: 1px 7px;
+  line-height: 1.5;
+}

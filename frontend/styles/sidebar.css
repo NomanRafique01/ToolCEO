@@ -8,26 +8,27 @@
 
 .sidebar-logo {
   flex-shrink: 0;
-  height: var(--topbar-height);
   display: flex;
+  flex-direction: row;
   align-items: center;
   gap: 12px;
   padding: 0 16px;
+  height: var(--topbar-height);
   border-bottom: 1px solid var(--border);
 }
 
 .logo-icon-wrap {
   flex-shrink: 0;
-  width: 53px;
-  height: 53px;
+  width: 56px;
+  height: 56px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .logo-icon {
-  width: 53px;
-  height: 53px;
+  width: 56px;
+  height: 56px;
   object-fit: contain;
   display: block;
 }
@@ -35,33 +36,32 @@
 .logo-text {
   display: flex;
   flex-direction: column;
-  gap: 3px;
+  align-items: flex-start;
+  gap: 4px;
 }
 
 .logo-name {
-  font-size: 16px;
-  font-weight: 700;
+  font-size: 15px;
+  font-weight: 800;
   color: var(--text-primary);
   line-height: 1;
-  letter-spacing: 0.01em;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
 }
 
-.logo-badge {
-  font-size: 9.5px;
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--accent);
-  line-height: 1;
-  opacity: 0.9;
-}
 
 /* ─── NAV SECTIONS & ITEMS ───────────────────────────────── */
 
 .sidebar-nav {
   flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
   padding-bottom: 16px;
 }
+
+.sidebar-nav::-webkit-scrollbar       { width: 4px; }
+.sidebar-nav::-webkit-scrollbar-track { background: transparent; }
+.sidebar-nav::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
 
 .nav-section { margin-top: 20px; }
 
