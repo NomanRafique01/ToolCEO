@@ -129,7 +129,8 @@
 .fmt-card--xlsx-entry::after,
 .fmt-card--pptx-entry::after,
 .fmt-card--txt-entry::after,
-.fmt-card--odt-entry::after {
+.fmt-card--odt-entry::after,
+.fmt-card--csv-entry::after {
   display: none !important;
 }
 

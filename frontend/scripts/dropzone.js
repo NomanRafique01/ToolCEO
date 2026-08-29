@@ -106,6 +106,16 @@ import { handleOdtEpubFilePicked, removeOdtEpubPanel } from '../tools/documents/
 import { handleOdtMdFilePicked,   removeOdtMdPanel   } from '../tools/documents/odt_convertor/odt_md.js';
 import { handleOdtRtfFilePicked,  removeOdtRtfPanel  } from '../tools/documents/odt_convertor/odt_rtf.js';
 
+// ── CSV conversion tools — all share one base, each file is a thin wrapper ──
+import { handleCsvJsonFilePicked, removeCsvJsonPanel } from '../tools/documents/csv_convertor/csv_json.js';
+import { handleCsvXlsxFilePicked, removeCsvXlsxPanel } from '../tools/documents/csv_convertor/csv_xlsx.js';
+import { handleCsvHtmlFilePicked, removeCsvHtmlPanel } from '../tools/documents/csv_convertor/csv_html.js';
+import { handleCsvMdFilePicked,   removeCsvMdPanel   } from '../tools/documents/csv_convertor/csv_md.js';
+import { handleCsvPdfFilePicked,  removeCsvPdfPanel  } from '../tools/documents/csv_convertor/csv_pdf.js';
+import { handleCsvTxtFilePicked,  removeCsvTxtPanel  } from '../tools/documents/csv_convertor/csv_txt.js';
+import { handleCsvXmlFilePicked,  removeCsvXmlPanel  } from '../tools/documents/csv_convertor/csv_xml.js';
+import { handleCsvSqlFilePicked,  removeCsvSqlPanel  } from '../tools/documents/csv_convertor/csv_sql.js';
+
 // ── PPTX conversion tools — all share one base, each file is a thin wrapper ──
 import { handlePptxPdfFilePicked,    removePptxPdfPanel    } from '../tools/documents/pptx_convertor/pptx_pdf.js';
 import { handlePptxHtmlFilePicked,   removePptxHtmlPanel   } from '../tools/documents/pptx_convertor/pptx_html.js';
@@ -334,6 +344,9 @@ function _updateDropZone(tool) {
     // Clean up any active ODT conversion panel
     removeOdtPdfPanel(); removeOdtDocxPanel(); removeOdtHtmlPanel();
     removeOdtTxtPanel(); removeOdtEpubPanel(); removeOdtMdPanel(); removeOdtRtfPanel();
+    // Clean up any active CSV conversion panel
+    removeCsvJsonPanel(); removeCsvXlsxPanel(); removeCsvHtmlPanel(); removeCsvMdPanel();
+    removeCsvPdfPanel(); removeCsvTxtPanel(); removeCsvXmlPanel(); removeCsvSqlPanel();
     // Clean up any active ebook panel
     Object.values(_EBOOK_TOOLS).forEach(({ r }) => r());
 
@@ -389,6 +402,9 @@ function _updateDropZone(tool) {
   // Clean up any active ODT conversion panel when switching tools
   removeOdtPdfPanel(); removeOdtDocxPanel(); removeOdtHtmlPanel();
   removeOdtTxtPanel(); removeOdtEpubPanel(); removeOdtMdPanel(); removeOdtRtfPanel();
+  // Clean up any active CSV conversion panel when switching tools
+  removeCsvJsonPanel(); removeCsvXlsxPanel(); removeCsvHtmlPanel(); removeCsvMdPanel();
+  removeCsvPdfPanel(); removeCsvTxtPanel(); removeCsvXmlPanel(); removeCsvSqlPanel();
   // Clean up any active ebook panel when switching tools
   Object.values(_EBOOK_TOOLS).forEach(({ r }) => r());
 
@@ -1147,6 +1163,16 @@ async function _submitFile(files) {
   if (tool.id === 'odt-epub') { handleOdtEpubFilePicked(files[0]); return; }
   if (tool.id === 'odt-md')   { handleOdtMdFilePicked(files[0]);   return; }
   if (tool.id === 'odt-rtf')  { handleOdtRtfFilePicked(files[0]);  return; }
+
+  // CSV conversion tools — dispatch by tool id
+  if (tool.id === 'csv-json') { handleCsvJsonFilePicked(files[0]); return; }
+  if (tool.id === 'csv-xlsx') { handleCsvXlsxFilePicked(files[0]); return; }
+  if (tool.id === 'csv-html') { handleCsvHtmlFilePicked(files[0]); return; }
+  if (tool.id === 'csv-md')   { handleCsvMdFilePicked(files[0]);   return; }
+  if (tool.id === 'csv-pdf')  { handleCsvPdfFilePicked(files[0]);  return; }
+  if (tool.id === 'csv-txt')  { handleCsvTxtFilePicked(files[0]);  return; }
+  if (tool.id === 'csv-xml')  { handleCsvXmlFilePicked(files[0]);  return; }
+  if (tool.id === 'csv-sql')  { handleCsvSqlFilePicked(files[0]);  return; }
 
   // eBook conversion tools — dispatch via lookup table
   if (_EBOOK_TOOLS[tool.id]) {

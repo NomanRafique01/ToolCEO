@@ -983,6 +983,144 @@ export function renderTxtTools(container, activateNav) {
 
 // ─── ODT TOOLS PANEL ─────────────────────────────────────────────────────────
 
+const CSV_CONVERSIONS = [
+  {
+    id: 'csv-json',
+    label: 'CSV to JSON',
+    desc: 'Convert CSV to JSON',
+    ext: '.json',
+    tag: 'Convert',
+    color: '#FBBF24',
+    bg: 'rgba(251,191,36,0.15)',
+    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+      <rect x="1" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M4 2l3 3H4V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      <path d="M7 9l2 1.5L7 12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="9" y="10" font-family="monospace" font-size="6.5" fill="currentColor">{}</text>
+    </svg>`,
+  },
+  {
+    id: 'csv-xlsx',
+    label: 'CSV to XLSX',
+    desc: 'Convert CSV to XLSX',
+    ext: '.xlsx',
+    tag: 'Convert',
+    color: '#34D399',
+    bg: 'rgba(52,211,153,0.15)',
+    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+      <rect x="1" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M4 2l3 3H4V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      <path d="M7 9l2 1.5L7 12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="9" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <line x1="10" y1="5" x2="14" y2="9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+      <line x1="14" y1="5" x2="10" y2="9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+    </svg>`,
+  },
+  {
+    id: 'csv-html',
+    label: 'CSV to HTML',
+    desc: 'Convert CSV to HTML',
+    ext: '.html',
+    tag: 'Convert',
+    color: '#FB923C',
+    bg: 'rgba(251,146,60,0.15)',
+    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+      <rect x="1" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M4 2l3 3H4V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      <path d="M7 9l2 1.5L7 12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M10 4l-1.5 2.5L10 9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M13 4l1.5 2.5L13 9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <line x1="11" y1="3.5" x2="12" y2="9.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+    </svg>`,
+  },
+  {
+    id: 'csv-md',
+    label: 'CSV to Markdown',
+    desc: 'Convert CSV to Markdown',
+    ext: '.md',
+    tag: 'Convert',
+    color: '#34D399',
+    bg: 'rgba(52,211,153,0.15)',
+    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+      <rect x="1" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M4 2l3 3H4V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      <path d="M7 9l2 1.5L7 12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <text x="9" y="10" font-family="monospace" font-size="7" fill="currentColor">#</text>
+      <line x1="12" y1="6" x2="15" y2="6" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+      <line x1="12" y1="8.5" x2="14" y2="8.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+    </svg>`,
+  },
+  {
+    id: 'csv-pdf',
+    label: 'CSV to PDF',
+    desc: 'Convert CSV to PDF',
+    ext: '.pdf',
+    tag: 'Convert',
+    color: '#FF6B6B',
+    bg: 'rgba(255,107,107,0.15)',
+    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+      <rect x="1" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M4 2l3 3H4V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      <path d="M7 9l2 1.5L7 12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <rect x="9" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M12 2l3 3h-3V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      <line x1="11" y1="7" x2="13" y2="7" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+      <line x1="11" y1="9" x2="13" y2="9" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+    </svg>`,
+  },
+  {
+    id: 'csv-txt',
+    label: 'CSV to TXT',
+    desc: 'Convert CSV to TXT',
+    ext: '.txt',
+    tag: 'Convert',
+    color: '#A78BFA',
+    bg: 'rgba(167,139,250,0.15)',
+    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+      <rect x="1" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M4 2l3 3H4V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      <path d="M7 9l2 1.5L7 12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <line x1="10" y1="5" x2="15" y2="5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+      <line x1="10" y1="7.5" x2="15" y2="7.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+      <line x1="10" y1="10" x2="13" y2="10" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+    </svg>`,
+  },
+  {
+    id: 'csv-xml',
+    label: 'CSV to XML',
+    desc: 'Convert CSV to XML',
+    ext: '.xml',
+    tag: 'Convert',
+    color: '#60A5FA',
+    bg: 'rgba(96,165,250,0.15)',
+    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+      <rect x="1" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M4 2l3 3H4V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      <path d="M7 9l2 1.5L7 12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M10 4l-1.2 2.5L10 9" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M14.5 4l1.2 2.5-1.2 2.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <line x1="11.5" y1="3.5" x2="13" y2="9.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+    </svg>`,
+  },
+  {
+    id: 'csv-sql',
+    label: 'CSV to SQL',
+    desc: 'Convert CSV to SQL INSERT statements',
+    ext: '.sql',
+    tag: 'Convert',
+    color: '#7C5CD8',
+    bg: 'rgba(124,92,216,0.15)',
+    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+      <rect x="1" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M4 2l3 3H4V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      <path d="M7 9l2 1.5L7 12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <ellipse cx="12" cy="4.5" rx="3" ry="1.5" stroke="currentColor" stroke-width="1.1"/>
+      <path d="M9 4.5v4c0 .83 1.34 1.5 3 1.5s3-.67 3-1.5v-4" stroke="currentColor" stroke-width="1.1"/>
+      <line x1="9" y1="6.5" x2="15" y2="6.5" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
+    </svg>`,
+  },
+];
+
 const ODT_CONVERSIONS = [
   {
     id: 'odt-pdf',
@@ -1106,6 +1244,67 @@ const ODT_CONVERSIONS = [
     </svg>`,
   },
 ];
+
+export function renderCsvTools(container, activateNav) {
+  setBreadcrumb(['Dashboard', 'Documents', 'CSV']);
+  container.innerHTML = `
+    <div class="explore-header">
+      <button class="fmt-back-btn" title="Back to Documents">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.6"
+            stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+      <div class="fmt-category-icon" style="background:rgba(132,204,22,0.15);color:#84CC16">
+        <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+          <rect x="2" y="1" width="10" height="13" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+          <line x1="4"  y1="6"  x2="4"  y2="12" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+          <line x1="7"  y1="6"  x2="7"  y2="12" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+          <line x1="10" y1="6"  x2="10" y2="12" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+          <line x1="4"  y1="8"  x2="10" y2="8"  stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+          <line x1="4"  y1="10" x2="10" y2="10" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <span class="explore-title">CSV — Conversions</span>
+    </div>
+
+    <div class="pdf-zone-label">
+      <svg width="14" height="14" viewBox="0 0 16 16" fill="none" class="pdf-zone-icon">
+        <path d="M3 8h10M10 5l3 3-3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      CSV Conversions
+    </div>
+    <div class="fmt-grid">
+      ${CSV_CONVERSIONS.map((t) => cardHTML(t)).join('')}
+    </div>
+  `;
+
+  // Back → Documents panel
+  container.querySelector('.fmt-back-btn').addEventListener('click', () => {
+    activateNav('Documents');
+  });
+
+  // Card selection highlight + tool-state update
+  container.querySelectorAll('.fmt-card').forEach((card) => {
+    card.addEventListener('click', () => {
+      container.querySelectorAll('.fmt-card').forEach((c) => c.classList.remove('selected'));
+      card.classList.add('selected');
+
+      const item = CSV_CONVERSIONS.find((t) => t.id === card.dataset.id);
+      if (item) {
+        const { mainText, subText } = _dropTextFor(item);
+        setActiveTool({
+          id: item.id, label: item.label, mainText, subText,
+          icon: item.icon, color: item.color, bg: item.bg,
+          tag: item.tag,
+        });
+        _scrollToDropZone();
+      }
+    });
+  });
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 
 export function renderOdtTools(container, activateNav) {
   setBreadcrumb(['Dashboard', 'Documents', 'ODT']);
@@ -1264,6 +1463,7 @@ const DOC_FORMATS = [
     ext: '.csv',
     color: '#84CC16',
     bg: 'rgba(132,204,22,0.15)',
+    isCsvEntry: true,
     icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
       <rect x="2" y="1" width="10" height="13" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
       <line x1="4"  y1="6"  x2="4"  y2="12" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
@@ -1408,6 +1608,7 @@ export function renderDocumentFormats(container, activateNav) {
         else if (f.isPptxEntry) extra = 'fmt-card--pptx-entry';
         else if (f.isTxtEntry)  extra = 'fmt-card--txt-entry';
         else if (f.isOdtEntry)  extra = 'fmt-card--odt-entry';
+        else if (f.isCsvEntry)  extra = 'fmt-card--csv-entry';
         return cardHTML(f, extra);
       }).join('')}
     </div>
@@ -1466,8 +1667,16 @@ export function renderDocumentFormats(container, activateNav) {
     });
   }
 
+  // CSV card → CSV conversions panel
+  const csvCard = container.querySelector('.fmt-card--csv-entry');
+  if (csvCard) {
+    csvCard.addEventListener('click', () => {
+      renderCsvTools(container, activateNav);
+    });
+  }
+
   // Other format card selection highlight + tool-state update
-  container.querySelectorAll('.fmt-card:not(.fmt-card--pdf-entry):not(.fmt-card--docx-entry):not(.fmt-card--xlsx-entry):not(.fmt-card--pptx-entry):not(.fmt-card--txt-entry):not(.fmt-card--odt-entry)').forEach((card) => {
+  container.querySelectorAll('.fmt-card:not(.fmt-card--pdf-entry):not(.fmt-card--docx-entry):not(.fmt-card--xlsx-entry):not(.fmt-card--pptx-entry):not(.fmt-card--txt-entry):not(.fmt-card--odt-entry):not(.fmt-card--csv-entry)').forEach((card) => {
     card.addEventListener('click', () => {
       container.querySelectorAll('.fmt-card').forEach((c) => c.classList.remove('selected'));
       card.classList.add('selected');
