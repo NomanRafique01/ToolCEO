@@ -15,6 +15,7 @@
 import { renderDocumentFormats } from './documents.js';
 import { renderEbookFormats }    from './ebooks.js';
 import { renderAudioFormats }    from './audio.js';
+import { renderImageFormats }    from './images.js';
 import { setActiveTool }         from './toolstate.js';
 
 // ── Category → renderer map ──────────────────────────────────────────────────
@@ -23,6 +24,7 @@ const CATEGORY_RENDERERS = {
   Documents : renderDocumentFormats,
   Audio     : renderAudioFormats,
   Ebooks    : renderEbookFormats,
+  Images    : renderImageFormats,
 };
 
 // The original "Explore Tools" grid HTML is captured once on first load so we

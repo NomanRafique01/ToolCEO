@@ -124,6 +124,44 @@ import { handlePptxOdpFilePicked,    removePptxOdpPanel    } from '../tools/docu
 import { handlePptxTxtFilePicked,    removePptxTxtPanel    } from '../tools/documents/pptx_convertor/pptx_txt.js';
 import { handlePptxRepairFilePicked, removePptxRepairPanel } from '../tools/documents/pptx_convertor/pptx_repair.js';
 
+// ── Images category — shared HD preview handler ──────────────────────────────
+import { isImageTool, handleImageFilePicked, removeImagePreview } from '../tools/images/image_preview.js';
+// ── Image Compressor — intercepts image_compressor before isImageTool fallback
+import { handleImageCompressorFilesPicked, removeImageCompressorPanel, initImageCompressorUI } from '../tools/images/image_compressor/image_compressor.js';
+
+// ── JPG conversion tools ──
+import { handleJpgPngFilePicked,  removeJpgPngPanel  } from '../tools/images/jpg_convertor/jpg_png.js';
+import { handleJpgWebpFilePicked, removeJpgWebpPanel } from '../tools/images/jpg_convertor/jpg_webp.js';
+import { handleJpgPdfFilePicked,  removeJpgPdfPanel  } from '../tools/images/jpg_convertor/jpg_pdf.js';
+import { handleJpgBmpFilePicked,  removeJpgBmpPanel  } from '../tools/images/jpg_convertor/jpg_bmp.js';
+import { handleJpgTiffFilePicked, removeJpgTiffPanel } from '../tools/images/jpg_convertor/jpg_tiff.js';
+import { handleJpgIcoFilePicked,  removeJpgIcoPanel  } from '../tools/images/jpg_convertor/jpg_ico.js';
+import { handleJpgTxtFilePicked,  removeJpgTxtPanel  } from '../tools/images/jpg_convertor/jpg_txt.js';
+
+// ── PNG conversion tools ──
+import { handlePngJpgFilePicked,  removePngJpgPanel  } from '../tools/images/png_convertor/png_jpg.js';
+import { handlePngWebpFilePicked, removePngWebpPanel } from '../tools/images/png_convertor/png_webp.js';
+import { handlePngPdfFilePicked,  removePngPdfPanel  } from '../tools/images/png_convertor/png_pdf.js';
+import { handlePngBmpFilePicked,  removePngBmpPanel  } from '../tools/images/png_convertor/png_bmp.js';
+import { handlePngTiffFilePicked, removePngTiffPanel } from '../tools/images/png_convertor/png_tiff.js';
+import { handlePngIcoFilePicked,  removePngIcoPanel  } from '../tools/images/png_convertor/png_ico.js';
+import { handlePngTxtFilePicked,  removePngTxtPanel  } from '../tools/images/png_convertor/png_txt.js';
+
+// ── WEBP conversion tools ──
+import { handleWebpJpgFilePicked,  removeWebpJpgPanel  } from '../tools/images/webp_convertor/webp_jpg.js';
+import { handleWebpPngFilePicked,  removeWebpPngPanel  } from '../tools/images/webp_convertor/webp_png.js';
+import { handleWebpPdfFilePicked,  removeWebpPdfPanel  } from '../tools/images/webp_convertor/webp_pdf.js';
+import { handleWebpBmpFilePicked,  removeWebpBmpPanel  } from '../tools/images/webp_convertor/webp_bmp.js';
+import { handleWebpTiffFilePicked, removeWebpTiffPanel } from '../tools/images/webp_convertor/webp_tiff.js';
+import { handleWebpIcoFilePicked,  removeWebpIcoPanel  } from '../tools/images/webp_convertor/webp_ico.js';
+import { handleWebpTxtFilePicked,  removeWebpTxtPanel  } from '../tools/images/webp_convertor/webp_txt.js';
+
+// ── SVG conversion tools ──
+import { handleSvgPngFilePicked,  removeSvgPngPanel  } from '../tools/images/svg_convertor/svg_png.js';
+import { handleSvgJpgFilePicked,  removeSvgJpgPanel  } from '../tools/images/svg_convertor/svg_jpg.js';
+import { handleSvgWebpFilePicked, removeSvgWebpPanel } from '../tools/images/svg_convertor/svg_webp.js';
+import { handleSvgPdfFilePicked,  removeSvgPdfPanel  } from '../tools/images/svg_convertor/svg_pdf.js';
+
 // ── eBook conversion tools — all share one base, each file is a thin wrapper ──
 import { handleEbook_pdf_epub_FilePicked,  removeEbook_pdf_epub_Panel  } from '../tools/ebooks/pdf/pdf_epub.js';
 import { handleEbook_pdf_mobi_FilePicked,  removeEbook_pdf_mobi_Panel  } from '../tools/ebooks/pdf/pdf_mobi.js';
@@ -349,6 +387,20 @@ function _updateDropZone(tool) {
     removeCsvPdfPanel(); removeCsvTxtPanel(); removeCsvXmlPanel(); removeCsvSqlPanel();
     // Clean up any active ebook panel
     Object.values(_EBOOK_TOOLS).forEach(({ r }) => r());
+    // Clean up any active image preview + compressor panel
+    removeImagePreview();
+    removeImageCompressorPanel();
+    // Clean up any active JPG conversion panel
+    removeJpgPngPanel(); removeJpgWebpPanel(); removeJpgPdfPanel(); removeJpgBmpPanel();
+    removeJpgTiffPanel(); removeJpgIcoPanel(); removeJpgTxtPanel();
+    // Clean up any active PNG conversion panel
+    removePngJpgPanel(); removePngWebpPanel(); removePngPdfPanel(); removePngBmpPanel();
+    removePngTiffPanel(); removePngIcoPanel(); removePngTxtPanel();
+    // Clean up any active WEBP conversion panel
+    removeWebpJpgPanel(); removeWebpPngPanel(); removeWebpPdfPanel(); removeWebpBmpPanel();
+    removeWebpTiffPanel(); removeWebpIcoPanel(); removeWebpTxtPanel();
+    // Clean up any active SVG conversion panel
+    removeSvgPngPanel(); removeSvgJpgPanel(); removeSvgWebpPanel(); removeSvgPdfPanel();
 
     const mainEl   = zone.querySelector('.drop-main-text');
     const subEl    = zone.querySelector('.drop-browse');
@@ -407,6 +459,20 @@ function _updateDropZone(tool) {
   removeCsvPdfPanel(); removeCsvTxtPanel(); removeCsvXmlPanel(); removeCsvSqlPanel();
   // Clean up any active ebook panel when switching tools
   Object.values(_EBOOK_TOOLS).forEach(({ r }) => r());
+  // Clean up any active image preview + compressor panel when switching tools
+  removeImagePreview();
+  removeImageCompressorPanel();
+  // Clean up any active JPG conversion panel when switching tools
+  removeJpgPngPanel(); removeJpgWebpPanel(); removeJpgPdfPanel(); removeJpgBmpPanel();
+  removeJpgTiffPanel(); removeJpgIcoPanel(); removeJpgTxtPanel();
+  // Clean up any active PNG conversion panel when switching tools
+  removePngJpgPanel(); removePngWebpPanel(); removePngPdfPanel(); removePngBmpPanel();
+  removePngTiffPanel(); removePngIcoPanel(); removePngTxtPanel();
+  // Clean up any active WEBP conversion panel when switching tools
+  removeWebpJpgPanel(); removeWebpPngPanel(); removeWebpPdfPanel(); removeWebpBmpPanel();
+  removeWebpTiffPanel(); removeWebpIcoPanel(); removeWebpTxtPanel();
+  // Clean up any active SVG conversion panel when switching tools
+  removeSvgPngPanel(); removeSvgJpgPanel(); removeSvgWebpPanel(); removeSvgPdfPanel();
 
   zone.style.setProperty('--dz-color', color);
   zone.style.setProperty('--dz-bg', bg);
@@ -433,6 +499,11 @@ function _updateDropZone(tool) {
   if (mainEl) mainEl.textContent = mainText;
   if (subEl)  subEl.textContent  = subText;
   if (privEl) privEl.textContent = 'Your files never leave your device.';
+
+  // Image Compressor — show panel with support text + level toggles
+  if (tool.id === 'image_compressor') {
+    initImageCompressorUI();
+  }
 
   // Check if there is an active background job for this tool.
   // If so, restore the normal progress ring (or download card) inside the drop zone!
@@ -733,6 +804,13 @@ function _buildRingWrap(color, pct, label, indeterminate) {
   wrap.style.setProperty('--dz-ring-color', color);
 
   wrap.innerHTML = `
+    <button class="dz-progress-cancel" type="button" title="Cancel" aria-label="Cancel conversion">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
     <svg class="dz-ring-svg" width="110" height="110" viewBox="0 0 110 110"
          xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <!-- glow inner circle -->
@@ -759,14 +837,30 @@ function _buildRingWrap(color, pct, label, indeterminate) {
 function _showProgress(zone, pct, color, label) {
   _resetZoneContent(zone);
   zone.classList.add('dz-state-processing');
-  zone.appendChild(_buildRingWrap(color, pct, label || 'Processing', false));
+  const wrap = _buildRingWrap(color, pct, label || 'Processing', false);
+  zone.appendChild(wrap);
+  _wireDzCancelBtn(wrap, zone);
 }
 
 /** Show an indeterminate scanning ring — spinning arc. */
 function _showScanProgress(zone, color) {
   _resetZoneContent(zone);
   zone.classList.add('dz-state-scanning');
-  zone.appendChild(_buildRingWrap(color, 0, 'Scanning', true));
+  const wrap = _buildRingWrap(color, 0, 'Scanning', true);
+  zone.appendChild(wrap);
+  _wireDzCancelBtn(wrap, zone);
+}
+
+/** Wire the cancel button inside a progress-wrap to abort the active job. */
+function _wireDzCancelBtn(wrap, zone) {
+  const btn = wrap.querySelector('.dz-progress-cancel');
+  if (!btn) return;
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    clearBgJob();
+    _resetZoneContent(zone);
+    document.dispatchEvent(new CustomEvent('progress-cancelled'));
+  });
 }
 
 /** Update just the ring fill + percentage text without rebuilding the overlay. */
@@ -804,6 +898,8 @@ function _resetAfterSave(zone) {
     removePdfExcelPanel();
     removePdfHtmlPanel();
     removePdfTxtPanel();
+    removeImagePreview();
+    removeImageCompressorPanel();
     const tool = getActiveTool();
     if (tool) _updateDropZone(tool);
   }, 1800);
@@ -1174,6 +1270,51 @@ async function _submitFile(files) {
   if (tool.id === 'csv-xml')  { handleCsvXmlFilePicked(files[0]);  return; }
   if (tool.id === 'csv-sql')  { handleCsvSqlFilePicked(files[0]);  return; }
 
+  // JPG conversion tools — pass ALL files (multi-select supported; base handles dedup)
+  if (tool.id === 'jpg-png')  { handleJpgPngFilePicked(files);  return; }
+  if (tool.id === 'jpg-webp') { handleJpgWebpFilePicked(files); return; }
+  if (tool.id === 'jpg-pdf')  { handleJpgPdfFilePicked(files);  return; }
+  if (tool.id === 'jpg-bmp')  { handleJpgBmpFilePicked(files);  return; }
+  if (tool.id === 'jpg-tiff') { handleJpgTiffFilePicked(files); return; }
+  if (tool.id === 'jpg-ico')  { handleJpgIcoFilePicked(files);  return; }
+  if (tool.id === 'jpg-txt')  { handleJpgTxtFilePicked(files);  return; }
+
+  // PNG conversion tools — dispatch by tool id
+  if (tool.id === 'png-jpg')  { handlePngJpgFilePicked(files);  return; }
+  if (tool.id === 'png-webp') { handlePngWebpFilePicked(files); return; }
+  if (tool.id === 'png-pdf')  { handlePngPdfFilePicked(files);  return; }
+  if (tool.id === 'png-bmp')  { handlePngBmpFilePicked(files);  return; }
+  if (tool.id === 'png-tiff') { handlePngTiffFilePicked(files); return; }
+  if (tool.id === 'png-ico')  { handlePngIcoFilePicked(files);  return; }
+  if (tool.id === 'png-txt')  { handlePngTxtFilePicked(files);  return; }
+
+  // WEBP conversion tools — dispatch by tool id
+  if (tool.id === 'webp-jpg')  { handleWebpJpgFilePicked(files);  return; }
+  if (tool.id === 'webp-png')  { handleWebpPngFilePicked(files);  return; }
+  if (tool.id === 'webp-pdf')  { handleWebpPdfFilePicked(files);  return; }
+  if (tool.id === 'webp-bmp')  { handleWebpBmpFilePicked(files);  return; }
+  if (tool.id === 'webp-tiff') { handleWebpTiffFilePicked(files); return; }
+  if (tool.id === 'webp-ico')  { handleWebpIcoFilePicked(files);  return; }
+  if (tool.id === 'webp-txt')  { handleWebpTxtFilePicked(files);  return; }
+
+  // SVG conversion tools — dispatch by tool id
+  if (tool.id === 'svg-png')  { handleSvgPngFilePicked(files);  return; }
+  if (tool.id === 'svg-jpg')  { handleSvgJpgFilePicked(files);  return; }
+  if (tool.id === 'svg-webp') { handleSvgWebpFilePicked(files); return; }
+  if (tool.id === 'svg-pdf')  { handleSvgPdfFilePicked(files);  return; }
+
+  // Image Compressor — dispatch before generic preview fallback
+  if (tool.id === 'image_compressor') {
+    handleImageCompressorFilesPicked(files);
+    return;
+  }
+
+  // Images category tools — dispatch to HD preview handler
+  if (isImageTool(tool.id)) {
+    handleImageFilePicked(files[0]);
+    return;
+  }
+
   // eBook conversion tools — dispatch via lookup table
   if (_EBOOK_TOOLS[tool.id]) {
     _EBOOK_TOOLS[tool.id].h(files[0]);
@@ -1419,6 +1560,12 @@ export function initDropZone() {
       removePdfExcelPanel();
       removePdfHtmlPanel();
       removePdfTxtPanel();
+      removeImagePreview();
+      removeImageCompressorPanel();
+      removeSvgPngPanel();
+      removeSvgJpgPanel();
+      removeSvgWebpPanel();
+      removeSvgPdfPanel();
       const tool = getActiveTool();
       if (tool) _updateDropZone(tool);
     }
@@ -1503,7 +1650,8 @@ export function initDropZone() {
       '.dz-merge-card-remove, .dz-merge-add-btn, .merge-queue-panel, .split-info-panel, ' +
       '.compress-settings-panel, .dz-compress-thumb-remove, .cmp-panel, ' +
       '.encrypt-settings-panel, .dz-encrypt-thumb-remove, .enc-panel, .extractor-info-panel, .dz-editor-thumb-remove, .dz-paste-btn, ' +
-      '.dz-pdf-word-thumb-wrap, .dz-pdf-excel-thumb-wrap, .dz-pdf-html-thumb-wrap, .dz-pdf-txt-thumb-wrap'
+      '.dz-pdf-word-thumb-wrap, .dz-pdf-excel-thumb-wrap, .dz-pdf-html-thumb-wrap, .dz-pdf-txt-thumb-wrap, ' +
+      '.imgcmp-panel, .dz-imgcmp-add-btn, .dz-imgcmp-card-remove'
     )) return;
     if (!getActiveTool()) { showNoToolWarning(); return; }
     // If already processing, scanning, done, or a file thumbnail is currently loaded, do not open file window
@@ -1526,18 +1674,71 @@ export function initDropZone() {
     }
     // For merge tool with existing queue, a zone click adds more files
     const tool = getActiveTool();
+    // PNG/WEBP tools with an existing queue: clicking zone opens the picker to add more
+    if (
+      (tool && tool.id.startsWith('png-') && dropZone.classList.contains('dz-has-png-thumbs')) ||
+      (tool && tool.id.startsWith('webp-') && dropZone.classList.contains('dz-has-webp-thumbs'))
+    ) {
+      const accept = tool.id.startsWith('png-') ? 'image/png,.png' : 'image/webp,.webp';
+      fileInput.multiple = true;
+      fileInput.accept   = accept;
+      fileInput.click();
+      return;
+    }
+    // Image Compressor with existing queue: clicking zone opens picker to add more
+    if (tool && tool.id === 'image_compressor' && dropZone.classList.contains('dz-has-imgcmp-thumbs')) {
+      fileInput.multiple = true;
+      fileInput.accept   = 'image/*,.jpg,.jpeg,.png,.webp,.avif,.gif,.bmp,.dib,.tiff,.tif,.ico,.heic,.heif,.svg';
+      fileInput.click();
+      return;
+    }
     if (tool && tool.id === 'merge') {
       fileInput.multiple = true;
       fileInput.accept   = '.pdf,application/pdf';
     } else if (tool && tool.id === 'images-pdf') {
       fileInput.multiple = true;
       fileInput.accept   = 'image/*';
+    } else if (tool && tool.id.startsWith('jpg-')) {
+      // JPG tools support multi-select from the OS picker
+      fileInput.multiple = true;
+      fileInput.accept   = 'image/jpeg,.jpg,.jpeg';
+    } else if (tool && tool.id.startsWith('png-')) {
+      // PNG tools support multi-select from the OS picker
+      fileInput.multiple = true;
+      fileInput.accept   = 'image/png,.png';
+    } else if (tool && tool.id.startsWith('webp-')) {
+      // WEBP tools support multi-select from the OS picker
+      fileInput.multiple = true;
+      fileInput.accept   = 'image/webp,.webp';
     } else if (tool && tool.id === 'encrypt') {
       fileInput.multiple = false;
       fileInput.accept   = '.pdf,.tceo,application/pdf,application/octet-stream';
+    } else if (tool && tool.id === 'image_compressor') {
+      fileInput.multiple = true;
+      fileInput.accept   = 'image/*,.jpg,.jpeg,.png,.webp,.avif,.gif,.bmp,.dib,.tiff,.tif,.ico,.heic,.heif,.svg';
+    } else if (tool) {
+      // ── Per-format image accept filters ──────────────────────────────────────
+      const _IMG_ACCEPT = {
+        // Top-level image category entry tools
+        'jpg'            : 'image/jpeg,.jpg,.jpeg',
+        'png'            : 'image/png,.png',
+        'webp'           : 'image/webp,.webp',
+        'gif'            : 'image/gif,.gif',
+        'bmp'            : 'image/bmp,.bmp',
+        'tiff'           : 'image/tiff,.tiff,.tif',
+        'svg'            : 'image/svg+xml,.svg',
+      };
+      const imgAccept = _IMG_ACCEPT[tool.id];
+      if (imgAccept) {
+        fileInput.multiple = false;
+        fileInput.accept   = imgAccept;
+      } else {
+        fileInput.multiple = false;
+        fileInput.accept   = PDF_TOOL_IDS.has(tool.id) ? '.pdf,application/pdf' : '*/*';
+      }
     } else {
       fileInput.multiple = false;
-      fileInput.accept   = PDF_TOOL_IDS.has(tool.id) ? '.pdf,application/pdf' : '*/*';
+      fileInput.accept   = '*/*';
     }
     fileInput.click();
   });
@@ -1568,6 +1769,14 @@ export function initDropZone() {
     if (!getActiveTool()) { showNoToolWarning(); return; }
     if (dropZone.classList.contains('dz-state-processing')) return;
     if (dropZone.classList.contains('dz-state-scanning'))   return;
+    // For JPG/PNG/WEBP tools with a queue already shown, let additional drops add to the queue
+    if (dropZone.classList.contains('dz-has-jpg-thumbs') ||
+        dropZone.classList.contains('dz-has-png-thumbs') ||
+        dropZone.classList.contains('dz-has-webp-thumbs') ||
+        dropZone.classList.contains('dz-has-imgcmp-thumbs')) {
+      if (e.dataTransfer.files.length > 0) _submitFile(e.dataTransfer.files);
+      return;
+    }
     if (
       dropZone.classList.contains('dz-has-thumb') ||
       dropZone.classList.contains('dz-has-compress-thumb') ||

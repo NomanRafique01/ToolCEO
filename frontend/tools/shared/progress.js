@@ -43,7 +43,7 @@ export function escHtml(str) {
 export function resetZoneContent(zone) {
   if (!zone) return;
   zone.querySelectorAll(
-    '.dz-progress-wrap, .dz-download-wrap, .dz-error-wrap, .dz-pdf-thumb-wrap, .dz-compress-thumb-wrap, .dz-encrypt-thumb-wrap, .dz-merge-thumb-strip, .dz-pdf-word-thumb-wrap, .dz-pdf-excel-thumb-wrap, .dz-pdf-html-thumb-wrap, .dz-pdf-txt-thumb-wrap, .dz-ebook-thumb-wrap, .dz-docx-thumb-wrap, .dz-pptx-thumb-wrap, .dz-xlsx-thumb-wrap, .dz-txt-thumb-wrap, .dz-odt-thumb-wrap, .dz-csv-thumb-wrap'
+    '.dz-progress-wrap, .dz-download-wrap, .dz-error-wrap, .dz-pdf-thumb-wrap, .dz-compress-thumb-wrap, .dz-encrypt-thumb-wrap, .dz-merge-thumb-strip, .dz-pdf-word-thumb-wrap, .dz-pdf-excel-thumb-wrap, .dz-pdf-html-thumb-wrap, .dz-pdf-txt-thumb-wrap, .dz-ebook-thumb-wrap, .dz-docx-thumb-wrap, .dz-pptx-thumb-wrap, .dz-xlsx-thumb-wrap, .dz-txt-thumb-wrap, .dz-odt-thumb-wrap, .dz-csv-thumb-wrap, .dz-img-preview-wrap, .dz-jpg-thumb-strip, .dz-png-thumb-strip, .dz-webp-thumb-strip, .dz-svg-thumb-strip'
   ).forEach((el) => el.remove());
   zone.classList.remove(
     'dz-state-processing', 'dz-state-done', 'dz-state-error',
@@ -51,7 +51,8 @@ export function resetZoneContent(zone) {
     'dz-has-encrypt-thumb', 'dz-has-merge-thumbs', 'dz-has-pdf-word-thumb',
     'dz-has-pdf-excel-thumb', 'dz-has-pdf-html-thumb', 'dz-has-pdf-txt-thumb',
     'dz-has-ebook-thumb', 'dz-has-docx-thumb', 'dz-has-pptx-thumb', 'dz-has-xlsx-thumb',
-    'dz-has-txt-thumb', 'dz-has-odt-thumb', 'dz-has-csv-thumb'
+    'dz-has-txt-thumb', 'dz-has-odt-thumb', 'dz-has-csv-thumb', 'dz-has-img-preview',
+    'dz-has-jpg-thumbs', 'dz-has-png-thumbs', 'dz-has-webp-thumbs', 'dz-has-svg-thumbs'
   );
 }
 
@@ -69,6 +70,13 @@ export function buildRingWrap(color, pct, label, indeterminate) {
   wrap.style.setProperty('--dz-ring-color', color);
 
   wrap.innerHTML = `
+    <button class="dz-progress-cancel" type="button" title="Cancel" aria-label="Cancel conversion">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+           stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
     <svg class="dz-ring-svg" width="110" height="110" viewBox="0 0 110 110"
          xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
       <circle class="dz-ring-glow" cx="55" cy="55" r="28"/>
@@ -92,14 +100,31 @@ export function buildRingWrap(color, pct, label, indeterminate) {
 export function showProgress(zone, pct, color, label) {
   resetZoneContent(zone);
   zone.classList.add('dz-state-processing');
-  zone.appendChild(buildRingWrap(color, pct, label || 'Processing', false));
+  const wrap = buildRingWrap(color, pct, label || 'Processing', false);
+  zone.appendChild(wrap);
+  _wireCancelBtn(wrap, zone);
 }
 
 /** Show an indeterminate scanning ring — spinning arc. */
 export function showScanProgress(zone, color) {
   resetZoneContent(zone);
   zone.classList.add('dz-state-scanning');
-  zone.appendChild(buildRingWrap(color, 0, 'Scanning', true));
+  const wrap = buildRingWrap(color, 0, 'Scanning', true);
+  zone.appendChild(wrap);
+  _wireCancelBtn(wrap, zone);
+}
+
+/** Wire the cancel button inside a progress-wrap to abort the active job. */
+function _wireCancelBtn(wrap, zone) {
+  const btn = wrap.querySelector('.dz-progress-cancel');
+  if (!btn) return;
+  btn.addEventListener('click', (e) => {
+    e.stopPropagation();
+    clearBgJob();            // closes SSE + hides bg-job bar
+    resetZoneContent(zone);  // remove ring overlay
+    // Let individual tool modules react (e.g. re-show idle state)
+    document.dispatchEvent(new CustomEvent('progress-cancelled'));
+  });
 }
 
 /** Update just the ring fill + percentage text without rebuilding the overlay. */
@@ -413,4 +438,3 @@ export function showDownloadBlobCard(zone, blob, filename, color, onReset) {
     }
   });
 }
-

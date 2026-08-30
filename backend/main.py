@@ -35,6 +35,16 @@ from tools.documents.txt_convertor.router import router as txt_convertor_router
 from tools.documents.odt_convertor.router import router as odt_convertor_router
 # CSV conversion tools — single router (8 targets: json, xlsx, html, md, pdf, txt, xml, sql)
 from tools.documents.csv_convertor.router import router as csv_convertor_router
+# Image Compressor — 7 formats: jpg, png, webp, gif, bmp, tiff, svg
+from tools.images.image_compressor.router import router as image_compressor_router
+# JPG Convertor — 8 targets: png, webp, pdf, bmp, tiff, ico, gif, txt
+from tools.images.jpg_convertor.router import router as jpg_convertor_router
+# PNG Convertor — 7 targets: jpg, webp, pdf, bmp, tiff, ico, txt
+from tools.images.png_convertor.router import router as png_convertor_router
+# WEBP Convertor — 7 targets: jpg, png, pdf, bmp, tiff, ico, txt
+from tools.images.webp_convertor.router import router as webp_convertor_router
+# SVG Convertor — 4 targets: png, jpg, webp, pdf
+from tools.images.svg_convertor.router import router as svg_convertor_router
 
 app = FastAPI(title="ToolCEO Backend")
 
@@ -105,5 +115,15 @@ app.include_router(txt_convertor_router, prefix="/api")
 app.include_router(odt_convertor_router, prefix="/api")
 # CSV converter — owns /api/csv/{target}/convert
 app.include_router(csv_convertor_router, prefix="/api")
+# Image Compressor — owns /api/images/compress/{fmt}
+app.include_router(image_compressor_router, prefix="/api")
+# JPG Convertor — owns /api/jpg/to-{target}/convert
+app.include_router(jpg_convertor_router, prefix="/api")
+# PNG Convertor — owns /api/png/to-{target}/convert
+app.include_router(png_convertor_router, prefix="/api")
+# WEBP Convertor — owns /api/webp/to-{target}/convert
+app.include_router(webp_convertor_router, prefix="/api")
+# SVG Convertor — owns /api/svg/to-{target}/convert
+app.include_router(svg_convertor_router, prefix="/api")
 
 

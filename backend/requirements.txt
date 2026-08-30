@@ -3,6 +3,7 @@ uvicorn
 PyMuPDF
 pytesseract
 Pillow
+pillow-heif
 python-multipart
 fonttools
 pikepdf
@@ -15,3 +16,5 @@ openpyxl
 beautifulsoup4
 lxml
 python-pptx
+scour
+cairosvg

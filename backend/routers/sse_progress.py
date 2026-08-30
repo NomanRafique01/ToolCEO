@@ -36,6 +36,11 @@ async def stream_progress(job_id: str):
             if job.state == "done":
                 payload["filename"]   = job.filename
                 payload["media_type"] = job.media_type
+                # Optional compression stats (set by image_compressor router)
+                for _stat in ("original_size", "compressed_size", "saved_percent"):
+                    val = getattr(job, _stat, None)
+                    if val is not None:
+                        payload[_stat] = val
             if job.state == "error":
                 payload["error"] = job.error or "Unknown error"
 
@@ -71,11 +76,22 @@ def download_result(job_id: str):
 
 def _do_download(job_id: str):
     job = get_job(job_id)
+    # If the job exists but is still running, wait up to 10 s for it to finish.
+    # This closes the race between the SSE "done" event and the download request
+    # arriving at the server before set_done() has been called.
+    if job is not None and job.state != "done" and job.state != "error":
+        import time as _time
+        for _ in range(40):          # 40 × 0.25 s = 10 s max
+            _time.sleep(0.25)
+            job = get_job(job_id)
+            if job is None or job.state in ("done", "error"):
+                break
+
     if job is None or job.state != "done" or job.result is None:
         raise HTTPException(status_code=404, detail="Job not ready or not found.")
     filename = (job.filename or "download").strip()
     if "." not in filename.rsplit("/", 1)[-1].rsplit("\\", 1)[-1]:
-        filename += ".zip" if job.media_type == "application/zip" else ".pdf"
+        filename += ".zip" if job.media_type == "application/zip" else ".bin"
     media_type = job.media_type or "application/pdf"
 
     # Build a safe Content-Disposition header.

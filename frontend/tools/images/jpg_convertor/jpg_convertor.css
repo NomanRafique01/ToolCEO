@@ -1,0 +1,361 @@
+/* ─────────────────────────────────────────────────────────────────────────────
+   tools/images/jpg_convertor/jpg_convertor.css
+   Multi-image queue strip + panel for all JPG conversion tools.
+   CSS token: --jpg-color  (set per-tool at runtime)
+   ───────────────────────────────────────────────────────────────────────────── */
+
+:root {
+  --jpg-color: #FF6B6B;
+}
+
+/* ─── DROP ZONE: HAS-JPG-THUMBS STATE ───────────────────────────────────────── */
+
+.drop-zone.dz-has-jpg-thumbs,
+.drop-zone.dz-has-png-thumbs,
+.drop-zone.dz-has-webp-thumbs,
+.drop-zone.dz-has-svg-thumbs {
+  padding-top: 12px;
+  padding-bottom: 12px;
+  height: auto;
+  min-height: 178px;
+  max-height: none;
+  overflow: visible;
+}
+
+.drop-zone.dz-has-jpg-thumbs .drop-icon,
+.drop-zone.dz-has-jpg-thumbs .drop-main-text,
+.drop-zone.dz-has-jpg-thumbs .drop-browse,
+.drop-zone.dz-has-jpg-thumbs .dz-paste-btn,
+.drop-zone.dz-has-jpg-thumbs .drop-private,
+.drop-zone.dz-has-png-thumbs .drop-icon,
+.drop-zone.dz-has-png-thumbs .drop-main-text,
+.drop-zone.dz-has-png-thumbs .drop-browse,
+.drop-zone.dz-has-png-thumbs .dz-paste-btn,
+.drop-zone.dz-has-png-thumbs .drop-private,
+.drop-zone.dz-has-webp-thumbs .drop-icon,
+.drop-zone.dz-has-webp-thumbs .drop-main-text,
+.drop-zone.dz-has-webp-thumbs .drop-browse,
+.drop-zone.dz-has-webp-thumbs .dz-paste-btn,
+.drop-zone.dz-has-webp-thumbs .drop-private,
+.drop-zone.dz-has-svg-thumbs .drop-icon,
+.drop-zone.dz-has-svg-thumbs .drop-main-text,
+.drop-zone.dz-has-svg-thumbs .drop-browse,
+.drop-zone.dz-has-svg-thumbs .dz-paste-btn,
+.drop-zone.dz-has-svg-thumbs .drop-private {
+  display: none !important;
+}
+
+/* ─── THUMBNAIL STRIP ───────────────────────────────────────────────────────── */
+
+.dz-jpg-thumb-strip {
+  display: flex;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 14px 10px;
+  width: 100%;
+  padding: 10px 8px 6px;
+  box-sizing: border-box;
+  overflow: visible;
+}
+
+/* ─── INDIVIDUAL CARD ───────────────────────────────────────────────────────── */
+
+.dz-jpg-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  flex-shrink: 0;
+  width: 96px;
+  user-select: none;
+}
+
+/* ── Thumbnail frame (square) ── */
+
+.dz-jpg-thumb-frame {
+  width: 90px;
+  height: 90px;
+  border-radius: 6px;
+  overflow: hidden;
+  display: block;
+  background: #1c2128;
+  border: 2px solid var(--jpg-color, #FF6B6B);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.35);
+  flex-shrink: 0;
+  transition: box-shadow 130ms ease;
+}
+
+.dz-jpg-card:hover .dz-jpg-thumb-frame {
+  box-shadow: 0 4px 18px color-mix(in srgb, var(--jpg-color, #FF6B6B) 55%, transparent);
+}
+
+.dz-jpg-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  display: block;
+  border-radius: 4px;
+  pointer-events: none;
+}
+
+/* ── Filename label ── */
+
+.dz-jpg-card-name {
+  font-size: 10px;
+  color: var(--text-muted, #8b949e);
+  max-width: 94px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  text-align: center;
+  line-height: 1.3;
+}
+
+/* ── Remove (×) button ── */
+
+.dz-jpg-card-remove {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--bg-surface, #1c2128);
+  border: 1.5px solid color-mix(in srgb, var(--jpg-color, #FF6B6B) 55%, var(--border));
+  color: var(--jpg-color, #FF6B6B);
+  font-size: 10px;
+  font-weight: 700;
+  line-height: 1;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 120ms ease;
+  z-index: 3;
+  padding: 0;
+}
+
+.dz-jpg-card-remove:hover {
+  background: color-mix(in srgb, var(--jpg-color, #FF6B6B) 20%, var(--bg-surface, #1c2128));
+}
+
+/* ─── ADD IMAGE BUTTON ──────────────────────────────────────────────────────── */
+
+.dz-jpg-add-btn {
+  flex-shrink: 0;
+  width: 90px;
+  height: 90px;
+  border-radius: 6px;
+  border: 2px dashed color-mix(in srgb, var(--jpg-color, #FF6B6B) 45%, transparent);
+  background: color-mix(in srgb, var(--jpg-color, #FF6B6B) 6%, transparent);
+  color: color-mix(in srgb, var(--jpg-color, #FF6B6B) 80%, transparent);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  font-size: 10px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: border-color 130ms ease, background 130ms ease, color 130ms ease;
+  align-self: flex-start;
+}
+
+.dz-jpg-add-btn:hover {
+  border-color: var(--jpg-color, #FF6B6B);
+  background: color-mix(in srgb, var(--jpg-color, #FF6B6B) 12%, transparent);
+  color: var(--jpg-color, #FF6B6B);
+}
+
+/* ─── QUEUE PANEL (below hero-card) ─────────────────────────────────────────── */
+
+.jpg-queue-panel {
+  margin-top: 14px;
+  background: var(--bg-surface);
+  border: 1px solid color-mix(in srgb, var(--jpg-color, #FF6B6B) 28%, var(--border));
+  border-radius: 12px;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 220ms ease, transform 220ms ease;
+}
+
+.jpg-queue-panel--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* ── Header row ── */
+
+.jpg-queue-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.jpg-queue-badge {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text-muted);
+  flex: 1;
+  min-width: 0;
+}
+
+.jpg-queue-badge-text strong {
+  color: var(--text-primary);
+}
+
+.jpg-queue-clear-btn {
+  background: none;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 4px 10px;
+  font-size: 12px;
+  color: var(--text-muted);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 120ms ease, color 120ms ease;
+}
+
+.jpg-queue-clear-btn:hover {
+  border-color: #F87171;
+  color: #F87171;
+}
+
+/* ── BMP size warning ── */
+
+.jpg-bmp-warning {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 12px;
+  color: #8FAAA6;
+  line-height: 1.45;
+  padding: 2px 0 4px;
+}
+
+/* ── ICO info row ── */
+
+.jpg-ico-info {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--text-muted, #8b949e);
+  line-height: 1.5;
+  padding: 2px 0 4px;
+  flex-wrap: wrap;
+}
+
+.jpg-ico-sizes {
+  font-weight: 600;
+  color: var(--jpg-color, #F59E0B);
+  white-space: nowrap;
+}
+
+/* ── PDF mode toggle row ── */
+
+.jpg-pdf-mode-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 2px 0 4px;
+}
+
+.jpg-pdf-mode-label {
+  font-size: 12px;
+  color: var(--text-muted, #8b949e);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.jpg-pdf-mode-toggle {
+  display: flex;
+  gap: 6px;
+}
+
+.jpg-pdf-mode-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--bg-card, #161b22);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 7px;
+  padding: 5px 11px;
+  font-size: 12px;
+  color: var(--text-muted, #8b949e);
+  cursor: pointer;
+  transition: border-color 130ms ease, color 130ms ease, background 130ms ease;
+  white-space: nowrap;
+}
+
+.jpg-pdf-mode-btn:hover {
+  border-color: color-mix(in srgb, var(--jpg-color, #FF6B6B) 55%, transparent);
+  color: var(--text-primary, #e6edf3);
+}
+
+.jpg-pdf-mode-btn--active {
+  border-color: var(--jpg-color, #FF6B6B);
+  background: color-mix(in srgb, var(--jpg-color, #FF6B6B) 12%, var(--bg-card, #161b22));
+  color: var(--jpg-color, #FF6B6B);
+}
+
+/* ── Actions row ── */
+
+.jpg-queue-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.jpg-queue-filename {
+  flex: 1;
+  min-width: 120px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  padding: 6px 10px;
+  font-size: 13px;
+  color: var(--text-primary);
+  outline: none;
+  transition: border-color 130ms ease;
+}
+
+.jpg-queue-filename:focus {
+  border-color: var(--jpg-color, #FF6B6B);
+}
+
+.jpg-queue-ext {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-left: -4px;
+  white-space: nowrap;
+}
+
+.jpg-queue-convert-btn {
+  background: var(--jpg-color, #FF6B6B);
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 7px 18px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: filter 150ms ease;
+}
+
+.jpg-queue-convert-btn:hover {
+  filter: brightness(1.12);
+}
