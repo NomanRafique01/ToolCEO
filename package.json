@@ -3,10 +3,60 @@
   "version": "1.0.0",
   "main": "electron/main.js",
   "scripts": {
-    "start": "electron ."
+    "start": "electron .",
+    "build": "electron-builder --win --x64"
+  },
+  "build": {
+    "appId": "com.nythris.toolceo",
+    "productName": "ToolCEO",
+    "win": {
+      "target": "nsis",
+      "icon": "assets/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico",
+      "installerHeaderIcon": "assets/icon.ico",
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "ToolCEO"
+    },
+    "extraResources": [
+      {
+        "from": "engines/",
+        "to": "engines/",
+        "filter": [
+          "**/*",
+          "!libreoffice/**",
+          "!calibre/**",
+          "!tesseract/**",
+          "!pandoc/**",
+          "!ffmpeg/**",
+          "!7zip/**",
+          "!ocr/**",
+          "!document/**",
+          "!*.zip"
+        ]
+      },
+      {
+        "from": "modules.json",
+        "to": "../modules.json"
+      }
+    ],
+    "files": [
+      "frontend/**/*",
+      "electron/**/*",
+      "assets/**/*",
+      "resources/**/*",
+      "package.json"
+    ]
   },
   "devDependencies": {
+    "adm-zip": "^0.6.0",
     "electron": "latest",
+    "electron-builder": "^26.0.0",
     "jimp": "^1.6.1"
   }
 }

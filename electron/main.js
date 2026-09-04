@@ -17,10 +17,12 @@
 
 'use strict';
 
-const { app, BrowserWindow, ipcMain, dialog, nativeImage } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, nativeImage, net, Notification } = require('electron');
 const path      = require('path');
 const fs        = require('fs');
 const os        = require('os');
+const https     = require('https');
+const AdmZip    = require('adm-zip');
 const { spawn, execFile, execFileSync } = require('child_process');
 
 // ─── CONSTANTS ─────────────────────────────────────────────────────────────────
@@ -550,18 +552,57 @@ async function registerFileAssociation() {
 // ─── BACKEND ──────────────────────────────────────────────────────────────────
 
 function startBackend() {
-  const backendDir = path.join(__dirname, '..', 'backend');
-  const pythonCmd  = IS_WIN ? 'python.exe' : 'python3';
-
-  backendProcess = spawn(
-    pythonCmd,
-    ['-m', 'uvicorn', 'main:app', '--host', '127.0.0.1', '--port', '8000'],
-    { cwd: backendDir, stdio: 'ignore' }
+  const backendExePath = path.join(
+    process.resourcesPath,
+    'engines', 'python', 'main_backend.exe'
   );
 
+  if (app.isPackaged && fs.existsSync(backendExePath)) {
+    console.log('[backend] Launching packaged backend from:', backendExePath);
+    backendProcess = spawn(backendExePath, [], {
+      detached: false,
+      stdio: 'ignore',
+      windowsHide: true,
+    });
+  } else {
+    // Development mode
+    const venvPython = path.join(__dirname, '..', 'backend', 'venv', 'Scripts', 'python.exe');
+    const pythonCmd = fs.existsSync(venvPython)
+      ? venvPython
+      : (IS_WIN ? 'python.exe' : 'python3');
+    const backendDir = path.join(__dirname, '..', 'backend');
+
+    console.log('[backend] Launching dev backend with:', pythonCmd);
+    backendProcess = spawn(
+      pythonCmd,
+      ['-m', 'uvicorn', 'main:app', '--host', '127.0.0.1', '--port', '8000'],
+      { cwd: backendDir, stdio: 'ignore', windowsHide: true }
+    );
+  }
+
   backendProcess.on('error', (err) => {
-    console.error('Failed to start backend:', err.message);
+    console.error('[backend] Backend failed to start:', err.message);
   });
+
+  backendProcess.on('exit', (code) => {
+    console.log('[backend] Backend exited with code:', code);
+  });
+}
+
+function stopBackend() {
+  if (backendProcess && !backendProcess.killed) {
+    try {
+      if (IS_WIN && backendProcess.pid) {
+        execFileSync('taskkill', ['/pid', String(backendProcess.pid), '/f', '/t'], {
+          stdio: 'ignore',
+          windowsHide: true,
+        });
+      } else {
+        backendProcess.kill('SIGTERM');
+      }
+    } catch (_) {}
+    backendProcess = null;
+  }
 }
 
 function waitForBackend(url, retries, delay, callback) {
@@ -604,6 +645,73 @@ function createWindow() {
   });
 
   mainWindow.on('closed', () => { mainWindow = null; });
+}
+
+// ─── MODULE DOWNLOAD STATE ────────────────────────────────────────────────────
+
+/**
+ * Active download state. Only one download at a time.
+ * Shape:
+ *  { moduleId, downloadUrl, tempPath, req, received, total,
+ *    paused, pausedAt, speedSamples, reconnectTimer }
+ */
+let _activeDownload = null;
+
+/** Returns the engines root directory: dev → project root/engines, packaged → resources/../engines */
+function _getEnginesDir() {
+  if (app.isPackaged) {
+    return path.join(process.resourcesPath, '..', 'engines');
+  }
+  return path.join(__dirname, '..', 'engines');
+}
+
+/** Send a native OS notification (no-op if Notification not supported). */
+function _notify(title, body) {
+  try {
+    if (Notification.isSupported()) {
+      new Notification({ title, body }).show();
+    }
+  } catch (_) { /* ignore */ }
+}
+
+/**
+ * Update speed samples and compute bytes-per-second over a rolling 2-second window.
+ * Returns { speedBps, etaSeconds }.
+ */
+function _calcSpeed(samples, received, total) {
+  const now = Date.now();
+  samples.push({ time: now, bytes: received });
+  // Keep only last 2 seconds
+  const cutoff = now - 2000;
+  while (samples.length > 1 && samples[0].time < cutoff) samples.shift();
+
+  let speedBps = 0;
+  if (samples.length >= 2) {
+    const oldest  = samples[0];
+    const newest  = samples[samples.length - 1];
+    const dt      = (newest.time - oldest.time) / 1000;
+    const db      = newest.bytes - oldest.bytes;
+    speedBps      = dt > 0 ? db / dt : 0;
+  }
+
+  const remaining   = total > 0 ? total - received : 0;
+  const etaSeconds  = speedBps > 0 && remaining > 0 ? Math.ceil(remaining / speedBps) : 0;
+  return { speedBps, etaSeconds };
+}
+
+/** Follow HTTP redirects and resolve to the final response. */
+function _httpsGetFollow(url, headers, redirectsLeft = 5) {
+  return new Promise((resolve, reject) => {
+    const req = https.get(url, { headers }, (res) => {
+      if ([301, 302, 303, 307, 308].includes(res.statusCode) && res.headers.location && redirectsLeft > 0) {
+        res.resume();
+        resolve(_httpsGetFollow(res.headers.location, headers, redirectsLeft - 1));
+        return;
+      }
+      resolve({ res, req });
+    });
+    req.on('error', reject);
+  });
 }
 
 // ─── APP READY ────────────────────────────────────────────────────────────────
@@ -740,6 +848,315 @@ app.whenReady().then(async () => {
     }
   });
 
+  // ── IPC: Read modules.json — returns flat { office: 'not_installed', ... } ─
+  ipcMain.handle('read-modules-json', () => {
+    const modulesPath = app.isPackaged
+      ? path.join(process.resourcesPath, '..', 'modules.json')
+      : path.join(__dirname, '..', 'modules.json');
+    try {
+      const raw  = fs.readFileSync(modulesPath, 'utf8');
+      const data = JSON.parse(raw);
+      return Object.fromEntries(
+        Object.entries(data.modules).map(([k, v]) => [k, v.status])
+      );
+    } catch (_) {
+      return {};
+    }
+  });
+
+  // ── IPC: Write a single module's status back to modules.json ──────────────
+  ipcMain.handle('write-modules-json', (_event, moduleId, status) => {
+    const modulesPath = app.isPackaged
+      ? path.join(process.resourcesPath, '..', 'modules.json')
+      : path.join(__dirname, '..', 'modules.json');
+    try {
+      const raw  = fs.readFileSync(modulesPath, 'utf8');
+      const data = JSON.parse(raw);
+      if (data.modules[moduleId]) {
+        data.modules[moduleId].status = status;
+      }
+      fs.writeFileSync(modulesPath, JSON.stringify(data, null, 2), 'utf8');
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
+  });
+
+  // ── IPC: Start module download ─────────────────────────────────────────────
+  ipcMain.handle('start-module-download', async (_event, { moduleId, downloadUrl }) => {
+    // One download at a time
+    if (_activeDownload) {
+      return { ok: false, reason: 'busy' };
+    }
+
+    // Online check
+    if (!net.isOnline()) {
+      _notify('No internet connection', 'Please check your network and try again.');
+      return { ok: false, reason: 'offline' };
+    }
+
+    const tempPath = path.join(app.getPath('temp'), `${moduleId}-${Date.now()}.zip`);
+
+    _activeDownload = {
+      moduleId,
+      downloadUrl,
+      tempPath,
+      req: null,
+      received: 0,
+      total: 0,
+      paused: false,
+      pausedAt: 0,
+      speedSamples: [],
+      reconnectTimer: null,
+    };
+
+    // Throttle IPC progress events to ~150ms intervals
+    let _lastProgressSend = 0;
+
+    const sendProgress = (payload) => {
+      const now = Date.now();
+      if (now - _lastProgressSend >= 150) {
+        _lastProgressSend = now;
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('module-download-progress', payload);
+        }
+      }
+    };
+
+    try {
+      const { res, req } = await _httpsGetFollow(downloadUrl, { 'User-Agent': 'ToolCEO/1.0' });
+      _activeDownload.req = req;
+      _activeDownload.total = parseInt(res.headers['content-length'] || '0', 10);
+
+      const writeStream = fs.createWriteStream(tempPath);
+
+      await new Promise((resolve, reject) => {
+        res.on('data', (chunk) => {
+          if (!_activeDownload) { res.destroy(); writeStream.close(); return; }
+          _activeDownload.received += chunk.length;
+          writeStream.write(chunk);
+
+          const { speedBps, etaSeconds } = _calcSpeed(
+            _activeDownload.speedSamples,
+            _activeDownload.received,
+            _activeDownload.total
+          );
+          const percent = _activeDownload.total > 0
+            ? Math.round((_activeDownload.received / _activeDownload.total) * 100)
+            : 0;
+
+          sendProgress({
+            moduleId,
+            receivedBytes: _activeDownload.received,
+            totalBytes:    _activeDownload.total,
+            speedBps,
+            etaSeconds,
+            percent,
+          });
+        });
+
+        res.on('end', () => { writeStream.end(); resolve(); });
+        res.on('error', (err) => { writeStream.destroy(); reject(err); });
+        req.on('error', (err) => { writeStream.destroy(); reject(err); });
+      });
+
+    } catch (err) {
+      // Network error mid-download
+      if (_activeDownload) {
+        _activeDownload.paused = true;
+        _activeDownload.pausedAt = _activeDownload.received;
+        _notify('Connection lost', 'Download paused. Check your connection.');
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('module-download-error', { moduleId, reason: 'connection-lost', received: _activeDownload.received });
+        }
+        // Start reconnect polling
+        _activeDownload.reconnectTimer = setInterval(() => {
+          if (!_activeDownload || !_activeDownload.paused) {
+            clearInterval(_activeDownload && _activeDownload.reconnectTimer);
+            return;
+          }
+          if (net.isOnline()) {
+            clearInterval(_activeDownload.reconnectTimer);
+            _activeDownload.reconnectTimer = null;
+            // Auto-resume
+            if (mainWindow && !mainWindow.isDestroyed()) {
+              mainWindow.webContents.send('module-download-error', { moduleId, reason: 'connection-restored' });
+            }
+          }
+        }, 5000);
+      }
+      return { ok: false, reason: 'network-error', error: err.message };
+    }
+
+    // Check still active (could have been cancelled)
+    if (!_activeDownload) return { ok: false, reason: 'cancelled' };
+
+    // Extract ZIP to engines/<moduleId>/
+    try {
+      const enginesDir = _getEnginesDir();
+      const destDir    = path.join(enginesDir, moduleId);
+      fs.mkdirSync(destDir, { recursive: true });
+
+      const zip = new AdmZip(tempPath);
+      zip.extractAllTo(destDir, true /* overwrite */);
+    } catch (err) {
+      _activeDownload = null;
+      return { ok: false, reason: 'extraction-failed', error: err.message };
+    }
+
+    // Delete temp zip
+    try { fs.unlinkSync(tempPath); } catch (_) { /* ignore */ }
+
+    // Write installed status
+    const modulesPath = app.isPackaged
+      ? path.join(process.resourcesPath, '..', 'modules.json')
+      : path.join(__dirname, '..', 'modules.json');
+    try {
+      const raw  = fs.readFileSync(modulesPath, 'utf8');
+      const data = JSON.parse(raw);
+      if (data.modules[moduleId]) data.modules[moduleId].status = 'installed';
+      fs.writeFileSync(modulesPath, JSON.stringify(data, null, 2), 'utf8');
+    } catch (_) { /* non-fatal */ }
+
+    const modName = moduleId.charAt(0).toUpperCase() + moduleId.slice(1) + ' Module';
+    _notify(modName + ' installed', `${modName} downloaded and installed successfully.`);
+
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('module-download-complete', { moduleId });
+    }
+
+    _activeDownload = null;
+    return { ok: true };
+  });
+
+  // ── IPC: Cancel module download ────────────────────────────────────────────
+  ipcMain.handle('cancel-module-download', () => {
+    if (!_activeDownload) return { ok: false };
+    const { req, tempPath, reconnectTimer } = _activeDownload;
+    if (reconnectTimer) clearInterval(reconnectTimer);
+    if (req) { try { req.destroy(); } catch (_) {} }
+    try { if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath); } catch (_) {}
+    _activeDownload = null;
+    return { ok: true };
+  });
+
+  // ── IPC: Resume module download (after connection-lost) ───────────────────
+  ipcMain.handle('resume-module-download', async () => {
+    if (!_activeDownload || !_activeDownload.paused) return { ok: false, reason: 'not-paused' };
+
+    if (!net.isOnline()) return { ok: false, reason: 'offline' };
+
+    const { moduleId, downloadUrl, tempPath, pausedAt } = _activeDownload;
+    _activeDownload.paused = false;
+    _activeDownload.received = pausedAt;
+    _activeDownload.speedSamples = [];
+
+    _notify('Connection restored', 'Resuming download…');
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('module-download-error', { moduleId, reason: 'resuming' });
+    }
+
+    let _lastProgressSend = 0;
+    const sendProgress = (payload) => {
+      const now = Date.now();
+      if (now - _lastProgressSend >= 150) {
+        _lastProgressSend = now;
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('module-download-progress', payload);
+        }
+      }
+    };
+
+    try {
+      const resumeHeaders = {
+        'User-Agent': 'ToolCEO/1.0',
+        'Range': `bytes=${pausedAt}-`,
+      };
+      const { res, req } = await _httpsGetFollow(downloadUrl, resumeHeaders);
+      _activeDownload.req = req;
+      // If server returns 200 (doesn't support range), total is full size; if 206, add to offset
+      if (res.statusCode === 200) {
+        _activeDownload.received = 0;
+        _activeDownload.total = parseInt(res.headers['content-length'] || '0', 10);
+      } else {
+        _activeDownload.total = pausedAt + parseInt(res.headers['content-length'] || '0', 10);
+      }
+
+      // Append mode if 206, overwrite if 200
+      const writeFlag = res.statusCode === 206 ? 'a' : 'w';
+      const writeStream = fs.createWriteStream(tempPath, { flags: writeFlag });
+
+      await new Promise((resolve, reject) => {
+        res.on('data', (chunk) => {
+          if (!_activeDownload) { res.destroy(); writeStream.close(); return; }
+          _activeDownload.received += chunk.length;
+          writeStream.write(chunk);
+
+          const { speedBps, etaSeconds } = _calcSpeed(
+            _activeDownload.speedSamples,
+            _activeDownload.received,
+            _activeDownload.total
+          );
+          const percent = _activeDownload.total > 0
+            ? Math.round((_activeDownload.received / _activeDownload.total) * 100)
+            : 0;
+
+          sendProgress({ moduleId, receivedBytes: _activeDownload.received, totalBytes: _activeDownload.total, speedBps, etaSeconds, percent });
+        });
+
+        res.on('end', () => { writeStream.end(); resolve(); });
+        res.on('error', reject);
+        req.on('error', reject);
+      });
+
+    } catch (err) {
+      if (_activeDownload) {
+        _activeDownload.paused = true;
+        _activeDownload.pausedAt = _activeDownload.received;
+        _notify('Connection lost', 'Download paused again. Check your connection.');
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('module-download-error', { moduleId, reason: 'connection-lost', received: _activeDownload.received });
+        }
+      }
+      return { ok: false, reason: 'network-error' };
+    }
+
+    if (!_activeDownload) return { ok: false, reason: 'cancelled' };
+
+    // Extract + install (same as start handler)
+    try {
+      const enginesDir = _getEnginesDir();
+      const destDir    = path.join(enginesDir, moduleId);
+      fs.mkdirSync(destDir, { recursive: true });
+      const zip = new AdmZip(tempPath);
+      zip.extractAllTo(destDir, true);
+    } catch (err) {
+      _activeDownload = null;
+      return { ok: false, reason: 'extraction-failed', error: err.message };
+    }
+
+    try { fs.unlinkSync(tempPath); } catch (_) {}
+
+    const modulesPath = app.isPackaged
+      ? path.join(process.resourcesPath, '..', 'modules.json')
+      : path.join(__dirname, '..', 'modules.json');
+    try {
+      const raw  = fs.readFileSync(modulesPath, 'utf8');
+      const data = JSON.parse(raw);
+      if (data.modules[moduleId]) data.modules[moduleId].status = 'installed';
+      fs.writeFileSync(modulesPath, JSON.stringify(data, null, 2), 'utf8');
+    } catch (_) {}
+
+    const modName = moduleId.charAt(0).toUpperCase() + moduleId.slice(1) + ' Module';
+    _notify(modName + ' installed', `${modName} downloaded and installed successfully.`);
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('module-download-complete', { moduleId });
+    }
+
+    _activeDownload = null;
+    return { ok: true };
+  });
+
   // ── Generate icons + register file association (all platforms) ────────────
   await ensureVaultIcons();
   registerFileAssociation();   // fire-and-forget — non-blocking for window open
@@ -757,13 +1174,15 @@ app.whenReady().then(async () => {
 
 // ─── CLEANUP ──────────────────────────────────────────────────────────────────
 
+// Stop backend on every possible close event
 app.on('window-all-closed', () => {
-  if (!IS_MAC) app.quit();
+  stopBackend();
+  if (process.platform !== 'darwin') app.quit();
 });
+app.on('before-quit', () => stopBackend());
+app.on('will-quit', () => stopBackend());
 
-app.on('will-quit', () => {
-  if (backendProcess) {
-    backendProcess.kill();
-    backendProcess = null;
-  }
-});
+// Handle force close and crash
+process.on('exit', () => stopBackend());
+process.on('SIGINT', () => { stopBackend(); process.exit(0); });
+process.on('SIGTERM', () => { stopBackend(); process.exit(0); });

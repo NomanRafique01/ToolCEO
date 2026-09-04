@@ -36,3 +36,32 @@ contextBridge.exposeInMainWorld('toolceo', {
     return () => ipcRenderer.removeListener('vault-file-open', handler);
   },
 });
+
+// ─── Module management API ────────────────────────────────────────────────────
+contextBridge.exposeInMainWorld('electronAPI', {
+  // Status read/write
+  readModulesJson:  ()                    => ipcRenderer.invoke('read-modules-json'),
+  writeModulesJson: (moduleId, status)    => ipcRenderer.invoke('write-modules-json', moduleId, status),
+
+  // Download lifecycle
+  startModuleDownload:  ({ moduleId, downloadUrl }) => ipcRenderer.invoke('start-module-download', { moduleId, downloadUrl }),
+  cancelModuleDownload: ()                           => ipcRenderer.invoke('cancel-module-download'),
+  resumeModuleDownload: ()                           => ipcRenderer.invoke('resume-module-download'),
+
+  // Progress / status events (renderer subscribes to these)
+  onModuleDownloadProgress: (cb) => {
+    const handler = (_e, payload) => cb(payload);
+    ipcRenderer.on('module-download-progress', handler);
+    return () => ipcRenderer.removeListener('module-download-progress', handler);
+  },
+  onModuleDownloadComplete: (cb) => {
+    const handler = (_e, payload) => cb(payload);
+    ipcRenderer.on('module-download-complete', handler);
+    return () => ipcRenderer.removeListener('module-download-complete', handler);
+  },
+  onModuleDownloadError: (cb) => {
+    const handler = (_e, payload) => cb(payload);
+    ipcRenderer.on('module-download-error', handler);
+    return () => ipcRenderer.removeListener('module-download-error', handler);
+  },
+});

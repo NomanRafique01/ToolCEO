@@ -11,6 +11,15 @@
 
 import { setBreadcrumb }          from './navigation.js';
 import { setActiveTool }          from './toolstate.js';
+import { getLockedModuleId } from './modulelock.js';
+
+// ─── MODULE-LOCK NAVIGATION HOOK ──────────────────────────────────────────────
+let _navigateToModule = null;
+export function setNavigateToModule(fn) { _navigateToModule = fn; }
+
+function _handleLockedClick(moduleId, toolLabel) {
+  if (_navigateToModule) _navigateToModule(moduleId, toolLabel);
+}
 
 // ─── THEME MAP ────────────────────────────────────────────────────────────────
 // One entry per supported ebook format.  color/bg are the CSS custom-property
@@ -799,9 +808,13 @@ const CONVERSIONS = {
 
 /** Shared card HTML builder — same pattern used in documents.js */
 function cardHTML(item, extraClass = '') {
+  const lockedMod  = getLockedModuleId(item.id);
+  const locked     = lockedMod !== null;
+  const lockClass  = locked ? ' fmt-card--locked' : '';
+  const lockedAttr = locked ? ` data-locked-module="${lockedMod}"` : '';
   const bottom = `<div class="fmt-tag fmt-tag--convert">${item.tag}</div>`;
   return `
-    <div class="fmt-card${extraClass ? ' ' + extraClass : ''}" data-id="${item.id}"
+    <div class="fmt-card${extraClass ? ' ' + extraClass : ''}${lockClass}" data-id="${item.id}"${lockedAttr}
          style="--fmt-color:${item.color};--fmt-bg:${item.bg}">
       <div class="fmt-card-top">
         <div class="fmt-icon-box">${item.icon}</div>
@@ -815,8 +828,13 @@ function cardHTML(item, extraClass = '') {
 
 /** Format picker card (top-level, no tag bottom) */
 function formatCardHTML(item) {
+  // The ebook format entry cards (EPUB, MOBI, etc.) are drill-down entry points.
+  // They are locked when eBook Module is not installed.
+  const ebookLocked = getLockedModuleId('ebook-epub') !== null;
+  const lockClass   = ebookLocked ? ' fmt-card--locked' : '';
+  const lockedAttr  = ebookLocked ? ' data-locked-module="ebook"' : '';
   return `
-    <div class="fmt-card fmt-card--ebook-fmt" data-fmt="${item.fmt}" data-id="${item.id}"
+    <div class="fmt-card fmt-card--ebook-fmt${lockClass}" data-fmt="${item.fmt}" data-id="${item.id}"${lockedAttr}
          style="--fmt-color:${item.color};--fmt-bg:${item.bg}">
       <div class="fmt-card-top">
         <div class="fmt-icon-box">${item.icon}</div>
@@ -878,6 +896,10 @@ function renderEbookConversions(container, activateNav, fmtKey) {
   // Card click → set active tool
   container.querySelectorAll('.fmt-card').forEach((card) => {
     card.addEventListener('click', () => {
+      if (card.classList.contains('fmt-card--locked')) {
+        _handleLockedClick(card.dataset.lockedModule, card.querySelector('.fmt-label')?.textContent || '');
+        return;
+      }
       container.querySelectorAll('.fmt-card').forEach((c) => c.classList.remove('selected'));
       card.classList.add('selected');
 
@@ -943,9 +965,13 @@ export function renderEbookFormats(container, activateNav, backTo = 'Dashboard')
     activateNav(backTo);
   });
 
-  // Format card → drill into conversions sub-panel
+  // Format card → drill into conversions sub-panel (or redirect to Modules if locked)
   container.querySelectorAll('.fmt-card--ebook-fmt').forEach((card) => {
     card.addEventListener('click', () => {
+      if (card.classList.contains('fmt-card--locked')) {
+        _handleLockedClick('ebook', card.querySelector('.fmt-label')?.textContent || '');
+        return;
+      }
       renderEbookConversions(container, activateNav, card.dataset.fmt);
     });
   });

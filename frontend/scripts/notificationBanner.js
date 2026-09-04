@@ -181,10 +181,10 @@ function _render(banner, notifications) {
   const pillsHtml = notifications.map((n) => {
     const m = TYPE_META[n.type] || TYPE_META.info;
     const isProgress = n.type === 'progress';
-    const isAutoDismiss = !isProgress; // All non-progress pills auto-dismiss after 4s
+    const isAutoDismiss = n.autoDismiss === true;
 
     return `
-      <span class="nb-pill ${isProgress ? 'nb-pill--progress' : ''}" style="--pill-color:${m.color}" data-id="${_escHtml(n.id)}">
+      <span class="nb-pill ${isProgress ? 'nb-pill--progress' : ''}" style="--pill-color:${m.color}" data-id="${_escHtml(n.id)}" data-auto-dismiss="${isAutoDismiss ? 'true' : 'false'}">
         <span class="nb-pill-icon" style="color:${m.color}">${m.icon}</span>
         <span class="nb-pill-msg">${_escHtml(n.message)}</span>
         ${!isProgress ? `<span class="nb-pill-time">${relTime(n.timestamp)}</span>` : ''}
@@ -248,8 +248,8 @@ function _render(banner, notifications) {
     });
   });
 
-  // Auto-dismiss all non-progress pills after 4 seconds with smooth slide-out
-  banner.querySelectorAll('.nb-pill:not(.nb-pill--progress)').forEach((pill) => {
+  // Auto-dismiss only notifications that explicitly ask for it.
+  banner.querySelectorAll('.nb-pill[data-auto-dismiss="true"]').forEach((pill) => {
     const id = pill.dataset.id;
     setTimeout(() => {
       // Check pill still exists in DOM before dismissing
@@ -259,7 +259,7 @@ function _render(banner, notifications) {
           dismissOne(id);
         }, { once: true });
       }
-    }, 4000);
+    }, 6000);
   });
 }
 

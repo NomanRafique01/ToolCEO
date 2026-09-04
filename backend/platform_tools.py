@@ -96,7 +96,41 @@ def find_ghostscript() -> str | None:
     return shutil.which("gs")
 
 
+def get_engine_path(engine_name: str) -> str | None:
+    """
+    Resolve external engine path relative to application root or frozen PyInstaller bundle.
+    """
+    engine_norm = engine_name.replace("/", os.sep).replace("\\", os.sep)
+    if getattr(sys, "frozen", False):
+        # Running as PyInstaller bundle (e.g. inside resources/engines/python/main_backend.exe)
+        exe_dir = os.path.dirname(sys.executable)
+        candidates = [
+            os.path.join(exe_dir, "..", engine_norm),
+            os.path.join(exe_dir, engine_norm),
+            os.path.join(exe_dir, "..", "engines", engine_norm),
+        ]
+        if hasattr(sys, "_MEIPASS"):
+            candidates.append(os.path.join(sys._MEIPASS, "engines", engine_norm))
+            candidates.append(os.path.join(sys._MEIPASS, engine_norm))
+    else:
+        # Running in development from repo root or backend dir
+        base = os.path.dirname(os.path.abspath(__file__))
+        candidates = [
+            os.path.join(base, "..", "engines", engine_norm),
+            os.path.join(base, "engines", engine_norm),
+        ]
+
+    for candidate in candidates:
+        norm = os.path.abspath(candidate)
+        if os.path.exists(norm):
+            return norm
+    return None
+
+
 def find_libreoffice() -> str | None:
+    bundled = get_engine_path("libreoffice/program/soffice.exe") or get_engine_path("libreoffice/soffice.exe")
+    if bundled:
+        return bundled
     if IS_WIN:
         found = _first_existing(
             [
@@ -123,6 +157,9 @@ def find_libreoffice() -> str | None:
 
 
 def find_pandoc() -> str | None:
+    bundled = get_engine_path("pandoc/pandoc.exe") or get_engine_path("pandoc/pandoc")
+    if bundled:
+        return bundled
     if IS_WIN:
         found = _first_existing(
             [
@@ -136,7 +173,17 @@ def find_pandoc() -> str | None:
     return shutil.which("pandoc")
 
 
+def find_ffmpeg() -> str | None:
+    bundled = get_engine_path("ffmpeg/ffmpeg.exe") or get_engine_path("ffmpeg/bin/ffmpeg.exe") or get_engine_path("ffmpeg/ffmpeg")
+    if bundled:
+        return bundled
+    return shutil.which("ffmpeg")
+
+
 def find_tesseract() -> str | None:
+    bundled = get_engine_path("tesseract/tesseract.exe") or get_engine_path("tesseract/tesseract")
+    if bundled:
+        return bundled
     if IS_WIN:
         found = _first_existing(
             [
@@ -152,3 +199,48 @@ def find_tesseract() -> str | None:
     if IS_MAC:
         return _first_existing(["/opt/homebrew/bin/tesseract", "/usr/local/bin/tesseract"]) or shutil.which("tesseract")
     return shutil.which("tesseract")
+
+
+def find_calibre() -> str | None:
+    bundled = (
+        get_engine_path("calibre/ebook-convert.exe")
+        or get_engine_path("calibre/app/bin/ebook-convert.exe")
+        or get_engine_path("calibre/ebook-convert")
+    )
+    if bundled:
+        return bundled
+    if IS_WIN:
+        found = _first_existing(
+            [
+                Path(os.environ.get("PROGRAMFILES", r"C:\Program Files"))
+                / "Calibre2"
+                / "ebook-convert.exe",
+            ]
+        )
+        return found or shutil.which("ebook-convert")
+    return shutil.which("ebook-convert")
+
+
+def find_7zip() -> str | None:
+    bundled = get_engine_path("7zip/7z.exe") or get_engine_path("7zip/7z")
+    if bundled:
+        return bundled
+    if IS_WIN:
+        found = _first_existing(
+            [
+                Path(os.environ.get("PROGRAMFILES", r"C:\Program Files"))
+                / "7-Zip"
+                / "7z.exe",
+            ]
+        )
+        return found or shutil.which("7z")
+    return shutil.which("7z")
+
+
+LIBREOFFICE_PATH = find_libreoffice()
+PANDOC_PATH = find_pandoc()
+FFMPEG_PATH = find_ffmpeg()
+TESSERACT_PATH = find_tesseract()
+CALIBRE_PATH = find_calibre()
+SEVENZIP_PATH = find_7zip()
+

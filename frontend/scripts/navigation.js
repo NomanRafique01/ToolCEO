@@ -12,11 +12,13 @@
  * inner content changes.
  */
 
-import { renderDocumentFormats } from './documents.js';
-import { renderEbookFormats }    from './ebooks.js';
-import { renderAudioFormats }    from './audio.js';
-import { renderImageFormats }    from './images.js';
+import { renderDocumentFormats, setNavigateToModule as setDocNav } from './documents.js';
+import { renderEbookFormats,    setNavigateToModule as setEbookNav } from './ebooks.js';
+import { renderAudioFormats,    setNavigateToModule as setAudioNav } from './audio.js';
+import { renderImageFormats,    setNavigateToModule as setImgNav } from './images.js';
+import { renderModules, setPendingLockContext } from './modules.js';
 import { setActiveTool }         from './toolstate.js';
+import { loadModuleStatuses }    from './modulelock.js';
 
 // ── Category → renderer map ──────────────────────────────────────────────────
 // Add future categories here.  Value is a function(container) that fills it.
@@ -25,6 +27,7 @@ const CATEGORY_RENDERERS = {
   Audio     : renderAudioFormats,
   Ebooks    : renderEbookFormats,
   Images    : renderImageFormats,
+  Modules   : renderModules,
 };
 
 // The original "Explore Tools" grid HTML is captured once on first load so we
@@ -67,6 +70,21 @@ export function initNavigation() {
   // Seed breadcrumb on first load
   setBreadcrumb(['Dashboard']);
 
+  // Load module statuses early so all renderers see them synchronously.
+  // The promise is fire-and-forget; renderers called before it resolves will
+  // treat everything as not_installed (the safe default).
+  loadModuleStatuses();
+
+  // ── Wire up the locked-card → Modules redirect for all category scripts ────
+  function navigateToModule(moduleId, toolLabel) {
+    setPendingLockContext({ moduleId, toolLabel });
+    activateNav('Modules');
+  }
+  setDocNav(navigateToModule);
+  setEbookNav(navigateToModule);
+  setAudioNav(navigateToModule);
+  setImgNav(navigateToModule);
+
   function activateNav(label) {
     // ── Sidebar highlight ────────────────────────────────────────────────
     navItems.forEach((n) => n.classList.remove('active'));
@@ -81,6 +99,16 @@ export function initNavigation() {
       setBreadcrumb(['Dashboard']);
     } else {
       setBreadcrumb(['Dashboard', label]);
+    }
+
+    // ── Dashboard hero/recent columns visibility ─────────────────────────
+    const dashPanel = document.getElementById('dashboard-panel');
+    if (dashPanel) {
+      if (label === 'Modules') {
+        dashPanel.classList.add('modules-active');
+      } else {
+        dashPanel.classList.remove('modules-active');
+      }
     }
 
     // ── Explore-section swap ─────────────────────────────────────────────

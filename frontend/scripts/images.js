@@ -10,6 +10,15 @@
  */
 
 import { setActiveTool } from './toolstate.js';
+import { getLockedModuleId } from './modulelock.js';
+
+// ─── MODULE-LOCK NAVIGATION HOOK ──────────────────────────────────────────────
+let _navigateToModule = null;
+export function setNavigateToModule(fn) { _navigateToModule = fn; }
+
+function _handleLockedClick(moduleId, toolLabel) {
+  if (_navigateToModule) _navigateToModule(moduleId, toolLabel);
+}
 
 // ─── PNG CONVERSION SUB-CARDS ─────────────────────────────────────────────────
 
@@ -255,6 +264,20 @@ const JPG_CONVERSIONS = [
     </svg>`,
   },
   {
+    id: 'jpg-gif',
+    label: 'JPG to GIF',
+    desc: 'Convert JPG to palette-quantized GIF',
+    ext: '.gif',
+    tag: 'Convert',
+    color: '#FB923C',
+    bg: 'rgba(251,146,60,0.15)',
+    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+      <rect x="1" y="2" width="14" height="12" rx="2" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M9.5 6.5 A3.5 3.5 0 1 0 9.5 9.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+      <line x1="9.5" y1="7.5" x2="11.5" y2="7.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+    </svg>`,
+  },
+  {
     id: 'jpg-txt',
     label: 'JPG to TXT (OCR)',
     desc: 'Extract text from JPG image using OCR',
@@ -480,11 +503,14 @@ const IMG_FORMATS = [
 // ─── HELPER: render a card ────────────────────────────────────────────────────
 
 function cardHTML(item, extraClass = '') {
+  const locked     = getLockedModuleId(item.id) !== null;
+  const lockClass  = locked ? ' fmt-card--locked' : '';
+  const lockedAttr = locked ? ` data-locked-module="${getLockedModuleId(item.id)}"` : '';
   const bottom = item.ext
     ? `<div class="fmt-ext">${item.ext}</div>`
     : `<div class="fmt-tag fmt-tag--${item.tag.toLowerCase()}">${item.tag}</div>`;
   return `
-    <div class="fmt-card${extraClass ? ' ' + extraClass : ''}" data-id="${item.id}"
+    <div class="fmt-card${extraClass ? ' ' + extraClass : ''}${lockClass}" data-id="${item.id}"${lockedAttr}
          style="--fmt-color:${item.color};--fmt-bg:${item.bg}">
       <div class="fmt-card-top">
         <div class="fmt-icon-box">${item.icon}</div>
@@ -548,6 +574,10 @@ export function renderJpgTools(container, activateNav) {
 
   container.querySelectorAll('.fmt-card').forEach((card) => {
     card.addEventListener('click', () => {
+      if (card.classList.contains('fmt-card--locked')) {
+        _handleLockedClick(card.dataset.lockedModule, card.querySelector('.fmt-label')?.textContent || '');
+        return;
+      }
       container.querySelectorAll('.fmt-card').forEach((c) => c.classList.remove('selected'));
       card.classList.add('selected');
       const item = JPG_CONVERSIONS.find((t) => t.id === card.dataset.id);
@@ -591,6 +621,10 @@ export function renderPngTools(container, activateNav) {
 
   container.querySelectorAll('.fmt-card').forEach((card) => {
     card.addEventListener('click', () => {
+      if (card.classList.contains('fmt-card--locked')) {
+        _handleLockedClick(card.dataset.lockedModule, card.querySelector('.fmt-label')?.textContent || '');
+        return;
+      }
       container.querySelectorAll('.fmt-card').forEach((c) => c.classList.remove('selected'));
       card.classList.add('selected');
       const item = PNG_CONVERSIONS.find((t) => t.id === card.dataset.id);
@@ -634,6 +668,10 @@ export function renderWebpTools(container, activateNav) {
 
   container.querySelectorAll('.fmt-card').forEach((card) => {
     card.addEventListener('click', () => {
+      if (card.classList.contains('fmt-card--locked')) {
+        _handleLockedClick(card.dataset.lockedModule, card.querySelector('.fmt-label')?.textContent || '');
+        return;
+      }
       container.querySelectorAll('.fmt-card').forEach((c) => c.classList.remove('selected'));
       card.classList.add('selected');
       const item = WEBP_CONVERSIONS.find((t) => t.id === card.dataset.id);
@@ -677,6 +715,10 @@ export function renderSvgTools(container, activateNav) {
 
   container.querySelectorAll('.fmt-card').forEach((card) => {
     card.addEventListener('click', () => {
+      if (card.classList.contains('fmt-card--locked')) {
+        _handleLockedClick(card.dataset.lockedModule, card.querySelector('.fmt-label')?.textContent || '');
+        return;
+      }
       container.querySelectorAll('.fmt-card').forEach((c) => c.classList.remove('selected'));
       card.classList.add('selected');
       const item = SVG_CONVERSIONS.find((t) => t.id === card.dataset.id);

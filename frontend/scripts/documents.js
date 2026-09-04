@@ -5,6 +5,7 @@
  */
 
 import { setActiveTool, onToolChange } from './toolstate.js';
+import { getLockedModuleId } from './modulelock.js';
 
 /** Thin local wrapper — avoids a circular import with navigation.js */
 function setBreadcrumb(segments) {
@@ -32,6 +33,19 @@ onToolChange((tool) => {
     }
   });
 });
+
+// ─── MODULE-LOCK NAVIGATION HOOK ──────────────────────────────────────────────
+// Set by navigation.js so documents.js can redirect to the Modules page without
+// a circular import.
+let _navigateToModule = null;
+
+/**
+ * Called by navigation.js to wire up the redirect callback.
+ * @param {Function} fn  (moduleId: string, toolLabel: string) => void
+ */
+export function setNavigateToModule(fn) {
+  _navigateToModule = fn;
+}
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 
@@ -450,6 +464,10 @@ export function renderPptxTools(container, activateNav) {
   // Card selection highlight + tool-state update
   container.querySelectorAll('.fmt-card').forEach((card) => {
     card.addEventListener('click', () => {
+      if (card.classList.contains('fmt-card--locked')) {
+        _handleLockedClick(card.dataset.lockedModule, card.querySelector('.fmt-label')?.textContent || '');
+        return;
+      }
       container.querySelectorAll('.fmt-card').forEach((c) => c.classList.remove('selected'));
       card.classList.add('selected');
 
@@ -562,6 +580,23 @@ const XLSX_CONVERSIONS = [
       <line x1="10.5" y1="9" x2="13.5" y2="9" stroke="currentColor" stroke-width="1" stroke-linecap="round"/>
     </svg>`,
   },
+  {
+    id: 'xlsx-txt',
+    label: 'XLSX to TXT',
+    desc: 'Extract text from XLSX spreadsheet',
+    ext: '.txt',
+    tag: 'Convert',
+    color: '#A78BFA',
+    bg: 'rgba(167,139,250,0.15)',
+    icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+      <rect x="1" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
+      <path d="M4 2l3 3H4V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
+      <path d="M7 9l2 1.5L7 12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+      <line x1="10" y1="5" x2="15" y2="5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+      <line x1="10" y1="7.5" x2="15" y2="7.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+      <line x1="10" y1="10" x2="13" y2="10" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
+    </svg>`,
+  },
 ];
 
 // ─── XLSX TOOLS PANEL ────────────────────────────────────────────────────────
@@ -606,6 +641,10 @@ export function renderXlsxTools(container, activateNav) {
   // Card selection highlight + tool-state update
   container.querySelectorAll('.fmt-card').forEach((card) => {
     card.addEventListener('click', () => {
+      if (card.classList.contains('fmt-card--locked')) {
+        _handleLockedClick(card.dataset.lockedModule, card.querySelector('.fmt-label')?.textContent || '');
+        return;
+      }
       container.querySelectorAll('.fmt-card').forEach((c) => c.classList.remove('selected'));
       card.classList.add('selected');
 
@@ -774,6 +813,10 @@ export function renderDocxTools(container, activateNav) {
   // Card selection highlight + tool-state update
   container.querySelectorAll('.fmt-card').forEach((card) => {
     card.addEventListener('click', () => {
+      if (card.classList.contains('fmt-card--locked')) {
+        _handleLockedClick(card.dataset.lockedModule, card.querySelector('.fmt-label')?.textContent || '');
+        return;
+      }
       container.querySelectorAll('.fmt-card').forEach((c) => c.classList.remove('selected'));
       card.classList.add('selected');
 
@@ -964,6 +1007,10 @@ export function renderTxtTools(container, activateNav) {
   // Card selection highlight + tool-state update
   container.querySelectorAll('.fmt-card').forEach((card) => {
     card.addEventListener('click', () => {
+      if (card.classList.contains('fmt-card--locked')) {
+        _handleLockedClick(card.dataset.lockedModule, card.querySelector('.fmt-label')?.textContent || '');
+        return;
+      }
       container.querySelectorAll('.fmt-card').forEach((c) => c.classList.remove('selected'));
       card.classList.add('selected');
 
@@ -1287,6 +1334,10 @@ export function renderCsvTools(container, activateNav) {
   // Card selection highlight + tool-state update
   container.querySelectorAll('.fmt-card').forEach((card) => {
     card.addEventListener('click', () => {
+      if (card.classList.contains('fmt-card--locked')) {
+        _handleLockedClick(card.dataset.lockedModule, card.querySelector('.fmt-label')?.textContent || '');
+        return;
+      }
       container.querySelectorAll('.fmt-card').forEach((c) => c.classList.remove('selected'));
       card.classList.add('selected');
 
@@ -1346,6 +1397,10 @@ export function renderOdtTools(container, activateNav) {
   // Card selection highlight + tool-state update
   container.querySelectorAll('.fmt-card').forEach((card) => {
     card.addEventListener('click', () => {
+      if (card.classList.contains('fmt-card--locked')) {
+        _handleLockedClick(card.dataset.lockedModule, card.querySelector('.fmt-label')?.textContent || '');
+        return;
+      }
       container.querySelectorAll('.fmt-card').forEach((c) => c.classList.remove('selected'));
       card.classList.add('selected');
 
@@ -1478,11 +1533,14 @@ const DOC_FORMATS = [
 // ─── HELPER: render a card ────────────────────────────────────────────────────
 
 function cardHTML(item, extraClass = '') {
+  const locked    = getLockedModuleId(item.id) !== null;
+  const lockClass = locked ? ' fmt-card--locked' : '';
+  const lockedAttr = locked ? ` data-locked-module="${getLockedModuleId(item.id)}"` : '';
   const bottom = item.ext
     ? `<div class="fmt-ext">${item.ext}</div>`
     : `<div class="fmt-tag fmt-tag--${item.tag.toLowerCase()}">${item.tag}</div>`;
   return `
-    <div class="fmt-card${extraClass ? ' ' + extraClass : ''}" data-id="${item.id}"
+    <div class="fmt-card${extraClass ? ' ' + extraClass : ''}${lockClass}" data-id="${item.id}"${lockedAttr}
          style="--fmt-color:${item.color};--fmt-bg:${item.bg}">
       <div class="fmt-card-top">
         <div class="fmt-icon-box">${item.icon}</div>
@@ -1492,6 +1550,16 @@ function cardHTML(item, extraClass = '') {
       <div class="fmt-desc">${item.desc}</div>
       ${bottom}
     </div>`;
+}
+
+/**
+ * Handle a click on a locked card — navigate to Modules page and
+ * highlight the required module.
+ */
+function _handleLockedClick(moduleId, toolLabel) {
+  if (_navigateToModule) {
+    _navigateToModule(moduleId, toolLabel);
+  }
 }
 
 // ─── PDF TOOLS PANEL ─────────────────────────────────────────────────────────
@@ -1554,6 +1622,11 @@ export function renderPdfTools(container, activateNav) {
   const allItems = [...PDF_TOOLS, ...PDF_CONVERSIONS];
   container.querySelectorAll('.fmt-card').forEach((card) => {
     card.addEventListener('click', () => {
+      // Locked card → redirect to Modules page
+      if (card.classList.contains('fmt-card--locked')) {
+        _handleLockedClick(card.dataset.lockedModule, card.querySelector('.fmt-label')?.textContent || '');
+        return;
+      }
       container.querySelectorAll('.fmt-card').forEach((c) => c.classList.remove('selected'));
       card.classList.add('selected');
 
@@ -1678,6 +1751,10 @@ export function renderDocumentFormats(container, activateNav) {
   // Other format card selection highlight + tool-state update
   container.querySelectorAll('.fmt-card:not(.fmt-card--pdf-entry):not(.fmt-card--docx-entry):not(.fmt-card--xlsx-entry):not(.fmt-card--pptx-entry):not(.fmt-card--txt-entry):not(.fmt-card--odt-entry):not(.fmt-card--csv-entry)').forEach((card) => {
     card.addEventListener('click', () => {
+      if (card.classList.contains('fmt-card--locked')) {
+        _handleLockedClick(card.dataset.lockedModule, card.querySelector('.fmt-label')?.textContent || '');
+        return;
+      }
       container.querySelectorAll('.fmt-card').forEach((c) => c.classList.remove('selected'));
       card.classList.add('selected');
 

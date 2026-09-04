@@ -43,6 +43,7 @@ _EXT_MAP = {
     "html": ".html",
     "ods":  ".ods",
     "json": ".json",
+    "txt":  ".txt",
 }
 
 
@@ -146,6 +147,17 @@ async def xlsx_to_json(
     output_filename: Optional[str] = Form(None),
 ):
     return await _enqueue(file, "json", output_filename)
+
+
+@router.post(
+    "/txt/convert",
+    summary="Convert an XLSX file to TXT",
+)
+async def xlsx_to_txt(
+    file:            UploadFile     = File(...),
+    output_filename: Optional[str] = Form(None),
+):
+    return await _enqueue(file, "txt", output_filename)
 
 
 # ---------------------------------------------------------------------------

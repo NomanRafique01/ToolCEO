@@ -1,0 +1,180 @@
+/* ─────────────────────────────────────────────────────────────
+   module-download.css
+   Floating download progress panel for module ZIP downloads.
+   Uses only existing design tokens from base.css.
+   ───────────────────────────────────────────────────────────── */
+
+/* ── Panel container ──────────────────────────────────────────────────────── */
+
+#mod-dl-panel {
+  position: fixed;
+  bottom: 28px;
+  right: 28px;
+  z-index: 9999;
+  min-width: 360px;
+  width: 380px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 20px 16px;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.3);
+  display: none; /* shown by JS when a download starts */
+}
+
+#mod-dl-panel.mod-dl-panel--visible {
+  display: block;
+  animation: mod-dl-fade-in 0.25s ease forwards;
+}
+
+@keyframes mod-dl-fade-in {
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Header row: icon + title ─────────────────────────────────────────────── */
+
+.mod-dl-header {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  margin-bottom: 14px;
+}
+
+.mod-dl-icon {
+  color: var(--accent);
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  opacity: 0.9;
+}
+
+/* "Downloading " label (muted) + module name (bright bold) are both
+   inside .mod-dl-title — split with a <span> in the JS */
+.mod-dl-title {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 400;
+  color: var(--text-muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.4;
+}
+
+.mod-dl-title strong {
+  font-weight: 700;
+  color: var(--text-primary);
+}
+
+/* ── Progress row: bar + percentage ───────────────────────────────────────── */
+
+.mod-dl-bar-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.mod-dl-bar-wrap {
+  flex: 1;
+  height: 6px;
+  background: var(--border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.mod-dl-bar-fill {
+  height: 100%;
+  background: var(--accent);
+  border-radius: 4px;
+  width: 0%;
+  transition: width 0.18s linear;
+}
+
+.mod-dl-percent {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--accent);
+  flex-shrink: 0;
+  min-width: 34px;
+  text-align: right;
+}
+
+/* ── Stats row: MB left · speed right ────────────────────────────────────── */
+
+.mod-dl-stats {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.mod-dl-mb {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.mod-dl-speed {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* ── Bottom row: time-remaining left · cancel right ──────────────────────── */
+
+.mod-dl-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.mod-dl-eta {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+/* Cancel — text only, no box */
+.mod-dl-btn--cancel {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #e74c3c;
+  cursor: pointer;
+  transition: color 0.15s;
+  line-height: 1;
+}
+
+.mod-dl-btn--cancel:hover {
+  color: #c0392b;
+}
+
+/* Resume — subtle teal text button */
+.mod-dl-btn--resume {
+  background: none;
+  border: none;
+  padding: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--accent);
+  cursor: pointer;
+  transition: color 0.15s;
+  line-height: 1;
+}
+
+.mod-dl-btn--resume:hover {
+  color: var(--accent-hover);
+}
+
+/* ── Paused / error status message ───────────────────────────────────────── */
+
+.mod-dl-status-msg {
+  font-size: 11px;
+  color: #e74c3c;
+  margin-bottom: 8px;
+}
+
+.mod-dl-status-msg--info {
+  color: var(--accent);
+}

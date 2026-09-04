@@ -222,7 +222,7 @@ export function showDownload(zone, filename, jobId, color, onReset) {
     closeBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       resetZoneContent(zone);
-      clearBgJob();
+      clearBgJob(jobId, true);
       if (typeof onReset === 'function') onReset();
     });
   }
@@ -271,7 +271,7 @@ export function showDownload(zone, filename, jobId, color, onReset) {
         if (savedPath) {
           btn.style.display = 'none';
           wrap.querySelector('.dz-save-done').classList.add('dz-save-done--visible');
-          clearBgJob();
+          clearBgJob(jobId, true);
           resetAfterSave(zone, onReset);
         } else {
           btn.disabled = false;
@@ -284,7 +284,7 @@ export function showDownload(zone, filename, jobId, color, onReset) {
         URL.revokeObjectURL(url);
         btn.style.display = 'none';
         wrap.querySelector('.dz-save-done').classList.add('dz-save-done--visible');
-        clearBgJob();
+        clearBgJob(jobId, true);
         resetAfterSave(zone, onReset);
       }
     } catch (err) {

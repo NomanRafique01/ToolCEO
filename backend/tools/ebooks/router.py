@@ -41,6 +41,7 @@ from fastapi.responses import JSONResponse
 import jobs as job_store
 from tools.ebooks.utils.calibre_engine import (
     cleanup_temp_files,
+    get_ebook_runtime_dir,
     run_conversion,
     stream_progress,
     validate_formats,
@@ -85,7 +86,8 @@ def _run_job(
     4. Read the output file and mark the job done.
     5. Clean up all temp files via calibre_engine.cleanup_temp_files().
     """
-    tmp_dir    = Path(tempfile.mkdtemp(prefix="toolceo_ebook_"))
+    runtime_root = get_ebook_runtime_dir()
+    tmp_dir    = Path(tempfile.mkdtemp(prefix="job_", dir=runtime_root))
     input_path  = tmp_dir / f"input.{input_suffix}"
     output_path = tmp_dir / output_filename
 
@@ -95,7 +97,16 @@ def _run_job(
         job_store.set_progress(job_id, 5)
 
         # ── Launch Calibre ────────────────────────────────────────────────
-        process = run_conversion(input_path, output_path, target_format, original_stem)
+        def _engine_progress(pct: int) -> None:
+            job_store.set_progress(job_id, max(5, min(95, int(pct))))
+
+        process = run_conversion(
+            input_path,
+            output_path,
+            target_format,
+            original_stem,
+            progress_cb=_engine_progress,
+        )
 
         # ── Stream progress ───────────────────────────────────────────────
         # Calibre emits a handful of sparse checkpoints (1%, 34%, 67%, 100%).

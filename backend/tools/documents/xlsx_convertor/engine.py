@@ -44,7 +44,7 @@ _log = logging.getLogger(__name__)
 _LO_TIMEOUT = 300
 
 # Targets that use LibreOffice
-_LO_TARGETS = {"pdf", "html", "ods"}
+_LO_TARGETS = {"pdf", "html", "ods", "txt"}
 
 # Targets that use Python/openpyxl
 _PY_TARGETS = {"json", "csv"}
@@ -54,6 +54,7 @@ _LO_FORMAT_MAP = {
     "pdf":  "pdf",
     "html": "html",
     "ods":  "ods",
+    "txt":  "txt:Text",
 }
 
 # Media-type per target (used by router for non-CSV targets)
@@ -63,6 +64,7 @@ MEDIA_TYPES = {
     "html": "text/html; charset=utf-8",
     "ods":  "application/vnd.oasis.opendocument.spreadsheet",
     "json": "application/json; charset=utf-8",
+    "txt":  "text/plain; charset=utf-8",
 }
 
 

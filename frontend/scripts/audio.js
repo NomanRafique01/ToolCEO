@@ -7,6 +7,15 @@
 
 import { setBreadcrumb } from './navigation.js';
 import { setActiveTool } from './toolstate.js';
+import { getLockedModuleId } from './modulelock.js';
+
+// ─── MODULE-LOCK NAVIGATION HOOK ──────────────────────────────────────────────
+let _navigateToModule = null;
+export function setNavigateToModule(fn) { _navigateToModule = fn; }
+
+function _handleLockedClick(moduleId, toolLabel) {
+  if (_navigateToModule) _navigateToModule(moduleId, toolLabel);
+}
 
 /** Scroll #main-content so the drop-zone is visible. */
 function _scrollToDropZone() {
@@ -169,8 +178,12 @@ export function renderAudioFormats(container, activateNav) {
     </div>
 
     <div class="fmt-grid">
-      ${AUDIO_FORMATS.map((f) => `
-        <div class="fmt-card" data-format="${f.id}"
+      ${AUDIO_FORMATS.map((f) => {
+        const locked     = getLockedModuleId(f.id) !== null;
+        const lockClass  = locked ? ' fmt-card--locked' : '';
+        const lockedAttr = locked ? ` data-locked-module="${getLockedModuleId(f.id)}"` : '';
+        return `
+        <div class="fmt-card${lockClass}" data-format="${f.id}"${lockedAttr}
              style="--fmt-color:${f.color};--fmt-bg:${f.bg}">
           <div class="fmt-card-top">
             <div class="fmt-icon-box">${f.icon}</div>
@@ -179,8 +192,8 @@ export function renderAudioFormats(container, activateNav) {
           <div class="fmt-label">${f.label}</div>
           <div class="fmt-desc">${f.desc}</div>
           <div class="fmt-ext">${f.ext}</div>
-        </div>
-      `).join('')}
+        </div>`;
+      }).join('')}
     </div>
   `;
 
@@ -192,6 +205,10 @@ export function renderAudioFormats(container, activateNav) {
   // Format card selection highlight + tool-state update
   container.querySelectorAll('.fmt-card').forEach((card) => {
     card.addEventListener('click', () => {
+      if (card.classList.contains('fmt-card--locked')) {
+        _handleLockedClick(card.dataset.lockedModule, card.querySelector('.fmt-label')?.textContent || '');
+        return;
+      }
       container.querySelectorAll('.fmt-card').forEach((c) => c.classList.remove('selected'));
       card.classList.add('selected');
 

@@ -584,7 +584,7 @@ async function _submitExtract() {
     const pct = typeof progress === 'number' ? progress : lastPct;
     lastPct = pct;
 
-    const bg = getBgJob();
+    const bg = getBgJob(jobId);
     if (bg && bg.jobId === jobId) {
       bg.progress = Math.max(10, Math.min(100, pct));
       bg.state = state === 'done' ? 'done' : (state === 'error' ? 'error' : 'running');

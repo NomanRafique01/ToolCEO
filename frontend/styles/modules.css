@@ -1,0 +1,465 @@
+/* ─────────────────────────────────────────────────────────────
+   modules.css — also controls dashboard layout when Modules is active
+   Styles for the Modules page — module cards, status badges,
+   install buttons, and the detail modal.
+   Uses the same design tokens as the rest of the app.
+   ───────────────────────────────────────────────────────────── */
+
+/* ─── HIDE HERO + RECENT COLUMNS ON MODULES PAGE ────────── */
+
+/* When the Modules nav item is active we add this class to #dashboard-panel
+   to hide the drop-zone hero card and the recent/download right column.
+   The explore-section (where the module cards render) stays fully visible. */
+#dashboard-panel.modules-active .dash-columns {
+  display: none !important;
+}
+
+/* Also hide the features strip — not relevant on the Modules page */
+#dashboard-panel.modules-active .features-strip {
+  display: none !important;
+}
+
+/* ─── LOADING PLACEHOLDER ─────────────────────────────────── */
+
+.mod-loading {
+  padding: 48px 24px;
+  text-align: center;
+  color: var(--text-muted);
+  font-size: 14px;
+}
+
+/* ─── MODULE GRID ─────────────────────────────────────────── */
+
+.mod-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+  margin-top: 4px;
+}
+
+/* ─── MODULE CARD ─────────────────────────────────────────── */
+
+.mod-card {
+  background: var(--bg-card);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 16px 14px;
+  cursor: pointer;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  transition: border-color 150ms ease, background 150ms ease, transform 120ms ease;
+  position: relative;
+}
+
+.mod-card:hover {
+  border-color: var(--mod-color, #00E5C0);
+  background: var(--mod-bg, rgba(0,229,192,0.08));
+  transform: translateY(-1px);
+}
+
+/* ─── CARD HEADER (icon + badge) ─────────────────────────── */
+
+.mod-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  margin-bottom: 4px;
+}
+
+.mod-card-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  background: var(--mod-bg, rgba(0,229,192,0.12));
+  color: var(--mod-color, #00E5C0);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  line-height: 0;
+}
+
+/* ─── STATUS BADGE ────────────────────────────────────────── */
+
+.mod-card-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 9px;
+  border-radius: 20px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.mod-card-badge--installed {
+  background: rgba(0,229,192,0.12);
+  color: #00E5C0;
+  border: 1px solid rgba(0,229,192,0.3);
+}
+
+.mod-card-badge--not-installed {
+  background: rgba(143,170,166,0.10);
+  color: var(--text-muted);
+  border: 1px solid rgba(143,170,166,0.2);
+}
+
+/* ─── CARD TYPOGRAPHY ─────────────────────────────────────── */
+
+.mod-card-name {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.mod-card-engine {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.mod-card-size {
+  font-size: 12px;
+  color: var(--mod-color, #00E5C0);
+  font-weight: 600;
+}
+
+/* ─── UNLOCKS LIST ────────────────────────────────────────── */
+
+.mod-card-unlocks {
+  list-style: none;
+  margin: 4px 0 2px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.mod-card-unlocks li {
+  font-size: 11px;
+  color: var(--text-muted);
+  padding-left: 12px;
+  position: relative;
+  line-height: 1.4;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mod-card-unlocks li::before {
+  content: '·';
+  position: absolute;
+  left: 2px;
+  color: var(--mod-color, #00E5C0);
+  font-weight: 700;
+}
+
+.mod-card-unlocks-more {
+  font-size: 11px;
+  color: var(--mod-color, #00E5C0) !important;
+  font-style: italic;
+}
+
+.mod-card-unlocks-more::before {
+  display: none;
+}
+
+/* ─── INSTALL BUTTON ─────────────────────────────────────── */
+
+.mod-card-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 6px;
+  padding: 7px 14px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
+  align-self: flex-start;
+  line-height: 1;
+}
+
+.mod-card-btn--install {
+  background: color-mix(in srgb, var(--mod-color, #00E5C0) 15%, transparent);
+  color: var(--mod-color, #00E5C0);
+  border-color: color-mix(in srgb, var(--mod-color, #00E5C0) 35%, transparent);
+}
+
+.mod-card-btn--install:hover {
+  background: color-mix(in srgb, var(--mod-color, #00E5C0) 25%, transparent);
+  border-color: var(--mod-color, #00E5C0);
+}
+
+.mod-card-btn--installed {
+  background: rgba(0,229,192,0.10);
+  color: #00E5C0;
+  border-color: rgba(0,229,192,0.25);
+  cursor: default;
+  opacity: 0.8;
+}
+
+/* ─── MODAL OVERLAY ──────────────────────────────────────── */
+
+.mod-modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: rgba(8,25,24,0.72);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  backdrop-filter: blur(4px);
+}
+
+/* ─── MODAL CARD ──────────────────────────────────────────── */
+
+.mod-modal {
+  background: var(--bg-card);
+  border: 1.5px solid var(--border);
+  border-radius: 16px;
+  width: 100%;
+  max-width: 500px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  box-shadow: 0 24px 64px rgba(0,0,0,0.5);
+}
+
+/* ─── MODAL HEADER ───────────────────────────────────────── */
+
+.mod-modal-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  padding: 20px 20px 16px;
+  border-bottom: 1px solid var(--border);
+}
+
+.mod-modal-icon {
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  line-height: 0;
+}
+
+.mod-modal-title-area {
+  flex: 1;
+  min-width: 0;
+}
+
+.mod-modal-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 4px;
+  line-height: 1.2;
+}
+
+.mod-modal-engine {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.mod-modal-close {
+  width: 28px;
+  height: 28px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  color: var(--text-muted);
+  cursor: pointer;
+  font-size: 13px;
+  flex-shrink: 0;
+  transition: border-color 120ms ease, color 120ms ease;
+}
+
+.mod-modal-close:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ─── MODAL BODY ─────────────────────────────────────────── */
+
+.mod-modal-body {
+  padding: 20px;
+  flex: 1;
+}
+
+.mod-modal-intro {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0 0 14px;
+  line-height: 1.5;
+}
+
+.mod-modal-tool-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.mod-modal-tool-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  font-size: 13px;
+  color: var(--text-primary);
+  line-height: 1.4;
+}
+
+.mod-modal-check {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+/* ─── MODAL FOOTER ───────────────────────────────────────── */
+
+.mod-modal-footer {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 16px 20px;
+  border-top: 1px solid var(--border);
+}
+
+.mod-modal-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 9px 20px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  border: 1.5px solid transparent;
+  transition: background 120ms ease, border-color 120ms ease;
+  line-height: 1;
+}
+
+.mod-modal-btn--install {
+  background: color-mix(in srgb, var(--mod-color, #00E5C0) 18%, transparent);
+  color: var(--mod-color, #00E5C0);
+  border-color: color-mix(in srgb, var(--mod-color, #00E5C0) 40%, transparent);
+}
+
+.mod-modal-btn--install:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--mod-color, #00E5C0) 28%, transparent);
+  border-color: var(--mod-color, #00E5C0);
+}
+
+.mod-modal-btn--install:disabled {
+  opacity: 0.6;
+  cursor: default;
+}
+
+.mod-modal-btn--installed {
+  background: rgba(0,229,192,0.10);
+  color: #00E5C0;
+  border-color: rgba(0,229,192,0.25);
+  cursor: default;
+}
+
+.mod-modal-btn--secondary {
+  background: var(--bg-surface);
+  color: var(--text-muted);
+  border-color: var(--border);
+}
+
+.mod-modal-btn--secondary:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+
+/* ─── LOCKED TOOL CARDS ───────────────────────────────────── */
+
+/**
+ * A tool card whose required module is not installed.
+ * Rules:
+ *  - Reduced opacity (subtle, not alarming)
+ *  - Small download icon badge in bottom-right corner using the card's teal/cyan accent
+ *  - No other layout, size, font, or structural changes
+ *  - Never applied to built-in tools
+ */
+.fmt-card--locked {
+  opacity: 0.55;
+  position: relative;
+  cursor: default !important;
+}
+
+/* Restore pointer cursor on hover but don't brighten the card */
+.fmt-card--locked:hover {
+  transform: none;
+  border-color: var(--border);
+  background: var(--bg-card);
+}
+
+/* Subtle download icon badge — bottom-right corner */
+.fmt-card--locked::after {
+  content: '';
+  position: absolute;
+  bottom: 10px;
+  right: 10px;
+  width: 14px;
+  height: 14px;
+  opacity: 0.55;
+  background-color: var(--fmt-color, #00E5C0);
+  /* Download arrow SVG as a mask */
+  -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M12 3v13M7 11l5 5 5-5' stroke='%23000' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M5 20h14' stroke='%23000' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E");
+          mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M12 3v13M7 11l5 5 5-5' stroke='%23000' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M5 20h14' stroke='%23000' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E");
+  -webkit-mask-size: contain;
+          mask-size: contain;
+  -webkit-mask-repeat: no-repeat;
+          mask-repeat: no-repeat;
+  -webkit-mask-position: center;
+          mask-position: center;
+  pointer-events: none;
+  display: block !important;
+}
+
+/* ─── MODULE HIGHLIGHT ON MODULES PAGE ────────────────────── */
+
+/**
+ * When a locked tool is clicked, the Modules page is shown and the
+ * target module card is highlighted with a pulsing outline.
+ */
+.mod-card--highlighted {
+  border-color: var(--mod-color, #00E5C0) !important;
+  background: var(--mod-bg, rgba(0,229,192,0.08)) !important;
+  animation: mod-highlight-pulse 1.8s ease-in-out 2;
+}
+
+@keyframes mod-highlight-pulse {
+  0%   { box-shadow: 0 0 0 0   color-mix(in srgb, var(--mod-color, #00E5C0) 40%, transparent); }
+  50%  { box-shadow: 0 0 0 6px color-mix(in srgb, var(--mod-color, #00E5C0) 0%,  transparent); }
+  100% { box-shadow: 0 0 0 0   color-mix(in srgb, var(--mod-color, #00E5C0) 0%,  transparent); }
+}
+
+/* Dynamic description label shown below a highlighted module card */
+.mod-locked-desc {
+  grid-column: 1 / -1;
+  margin-top: 2px;
+  padding: 12px 16px;
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  font-size: 13px;
+  color: var(--text-muted);
+  line-height: 1.6;
+  font-style: italic;
+}

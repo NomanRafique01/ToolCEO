@@ -55,12 +55,13 @@ export function pushNotification({ type = 'success', message = '', detail = '', 
     _clearTimer(item.id);
     item.timestamp = Date.now();
     item.read = false;
+    item.autoDismiss = autoDismiss === true;
     if (detail) item.detail = detail;
     _store.unshift(item);
   } else {
     // Create new notification item
     const id = `notif-${++_counter}-${Date.now()}`;
-    item = { id, type, message, detail, timestamp: Date.now(), read: false };
+    item = { id, type, message, detail, timestamp: Date.now(), read: false, autoDismiss: autoDismiss === true };
     _store.unshift(item);
   }
 
@@ -75,7 +76,7 @@ export function pushNotification({ type = 'success', message = '', detail = '', 
   if (autoDismiss === true) {
     const tid = setTimeout(() => {
       dismissOne(item.id);
-    }, 15000);
+    }, 8000);
     _timers.set(item.id, tid);
   }
 

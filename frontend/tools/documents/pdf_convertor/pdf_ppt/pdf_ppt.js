@@ -310,7 +310,7 @@ async function _submitConvert(file, outputFilename) {
     const pct    = Math.max(lastPct, rawPct);
     lastPct      = pct;
 
-    const bg = getBgJob();
+    const bg = getBgJob(jobId);
     if (bg && bg.jobId === jobId) {
       bg.progress = Math.max(10, Math.min(100, pct));
       bg.state    = state === 'done' ? 'done' : (state === 'error' ? 'error' : 'running');

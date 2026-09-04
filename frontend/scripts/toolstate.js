@@ -1,56 +1,108 @@
 import { pushNotification } from './notificationStore.js';
 
-/** @type {{ id: string, label: string, mainText: string, subText: string, color?: string, icon?: string } | null} */
 let _activeTool = null;
-
-/** Listeners called when the active tool changes. */
 const _listeners = [];
 
-/**
- * Set the active tool and notify all listeners.
- * @param {{ id: string, label: string, mainText: string, subText: string } | null} tool
- */
 export function setActiveTool(tool) {
   _activeTool = tool;
   _listeners.forEach((fn) => fn(tool));
 }
 
-/** @returns {{ id: string, label: string, mainText: string, subText: string } | null} */
 export function getActiveTool() {
   return _activeTool;
 }
 
-/** @param {(tool: object | null) => void} fn */
 export function onToolChange(fn) {
   _listeners.push(fn);
 }
 
-// ─── BACKGROUND JOB TRACKING ──────────────────────────────────────────────────
+const _bgJobs = new Map();
+let _bgSeq = 0;
 
-let _activeBgJob    = null;
-let _bgJobDoneHandled = false;
+function _makeClientId() {
+  _bgSeq += 1;
+  return `local-bg-${Date.now()}-${_bgSeq}`;
+}
+
+function _pickFallbackJob() {
+  const activeTool = getActiveTool();
+  const jobs = [..._bgJobs.values()].reverse();
+  return jobs.find((job) => activeTool && job.tool && job.tool.id === activeTool.id)
+    || jobs.find((job) => job.state === 'running' || job.state === 'submitting')
+    || jobs[0]
+    || null;
+}
+
+function _visibleJobs() {
+  const activeTool = getActiveTool();
+  return [..._bgJobs.values()].filter((job) => {
+    if (!activeTool) return true;
+    // Hide ALL states for the currently active tool — the tool's own panel
+    // shows the result inline; showing it in the bg bar too is redundant/confusing.
+    return !job.tool || job.tool.id !== activeTool.id;
+  });
+}
 
 export function setBgJob(job) {
-  if (_activeBgJob && _activeBgJob.sse && _activeBgJob.sse !== job.sse) {
-    try { _activeBgJob.sse.close(); } catch (_) {}
+  if (!job) return null;
+  const incoming = { ...job };
+  let key = incoming.jobId ? String(incoming.jobId) : incoming.clientId || _makeClientId();
+  let existing = _bgJobs.get(key);
+
+  if (incoming.jobId && !existing) {
+    for (const [candidateKey, candidate] of _bgJobs.entries()) {
+      const sameTool = candidate.tool && incoming.tool && candidate.tool.id === incoming.tool.id;
+      const sameFile = (candidate.filename || '') === (incoming.filename || '');
+      if (!candidate.jobId && sameTool && sameFile) {
+        existing = candidate;
+        _bgJobs.delete(candidateKey);
+        key = String(incoming.jobId);
+        break;
+      }
+    }
   }
-  _activeBgJob = job;
-  _bgJobDoneHandled = false;   // reset so new job can auto-switch on done
+
+  if (existing && existing.sse && existing.sse !== incoming.sse) {
+    try { existing.sse.close(); } catch (_) {}
+  }
+
+  _bgJobs.set(key, {
+    ...existing,
+    ...incoming,
+    clientId: key,
+    notified: existing ? existing.notified : false,
+  });
   syncBgJobBar();
+  return key;
 }
 
-export function getBgJob() {
-  return _activeBgJob;
+export function getBgJob(jobId = null) {
+  if (jobId) return _bgJobs.get(String(jobId)) || null;
+  return _pickFallbackJob();
 }
 
-export function clearBgJob(silent = false) {
-  if (_activeBgJob && _activeBgJob.sse) {
-    try { _activeBgJob.sse.close(); } catch (_) {}
+export function clearBgJob(jobIdOrSilent = null, maybeSilent = false) {
+  let key = null;
+  let silent = maybeSilent;
+
+  if (typeof jobIdOrSilent === 'boolean') {
+    silent = jobIdOrSilent;
+  } else if (jobIdOrSilent) {
+    key = String(jobIdOrSilent);
+  } else {
+    const fallback = _pickFallbackJob();
+    key = fallback ? fallback.clientId : null;
   }
-  _activeBgJob = null;
+
+  const job = key ? _bgJobs.get(key) : null;
+  if (job && job.sse) {
+    try { job.sse.close(); } catch (_) {}
+  }
+  if (key) _bgJobs.delete(key);
+
   syncBgJobBar();
   if (!silent) {
-    document.dispatchEvent(new CustomEvent('bg-job-cleared'));
+    document.dispatchEvent(new CustomEvent('bg-job-cleared', { detail: { jobId: key } }));
   }
 }
 
@@ -58,33 +110,69 @@ export function syncBgJobBar() {
   const bar = document.getElementById('bg-job-bar');
   if (!bar) return;
 
-  if (!_activeBgJob) {
+  const jobs = _visibleJobs();
+  if (jobs.length === 0) {
     bar.style.display = 'none';
     bar.innerHTML = '';
     return;
   }
-
-  // Only show when user is viewing a DIFFERENT tool than the one executing.
-  // Immediately hide when they return to the executing tool so the normal
-  // dropzone progress bar is visible instead.
-  const activeTool = getActiveTool();
-  const isShifted  = !activeTool || activeTool.id !== _activeBgJob.tool.id;
-
-  if (!isShifted) {
-    bar.style.display = 'none';
-    bar.innerHTML = '';
-    return;
-  }
-
-  const { tool, progress, state, filename, jobId } = _activeBgJob;
-  const color = (tool && tool.color) || '#00E5C0';
-  const bg    = (tool && tool.bg)    || 'rgba(0,229,192,0.12)';
-  const label = (tool && tool.label) || 'Tool Task';
-  const pct   = Math.max(10, Math.min(100, Math.round(progress || 10)));
 
   bar.style.display = 'block';
-  bar.style.setProperty('--bg-job-color', color);
-  bar.style.setProperty('--bg-job-bg', bg);
+  bar.innerHTML = jobs.map(_renderBgJob).join('');
+
+  bar.querySelectorAll('[data-bg-view]').forEach((btn) => {
+    btn.onclick = (e) => {
+      e.stopPropagation();
+      const job = _bgJobs.get(btn.dataset.bgView);
+      if (job) {
+        document.dispatchEvent(new CustomEvent('bg-job-switch', { detail: { tool: job.tool } }));
+      }
+    };
+  });
+
+  bar.querySelectorAll('[data-bg-save]').forEach((saveBtn) => {
+    saveBtn.onclick = async (e) => {
+      e.stopPropagation();
+      const job = _bgJobs.get(saveBtn.dataset.bgSave);
+      if (!job) return;
+      saveBtn.disabled = true;
+      saveBtn.textContent = 'Saving...';
+      try {
+        await _downloadJobFile(job.jobId, job.filename);
+        saveBtn.textContent = 'Saved';
+        clearBgJob(job.clientId, true);
+      } catch (_) {
+        saveBtn.disabled = false;
+        saveBtn.textContent = 'Save As...';
+      }
+    };
+  });
+
+  bar.querySelectorAll('[data-bg-close]').forEach((closeX) => {
+    closeX.onclick = (e) => {
+      e.stopPropagation();
+      clearBgJob(closeX.dataset.bgClose);
+    };
+  });
+}
+
+function _renderBgJob(job) {
+  const { tool, progress, state, filename, jobId, clientId } = job;
+  const color = (tool && tool.color) || '#00E5C0';
+  const bg = (tool && tool.bg) || 'rgba(0,229,192,0.12)';
+  const label = (tool && tool.label) || 'Tool Task';
+  const pct = Math.max(5, Math.min(100, Math.round(progress || 5)));
+  const key = _esc(clientId || jobId || '');
+
+  if ((state === 'done' || state === 'error') && !job.notified) {
+    job.notified = true;
+    pushNotification({
+      type: state === 'done' ? 'success' : 'error',
+      message: `${label} ${state === 'done' ? 'completed' : 'failed'}`,
+      detail: filename || '',
+      autoDismiss: false,
+    });
+  }
 
   const iconHtml = (tool && tool.icon)
     ? tool.icon
@@ -97,65 +185,20 @@ export function syncBgJobBar() {
          <path d="M12 7v5l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
        </svg>`;
 
-  let statusBadge = '';
-  let actionBtn   = '';
+  const statusBadge = state === 'done'
+    ? '<span class="bg-job-badge bg-job-badge--done">&#10003; Completed</span>'
+    : state === 'error'
+      ? '<span class="bg-job-badge bg-job-badge--error">Failed</span>'
+      : `<span class="bg-job-badge bg-job-badge--running"><span class="bg-job-dot" style="background:${color}"></span>${state === 'submitting' ? 'Uploading...' : 'Executing in background'}</span>`;
 
-  if (state === 'submitting') {
-    statusBadge = `
-      <span class="bg-job-badge bg-job-badge--running">
-        <span class="bg-job-dot" style="background:${color}"></span>
-        Uploading&hellip;
-      </span>`;
-    actionBtn = '';
-  } else if (state === 'running') {
-    statusBadge = `
-      <span class="bg-job-badge bg-job-badge--running">
-        <span class="bg-job-dot" style="background:${color}"></span>
-        Executing in background
-      </span>`;
-    actionBtn = `
-      <button type="button" class="bg-job-btn bg-job-btn--view" id="bg-job-switch-btn">
-        View Tool
-      </button>`;
-  } else if (state === 'done') {
-    statusBadge = `
-      <span class="bg-job-badge bg-job-badge--done">&#10003; Completed</span>`;
-    actionBtn = `
-      <button type="button" class="bg-job-btn bg-job-btn--save" id="bg-job-save-btn">
-        Save As&hellip;
-      </button>`;
+  const actionBtn = state === 'done' && jobId
+    ? `<button type="button" class="bg-job-btn bg-job-btn--save" data-bg-save="${key}">Save As...</button>`
+    : state === 'running'
+      ? `<button type="button" class="bg-job-btn bg-job-btn--view" data-bg-view="${key}">View Tool</button>`
+      : '';
 
-    // Auto-switch back to the executing tool — once per job.
-    // isShifted will then be false and the bar hides automatically.
-    if (!_bgJobDoneHandled) {
-      _bgJobDoneHandled = true;
-      const doneJob = _activeBgJob;
-      // Push success notification
-      pushNotification({
-        type: 'success',
-        message: `${doneJob.tool.label} completed`,
-        detail: doneJob.filename || '',
-      });
-      document.dispatchEvent(new CustomEvent('bg-job-switch', { detail: { tool: doneJob.tool } }));
-    }
-  } else if (state === 'error') {
-    statusBadge = `
-      <span class="bg-job-badge bg-job-badge--error">Failed</span>`;
-    actionBtn = '';
-    // Push error notification once
-    if (!_bgJobDoneHandled) {
-      _bgJobDoneHandled = true;
-      const errJob = _activeBgJob;
-      pushNotification({
-        type: 'error',
-        message: `${errJob.tool.label} failed`,
-        detail: errJob.filename || '',
-      });
-    }
-  }
-
-  bar.innerHTML = `
-    <div class="bg-job-card">
+  return `
+    <div class="bg-job-card" style="--bg-job-color:${color};--bg-job-bg:${bg}">
       <div class="bg-job-header">
         <div class="bg-job-left">
           <div class="bg-job-icon">${iconHtml}</div>
@@ -165,7 +208,7 @@ export function syncBgJobBar() {
         <div class="bg-job-right">
           <span class="bg-job-pct">${state === 'error' ? 'Err' : `${pct}%`}</span>
           ${actionBtn}
-          <button type="button" class="bg-job-close-x" id="bg-job-close-x" title="Dismiss" aria-label="Dismiss background job">
+          <button type="button" class="bg-job-close-x" data-bg-close="${key}" title="Dismiss" aria-label="Dismiss background job">
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
               <line x1="1" y1="1" x2="11" y2="11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
               <line x1="11" y1="1" x2="1" y2="11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
@@ -178,43 +221,7 @@ export function syncBgJobBar() {
         <div class="bg-job-fill" style="width:${pct}%;background:${color}"></div>
       </div>
     </div>`;
-
-  const switchBtn = bar.querySelector('#bg-job-switch-btn');
-  if (switchBtn) {
-    switchBtn.onclick = (e) => {
-      e.stopPropagation();
-      document.dispatchEvent(new CustomEvent('bg-job-switch', {
-        detail: { tool: _activeBgJob.tool }
-      }));
-    };
-  }
-
-  const saveBtn = bar.querySelector('#bg-job-save-btn');
-  if (saveBtn) {
-    saveBtn.onclick = async (e) => {
-      e.stopPropagation();
-      saveBtn.disabled = true;
-      saveBtn.textContent = 'Saving\u2026';
-      try {
-        await _downloadJobFile(jobId, filename);
-        saveBtn.textContent = '\u2713 Saved';
-        clearBgJob();
-      } catch (err) {
-        saveBtn.disabled = false;
-        saveBtn.textContent = 'Save As\u2026';
-      }
-    };
-  }
-
-  const closeX = bar.querySelector('#bg-job-close-x');
-  if (closeX) {
-    closeX.onclick = (e) => {
-      e.stopPropagation();
-      clearBgJob();
-    };
-  }
 }
-
 
 function _esc(str) {
   return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
@@ -224,9 +231,9 @@ async function _downloadJobFile(jobId, filename) {
   const res = await fetch(`http://127.0.0.1:8000/api/download/${jobId}`);
   if (!res.ok) throw new Error(`Download failed (${res.status})`);
 
-  const blob     = await res.blob();
+  const blob = await res.blob();
   const arrayBuf = await blob.arrayBuffer();
-  const uint8    = new Uint8Array(arrayBuf);
+  const uint8 = new Uint8Array(arrayBuf);
   const chunkSize = 8192;
   let binary = '';
   for (let i = 0; i < uint8.length; i += chunkSize) {
@@ -239,8 +246,10 @@ async function _downloadJobFile(jobId, filename) {
     if (!savedPath) throw new Error('Save cancelled');
   } else {
     const url = URL.createObjectURL(blob);
-    const a   = document.createElement('a');
-    a.href = url; a.download = filename; a.click();
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename;
+    a.click();
     URL.revokeObjectURL(url);
   }
 }

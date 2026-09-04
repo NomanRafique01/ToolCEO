@@ -36,3 +36,32 @@ desktop.ini
 .idea/
 *.suo
 *.user
+
+# -- ToolCEO runtime/test output ---------------------------
+.runtime/
+scratch/calibre_debug/
+scratch/
+
+# -- Build artifacts ---------------------------------------
+backend/main_backend.spec
+*.spec
+
+# -- Bob AI internal ---------------------------------------
+.bob/
+
+# -- Engines (binary, downloaded at runtime) ---------------
+engines/
+!engines/python/
+
+# -- Reports / planning docs (generated, not source) -------
+TOOLCEO_ENGINE_REPORT.md
+TOOLCEO_ENGINE_REPORT.pdf
+module-download-system-plan.md
+
+# -- Backend one-off diagnostic scripts --------------------
+backend/_audit_ico.py
+backend/_diag_ico.py
+backend/_test_e2e_ico.py
+backend/_verify_pillow_ico.py
+.codenav/
+.navcode/

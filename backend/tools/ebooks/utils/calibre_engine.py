@@ -67,10 +67,10 @@ import platform
 import re
 import shutil
 import subprocess
-import tempfile
 import zipfile
 from pathlib import Path
 from typing import Generator, Optional
+from xml.sax.saxutils import escape as _xml_escape
 
 # ---------------------------------------------------------------------------
 # Sentinel object returned by run_conversion for the PDF→EPUB fast-path
@@ -111,10 +111,10 @@ _SUPPORTED: dict[str, set[str]] = {
     "pdf":  {"epub", "mobi", "azw3", "fb2", "txt", "rtf"},
     "epub": {"pdf",  "mobi", "azw3", "fb2", "txt", "rtf"},
     "mobi": {"pdf",  "epub", "azw3", "fb2", "txt", "rtf"},
-    "azw3": {"pdf",  "epub", "mobi", "fb2", "txt"},
-    "fb2":  {"pdf",  "epub", "mobi", "txt", "rtf"},
-    "txt":  {"pdf",  "epub", "mobi", "rtf"},
-    "rtf":  {"pdf",  "epub", "mobi", "txt"},
+    "azw3": {"pdf",  "epub", "mobi", "fb2", "txt", "rtf"},
+    "fb2":  {"pdf",  "epub", "mobi", "txt", "rtf", "azw3"},
+    "txt":  {"pdf",  "epub", "mobi", "rtf", "fb2", "azw3"},
+    "rtf":  {"pdf",  "epub", "mobi", "txt", "fb2", "azw3"},
 }
 
 # Subprocess timeout for Calibre conversion (seconds).
@@ -131,6 +131,130 @@ _PROGRESS_RE = re.compile(r"^\s*(\d{1,3})\s*%")
 
 
 # ---------------------------------------------------------------------------
+# Calibre process environment
+# ---------------------------------------------------------------------------
+
+def _repo_runtime_dir() -> Path:
+    """Return ToolCEO's repo-local runtime directory."""
+    return Path(__file__).resolve().parents[4] / ".runtime" / "ebooks"
+
+
+def get_ebook_runtime_dir() -> Path:
+    """Return the writable repo-local runtime directory for ebook jobs."""
+    root = _repo_runtime_dir()
+    root.mkdir(parents=True, exist_ok=True)
+    return root
+
+
+def _calibre_work_dir(output_path: Path) -> Path:
+    """Return a writable per-job directory for Calibre temp/config/cache files."""
+    try:
+        output_parent = Path(output_path).resolve().parent
+        output_parent.mkdir(parents=True, exist_ok=True)
+        probe = output_parent / ".toolceo_write_probe"
+        probe.write_text("", encoding="utf-8")
+        probe.unlink(missing_ok=True)
+        base = output_parent / ".calibre-runtime"
+    except OSError:
+        base = _repo_runtime_dir() / ".calibre-runtime"
+    base.mkdir(parents=True, exist_ok=True)
+    return base
+
+
+def _calibre_env(output_path: Path) -> dict[str, str]:
+    """
+    Build an environment that keeps Calibre writes inside the conversion folder.
+
+    The bundled Windows Calibre can fail with PermissionError when it tries to
+    create temp/config files in the user profile.  Pointing all Calibre runtime
+    locations at the job temp directory keeps conversions portable in Electron,
+    tests, and restricted worker environments.
+    """
+    work_dir = _calibre_work_dir(output_path)
+    env = os.environ.copy()
+    env.update(
+        {
+            "CALIBRE_CONFIG_DIRECTORY": str(work_dir / "config"),
+            "CALIBRE_CACHE_DIRECTORY": str(work_dir / "cache"),
+            "TMP": str(work_dir / "tmp"),
+            "TEMP": str(work_dir / "tmp"),
+        }
+    )
+    for key in ("CALIBRE_CONFIG_DIRECTORY", "CALIBRE_CACHE_DIRECTORY", "TMP"):
+        Path(env[key]).mkdir(parents=True, exist_ok=True)
+    return env
+
+
+def _write_simple_epub_from_text(txt_path: Path, epub_path: Path, title: str) -> None:
+    """Create a small valid EPUB3 from a plain text file without Calibre."""
+    raw = txt_path.read_text(encoding="utf-8", errors="replace")
+    paragraphs = [p.strip() for p in re.split(r"\n\s*\n", raw) if p.strip()]
+    if not paragraphs:
+        paragraphs = [raw.strip() or title]
+
+    body = "\n".join(f"    <p>{_xml_escape(p)}</p>" for p in paragraphs)
+    title_xml = _xml_escape(title or txt_path.stem)
+    content = f"""<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en">
+<head>
+  <title>{title_xml}</title>
+  <link rel="stylesheet" type="text/css" href="../styles/main.css"/>
+</head>
+<body>
+  <h1>{title_xml}</h1>
+{body}
+</body>
+</html>
+"""
+    nav = f"""<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" xmlns:epub="http://www.idpf.org/2007/ops" lang="en">
+<head><title>{title_xml}</title></head>
+<body>
+  <nav epub:type="toc" id="toc">
+    <h1>{title_xml}</h1>
+    <ol><li><a href="content.xhtml">{title_xml}</a></li></ol>
+  </nav>
+</body>
+</html>
+"""
+    opf = f"""<?xml version="1.0" encoding="utf-8"?>
+<package xmlns="http://www.idpf.org/2007/opf" version="3.0" unique-identifier="bookid">
+  <metadata xmlns:dc="http://purl.org/dc/elements/1.1/">
+    <dc:identifier id="bookid">toolceo-{_xml_escape(txt_path.stem)}</dc:identifier>
+    <dc:title>{title_xml}</dc:title>
+    <dc:language>en</dc:language>
+    <meta property="dcterms:modified">2026-09-01T00:00:00Z</meta>
+  </metadata>
+  <manifest>
+    <item id="nav" href="Text/nav.xhtml" media-type="application/xhtml+xml" properties="nav"/>
+    <item id="content" href="Text/content.xhtml" media-type="application/xhtml+xml"/>
+    <item id="css" href="styles/main.css" media-type="text/css"/>
+  </manifest>
+  <spine>
+    <itemref idref="content"/>
+  </spine>
+</package>
+"""
+    css = "body { font-family: serif; line-height: 1.5; margin: 1em; }\np { margin: 0 0 1em; }\n"
+
+    with zipfile.ZipFile(epub_path, "w") as zf:
+        zf.writestr("mimetype", "application/epub+zip", compress_type=zipfile.ZIP_STORED)
+        zf.writestr("META-INF/container.xml", """<?xml version="1.0"?>
+<container version="1.0" xmlns="urn:oasis:names:tc:opendocument:xmlns:container">
+  <rootfiles>
+    <rootfile full-path="OEBPS/content.opf" media-type="application/oebps-package+xml"/>
+  </rootfiles>
+</container>
+""")
+        zf.writestr("OEBPS/content.opf", opf)
+        zf.writestr("OEBPS/Text/content.xhtml", content)
+        zf.writestr("OEBPS/Text/nav.xhtml", nav)
+        zf.writestr("OEBPS/styles/main.css", css)
+
+
+# ---------------------------------------------------------------------------
 # Binary resolution
 # ---------------------------------------------------------------------------
 
@@ -139,11 +263,20 @@ def get_calibre_binary() -> Optional[str]:
     Return the absolute path to the ``ebook-convert`` binary.
 
     Search order:
-    1. Bundled binary shipped alongside the app under ``resources/calibre/``.
-    2. System PATH (useful for developer machines / server installs).
+    1. platform_tools.find_calibre() (checks engines/calibre/ and installed paths)
+    2. Bundled binary shipped alongside the app under ``resources/calibre/``.
+    3. System PATH (useful for developer machines / server installs).
 
     Returns None when Calibre cannot be found on this host.
     """
+    try:
+        from platform_tools import find_calibre
+        calibre_path = find_calibre()
+        if calibre_path:
+            return calibre_path
+    except Exception:
+        pass
+
     system = platform.system()
 
     # Locate the project root so bundled paths stay relative regardless of
@@ -208,6 +341,7 @@ def run_conversion(
     output_path: Path,
     target_format: str,
     original_stem: str = "",
+    progress_cb=None,
 ):
     """
     Launch the appropriate conversion process and return a handle that
@@ -237,7 +371,7 @@ def run_conversion(
         from tools.ebooks.utils.pdf_epub_engine import convert_pdf_to_epub
 
         # Extract cover image from first page (best-effort).
-        cover_dir  = tempfile.gettempdir()
+        cover_dir  = str(_calibre_work_dir(output_path))
         cover_path = extract_pdf_cover(str(input_path), cover_dir)
 
         # _progress_values collects callbacks emitted during conversion so that
@@ -247,7 +381,10 @@ def run_conversion(
         _progress_values: list[int] = []
 
         def _on_progress(pct: int) -> None:
+            pct = int(pct)
             _progress_values.append(pct)
+            if callable(progress_cb):
+                progress_cb(pct)
 
         try:
             convert_pdf_to_epub(
@@ -278,7 +415,10 @@ def run_conversion(
         _progress_values_txt: list[int] = []
 
         def _on_progress_txt(pct: int) -> None:
+            pct = int(pct)
             _progress_values_txt.append(pct)
+            if callable(progress_cb):
+                progress_cb(pct)
 
         convert_pdf_to_txt(
             pdf_path=str(input_path),
@@ -300,7 +440,7 @@ def run_conversion(
     # instead of the raw PDF; this prevents Calibre from flattening tables and
     # losing monospace code formatting.
     if input_fmt == "pdf" and output_fmt in ("mobi", "azw3"):
-        from tools.ebooks.utils.pdf_epub_engine import convert_pdf_to_html
+        from tools.ebooks.utils.pdf_epub_engine import convert_pdf_to_epub
 
         binary = get_calibre_binary()
         if not binary:
@@ -310,49 +450,30 @@ def run_conversion(
                 "or place the bundled binary under resources/calibre/<platform>/."
             )
 
-        html_tmp   = os.path.join(
-            tempfile.gettempdir(), f"toolceo_pdf2mobi_{os.getpid()}.html"
-        )
-        # Render the PDF first page as a cover JPEG and pass it to Calibre via
-        # --cover so Calibre never falls back to its own generated thumbnail.
-        cover_tmp  = extract_pdf_cover(str(input_path), tempfile.gettempdir())
+        work_dir = _calibre_work_dir(output_path)
+        epub_tmp = work_dir / f"pdf_bridge_{os.getpid()}.epub"
+        cover_tmp = extract_pdf_cover(str(input_path), str(work_dir))
 
         _progress_values_mobi: list[int] = []
 
         def _on_progress_mobi(pct: int) -> None:
-            # HTML extraction covers the first ~50 % of user-perceived progress;
-            # Calibre covers the remaining ~50 %.  Scale accordingly.
-            _progress_values_mobi.append(int(pct * 0.5))
+            mapped = int(pct * 0.5)
+            _progress_values_mobi.append(mapped)
+            if callable(progress_cb):
+                progress_cb(mapped)
 
         try:
-            convert_pdf_to_html(
+            convert_pdf_to_epub(
                 pdf_path=str(input_path),
-                html_path=html_tmp,
+                epub_path=str(epub_tmp),
                 title=title,
+                cover_path=cover_tmp,
                 progress_cb=_on_progress_mobi,
-            )
-
-            # Calibre flags that improve MOBI/AZW3 output fidelity:
-            #   --no-inline-toc       : skip auto-generated TOC page
-            #   --chapter=/           : disable heuristic chapter detection
-            #   --page-breaks-before=/: no forced page-breaks before every heading
-            #   --mobi-file-type=both : produce KF7+KF8 for broadest Kindle compat
-            #   --output-profile=kindle: tune for Kindle screen dimensions
-            #   --cover               : supply the real PDF first page as the cover,
-            #                          preventing Calibre from generating its own
-            #                          decorative thumbnail
-            #   --extra-css           : inject table/pre styles
-            extra_css = (
-                "table { border-collapse: collapse; width: 100%; } "
-                "td, th { border: 1px solid #ccc; padding: 4px 8px; } "
-                "pre { font-family: monospace; background: #f8f8f8; "
-                "      padding: 0.8em; white-space: pre-wrap; } "
-                "tt, code { font-size: 0.9em; font-family: monospace; }"
             )
 
             cmd: list[str] = [
                 binary,
-                html_tmp,
+                str(epub_tmp),
                 str(output_path),
                 "--title", title,
                 "--authors", "Unknown",
@@ -360,13 +481,8 @@ def run_conversion(
                 "--chapter", "/",
                 "--page-breaks-before", "/",
                 "--output-profile", "kindle",
-                "--input-encoding", "utf-8",
-                "--extra-css", extra_css,
                 "-v",
             ]
-            # Attach the real cover only when extraction succeeded.
-            if cover_tmp:
-                cmd += ["--cover", cover_tmp]
             # --mobi-file-type is only valid for MOBI output, not AZW3.
             if output_fmt == "mobi":
                 cmd += ["--mobi-file-type", "both"]
@@ -379,6 +495,7 @@ def run_conversion(
                 text=True,
                 encoding="utf-8",
                 errors="replace",
+                env=_calibre_env(output_path),
                 timeout=_CALIBRE_TIMEOUT,
             )
             if result.returncode != 0:
@@ -389,7 +506,7 @@ def run_conversion(
                 )
             _progress_values_mobi.append(95)
         finally:
-            cleanup_temp_files(html_tmp)
+            cleanup_temp_files(epub_tmp)
             if cover_tmp:
                 cleanup_temp_files(cover_tmp)
 
@@ -398,6 +515,80 @@ def run_conversion(
         proc._toolceo_target_fmt   = output_fmt
         proc._toolceo_title        = title
         proc._toolceo_progress_log = _progress_values_mobi
+        return proc
+
+    # ── TXT input: native TXT → EPUB bridge, then Calibre if needed ─────────
+    # Calibre's TXT/HTML input plugin calls Windows long-path APIs that can
+    # fail with PermissionError inside the desktop app sandbox.  Building a
+    # minimal EPUB ourselves avoids that fragile input path while keeping every
+    # TXT target available.
+    if input_fmt == "txt":
+        _progress_values_txt_bridge: list[int] = [10]
+
+        if output_fmt == "epub":
+            _write_simple_epub_from_text(Path(input_path), Path(output_path), title)
+            if callable(progress_cb):
+                progress_cb(95)
+            proc = _AlreadyDoneProcess()
+            proc._toolceo_output_path = str(output_path)
+            proc._toolceo_target_fmt = "epub"
+            proc._toolceo_title = title
+            proc._toolceo_progress_log = [10, 95]
+            return proc
+
+        binary = get_calibre_binary()
+        if not binary:
+            raise RuntimeError(
+                "Calibre's ebook-convert was not found on this system. "
+                "Please install Calibre (https://calibre-ebook.com/download) "
+                "or place the bundled binary under resources/calibre/<platform>/."
+            )
+
+        work_dir = _calibre_work_dir(output_path)
+        epub_tmp = work_dir / f"txt_bridge_{os.getpid()}.epub"
+        try:
+            _write_simple_epub_from_text(Path(input_path), epub_tmp, title)
+            _progress_values_txt_bridge.append(40)
+            if callable(progress_cb):
+                progress_cb(40)
+            cmd = [
+                binary,
+                str(epub_tmp),
+                str(output_path),
+                "--title", title,
+                "--authors", "Unknown",
+                "-v",
+            ]
+            if output_fmt == "mobi":
+                cmd += ["--mobi-file-type", "both"]
+            result = subprocess.run(
+                cmd,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.STDOUT,
+                text=True,
+                encoding="utf-8",
+                errors="replace",
+                env=_calibre_env(output_path),
+                timeout=_CALIBRE_TIMEOUT,
+            )
+            if result.returncode != 0:
+                _log.debug("calibre output:\n%s", result.stdout)
+                raise RuntimeError(
+                    f"ebook-convert exited with code {result.returncode}. "
+                    "Check that the input file is valid and not corrupted."
+                )
+            _progress_values_txt_bridge.append(95)
+            if callable(progress_cb):
+                progress_cb(95)
+        finally:
+            cleanup_temp_files(epub_tmp)
+
+        proc = _AlreadyDoneProcess()
+        proc._toolceo_output_path = str(output_path)
+        proc._toolceo_target_fmt = output_fmt
+        proc._toolceo_source_fmt = "txt"
+        proc._toolceo_title = title
+        proc._toolceo_progress_log = _progress_values_txt_bridge
         return proc
 
     # ── All other conversions: delegate to Calibre ────────────────────────
@@ -413,7 +604,7 @@ def run_conversion(
     # embed the random temp path (e.g. toolceo_ebook_oqf4acxy\input.pdf) into
     # the converted output.
     input_ext = Path(input_path).suffix  # includes the leading dot, e.g. ".pdf"
-    clean_input_path = os.path.join(tempfile.gettempdir(), f"input{input_ext}")
+    clean_input_path = str(_calibre_work_dir(output_path) / f"input{input_ext}")
     shutil.copy(str(input_path), clean_input_path)
     _log.debug("Copied input to clean path: %s", clean_input_path)
 
@@ -435,6 +626,7 @@ def run_conversion(
         text=True,
         encoding="utf-8",
         errors="replace",
+        env=_calibre_env(output_path),
     )
     # Attach context so stream_progress can perform post-processing and cleanup
     # after conversion completes, without changing the public function signature.
@@ -472,9 +664,6 @@ def stream_progress(process) -> Generator[int, None, None]:
     # can fill the gaps and the SSE client sees a smooth progression instead
     # of a single 100% jump.
     if getattr(process, "_toolceo_already_done", False):
-        progress_log: list[int] = getattr(process, "_toolceo_progress_log", [])
-        for pct in progress_log:
-            yield pct
         yield 100
         return
 
