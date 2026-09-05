@@ -231,9 +231,15 @@ function _getSwapParts(container) {
   return { swap, cardView, viewer };
 }
 
-function _showViewer(container) {
+function _showViewer(container, color) {
   const { cardView, viewer } = _getSwapParts(container);
   if (!cardView || !viewer) return;
+
+  if (color) {
+    viewer.style.setProperty('--extractor-color', color);
+    viewer.style.setProperty('--extractor-bg', `color-mix(in srgb, ${color} 11%, transparent)`);
+    viewer.style.setProperty('--extractor-bg-strong', `color-mix(in srgb, ${color} 20%, transparent)`);
+  }
 
   document.body.classList.add('has-extractor-viewer');
   cardView.style.opacity = '0';
@@ -241,12 +247,15 @@ function _showViewer(container) {
   setTimeout(() => {
     cardView.classList.add('extractor-hidden');
     viewer.classList.add('extractor-viewer--visible');
-    const mainContent = document.getElementById('main-content');
-    if (mainContent) {
-      const viewerTop = viewer.getBoundingClientRect().top + mainContent.scrollTop - 70;
-      mainContent.scrollTo({ top: Math.max(0, viewerTop), behavior: 'smooth' });
-    }
   }, 300);
+}
+
+function _scrollToViewer(viewer) {
+  const mainContent = document.getElementById('main-content');
+  if (mainContent && viewer) {
+    const viewerTop = viewer.getBoundingClientRect().top + mainContent.scrollTop - 70;
+    mainContent.scrollTo({ top: Math.max(0, viewerTop), behavior: 'smooth' });
+  }
 }
 
 function _closeViewer(container) {
@@ -261,12 +270,6 @@ function _closeViewer(container) {
     cardView.style.opacity = '1';
     cardView.style.transform = 'translateY(0)';
   });
-}
-
-function _showLoading(viewer, file) {
-  viewer.querySelector('.extractor-file-name').textContent = file.name;
-  viewer.querySelector('.extractor-page-count').textContent = 'Loading pages...';
-  viewer.querySelector('.extractor-grid').innerHTML = '<div class="extractor-empty-state">Preparing PDF preview...</div>';
 }
 
 function _updateSelectionMeta(viewer) {
@@ -326,7 +329,7 @@ function _clearSelectedPages(viewer) {
   });
 }
 
-function _buildPageCards(viewer, pageCount) {
+function _buildPageCards(viewer, pageCount, firstThumbnail = null) {
   const grid = viewer.querySelector('.extractor-grid');
   grid.innerHTML = '';
 
@@ -336,9 +339,14 @@ function _buildPageCards(viewer, pageCount) {
     card.className = 'extractor-page-card extractor-card-selected';
     card.dataset.pageIndex = String(i);
     card.setAttribute('role', 'listitem');
+
+    const hasFirstThumb = (i === 0 && firstThumbnail);
     card.innerHTML = `
       <div class="extractor-thumb-stage">
-        <div class="extractor-thumb-skeleton" aria-hidden="true"></div>
+        ${hasFirstThumb
+          ? `<img class="extractor-thumb-img" src="${firstThumbnail}" alt="Page ${pageNumber} preview" draggable="false" />`
+          : '<div class="extractor-thumb-skeleton" aria-hidden="true"></div>'
+        }
         <div class="extractor-selected-overlay">
           <svg width="22" height="22" viewBox="0 0 16 16" fill="none">
             <circle cx="8" cy="8" r="6.2" stroke="currentColor" stroke-width="1.3"/>
@@ -361,6 +369,7 @@ function _buildPageCards(viewer, pageCount) {
 }
 
 async function _renderPage(pdfDoc, pageNumber, viewer, token) {
+  if (!pdfDoc || token !== _renderToken) return;
   const page = await pdfDoc.getPage(pageNumber);
   if (token !== _renderToken) return;
 
@@ -380,11 +389,39 @@ async function _renderPage(pdfDoc, pageNumber, viewer, token) {
   const skeleton = stage.querySelector('.extractor-thumb-skeleton');
   if (skeleton) skeleton.remove();
 
+  const existingImg = stage.querySelector('img');
+  if (existingImg) existingImg.remove();
+  const existingCanvas = stage.querySelector('canvas');
+  if (existingCanvas) existingCanvas.remove();
+
   const overlay = stage.querySelector('.extractor-selected-overlay');
   if (overlay) {
     stage.insertBefore(canvas, overlay);
   } else {
     stage.appendChild(canvas);
+  }
+}
+
+async function _renderThumbnailsQueue(pdfDoc, viewer, token) {
+  if (!pdfDoc) return;
+  const numPages = pdfDoc.numPages;
+  const BATCH_SIZE = 4;
+
+  for (let i = 1; i <= numPages; i += BATCH_SIZE) {
+    if (token !== _renderToken) return;
+    const batch = [];
+    for (let p = i; p < i + BATCH_SIZE && p <= numPages; p += 1) {
+      batch.push(
+        _renderPage(pdfDoc, p, viewer, token).catch(() => {
+          const card = viewer.querySelector(`.extractor-page-card[data-page-index="${p - 1}"]`);
+          const stage = card && card.querySelector('.extractor-thumb-stage');
+          if (stage && !stage.querySelector('canvas, img')) {
+            stage.innerHTML = '<span class="extractor-empty-state">Preview failed</span>';
+          }
+        })
+      );
+    }
+    await Promise.all(batch);
   }
 }
 
@@ -439,89 +476,71 @@ async function _loadPdfIntoViewer(container, file) {
   if (!zone) return;
 
   removeExtractorPanel();
-  showScanProgress(zone, color);
-
-  const fd = new FormData();
-  fd.append('file', file);
+  showProgress(zone, 10, color, 'Reading PDF offline…');
+  _renderToken += 1;
+  const token = _renderToken;
 
   let info = null;
   try {
-    const res = await fetch(`${BACKEND}/api/pdf/extractor/info`, { method: 'POST', body: fd }).catch(() => null);
-    if (res && res.ok) {
-      info = await res.json();
-    }
-  } catch (err) {
-    info = null;
+    const offlineInfo = await getOfflinePdfInfo(file, 0.5);
+    info = {
+      page_count: offlineInfo.pageCount || 0,
+      thumbnail: offlineInfo.thumbnail || null,
+      pdfDoc: offlineInfo.pdfDoc || null,
+    };
+  } catch (offlineErr) {
+    showError(zone, `Could not read PDF: ${offlineErr.message}`);
+    return;
   }
 
-  if (!info) {
-    try {
-      const offlineInfo = await getOfflinePdfInfo(file, 0.5);
-      info = {
-        page_count: offlineInfo.pageCount || 0,
-        thumbnail: offlineInfo.thumbnail || null,
-        image_status: { has_usable_images: true }
-      };
-    } catch (offlineErr) {
-      showError(zone, `Could not read PDF: ${offlineErr.message}`);
-      return;
-    }
-  }
+  if (token !== _renderToken) return;
 
   _selectedFile = file;
   _pageCount = info.page_count || 0;
   _baseName = _fileBaseName(file.name);
   _selectedPages = new Set(Array.from({ length: _pageCount }, (_, i) => i + 1));
-  _activeContainer = container;
-  _pdfDoc = null;
-  _renderToken += 1;
-  const token = _renderToken;
+  _activeContainer = container || document.getElementById('explore-section') || document.body;
+  _pdfDoc = info.pdfDoc || null;
 
+  updateProgress(zone, 100, color);
   resetZoneContent(zone);
   _showPdfThumbnail(zone, file, color, info.thumbnail || null);
-
-  const imageStatus = info.image_status || {};
-  if (imageStatus.has_usable_images === false) {
-    pushNotification({
-      type: 'warning',
-      message: imageStatus.reason === 'images_too_blurry'
-        ? 'Image Too Blurry'
-        : 'No Images Found',
-      detail: imageStatus.message || 'No usable embedded images were found in this PDF.',
-    });
-    return;
-  }
-
   _showExtractorPanel(color);
 
-  const { viewer } = _getSwapParts(container);
+  const { viewer } = _getSwapParts(_activeContainer);
   if (!viewer) return;
-  _showViewer(container);
-  _showLoading(viewer, file);
+
+  _showViewer(_activeContainer, color);
   viewer.querySelector('.extractor-file-name').textContent = file.name;
   _updateSelectionMeta(viewer);
   const searchInput = viewer.querySelector('.extractor-search-input');
   if (searchInput) searchInput.value = '';
-  _buildPageCards(viewer, _pageCount);
+  _buildPageCards(viewer, _pageCount, info.thumbnail);
 
-  try {
-    const pdfDoc = await loadPdfDocument(file);
-    if (token !== _renderToken) return;
-    _pdfDoc = pdfDoc;
-    for (let pageNumber = 1; pageNumber <= pdfDoc.numPages; pageNumber += 1) {
-      _renderPage(pdfDoc, pageNumber, viewer, token).catch(() => {
-        const card = viewer.querySelector(`.extractor-page-card[data-page-index="${pageNumber - 1}"]`);
-        const stage = card && card.querySelector('.extractor-thumb-stage');
-        if (stage) stage.innerHTML = '<span class="extractor-empty-state">Preview failed</span>';
+  // Wait for the viewer transition (300 ms) + two animation frames so the
+  // full page-card grid has been laid out before we scroll to it.
+  setTimeout(() => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => {
+        _scrollToViewer(viewer);
       });
-    }
-  } catch (err) {
-    pushNotification({
-      type: 'warning',
-      message: 'Preview Limited',
-      detail: err.message || 'Page thumbnails could not be rendered.',
     });
-  }
+  }, 320);
+
+  const pdfLoadPromise = _pdfDoc ? Promise.resolve(_pdfDoc) : loadPdfDocument(file);
+  pdfLoadPromise
+    .then((doc) => {
+      if (token !== _renderToken) return;
+      _pdfDoc = doc;
+      _renderThumbnailsQueue(doc, viewer, token);
+    })
+    .catch((err) => {
+      pushNotification({
+        type: 'warning',
+        message: 'Preview Limited',
+        detail: err.message || 'Page thumbnails could not be rendered.',
+      });
+    });
 }
 
 async function _submitExtract() {

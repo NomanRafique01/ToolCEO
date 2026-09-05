@@ -11,6 +11,7 @@
 
 import { setActiveTool } from './toolstate.js';
 import { getLockedModuleId } from './modulelock.js';
+import { isFavourite as _isFavourite } from './favourites.js';
 
 // ─── MODULE-LOCK NAVIGATION HOOK ──────────────────────────────────────────────
 let _navigateToModule = null;
@@ -503,12 +504,23 @@ const IMG_FORMATS = [
 // ─── HELPER: render a card ────────────────────────────────────────────────────
 
 function cardHTML(item, extraClass = '') {
+  const isEntry    = Boolean(item.isJpgEntry || item.isPngEntry || item.isWebpEntry || item.isSvgEntry || item.isGifEntry || item.isBmpEntry || item.isTiffEntry);
   const locked     = getLockedModuleId(item.id) !== null;
   const lockClass  = locked ? ' fmt-card--locked' : '';
   const lockedAttr = locked ? ` data-locked-module="${getLockedModuleId(item.id)}"` : '';
   const bottom = item.ext
     ? `<div class="fmt-ext">${item.ext}</div>`
     : `<div class="fmt-tag fmt-tag--${item.tag.toLowerCase()}">${item.tag}</div>`;
+
+  let starBtn = '';
+  if (!isEntry) {
+    const fav       = _isFavourite(item.id);
+    const starCls   = fav ? ' is-favourite' : '';
+    const starCh    = fav ? '\u2605' : '\u2606';
+    const starTitle = fav ? 'Remove from Favourites' : 'Add to Favourites';
+    starBtn = `<button class="card-fav-btn${starCls}" type="button" title="${starTitle}" aria-label="${starTitle}" data-fav-id="${item.id}">${starCh}</button>`;
+  }
+
   return `
     <div class="fmt-card${extraClass ? ' ' + extraClass : ''}${lockClass}" data-id="${item.id}"${lockedAttr}
          style="--fmt-color:${item.color};--fmt-bg:${item.bg}">
@@ -519,6 +531,7 @@ function cardHTML(item, extraClass = '') {
       <div class="fmt-label">${item.label}</div>
       <div class="fmt-desc">${item.desc}</div>
       ${bottom}
+      ${starBtn}
     </div>`;
 }
 

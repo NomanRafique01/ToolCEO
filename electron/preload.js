@@ -42,11 +42,13 @@ contextBridge.exposeInMainWorld('electronAPI', {
   // Status read/write
   readModulesJson:  ()                    => ipcRenderer.invoke('read-modules-json'),
   writeModulesJson: (moduleId, status)    => ipcRenderer.invoke('write-modules-json', moduleId, status),
+  getBuildInfo:     ()                    => ipcRenderer.invoke('get-build-info'),
 
   // Download lifecycle
-  startModuleDownload:  ({ moduleId, downloadUrl }) => ipcRenderer.invoke('start-module-download', { moduleId, downloadUrl }),
-  cancelModuleDownload: ()                           => ipcRenderer.invoke('cancel-module-download'),
-  resumeModuleDownload: ()                           => ipcRenderer.invoke('resume-module-download'),
+  startModuleDownload:     ({ moduleId, downloadUrl }) => ipcRenderer.invoke('start-module-download', { moduleId, downloadUrl }),
+  cancelModuleDownload:    ()                           => ipcRenderer.invoke('cancel-module-download'),
+  resumeModuleDownload:    ()                           => ipcRenderer.invoke('resume-module-download'),
+  getActiveModuleDownload: ()                           => ipcRenderer.invoke('get-active-module-download'),
 
   // Progress / status events (renderer subscribes to these)
   onModuleDownloadProgress: (cb) => {

@@ -3,7 +3,8 @@
   "version": "1.0.0",
   "main": "electron/main.js",
   "scripts": {
-    "start": "electron .",
+    "start": "node start.js",
+    "prebuild": "node scripts/prebuild.js",
     "build": "electron-builder --win --x64"
   },
   "build": {
@@ -16,6 +17,7 @@
     "nsis": {
       "oneClick": false,
       "allowToChangeInstallationDirectory": true,
+      "deleteAppDataOnUninstall": true,
       "installerIcon": "assets/icon.ico",
       "uninstallerIcon": "assets/icon.ico",
       "installerHeaderIcon": "assets/icon.ico",
@@ -37,12 +39,18 @@
           "!7zip/**",
           "!ocr/**",
           "!document/**",
+          "!ebook/**",
+          "!media/**",
           "!*.zip"
         ]
       },
       {
         "from": "modules.json",
         "to": "../modules.json"
+      },
+      {
+        "from": "build-info.json",
+        "to": "../build-info.json"
       }
     ],
     "files": [
@@ -50,6 +58,7 @@
       "electron/**/*",
       "assets/**/*",
       "resources/**/*",
+      "build-info.json",
       "package.json"
     ]
   },

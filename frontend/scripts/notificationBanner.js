@@ -184,12 +184,11 @@ function _render(banner, notifications) {
     const isAutoDismiss = n.autoDismiss === true;
 
     return `
-      <span class="nb-pill ${isProgress ? 'nb-pill--progress' : ''}" style="--pill-color:${m.color}" data-id="${_escHtml(n.id)}" data-auto-dismiss="${isAutoDismiss ? 'true' : 'false'}">
+      <span class="nb-pill ${isProgress ? 'nb-pill--progress' : ''}" style="--pill-color:${m.color}" data-id="${_escHtml(n.id)}" data-auto-dismiss="${isAutoDismiss ? 'true' : 'false'}" title="${_escHtml(n.message)}">
         <span class="nb-pill-icon" style="color:${m.color}">${m.icon}</span>
         <span class="nb-pill-msg">${_escHtml(n.message)}</span>
         ${!isProgress ? `<span class="nb-pill-time">${relTime(n.timestamp)}</span>` : ''}
         <button class="nb-pill-x" data-pill-x="${_escHtml(n.id)}" title="Dismiss">&times;</button>
-
       </span>`;
   }).join('');
 

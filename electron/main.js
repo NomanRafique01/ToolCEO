@@ -621,12 +621,19 @@ function createSplash() {
   splashWindow = new BrowserWindow({
     width: 1200,
     height: 750,
-    frame: true,
+    show: false,
+    frame: false,
+    titleBarStyle: 'hidden',
+    titleBarOverlay: {
+      color: '#081918',
+      symbolColor: '#8FAAA6',
+      height: 32,
+    },
     transparent: false,
     backgroundColor: '#0A1F1C',
     alwaysOnTop: true,
     skipTaskbar: false,
-    resizable: false,
+    resizable: true,
     center: true,
     title: 'ToolCEO',
     icon: appIconPath,
@@ -638,10 +645,22 @@ function createSplash() {
   splashWindow.setMenuBarVisibility(false);
   splashWindow.loadFile(path.join(__dirname, '..', 'frontend', 'splash.html'));
 
+  const showSplash = () => {
+    if (splashWindow && !splashWindow.isDestroyed() && !splashWindow.isVisible()) {
+      splashWindow.maximize();
+      splashWindow.show();
+    }
+  };
+  splashWindow.once('ready-to-show', showSplash);
+  setTimeout(showSplash, 300);
+
   // If user closes the splash manually, show the main window immediately
   splashWindow.on('closed', () => {
     splashWindow = null;
-    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.show();
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.maximize();
+      mainWindow.show();
+    }
   });
 }
 
@@ -675,8 +694,10 @@ function createWindow() {
     mainWindow.webContents.session.clearCache();
   }
 
-  // Wait for both: 4s minimum splash time AND window ready-to-show
-  const timerDone   = new Promise(resolve => setTimeout(resolve, 10000));
+  // Wait for both: minimum splash time (4s) AND window ready-to-show
+  const timerDone   = splashWindow
+    ? new Promise(resolve => setTimeout(resolve, 4000))
+    : Promise.resolve();
   const windowReady = new Promise(resolve => mainWindow.once('ready-to-show', resolve));
 
   Promise.all([timerDone, windowReady]).then(() => {
@@ -685,6 +706,7 @@ function createWindow() {
       splashWindow = null;
     }
     if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.maximize();
       mainWindow.show();
     }
   });
@@ -718,9 +740,358 @@ function _getEnginesDir() {
   return path.join(__dirname, '..', 'engines');
 }
 
-/** Send a native OS notification (no-op if Notification not supported). */
+/** Returns the path to modules.json */
+function _getModulesJsonPath() {
+  if (app.isPackaged) {
+    return path.join(process.resourcesPath, '..', 'modules.json');
+  }
+  return path.join(__dirname, '..', 'modules.json');
+}
+
+/** Asynchronously delete a file with retry on Windows to avoid EBUSY/EPERM locks */
+async function _safeUnlink(filePath, retries = 5, delayMs = 300) {
+  if (!filePath) return;
+  for (let i = 0; i < retries; i++) {
+    try {
+      if (fs.existsSync(filePath)) {
+        await fs.promises.unlink(filePath);
+      }
+      return;
+    } catch (_) {
+      if (i < retries - 1) {
+        await new Promise((r) => setTimeout(r, delayMs));
+      }
+    }
+  }
+}
+
+/**
+ * Returns build information from build-info.json or defaults to app version.
+ */
+function _getBuildInfo() {
+  try {
+    const possiblePaths = [
+      path.join(__dirname, '..', 'build-info.json'),
+      path.join(process.resourcesPath || '', '..', 'build-info.json'),
+      path.join(process.resourcesPath || '', 'build-info.json'),
+      path.join(__dirname, '..', 'frontend', 'build-info.json'),
+    ];
+    for (const p of possiblePaths) {
+      if (fs.existsSync(p)) {
+        return JSON.parse(fs.readFileSync(p, 'utf8'));
+      }
+    }
+  } catch (_) {}
+  return { buildId: `build-${app.getVersion()}` };
+}
+
+/**
+ * On fresh install or when a new build is launched, ensure all modules in modules.json
+ * are strictly "not_installed".
+ */
+function _ensureCleanInstallState() {
+  try {
+    const currentBuild = _getBuildInfo();
+    const currentBuildId = currentBuild && currentBuild.buildId ? currentBuild.buildId : app.getVersion();
+    const buildMarkerPath = path.join(app.getPath('userData'), 'last_installed_build.json');
+
+    let isNewBuild = true;
+    if (fs.existsSync(buildMarkerPath)) {
+      try {
+        const stored = JSON.parse(fs.readFileSync(buildMarkerPath, 'utf8'));
+        if (stored && stored.buildId === currentBuildId) {
+          isNewBuild = false;
+        }
+      } catch (_) {}
+    }
+
+    if (isNewBuild) {
+      console.log(`[ToolCEO] New build/install detected (${currentBuildId}). Ensuring clean module status.`);
+      const modulesPath = _getModulesJsonPath();
+      if (fs.existsSync(modulesPath)) {
+        try {
+          const raw = fs.readFileSync(modulesPath, 'utf8');
+          const data = JSON.parse(raw);
+          if (data && data.modules) {
+            for (const key of Object.keys(data.modules)) {
+              data.modules[key].status = 'not_installed';
+            }
+            fs.writeFileSync(modulesPath, JSON.stringify(data, null, 2), 'utf8');
+          }
+        } catch (_) {}
+      }
+
+      try {
+        fs.writeFileSync(buildMarkerPath, JSON.stringify({ buildId: currentBuildId, timestamp: Date.now() }, null, 2), 'utf8');
+      } catch (_) {}
+    }
+  } catch (err) {
+    console.error('[ToolCEO] Failed to check/reset clean install state:', err);
+  }
+}
+
+/**
+ * Asynchronously extract a module ZIP in a separate OS process/worker so Electron's
+ * main thread and window rendering NEVER freeze or stutter.
+ * Reports real-time extraction progress via onProgress(percent, message).
+ */
+async function _extractZip(zipPath, enginesDir, moduleId, onProgress = () => {}) {
+  await fs.promises.mkdir(enginesDir, { recursive: true });
+
+  const MODULE_ENGINE_MAP = {
+    ocr: ['tesseract'],
+    office: ['libreoffice'],
+    document: ['pandoc'],
+    ebook: ['calibre'],
+    media: ['7zip', 'ffmpeg'],
+  };
+
+  const expectedEngines = MODULE_ENGINE_MAP[moduleId] || [];
+  let extracted = false;
+
+  // 1. Try 7-Zip if available (runs in an external process - zero main thread load)
+  const sevenZipCandidates = [
+    path.join(enginesDir, '7zip', IS_WIN ? '7z.exe' : '7z'),
+    path.join(RESOURCES_DIR, 'bin', IS_WIN ? '7z.exe' : '7z'),
+  ];
+  for (const sevenZipExe of sevenZipCandidates) {
+    if (fs.existsSync(sevenZipExe)) {
+      try {
+        await new Promise((resolve, reject) => {
+          const child = execFile(sevenZipExe, ['x', zipPath, `-o${enginesDir}`, '-y', '-aoa', '-bsp1'], { windowsHide: true });
+          let lastPct = 0;
+          const parseProgress = (chunk) => {
+            const str = chunk.toString();
+            const matches = str.match(/([0-9]{1,3})%/g);
+            if (matches && matches.length > 0) {
+              const last = matches[matches.length - 1];
+              const p = parseInt(last, 10);
+              if (!isNaN(p) && p >= lastPct && p <= 100) {
+                lastPct = p;
+                onProgress(p, 'Installing module files…');
+              }
+            }
+          };
+          if (child.stdout) child.stdout.on('data', parseProgress);
+          if (child.stderr) child.stderr.on('data', parseProgress);
+          child.on('close', (code) => {
+            if (code === 0) resolve();
+            else reject(new Error(`7-Zip extraction failed with code ${code}`));
+          });
+          child.on('error', reject);
+        });
+        extracted = true;
+        break;
+      } catch (err) {
+        console.warn('7-Zip extraction failed:', err.message);
+      }
+    }
+  }
+
+  // 2. Native OS extraction via separate child process (Zero main-thread blocking)
+  if (!extracted) {
+    const tarExe = IS_WIN
+      ? path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'tar.exe')
+      : 'tar';
+
+    const tarAvailable = IS_WIN ? fs.existsSync(tarExe) : true;
+    if (tarAvailable) {
+      try {
+        // Fast listing to count entries for percentage calculation
+        let totalFiles = 0;
+        try {
+          totalFiles = await new Promise((res) => {
+            const timer = setTimeout(() => res(0), 4000);
+            execFile(tarExe, ['-tf', zipPath], { windowsHide: true, maxBuffer: 32 * 1024 * 1024 }, (err, stdout) => {
+              clearTimeout(timer);
+              if (err || !stdout) return res(0);
+              const count = stdout.split(/\r?\n/).filter(Boolean).length;
+              res(count);
+            });
+          });
+        } catch (_) {
+          totalFiles = 0;
+        }
+
+        await new Promise((resolve, reject) => {
+          const child = execFile(tarExe, ['-vxf', zipPath, '-C', enginesDir], { windowsHide: true });
+          let count = 0;
+          let lastPct = 0;
+          let buffer = '';
+          let lastEmit = 0;
+
+          const handleData = (chunk) => {
+            buffer += chunk.toString();
+            const lines = buffer.split(/\r?\n/);
+            buffer = lines.pop() || '';
+            count += lines.filter(Boolean).length;
+
+            const now = Date.now();
+            if (now - lastEmit >= 100) {
+              lastEmit = now;
+              if (totalFiles > 0) {
+                const pct = Math.min(99, Math.floor((count / totalFiles) * 100));
+                if (pct >= lastPct) {
+                  lastPct = pct;
+                  onProgress(pct, 'Installing module files…');
+                }
+              } else {
+                const estPct = Math.min(95, Math.floor(count / 30));
+                if (estPct >= lastPct) {
+                  lastPct = estPct;
+                  onProgress(estPct, 'Installing module files…');
+                }
+              }
+            }
+          };
+
+          if (child.stderr) child.stderr.on('data', handleData);
+          if (child.stdout) child.stdout.on('data', handleData);
+
+          child.on('close', (code) => {
+            if (code === 0) resolve();
+            else reject(new Error(`tar extraction failed with code ${code}`));
+          });
+          child.on('error', reject);
+        });
+        extracted = true;
+      } catch (err) {
+        console.warn('Native tar extraction failed:', err.message);
+      }
+    }
+
+    // Windows PowerShell Expand-Archive fallback
+    if (!extracted && IS_WIN) {
+      const psExe = path.join(process.env.SystemRoot || 'C:\\Windows', 'System32', 'WindowsPowerShell', 'v1.0', 'powershell.exe');
+      if (fs.existsSync(psExe)) {
+        try {
+          await new Promise((resolve, reject) => {
+            let simPct = 5;
+            onProgress(simPct, 'Installing module files…');
+            const simTimer = setInterval(() => {
+              if (simPct < 95) {
+                simPct += Math.max(1, Math.floor((95 - simPct) * 0.08));
+                onProgress(simPct, 'Installing module files…');
+              }
+            }, 300);
+
+            const cmd = `Expand-Archive -LiteralPath "${zipPath}" -DestinationPath "${enginesDir}" -Force`;
+            execFile(psExe, ['-NoProfile', '-NonInteractive', '-Command', cmd], { windowsHide: true }, (err) => {
+              clearInterval(simTimer);
+              if (err) reject(err);
+              else resolve();
+            });
+          });
+          extracted = true;
+        } catch (err) {
+          console.warn('PowerShell Expand-Archive extraction failed:', err.message);
+        }
+      }
+    } else if (!extracted && !IS_WIN) {
+      // Unix unzip fallback
+      try {
+        await new Promise((resolve, reject) => {
+          execFile('unzip', ['-q', '-o', zipPath, '-d', enginesDir], (err) => {
+            if (err) reject(err);
+            else resolve();
+          });
+        });
+        extracted = true;
+      } catch (err) {
+        console.warn('Unix unzip failed:', err.message);
+      }
+    }
+  }
+
+  // 3. Fallback: run AdmZip in a separate Node.js worker_threads Worker so main thread never hangs
+  if (!extracted) {
+    try {
+      const { Worker } = require('worker_threads');
+      const workerCode = `
+        const { workerData, parentPort } = require('worker_threads');
+        const AdmZip = require('adm-zip');
+        try {
+          const zip = new AdmZip(workerData.zipPath);
+          const entries = zip.getEntries();
+          const total = entries.length;
+          let lastSent = 0;
+          for (let i = 0; i < total; i++) {
+            zip.extractEntryTo(entries[i], workerData.enginesDir, true, true);
+            const now = Date.now();
+            if (now - lastSent >= 100 || i === total - 1) {
+              lastSent = now;
+              const pct = Math.min(99, Math.floor(((i + 1) / total) * 100));
+              parentPort.postMessage({ type: 'progress', percent: pct, current: i + 1, total });
+            }
+          }
+          parentPort.postMessage({ ok: true });
+        } catch (err) {
+          parentPort.postMessage({ ok: false, error: err.message });
+        }
+      `;
+      await new Promise((resolve, reject) => {
+        const worker = new Worker(workerCode, {
+          eval: true,
+          workerData: { zipPath, enginesDir },
+        });
+        worker.on('message', (msg) => {
+          if (msg.type === 'progress') {
+            onProgress(msg.percent, 'Installing module files…');
+          } else if (msg.ok) {
+            resolve();
+          } else {
+            reject(new Error(msg.error));
+          }
+        });
+        worker.on('error', reject);
+        worker.on('exit', (code) => {
+          if (code !== 0) reject(new Error(`Worker stopped with exit code ${code}`));
+        });
+      });
+      extracted = true;
+    } catch (err) {
+      console.warn('Worker thread AdmZip failed, last resort in-process fallback:', err.message);
+      const zip = new AdmZip(zipPath);
+      await zip.extractAllToAsync(enginesDir, true);
+    }
+  }
+
+  onProgress(100, 'Finishing installation…');
+
+  // Ensure compatibility: if engine is at engines/<engine>, ensure engines/<moduleId>/<engine>
+  // also resolves (via Windows junction or folder link) so all lookup paths succeed
+  for (const eng of expectedEngines) {
+    const sourceEngPath = path.join(enginesDir, eng);
+    const nestedModPath = path.join(enginesDir, moduleId, eng);
+    const modDirPath    = path.join(enginesDir, moduleId);
+
+    if (fs.existsSync(sourceEngPath) && !fs.existsSync(nestedModPath)) {
+      try {
+        fs.mkdirSync(modDirPath, { recursive: true });
+        if (IS_WIN) {
+          try { fs.symlinkSync(sourceEngPath, nestedModPath, 'junction'); } catch (_) {}
+        }
+      } catch (_) {}
+    } else if (!fs.existsSync(sourceEngPath) && fs.existsSync(nestedModPath)) {
+      try {
+        if (IS_WIN) {
+          try { fs.symlinkSync(nestedModPath, sourceEngPath, 'junction'); } catch (_) {}
+        }
+      } catch (_) {}
+    }
+  }
+}
+
+/** Send a native OS notification only when window is minimized or app is running in the background. */
 function _notify(title, body) {
   try {
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      const isInsideApp = mainWindow.isVisible() && !mainWindow.isMinimized() && mainWindow.isFocused();
+      if (isInsideApp) {
+        // User is actively inside the app — in-app notifications handle messaging
+        return;
+      }
+    }
     if (Notification.isSupported()) {
       new Notification({ title, body }).show();
     }
@@ -903,14 +1274,12 @@ app.whenReady().then(async () => {
 
   // ── IPC: Read modules.json — returns flat { office: 'not_installed', ... } ─
   ipcMain.handle('read-modules-json', () => {
-    const modulesPath = app.isPackaged
-      ? path.join(process.resourcesPath, '..', 'modules.json')
-      : path.join(__dirname, '..', 'modules.json');
+    const modulesPath = _getModulesJsonPath();
     try {
       const raw  = fs.readFileSync(modulesPath, 'utf8');
       const data = JSON.parse(raw);
       return Object.fromEntries(
-        Object.entries(data.modules).map(([k, v]) => [k, v.status])
+        Object.entries(data.modules || {}).map(([k, v]) => [k, v.status])
       );
     } catch (_) {
       return {};
@@ -919,15 +1288,15 @@ app.whenReady().then(async () => {
 
   // ── IPC: Write a single module's status back to modules.json ──────────────
   ipcMain.handle('write-modules-json', (_event, moduleId, status) => {
-    const modulesPath = app.isPackaged
-      ? path.join(process.resourcesPath, '..', 'modules.json')
-      : path.join(__dirname, '..', 'modules.json');
+    const modulesPath = _getModulesJsonPath();
     try {
-      const raw  = fs.readFileSync(modulesPath, 'utf8');
-      const data = JSON.parse(raw);
-      if (data.modules[moduleId]) {
-        data.modules[moduleId].status = status;
+      let data = { modules: {} };
+      if (fs.existsSync(modulesPath)) {
+        data = JSON.parse(fs.readFileSync(modulesPath, 'utf8'));
       }
+      if (!data.modules) data.modules = {};
+      if (!data.modules[moduleId]) data.modules[moduleId] = {};
+      data.modules[moduleId].status = status;
       fs.writeFileSync(modulesPath, JSON.stringify(data, null, 2), 'utf8');
       return { ok: true };
     } catch (err) {
@@ -935,11 +1304,16 @@ app.whenReady().then(async () => {
     }
   });
 
+  // ── IPC: Get build info ───────────────────────────────────────────────────
+  ipcMain.handle('get-build-info', () => {
+    return _getBuildInfo();
+  });
+
   // ── IPC: Start module download ─────────────────────────────────────────────
   ipcMain.handle('start-module-download', async (_event, { moduleId, downloadUrl }) => {
     // One download at a time
     if (_activeDownload) {
-      return { ok: false, reason: 'busy' };
+      return { ok: false, reason: 'busy', activeModuleId: _activeDownload.moduleId };
     }
 
     // Online check
@@ -961,6 +1335,8 @@ app.whenReady().then(async () => {
       pausedAt: 0,
       speedSamples: [],
       reconnectTimer: null,
+      phase: 'downloading',
+      cancelled: false,
     };
 
     // Throttle IPC progress events to ~150ms intervals
@@ -976,6 +1352,12 @@ app.whenReady().then(async () => {
       }
     };
 
+    const sendProgressDirect = (payload) => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('module-download-progress', payload);
+      }
+    };
+
     try {
       const { res, req } = await _httpsGetFollow(downloadUrl, { 'User-Agent': 'ToolCEO/1.0' });
       _activeDownload.req = req;
@@ -984,8 +1366,18 @@ app.whenReady().then(async () => {
       const writeStream = fs.createWriteStream(tempPath);
 
       await new Promise((resolve, reject) => {
+        let isResolved = false;
+        const cleanup = () => {
+          res.removeAllListeners();
+          req.removeAllListeners();
+        };
+
         res.on('data', (chunk) => {
-          if (!_activeDownload) { res.destroy(); writeStream.close(); return; }
+          if (!_activeDownload || _activeDownload.cancelled) {
+            try { res.destroy(); } catch (_) {}
+            try { writeStream.destroy(); } catch (_) {}
+            return;
+          }
           _activeDownload.received += chunk.length;
           writeStream.write(chunk);
 
@@ -994,8 +1386,9 @@ app.whenReady().then(async () => {
             _activeDownload.received,
             _activeDownload.total
           );
+          // Keep percent capped at 99% during chunk streaming until write stream fully flushes
           const percent = _activeDownload.total > 0
-            ? Math.round((_activeDownload.received / _activeDownload.total) * 100)
+            ? Math.min(99, Math.floor((_activeDownload.received / _activeDownload.total) * 100))
             : 0;
 
           sendProgress({
@@ -1005,17 +1398,52 @@ app.whenReady().then(async () => {
             speedBps,
             etaSeconds,
             percent,
+            phase: 'downloading',
           });
         });
 
-        res.on('end', () => { writeStream.end(); resolve(); });
-        res.on('error', (err) => { writeStream.destroy(); reject(err); });
-        req.on('error', (err) => { writeStream.destroy(); reject(err); });
+        writeStream.on('finish', () => {
+          if (!isResolved) {
+            isResolved = true;
+            cleanup();
+            resolve();
+          }
+        });
+
+        writeStream.on('error', (err) => {
+          if (!isResolved) {
+            isResolved = true;
+            cleanup();
+            reject(err);
+          }
+        });
+
+        res.on('end', () => {
+          writeStream.end();
+        });
+
+        res.on('error', (err) => {
+          try { writeStream.destroy(); } catch (_) {}
+          if (!isResolved) {
+            isResolved = true;
+            cleanup();
+            reject(err);
+          }
+        });
+
+        req.on('error', (err) => {
+          try { writeStream.destroy(); } catch (_) {}
+          if (!isResolved) {
+            isResolved = true;
+            cleanup();
+            reject(err);
+          }
+        });
       });
 
     } catch (err) {
       // Network error mid-download
-      if (_activeDownload) {
+      if (_activeDownload && !_activeDownload.cancelled) {
         _activeDownload.paused = true;
         _activeDownload.pausedAt = _activeDownload.received;
         _notify('Connection lost', 'Download paused. Check your connection.');
@@ -1023,6 +1451,7 @@ app.whenReady().then(async () => {
           mainWindow.webContents.send('module-download-error', { moduleId, reason: 'connection-lost', received: _activeDownload.received });
         }
         // Start reconnect polling
+        if (_activeDownload.reconnectTimer) clearInterval(_activeDownload.reconnectTimer);
         _activeDownload.reconnectTimer = setInterval(() => {
           if (!_activeDownload || !_activeDownload.paused) {
             clearInterval(_activeDownload && _activeDownload.reconnectTimer);
@@ -1037,39 +1466,87 @@ app.whenReady().then(async () => {
             }
           }
         }, 5000);
+        return { ok: false, reason: 'connection-lost', paused: true, activeModuleId: moduleId, received: _activeDownload.received };
       }
       return { ok: false, reason: 'network-error', error: err.message };
     }
 
     // Check still active (could have been cancelled)
-    if (!_activeDownload) return { ok: false, reason: 'cancelled' };
+    if (!_activeDownload || _activeDownload.cancelled) {
+      await _safeUnlink(tempPath);
+      return { ok: false, reason: 'cancelled' };
+    }
 
-    // Extract ZIP to engines/<moduleId>/
+    // Download is 100% complete! Transition to extracting phase
+    _activeDownload.phase = 'extracting';
+    _activeDownload.percent = 0;
+    _activeDownload.message = 'Installing module files…';
+    sendProgressDirect({
+      moduleId,
+      receivedBytes: _activeDownload.total || _activeDownload.received,
+      totalBytes:    _activeDownload.total || _activeDownload.received,
+      speedBps: 0,
+      etaSeconds: 0,
+      percent: 0,
+      phase: 'extracting',
+      message: 'Installing module files…',
+    });
+
+    // Extract ZIP to engines
     try {
       const enginesDir = _getEnginesDir();
-      const destDir    = path.join(enginesDir, moduleId);
-      fs.mkdirSync(destDir, { recursive: true });
-
-      const zip = new AdmZip(tempPath);
-      zip.extractAllTo(destDir, true /* overwrite */);
+      let lastExtractSend = 0;
+      await _extractZip(tempPath, enginesDir, moduleId, (percent, message) => {
+        const now = Date.now();
+        if (now - lastExtractSend >= 100 || percent === 100) {
+          lastExtractSend = now;
+          if (_activeDownload) {
+            _activeDownload.percent = percent;
+            _activeDownload.message = message;
+          }
+          sendProgressDirect({
+            moduleId,
+            receivedBytes: _activeDownload ? (_activeDownload.total || _activeDownload.received) : 0,
+            totalBytes:    _activeDownload ? (_activeDownload.total || _activeDownload.received) : 0,
+            speedBps: 0,
+            etaSeconds: 0,
+            percent,
+            phase: 'extracting',
+            message: message || 'Installing module files…',
+          });
+        }
+      });
     } catch (err) {
+      console.error('Module extraction error:', err);
+      await _safeUnlink(tempPath);
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('module-download-error', {
+          moduleId,
+          reason: 'extraction-failed',
+          error: err.message || 'Failed to extract module archive',
+        });
+      }
       _activeDownload = null;
       return { ok: false, reason: 'extraction-failed', error: err.message };
     }
 
-    // Delete temp zip
-    try { fs.unlinkSync(tempPath); } catch (_) { /* ignore */ }
+    // Delete temp zip cleanly
+    await _safeUnlink(tempPath);
 
-    // Write installed status
-    const modulesPath = app.isPackaged
-      ? path.join(process.resourcesPath, '..', 'modules.json')
-      : path.join(__dirname, '..', 'modules.json');
+    // Write installed status to modules.json
+    const modulesPath = _getModulesJsonPath();
     try {
-      const raw  = fs.readFileSync(modulesPath, 'utf8');
-      const data = JSON.parse(raw);
-      if (data.modules[moduleId]) data.modules[moduleId].status = 'installed';
+      let data = { modules: {} };
+      if (fs.existsSync(modulesPath)) {
+        data = JSON.parse(fs.readFileSync(modulesPath, 'utf8'));
+      }
+      if (!data.modules) data.modules = {};
+      if (!data.modules[moduleId]) data.modules[moduleId] = {};
+      data.modules[moduleId].status = 'installed';
       fs.writeFileSync(modulesPath, JSON.stringify(data, null, 2), 'utf8');
-    } catch (_) { /* non-fatal */ }
+    } catch (err) {
+      console.error('Failed to write installed status to modules.json:', err);
+    }
 
     const modName = moduleId.charAt(0).toUpperCase() + moduleId.slice(1) + ' Module';
     _notify(modName + ' installed', `${modName} downloaded and installed successfully.`);
@@ -1082,13 +1559,31 @@ app.whenReady().then(async () => {
     return { ok: true };
   });
 
+  // ── IPC: Get active module download state ──────────────────────────────────
+  ipcMain.handle('get-active-module-download', () => {
+    if (!_activeDownload) return null;
+    return {
+      moduleId: _activeDownload.moduleId,
+      received: _activeDownload.received,
+      total:    _activeDownload.total,
+      paused:   _activeDownload.paused,
+      phase:    _activeDownload.phase,
+      percent:  _activeDownload.percent,
+      message:  _activeDownload.message,
+    };
+  });
+
   // ── IPC: Cancel module download ────────────────────────────────────────────
-  ipcMain.handle('cancel-module-download', () => {
+  ipcMain.handle('cancel-module-download', async () => {
     if (!_activeDownload) return { ok: false };
+    if (_activeDownload.phase === 'extracting') {
+      return { ok: false, reason: 'extracting' };
+    }
+    _activeDownload.cancelled = true;
     const { req, tempPath, reconnectTimer } = _activeDownload;
     if (reconnectTimer) clearInterval(reconnectTimer);
     if (req) { try { req.destroy(); } catch (_) {} }
-    try { if (fs.existsSync(tempPath)) fs.unlinkSync(tempPath); } catch (_) {}
+    await _safeUnlink(tempPath);
     _activeDownload = null;
     return { ok: true };
   });
@@ -1120,6 +1615,12 @@ app.whenReady().then(async () => {
       }
     };
 
+    const sendProgressDirect = (payload) => {
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('module-download-progress', payload);
+      }
+    };
+
     try {
       const resumeHeaders = {
         'User-Agent': 'ToolCEO/1.0',
@@ -1127,7 +1628,6 @@ app.whenReady().then(async () => {
       };
       const { res, req } = await _httpsGetFollow(downloadUrl, resumeHeaders);
       _activeDownload.req = req;
-      // If server returns 200 (doesn't support range), total is full size; if 206, add to offset
       if (res.statusCode === 200) {
         _activeDownload.received = 0;
         _activeDownload.total = parseInt(res.headers['content-length'] || '0', 10);
@@ -1140,8 +1640,18 @@ app.whenReady().then(async () => {
       const writeStream = fs.createWriteStream(tempPath, { flags: writeFlag });
 
       await new Promise((resolve, reject) => {
+        let isResolved = false;
+        const cleanup = () => {
+          res.removeAllListeners();
+          req.removeAllListeners();
+        };
+
         res.on('data', (chunk) => {
-          if (!_activeDownload) { res.destroy(); writeStream.close(); return; }
+          if (!_activeDownload || _activeDownload.cancelled) {
+            try { res.destroy(); } catch (_) {}
+            try { writeStream.destroy(); } catch (_) {}
+            return;
+          }
           _activeDownload.received += chunk.length;
           writeStream.write(chunk);
 
@@ -1151,52 +1661,145 @@ app.whenReady().then(async () => {
             _activeDownload.total
           );
           const percent = _activeDownload.total > 0
-            ? Math.round((_activeDownload.received / _activeDownload.total) * 100)
+            ? Math.min(99, Math.floor((_activeDownload.received / _activeDownload.total) * 100))
             : 0;
 
-          sendProgress({ moduleId, receivedBytes: _activeDownload.received, totalBytes: _activeDownload.total, speedBps, etaSeconds, percent });
+          sendProgress({ moduleId, receivedBytes: _activeDownload.received, totalBytes: _activeDownload.total, speedBps, etaSeconds, percent, phase: 'downloading' });
         });
 
-        res.on('end', () => { writeStream.end(); resolve(); });
-        res.on('error', reject);
-        req.on('error', reject);
+        writeStream.on('finish', () => {
+          if (!isResolved) {
+            isResolved = true;
+            cleanup();
+            resolve();
+          }
+        });
+
+        writeStream.on('error', (err) => {
+          if (!isResolved) {
+            isResolved = true;
+            cleanup();
+            reject(err);
+          }
+        });
+
+        res.on('end', () => {
+          writeStream.end();
+        });
+
+        res.on('error', (err) => {
+          try { writeStream.destroy(); } catch (_) {}
+          if (!isResolved) {
+            isResolved = true;
+            cleanup();
+            reject(err);
+          }
+        });
+
+        req.on('error', (err) => {
+          try { writeStream.destroy(); } catch (_) {}
+          if (!isResolved) {
+            isResolved = true;
+            cleanup();
+            reject(err);
+          }
+        });
       });
 
     } catch (err) {
-      if (_activeDownload) {
+      if (_activeDownload && !_activeDownload.cancelled) {
         _activeDownload.paused = true;
         _activeDownload.pausedAt = _activeDownload.received;
         _notify('Connection lost', 'Download paused again. Check your connection.');
         if (mainWindow && !mainWindow.isDestroyed()) {
           mainWindow.webContents.send('module-download-error', { moduleId, reason: 'connection-lost', received: _activeDownload.received });
         }
+        if (_activeDownload.reconnectTimer) clearInterval(_activeDownload.reconnectTimer);
+        _activeDownload.reconnectTimer = setInterval(() => {
+          if (!_activeDownload || !_activeDownload.paused) {
+            clearInterval(_activeDownload && _activeDownload.reconnectTimer);
+            return;
+          }
+          if (net.isOnline()) {
+            clearInterval(_activeDownload.reconnectTimer);
+            _activeDownload.reconnectTimer = null;
+            if (mainWindow && !mainWindow.isDestroyed()) {
+              mainWindow.webContents.send('module-download-error', { moduleId, reason: 'connection-restored' });
+            }
+          }
+        }, 5000);
       }
-      return { ok: false, reason: 'network-error' };
+      return { ok: false, reason: 'connection-lost', paused: true };
     }
 
-    if (!_activeDownload) return { ok: false, reason: 'cancelled' };
+    if (!_activeDownload || _activeDownload.cancelled) {
+      await _safeUnlink(tempPath);
+      return { ok: false, reason: 'cancelled' };
+    }
 
-    // Extract + install (same as start handler)
+    // Extraction phase
+    _activeDownload.phase = 'extracting';
+    _activeDownload.percent = 0;
+    _activeDownload.message = 'Installing module files…';
+    sendProgressDirect({
+      moduleId,
+      receivedBytes: _activeDownload.total || _activeDownload.received,
+      totalBytes:    _activeDownload.total || _activeDownload.received,
+      speedBps: 0,
+      etaSeconds: 0,
+      percent: 0,
+      phase: 'extracting',
+      message: 'Installing module files…',
+    });
+
     try {
       const enginesDir = _getEnginesDir();
-      const destDir    = path.join(enginesDir, moduleId);
-      fs.mkdirSync(destDir, { recursive: true });
-      const zip = new AdmZip(tempPath);
-      zip.extractAllTo(destDir, true);
+      let lastExtractSend = 0;
+      await _extractZip(tempPath, enginesDir, moduleId, (percent, message) => {
+        const now = Date.now();
+        if (now - lastExtractSend >= 100 || percent === 100) {
+          lastExtractSend = now;
+          if (_activeDownload) {
+            _activeDownload.percent = percent;
+            _activeDownload.message = message;
+          }
+          sendProgressDirect({
+            moduleId,
+            receivedBytes: _activeDownload ? (_activeDownload.total || _activeDownload.received) : 0,
+            totalBytes:    _activeDownload ? (_activeDownload.total || _activeDownload.received) : 0,
+            speedBps: 0,
+            etaSeconds: 0,
+            percent,
+            phase: 'extracting',
+            message: message || 'Installing module files…',
+          });
+        }
+      });
     } catch (err) {
+      console.error('Resume extraction error:', err);
+      await _safeUnlink(tempPath);
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('module-download-error', {
+          moduleId,
+          reason: 'extraction-failed',
+          error: err.message || 'Failed to extract module archive',
+        });
+      }
       _activeDownload = null;
       return { ok: false, reason: 'extraction-failed', error: err.message };
     }
 
-    try { fs.unlinkSync(tempPath); } catch (_) {}
+    await _safeUnlink(tempPath);
 
-    const modulesPath = app.isPackaged
-      ? path.join(process.resourcesPath, '..', 'modules.json')
-      : path.join(__dirname, '..', 'modules.json');
+    const modulesPath = _getModulesJsonPath();
     try {
-      const raw  = fs.readFileSync(modulesPath, 'utf8');
-      const data = JSON.parse(raw);
-      if (data.modules[moduleId]) data.modules[moduleId].status = 'installed';
+      let data = { modules: {} };
+      if (fs.existsSync(modulesPath)) {
+        data = JSON.parse(fs.readFileSync(modulesPath, 'utf8'));
+      }
+      if (!data.modules) data.modules = {};
+      if (!data.modules[moduleId]) data.modules[moduleId] = {};
+      data.modules[moduleId].status = 'installed';
       fs.writeFileSync(modulesPath, JSON.stringify(data, null, 2), 'utf8');
     } catch (_) {}
 
@@ -1209,6 +1812,9 @@ app.whenReady().then(async () => {
     _activeDownload = null;
     return { ok: true };
   });
+
+  // ── Ensure clean modules on fresh install / new build ─────────────────────
+  _ensureCleanInstallState();
 
   // ── Show splash immediately, then load main window + backend in parallel ──
   createSplash();

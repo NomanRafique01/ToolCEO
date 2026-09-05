@@ -49,7 +49,9 @@
       width: 520px; height: 520px;
       background: radial-gradient(ellipse at center, rgba(0,229,192,0.08) 0%, transparent 68%);
       pointer-events: none;
+      z-index: 0;
     }
+
 
     /* ── Content stack ── */
     .content {
@@ -88,7 +90,7 @@
 
     /* ── Progress section ── */
     .progress-section {
-      width: 400px;
+      width: 260px;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -97,8 +99,8 @@
 
     .progress-track {
       width: 100%;
-      height: 3px;
-      background: var(--border);
+      height: 4px;
+      background: rgba(255, 255, 255, 0.08);
       border-radius: 999px;
       overflow: hidden;
     }
@@ -107,8 +109,8 @@
       height: 100%;
       width: 0%;
       border-radius: 999px;
-      background: linear-gradient(90deg, var(--accent), var(--accent-hover));
-      animation: fillBar 10s linear forwards;
+      background: var(--accent);
+      animation: fillBar 4s linear forwards;
     }
 
     @keyframes fillBar {
@@ -143,23 +145,7 @@
       font-size: 11px;
       color: var(--border);
       letter-spacing: 0.06em;
-    }
-
-    /* ── Bottom scan-line ── */
-    .bottom-line {
-      position: absolute;
-      bottom: 0; left: 0; right: 0;
-      height: 2px;
-      background: linear-gradient(90deg, transparent 0%, var(--accent) 50%, transparent 100%);
-      opacity: 0.35;
-      animation: scanLine 10s linear forwards;
-      transform-origin: left;
-      transform: scaleX(0);
-    }
-
-    @keyframes scanLine {
-      from { transform: scaleX(0); opacity: 0.35; }
-      to   { transform: scaleX(1); opacity: 0.7; }
+      z-index: 1;
     }
   </style>
 </head>
@@ -187,11 +173,10 @@
     </div>
 
     <div class="version">v1.0.0</div>
-    <div class="bottom-line"></div>
   </div>
 
   <script>
-    // Cycling messages
+    // ── Cycling status messages ──
     const messages = ['msg0', 'msg1', 'msg2', 'msg3'];
     let current = 0;
 
@@ -202,11 +187,14 @@
     }
 
     showMessage(0);
-    const interval = setInterval(() => {
+    const msgInterval = setInterval(() => {
       current++;
-      if (current >= messages.length) { clearInterval(interval); return; }
+      if (current >= messages.length) { clearInterval(msgInterval); return; }
       showMessage(current);
-    }, 2500);
+    }, 1000);
+
+
   </script>
 </body>
 </html>
+

@@ -10,6 +10,7 @@ import { initQuickConvert }         from './quickconvert.js';
 import { initNotificationBanner }   from './notificationBanner.js';
 import { initVaultFileHandler }     from './vaultFileHandler.js';
 import { initModuleDownloadPanel }  from './moduleDownload.js';
+import { initFavourites }           from './favourites.js';
 
 document.addEventListener('DOMContentLoaded', () => {
   const { activateNav } = initNavigation();
@@ -17,6 +18,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initQuickConvert();
   initNotificationBanner();
   initModuleDownloadPanel();
+  initFavourites({ activateNav });
 
   // Register Electron IPC listener for .tceo double-click / CLI open events.
   // navContext is passed so the handler can drive the sidebar navigation.

@@ -18,6 +18,7 @@
 /* ── 2. Master Card Container ── */
 .tool-card,
 .fmt-card {
+  position: relative !important;
   box-sizing: border-box !important;
   width: 100% !important;
   height: 140px !important;
@@ -121,3 +122,78 @@
   overflow: hidden !important;
   text-overflow: ellipsis !important;
 }
+
+/* ── 6. Card Star / Favourite Icon Button ── */
+.card-fav-btn {
+  position: absolute !important;
+  top: 10px !important;
+  right: 36px !important;
+  width: 24px !important;
+  height: 24px !important;
+  display: flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  background: transparent !important;
+  border: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  cursor: pointer !important;
+  color: var(--fmt-color, currentColor) !important;
+  opacity: 0.4 !important;
+  font-size: 16px !important;
+  line-height: 1 !important;
+  transition: transform 120ms ease, opacity 120ms ease, box-shadow 120ms ease !important;
+  z-index: 5 !important;
+  user-select: none !important;
+  border-radius: 50% !important;
+  outline: none !important;
+}
+
+.card-fav-btn:hover {
+  transform: scale(1.15) !important;
+  opacity: 0.8 !important;
+}
+
+.card-fav-btn.is-favourite {
+  opacity: 1 !important;
+  box-shadow: 0 0 6px currentColor !important;
+}
+
+.card-fav-btn.is-favourite:hover {
+  transform: scale(1.15) !important;
+  opacity: 1 !important;
+  box-shadow: 0 0 6px currentColor !important;
+}
+
+/* ── 7. Favourites View Empty State ── */
+.fav-empty-state {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+  padding: 60px 24px !important;
+  text-align: center !important;
+  margin: 20px auto 0 !important;
+  border: 1.5px dashed var(--border) !important;
+  border-radius: 12px !important;
+  background: rgba(17, 44, 40, 0.4) !important;
+  width: 100% !important;
+  box-sizing: border-box !important;
+}
+
+.fav-empty-icon {
+  font-size: 40px !important;
+  color: #F59E0B !important;
+  opacity: 0.6 !important;
+  margin-bottom: 12px !important;
+  line-height: 1 !important;
+}
+
+.fav-empty-text {
+  font-size: 14px !important;
+  font-weight: 500 !important;
+  color: var(--text-muted) !important;
+  max-width: 320px !important;
+  line-height: 1.5 !important;
+}
+

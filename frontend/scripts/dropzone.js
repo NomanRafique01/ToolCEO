@@ -12,6 +12,7 @@
 
 import { getActiveTool, setActiveTool, onToolChange, setBgJob, getBgJob, syncBgJobBar, clearBgJob } from './toolstate.js';
 import { pushNotification } from './notificationStore.js';
+import { showDownloadBlobCard } from '../tools/shared/progress.js';
 import {
   handleSplitFilePicked,
   removeSplitPanel,
@@ -514,6 +515,27 @@ function _updateDropZone(tool) {
       return;
     }
     if (bgJob.state === 'done') {
+      if (bgJob.blob) {
+        showDownloadBlobCard(zone, bgJob.blob, bgJob.filename, color, () => {
+          _resetZoneContent(zone);
+          clearBgJob();
+          removeSplitPanel();
+          removeMergePanel();
+          removeCompressPanel();
+          removeEncryptPanel();
+          removeRotatePanel();
+          removeEditorPanel();
+          removeWatermarkPanel();
+          removeExtractorPanel();
+          removePdfWordPanel();
+          removePdfExcelPanel();
+          removePdfHtmlPanel();
+          removePdfTxtPanel();
+          const t = getActiveTool();
+          if (t) _updateDropZone(t);
+        });
+        return;
+      }
       _showDownload(zone, bgJob.filename, bgJob.jobId, color);
       return;
     }
@@ -907,6 +929,17 @@ function _resetAfterSave(zone) {
 
 /** Show download-ready state — card is centred inside the drop zone. */
 function _showDownload(zone, filename, jobId, color) {
+  const currentBgJob = getBgJob(jobId);
+  if (currentBgJob && currentBgJob.blob) {
+    showDownloadBlobCard(zone, currentBgJob.blob, filename, color, () => {
+      _resetZoneContent(zone);
+      clearBgJob();
+      const t = getActiveTool();
+      if (t) _updateDropZone(t);
+    });
+    return;
+  }
+
   _resetZoneContent(zone);
   zone.classList.add('dz-state-done');
 

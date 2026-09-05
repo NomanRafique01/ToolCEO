@@ -664,6 +664,8 @@ async function _applyAndSave(viewer) {
       bgDone.progress = 100;
       bgDone.state = 'done';
       bgDone.filename = outName;
+      bgDone.blob = blob;
+      setBgJob({ ...bgDone, blob });
       syncBgJobBar();
     }
 

@@ -8,6 +8,7 @@
 import { setBreadcrumb } from './navigation.js';
 import { setActiveTool } from './toolstate.js';
 import { getLockedModuleId } from './modulelock.js';
+import { isFavourite as _isFavourite } from './favourites.js';
 
 // ─── MODULE-LOCK NAVIGATION HOOK ──────────────────────────────────────────────
 let _navigateToModule = null;
@@ -182,6 +183,10 @@ export function renderAudioFormats(container, activateNav) {
         const locked     = getLockedModuleId(f.id) !== null;
         const lockClass  = locked ? ' fmt-card--locked' : '';
         const lockedAttr = locked ? ` data-locked-module="${getLockedModuleId(f.id)}"` : '';
+        const fav        = _isFavourite(f.id);
+        const starCls    = fav ? ' is-favourite' : '';
+        const starCh     = fav ? '\u2605' : '\u2606';
+        const starTitle  = fav ? 'Remove from Favourites' : 'Add to Favourites';
         return `
         <div class="fmt-card${lockClass}" data-format="${f.id}"${lockedAttr}
              style="--fmt-color:${f.color};--fmt-bg:${f.bg}">
@@ -192,6 +197,7 @@ export function renderAudioFormats(container, activateNav) {
           <div class="fmt-label">${f.label}</div>
           <div class="fmt-desc">${f.desc}</div>
           <div class="fmt-ext">${f.ext}</div>
+          <button class="card-fav-btn${starCls}" type="button" title="${starTitle}" aria-label="${starTitle}" data-fav-id="${f.id}">${starCh}</button>
         </div>`;
       }).join('')}
     </div>

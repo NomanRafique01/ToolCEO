@@ -100,14 +100,32 @@
   text-align: right;
 }
 
-/* ── Bottom row: cancel button ────────────────────────────────────────────── */
+/* ── Bottom row: size info (left) + cancel / resume actions (right) ────────── */
+
+.mod-dl-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 6px;
+}
+
+.mod-dl-size {
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-muted);
+  letter-spacing: 0.2px;
+  font-variant-numeric: tabular-nums;
+  user-select: none;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
 
 .mod-dl-actions {
   display: flex;
   justify-content: flex-end;
   align-items: center;
   gap: 8px;
-  margin-top: 4px;
 }
 
 /* Cancel — text only, no box */
@@ -154,4 +172,17 @@
 
 .mod-dl-status-msg--info {
   color: var(--accent);
+}
+
+.mod-dl-status-installing {
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--accent);
+  letter-spacing: 0.2px;
+  animation: mod-dl-pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes mod-dl-pulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
 }

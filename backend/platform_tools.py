@@ -99,31 +99,50 @@ def find_ghostscript() -> str | None:
 def get_engine_path(engine_name: str) -> str | None:
     """
     Resolve external engine path relative to application root or frozen PyInstaller bundle.
+    Supports both direct engine names (e.g. tesseract/tesseract.exe) and module-prefixed
+    directories (e.g. ocr/tesseract/tesseract.exe).
     """
     engine_norm = engine_name.replace("/", os.sep).replace("\\", os.sep)
-    if getattr(sys, "frozen", False):
-        # Running as PyInstaller bundle (e.g. inside resources/engines/python/main_backend.exe)
-        exe_dir = os.path.dirname(sys.executable)
-        candidates = [
-            os.path.join(exe_dir, "..", engine_norm),
-            os.path.join(exe_dir, engine_norm),
-            os.path.join(exe_dir, "..", "engines", engine_norm),
-        ]
-        if hasattr(sys, "_MEIPASS"):
-            candidates.append(os.path.join(sys._MEIPASS, "engines", engine_norm))
-            candidates.append(os.path.join(sys._MEIPASS, engine_norm))
-    else:
-        # Running in development from repo root or backend dir
-        base = os.path.dirname(os.path.abspath(__file__))
-        candidates = [
-            os.path.join(base, "..", "engines", engine_norm),
-            os.path.join(base, "engines", engine_norm),
-        ]
 
-    for candidate in candidates:
-        norm = os.path.abspath(candidate)
-        if os.path.exists(norm):
-            return norm
+    MODULE_PREFIX_MAP = {
+        "tesseract": "ocr",
+        "libreoffice": "office",
+        "pandoc": "document",
+        "calibre": "ebook",
+        "7zip": "media",
+        "ffmpeg": "media",
+    }
+
+    variants = [engine_norm]
+    first_part = engine_norm.split(os.sep)[0].lower()
+    if first_part in MODULE_PREFIX_MAP:
+        mod_prefix = MODULE_PREFIX_MAP[first_part]
+        variants.append(os.path.join(mod_prefix, engine_norm))
+
+    for variant in variants:
+        if getattr(sys, "frozen", False):
+            # Running as PyInstaller bundle (e.g. inside resources/engines/python/main_backend.exe)
+            exe_dir = os.path.dirname(sys.executable)
+            candidates = [
+                os.path.join(exe_dir, "..", variant),
+                os.path.join(exe_dir, variant),
+                os.path.join(exe_dir, "..", "engines", variant),
+            ]
+            if hasattr(sys, "_MEIPASS"):
+                candidates.append(os.path.join(sys._MEIPASS, "engines", variant))
+                candidates.append(os.path.join(sys._MEIPASS, variant))
+        else:
+            # Running in development from repo root or backend dir
+            base = os.path.dirname(os.path.abspath(__file__))
+            candidates = [
+                os.path.join(base, "..", "engines", variant),
+                os.path.join(base, "engines", variant),
+            ]
+
+        for candidate in candidates:
+            norm = os.path.abspath(candidate)
+            if os.path.exists(norm):
+                return norm
     return None
 
 

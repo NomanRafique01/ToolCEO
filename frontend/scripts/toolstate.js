@@ -124,7 +124,7 @@ export function syncBgJobBar() {
     btn.onclick = (e) => {
       e.stopPropagation();
       const job = _bgJobs.get(btn.dataset.bgView);
-      if (job) {
+      if (job && job.tool) {
         document.dispatchEvent(new CustomEvent('bg-job-switch', { detail: { tool: job.tool } }));
       }
     };
@@ -138,7 +138,11 @@ export function syncBgJobBar() {
       saveBtn.disabled = true;
       saveBtn.textContent = 'Saving...';
       try {
-        await _downloadJobFile(job.jobId, job.filename);
+        if (job.blob) {
+          await _saveBlobFile(job.blob, job.filename);
+        } else {
+          await _downloadJobFile(job.jobId, job.filename);
+        }
         saveBtn.textContent = 'Saved';
         clearBgJob(job.clientId, true);
       } catch (_) {
@@ -191,16 +195,18 @@ function _renderBgJob(job) {
       ? '<span class="bg-job-badge bg-job-badge--error">Failed</span>'
       : `<span class="bg-job-badge bg-job-badge--running"><span class="bg-job-dot" style="background:${color}"></span>${state === 'submitting' ? 'Uploading...' : 'Executing in background'}</span>`;
 
-  const actionBtn = state === 'done' && jobId
+  const actionBtn = state === 'done' && (jobId || job.blob)
     ? `<button type="button" class="bg-job-btn bg-job-btn--save" data-bg-save="${key}">Save As...</button>`
     : state === 'running'
       ? `<button type="button" class="bg-job-btn bg-job-btn--view" data-bg-view="${key}">View Tool</button>`
       : '';
 
+  const clickableLeft = (job.tool) ? `data-bg-view="${key}" style="cursor:pointer" title="Switch to ${_esc(label)}"` : '';
+
   return `
     <div class="bg-job-card" style="--bg-job-color:${color};--bg-job-bg:${bg}">
       <div class="bg-job-header">
-        <div class="bg-job-left">
+        <div class="bg-job-left" ${clickableLeft}>
           <div class="bg-job-icon">${iconHtml}</div>
           <span class="bg-job-name">${_esc(label)}</span>
           ${statusBadge}
@@ -227,11 +233,7 @@ function _esc(str) {
   return String(str || '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-async function _downloadJobFile(jobId, filename) {
-  const res = await fetch(`http://127.0.0.1:8000/api/download/${jobId}`);
-  if (!res.ok) throw new Error(`Download failed (${res.status})`);
-
-  const blob = await res.blob();
+async function _saveBlobFile(blob, filename) {
   const arrayBuf = await blob.arrayBuffer();
   const uint8 = new Uint8Array(arrayBuf);
   const chunkSize = 8192;
@@ -252,6 +254,14 @@ async function _downloadJobFile(jobId, filename) {
     a.click();
     URL.revokeObjectURL(url);
   }
+}
+
+async function _downloadJobFile(jobId, filename) {
+  const res = await fetch(`http://127.0.0.1:8000/api/download/${jobId}`);
+  if (!res.ok) throw new Error(`Download failed (${res.status})`);
+
+  const blob = await res.blob();
+  await _saveBlobFile(blob, filename);
 }
 
 onToolChange(() => syncBgJobBar());

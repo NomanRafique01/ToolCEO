@@ -179,7 +179,7 @@
   align-items: center;
   gap: 8px;
   min-width: 320px;
-  max-width: 520px;
+  max-width: none;
   background: color-mix(in srgb, var(--pill-color, #00E5C0) 12%, transparent);
   border: 0.5px solid color-mix(in srgb, var(--pill-color, #00E5C0) 30%, transparent);
   border-radius: 8px;
@@ -216,7 +216,7 @@
   from {
     opacity: 1;
     transform: translateX(0);
-    max-width: 520px;
+    max-width: 1200px;
   }
   to {
     opacity: 0;

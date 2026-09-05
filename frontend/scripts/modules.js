@@ -9,7 +9,7 @@
  */
 
 import { pushNotification }                          from './notificationStore.js';
-import { startModuleDownload, isDownloadActive } from './moduleDownload.js';
+import { startModuleDownload, isDownloadActive, getActiveDownloadModuleId, syncActiveDownload } from './moduleDownload.js';
 
 /** Thin local wrapper — avoids circular import with navigation.js */
 function setBreadcrumb(segments) {
@@ -232,23 +232,30 @@ function _openModal(mod, isInstalled) {
 
       <div class="mod-modal-footer">
         ${isInstalled
-          ? `<button class="mod-modal-btn mod-modal-btn--installed" disabled>
+          ? `<button class="mod-modal-btn mod-modal-btn--installed" disabled style="--mod-color:${mod.color};--mod-bg:${mod.bg}">
                <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
                  <path d="M3 8l4 4 6-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
                </svg>
                Installed
              </button>`
-          : isDownloadActive()
-            ? `<button class="mod-modal-btn mod-modal-btn--install" disabled title="A download is already in progress" style="--mod-color:${mod.color};--mod-bg:${mod.bg}">
-                 A download is already in progress
-               </button>`
-            : `<button class="mod-modal-btn mod-modal-btn--install" data-module-id="${mod.id}" style="--mod-color:${mod.color};--mod-bg:${mod.bg}">
-                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                   <path d="M12 3v13M7 11l5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                   <path d="M5 20h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          : isDownloadActive() && getActiveDownloadModuleId() === mod.id
+            ? `<button class="mod-modal-btn mod-modal-btn--installing" disabled style="--mod-color:${mod.color};--mod-bg:${mod.bg}">
+                 <svg class="mod-spinner" width="14" height="14" viewBox="0 0 16 16" fill="none">
+                   <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="2" stroke-dasharray="28" stroke-dashoffset="10"/>
                  </svg>
-                 Install Module
-               </button>`}
+                 Installing…
+               </button>`
+            : isDownloadActive()
+              ? `<button class="mod-modal-btn mod-modal-btn--install" disabled title="A download is already in progress" style="--mod-color:${mod.color};--mod-bg:${mod.bg}">
+                   A download is already in progress
+                 </button>`
+              : `<button class="mod-modal-btn mod-modal-btn--install" data-module-id="${mod.id}" style="--mod-color:${mod.color};--mod-bg:${mod.bg}">
+                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+                     <path d="M12 3v13M7 11l5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                     <path d="M5 20h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+                   </svg>
+                   Install Module
+                 </button>`}
         <button class="mod-modal-btn mod-modal-btn--secondary" id="mod-modal-cancel">Cancel</button>
       </div>
     </div>`;
@@ -318,17 +325,70 @@ export async function renderModules(container, activateNav) {
 
   const statuses = await _loadStatuses();
 
+  // Sync active download from Electron if in progress
+  if (window.electronAPI && window.electronAPI.getActiveModuleDownload) {
+    try {
+      const activeDl = await window.electronAPI.getActiveModuleDownload();
+      if (activeDl && activeDl.moduleId) {
+        syncActiveDownload(activeDl);
+      }
+    } catch (_) {}
+  }
+
   // Build module cards
   const cardsHTML = MODULES.map((mod) => {
     const installed = statuses[mod.id] === 'installed';
+    const isInstalling = isDownloadActive() && getActiveDownloadModuleId() === mod.id;
+
+    let badgeClass = 'mod-card-badge--not-installed';
+    let badgeText  = 'Not Installed';
+    if (installed) {
+      badgeClass = 'mod-card-badge--installed';
+      badgeText  = 'Installed';
+    } else if (isInstalling) {
+      badgeClass = 'mod-card-badge--installing';
+      badgeText  = 'Installing…';
+    }
+
+    let btnHTML = '';
+    if (installed) {
+      btnHTML = `
+        <button class="mod-card-btn mod-card-btn--installed"
+                disabled
+                data-module-id="${mod.id}">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+            <path d="M3 8l4 4 6-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Installed
+        </button>`;
+    } else if (isInstalling) {
+      btnHTML = `
+        <button class="mod-card-btn mod-card-btn--installing"
+                disabled
+                data-module-id="${mod.id}">
+          <svg class="mod-spinner" width="12" height="12" viewBox="0 0 16 16" fill="none">
+            <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="2" stroke-dasharray="28" stroke-dashoffset="10"/>
+          </svg>
+          Installing…
+        </button>`;
+    } else {
+      btnHTML = `
+        <button class="mod-card-btn mod-card-btn--install"
+                data-module-id="${mod.id}">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+            <path d="M12 3v13M7 11l5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M5 20h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          Install Module
+        </button>`;
+    }
+
     return `
       <div class="mod-card" data-module-id="${mod.id}"
            style="--mod-color:${mod.color};--mod-bg:${mod.bg}">
         <div class="mod-card-header">
           <div class="mod-card-icon">${mod.icon}</div>
-          <span class="mod-card-badge ${installed ? 'mod-card-badge--installed' : 'mod-card-badge--not-installed'}">
-            ${installed ? 'Installed' : 'Not Installed'}
-          </span>
+          <span class="mod-card-badge ${badgeClass}">${badgeText}</span>
         </div>
         <div class="mod-card-name">${mod.name}</div>
         <div class="mod-card-engine">Engine: ${mod.engine}</div>
@@ -337,20 +397,7 @@ export async function renderModules(container, activateNav) {
           ${mod.unlocks.slice(0, 3).map((u) => `<li>${u}</li>`).join('')}
           ${mod.unlocks.length > 3 ? `<li class="mod-card-unlocks-more">+${mod.unlocks.length - 3} more…</li>` : ''}
         </ul>
-        <button class="mod-card-btn ${installed ? 'mod-card-btn--installed' : 'mod-card-btn--install'}"
-                ${installed ? 'disabled' : ''}
-                data-module-id="${mod.id}">
-          ${installed
-            ? `<svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-                 <path d="M3 8l4 4 6-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-               </svg>
-               Installed`
-            : `<svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-                 <path d="M12 3v13M7 11l5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                 <path d="M5 20h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-               </svg>
-               Install Module`}
-        </button>
+        ${btnHTML}
       </div>`;
   }).join('');
 
@@ -388,27 +435,29 @@ export async function renderModules(container, activateNav) {
     activateNav('Dashboard');
   });
 
-  // Card & button click → open modal
-  container.querySelectorAll('.mod-card').forEach((card) => {
-    const modId  = card.dataset.moduleId;
-    const mod    = MODULES.find((m) => m.id === modId);
-    const installed = statuses[modId] === 'installed';
-
-    // Clicking the card body (not the button) opens modal
-    card.addEventListener('click', (e) => {
-      if (e.target.closest('.mod-card-btn')) return;
-      if (mod) _openModal(mod, installed);
-    });
-
-    // Clicking the install button directly also opens modal
-    const btn = card.querySelector('.mod-card-btn--install');
-    if (btn) {
-      btn.addEventListener('click', (e) => {
+  // Event delegation on mod-grid for card and button clicks
+  const modGrid = container.querySelector('.mod-grid');
+  if (modGrid) {
+    modGrid.addEventListener('click', (e) => {
+      const installBtn = e.target.closest('.mod-card-btn--install');
+      if (installBtn) {
         e.stopPropagation();
+        const modId = installBtn.dataset.moduleId;
+        const mod   = MODULES.find((m) => m.id === modId);
         if (mod) _openModal(mod, false);
-      });
-    }
-  });
+        return;
+      }
+
+      const card = e.target.closest('.mod-card');
+      if (card) {
+        if (e.target.closest('.mod-card-btn')) return;
+        const modId = card.dataset.moduleId;
+        const mod   = MODULES.find((m) => m.id === modId);
+        const isInstalled = card.querySelector('.mod-card-badge--installed') !== null;
+        if (mod) _openModal(mod, isInstalled);
+      }
+    });
+  }
 
   // ── Locked-tool highlight ──────────────────────────────────────────────────
   // If the user clicked a locked tool card elsewhere, we were given context
@@ -458,3 +507,115 @@ export async function renderModules(container, activateNav) {
     }
   }
 }
+
+/**
+ * Directly update a module card and its modal in the DOM without re-rendering the whole page.
+ * @param {string} moduleId
+ * @param {'not_installed' | 'installing' | 'installed'} state
+ */
+export function updateModuleCardDOM(moduleId, state) {
+  const card = document.querySelector(`.mod-card[data-module-id="${moduleId}"]`);
+
+  if (card) {
+    const badge = card.querySelector('.mod-card-badge');
+    const btn = card.querySelector('.mod-card-btn');
+    if (state === 'installing') {
+      if (badge) {
+        badge.className = 'mod-card-badge mod-card-badge--installing';
+        badge.textContent = 'Installing…';
+      }
+      if (btn) {
+        btn.className = 'mod-card-btn mod-card-btn--installing';
+        btn.disabled = true;
+        btn.innerHTML = `
+          <svg class="mod-spinner" width="12" height="12" viewBox="0 0 16 16" fill="none">
+            <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="2" stroke-dasharray="28" stroke-dashoffset="10"/>
+          </svg>
+          Installing…`;
+      }
+    } else if (state === 'installed') {
+      if (badge) {
+        badge.className = 'mod-card-badge mod-card-badge--installed';
+        badge.textContent = 'Installed';
+      }
+      if (btn) {
+        btn.className = 'mod-card-btn mod-card-btn--installed';
+        btn.disabled = true;
+        btn.innerHTML = `
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+            <path d="M3 8l4 4 6-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Installed`;
+      }
+    } else {
+      if (badge) {
+        badge.className = 'mod-card-badge mod-card-badge--not-installed';
+        badge.textContent = 'Not Installed';
+      }
+      if (btn) {
+        btn.className = 'mod-card-btn mod-card-btn--install';
+        btn.disabled = false;
+        btn.innerHTML = `
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+            <path d="M12 3v13M7 11l5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M5 20h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          Install Module`;
+      }
+    }
+  }
+
+  // Also check if modal is open for this module
+  const overlay = document.getElementById('modules-modal-overlay');
+  if (overlay) {
+    const modalInstallBtn = overlay.querySelector('.mod-modal-btn--installing, .mod-modal-btn--installed, .mod-modal-btn--install');
+    if (modalInstallBtn) {
+      const mod = MODULES.find((m) => m.id === moduleId);
+      const color = mod ? mod.color : '#00E5C0';
+      const bg = mod ? mod.bg : 'rgba(0,229,192,0.15)';
+      if (state === 'installing') {
+        modalInstallBtn.className = 'mod-modal-btn mod-modal-btn--installing';
+        modalInstallBtn.disabled = true;
+        modalInstallBtn.style.setProperty('--mod-color', color);
+        modalInstallBtn.style.setProperty('--mod-bg', bg);
+        modalInstallBtn.innerHTML = `
+          <svg class="mod-spinner" width="14" height="14" viewBox="0 0 16 16" fill="none">
+            <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="2" stroke-dasharray="28" stroke-dashoffset="10"/>
+          </svg>
+          Installing…`;
+      } else if (state === 'installed') {
+        modalInstallBtn.className = 'mod-modal-btn mod-modal-btn--installed';
+        modalInstallBtn.disabled = true;
+        modalInstallBtn.style.setProperty('--mod-color', color);
+        modalInstallBtn.style.setProperty('--mod-bg', bg);
+        modalInstallBtn.innerHTML = `
+          <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+            <path d="M3 8l4 4 6-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          Installed`;
+      } else {
+        modalInstallBtn.className = 'mod-modal-btn mod-modal-btn--install';
+        modalInstallBtn.disabled = false;
+        modalInstallBtn.style.setProperty('--mod-color', color);
+        modalInstallBtn.style.setProperty('--mod-bg', bg);
+        modalInstallBtn.innerHTML = `
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+            <path d="M12 3v13M7 11l5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <path d="M5 20h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+          </svg>
+          Install Module`;
+      }
+    }
+  }
+}
+
+// Global listener for real-time state changes
+if (typeof window !== 'undefined' && !window.__moduleStateListenerRegistered) {
+  window.__moduleStateListenerRegistered = true;
+  window.addEventListener('module-state-changed', (e) => {
+    if (e.detail && e.detail.moduleId) {
+      updateModuleCardDOM(e.detail.moduleId, e.detail.state);
+    }
+  });
+}
+

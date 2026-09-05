@@ -17,17 +17,20 @@ import { renderEbookFormats,    setNavigateToModule as setEbookNav } from './ebo
 import { renderAudioFormats,    setNavigateToModule as setAudioNav } from './audio.js';
 import { renderImageFormats,    setNavigateToModule as setImgNav } from './images.js';
 import { renderModules, setPendingLockContext } from './modules.js';
+import { renderFavourites, setNavigateToModule as setFavNav } from './favourites.js';
 import { setActiveTool }         from './toolstate.js';
 import { loadModuleStatuses }    from './modulelock.js';
 
 // ── Category → renderer map ──────────────────────────────────────────────────
 // Add future categories here.  Value is a function(container) that fills it.
 const CATEGORY_RENDERERS = {
-  Documents : renderDocumentFormats,
-  Audio     : renderAudioFormats,
-  Ebooks    : renderEbookFormats,
-  Images    : renderImageFormats,
-  Modules   : renderModules,
+  Documents  : renderDocumentFormats,
+  Audio      : renderAudioFormats,
+  Ebooks     : renderEbookFormats,
+  Images     : renderImageFormats,
+  Modules    : renderModules,
+  Favorites  : renderFavourites,
+  Favourites : renderFavourites,
 };
 
 // The original "Explore Tools" grid HTML is captured once on first load so we
@@ -84,19 +87,22 @@ export function initNavigation() {
   setEbookNav(navigateToModule);
   setAudioNav(navigateToModule);
   setImgNav(navigateToModule);
+  setFavNav(navigateToModule);
 
   function activateNav(label) {
     // ── Sidebar highlight ────────────────────────────────────────────────
     navItems.forEach((n) => n.classList.remove('active'));
-    const target = [...navItems].find((n) => n.dataset.label === label);
+    const target = [...navItems].find((n) => n.dataset.label === label || (label === 'Favourites' && n.dataset.label === 'Favorites') || (label === 'Favorites' && n.dataset.label === 'Favourites'));
     if (target) {
       target.classList.add('active');
-      if (pageTitle) pageTitle.textContent = label;
+      if (pageTitle) pageTitle.textContent = (label === 'Favorites' || label === 'Favourites') ? 'Favourites' : label;
     }
 
     // ── Breadcrumb update ────────────────────────────────────────────────
     if (label === 'Dashboard') {
       setBreadcrumb(['Dashboard']);
+    } else if (label === 'Favorites' || label === 'Favourites') {
+      setBreadcrumb(['Dashboard', 'Favourites']);
     } else {
       setBreadcrumb(['Dashboard', label]);
     }

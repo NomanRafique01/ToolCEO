@@ -969,6 +969,8 @@ async function _submitEncrypt(opts) {
       bgDone.progress = 100;
       bgDone.state    = 'done';
       bgDone.filename = outName;
+      bgDone.blob     = blob;
+      setBgJob({ ...bgDone, blob });
       syncBgJobBar();
     }
 
@@ -984,7 +986,9 @@ async function _submitEncrypt(opts) {
     };
 
     setTimeout(() => {
-      showDownloadBlobCard(zone, blob, outName, color, resetCb);
+      if (getActiveTool()?.id === tool?.id) {
+        showDownloadBlobCard(zone, blob, outName, color, resetCb);
+      }
       pushNotification({
         type: 'success',
         message: 'PDF Encrypted Successfully',
@@ -1079,6 +1083,8 @@ async function _submitDecrypt(opts) {
       bgDone.progress = 100;
       bgDone.state    = 'done';
       bgDone.filename = outName;
+      bgDone.blob     = blob;
+      setBgJob({ ...bgDone, blob });
       syncBgJobBar();
     }
 
@@ -1094,8 +1100,10 @@ async function _submitDecrypt(opts) {
     };
 
     removeEncryptPanel();
-    resetZoneContent(zone);
-    showDownloadBlobCard(zone, blob, outName, color, resetCb);
+    if (getActiveTool()?.id === tool?.id) {
+      resetZoneContent(zone);
+      showDownloadBlobCard(zone, blob, outName, color, resetCb);
+    }
     pushNotification({
       type: 'success',
       message: 'PDF Unlocked Successfully',
@@ -1172,6 +1180,8 @@ async function _submitVaultLock(opts) {
       bgDone.progress = 100;
       bgDone.state    = 'done';
       bgDone.filename = outName;
+      bgDone.blob     = blob;
+      setBgJob({ ...bgDone, blob });
       syncBgJobBar();
     }
 
@@ -1187,7 +1197,9 @@ async function _submitVaultLock(opts) {
     };
 
     setTimeout(() => {
-      showDownloadBlobCard(zone, blob, outName, color, resetCb);
+      if (getActiveTool()?.id === tool?.id) {
+        showDownloadBlobCard(zone, blob, outName, color, resetCb);
+      }
       pushNotification({
         type: 'success',
         message: 'PDF Locked in ToolCEO Vault (.tceo)',
@@ -1293,6 +1305,8 @@ async function _submitVaultUnlock(opts) {
       bgDone.progress = 100;
       bgDone.state    = 'done';
       bgDone.filename = outName;
+      bgDone.blob     = blob;
+      setBgJob({ ...bgDone, blob });
       syncBgJobBar();
     }
 
@@ -1308,8 +1322,10 @@ async function _submitVaultUnlock(opts) {
     };
 
     removeEncryptPanel();
-    resetZoneContent(zone);
-    showDownloadBlobCard(zone, blob, outName, color, resetCb);
+    if (getActiveTool()?.id === tool?.id) {
+      resetZoneContent(zone);
+      showDownloadBlobCard(zone, blob, outName, color, resetCb);
+    }
     pushNotification({
       type: 'success',
       message: 'PDF Recovered & Unlocked Successfully',

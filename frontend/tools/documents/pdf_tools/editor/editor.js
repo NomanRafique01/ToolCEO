@@ -1046,17 +1046,20 @@ async function _saveEditedPdf(viewer) {
     const output = json.file || json.output || json.pdf || json.data;
     if (!output) throw new Error('Backend did not return an edited PDF.');
 
+    const blob = _dataUriToBlob(output, 'application/pdf');
+
     if (zone) updateProgress(zone, 100, color);
     const bgDone = getBgJob();
     if (bgDone) {
       bgDone.progress = 100;
       bgDone.state = 'done';
       bgDone.filename = outName;
+      bgDone.blob = blob;
+      setBgJob({ ...bgDone, blob });
       syncBgJobBar();
     }
 
-    const blob = _dataUriToBlob(output, 'application/pdf');
-    if (zone) {
+    if (zone && getActiveTool()?.id === 'editor') {
       setTimeout(() => showDownloadBlobCard(zone, blob, outName, color, _resetAfterEditorSave), 200);
     }
 

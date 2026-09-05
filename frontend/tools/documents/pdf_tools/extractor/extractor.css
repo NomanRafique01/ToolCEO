@@ -282,7 +282,8 @@ body.has-extractor-viewer .features-strip {
   cursor: pointer;
 }
 
-.extractor-thumb-stage canvas {
+.extractor-thumb-stage canvas,
+.extractor-thumb-stage img {
   max-width: 92%;
   max-height: 240px;
   width: auto;
