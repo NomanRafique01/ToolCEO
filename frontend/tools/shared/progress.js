@@ -20,7 +20,7 @@
  *   escHtml(str)
  */
 
-import { clearBgJob } from '../../scripts/toolstate.js';
+import { clearBgJob, getActiveTool, getBgJob } from '../../scripts/toolstate.js';
 
 const BACKEND = 'http://127.0.0.1:8000';
 
@@ -170,6 +170,15 @@ export function resetAfterSave(zone, onReset) {
  * @param {Function}    [onReset]  optional callback invoked after zone reset post-save
  */
 export function showDownload(zone, filename, jobId, color, onReset) {
+  // If the user navigated away from the tool that owns this job, don't
+  // clobber their current drop zone. The bg-job-bar already provides
+  // a "Save As…" button for background-completed jobs.
+  const bgJob = getBgJob(jobId);
+  if (bgJob && bgJob.tool) {
+    const activeTool = getActiveTool();
+    if (activeTool && activeTool.id !== bgJob.tool.id) return;
+  }
+
   resetZoneContent(zone);
   zone.classList.add('dz-state-done');
 

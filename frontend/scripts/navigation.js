@@ -91,7 +91,7 @@ export function initNavigation() {
     const target = [...navItems].find((n) => n.dataset.label === label);
     if (target) {
       target.classList.add('active');
-      pageTitle.textContent = label;
+      if (pageTitle) pageTitle.textContent = label;
     }
 
     // ── Breadcrumb update ────────────────────────────────────────────────

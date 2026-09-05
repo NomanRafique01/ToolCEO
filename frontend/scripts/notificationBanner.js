@@ -248,18 +248,18 @@ function _render(banner, notifications) {
     });
   });
 
-  // Auto-dismiss only notifications that explicitly ask for it.
-  banner.querySelectorAll('.nb-pill[data-auto-dismiss="true"]').forEach((pill) => {
+  // Auto-dismiss all non-progress pills after 3s with slide-out animation.
+  banner.querySelectorAll('.nb-pill:not(.nb-pill--progress)').forEach((pill) => {
     const id = pill.dataset.id;
     setTimeout(() => {
-      // Check pill still exists in DOM before dismissing
+      // Confirm pill still exists in DOM before animating out
       if (banner.querySelector(`.nb-pill[data-id="${id}"]`)) {
         pill.classList.add('nb-pill--dismissing');
         pill.addEventListener('animationend', () => {
           dismissOne(id);
         }, { once: true });
       }
-    }, 6000);
+    }, 3000);
   });
 }
 

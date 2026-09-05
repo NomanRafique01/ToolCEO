@@ -1397,10 +1397,14 @@ async function _submitFile(files) {
     sse.close();
 
     if (state === 'done') {
-      _updateProgress(zone, 100, color);
-      const dlName = data.filename || `output_${jobId.slice(0, 8)}`;
-      setTimeout(() => _showDownload(zone, dlName, jobId, color), 200);
-      document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'smooth' });
+      // Only update the drop zone if the user is still on this tool.
+      // If they navigated away, the bg-job-bar already provides the Save button.
+      if (getActiveTool()?.id === tool.id) {
+        _updateProgress(zone, 100, color);
+        const dlName = data.filename || `output_${jobId.slice(0, 8)}`;
+        setTimeout(() => _showDownload(zone, dlName, jobId, color), 200);
+        document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'smooth' });
+      }
       return;
     }
 

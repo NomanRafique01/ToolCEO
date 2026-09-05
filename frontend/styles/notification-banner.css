@@ -227,7 +227,7 @@
   }
 }
 
-/* 4-second countdown progress line for auto-dismissable success/info pills */
+/* 3-second countdown progress line on all auto-dismissable pills */
 .nb-pill-progress {
   position: absolute;
   bottom: 0;
@@ -237,7 +237,7 @@
   background: var(--pill-color, #00E5C0);
   border-radius: 0 0 8px 8px;
   transform-origin: left center;
-  animation: pillCountdown 4s linear forwards;
+  animation: pillCountdown 3s linear forwards;
 }
 
 .nb-pill:hover .nb-pill-progress {

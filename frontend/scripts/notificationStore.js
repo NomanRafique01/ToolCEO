@@ -71,12 +71,12 @@ export function pushNotification({ type = 'success', message = '', detail = '', 
   }
 
   // ── Auto-dismiss scheduling ────────────────────────────────────────────────
-  // Auto-dismiss for success & info pills is driven by UI animation in notificationBanner.js.
-  // Warning & Error pills stay until manually dismissed by user.
-  if (autoDismiss === true) {
+  // All notification types auto-dismiss after 3s (+ 300ms animation buffer).
+  // Progress pills are exempt — they are managed by the bg-job lifecycle.
+  if (type !== 'progress') {
     const tid = setTimeout(() => {
       dismissOne(item.id);
-    }, 8000);
+    }, 3300);
     _timers.set(item.id, tid);
   }
 

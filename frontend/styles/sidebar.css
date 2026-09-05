@@ -109,20 +109,20 @@
 
 .sidebar-status {
   flex-shrink: 0;
-  margin: 16px;
+  margin: 10px;
   background: var(--bg-surface);
   border: 1px solid rgba(0, 229, 192, 0.18);
-  border-radius: 10px;
-  padding: 12px;
+  border-radius: 8px;
+  padding: 8px;
   display: flex;
   align-items: flex-start;
-  gap: 10px;
+  gap: 7px;
   box-shadow: 0 0 12px rgba(0, 229, 192, 0.06);
 }
 
 .status-icon {
-  width: 16px;
-  height: 16px;
+  width: 12px;
+  height: 12px;
   flex-shrink: 0;
   margin-top: 1px;
   opacity: 0.85;
@@ -131,18 +131,18 @@
 .status-body {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 
 .status-title {
-  font-size: 13px;
+  font-size: 11px;
   font-weight: 500;
   color: var(--text-primary);
   line-height: 1;
 }
 
 .status-subtitle {
-  font-size: 11px;
+  font-size: 10px;
   color: var(--text-muted);
-  line-height: 1.5;
+  line-height: 1.4;
 }
