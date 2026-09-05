@@ -95,12 +95,7 @@ export function initModuleDownloadPanel() {
       </div>
       <span class="mod-dl-percent" id="mod-dl-percent">0%</span>
     </div>
-    <div class="mod-dl-stats">
-      <span class="mod-dl-mb" id="mod-dl-mb">0 / — MB</span>
-      <span class="mod-dl-speed" id="mod-dl-speed">—</span>
-    </div>
     <div class="mod-dl-actions" id="mod-dl-actions">
-      <span class="mod-dl-eta" id="mod-dl-eta">Time remaining: —</span>
       <button class="mod-dl-btn--cancel" id="mod-dl-cancel-btn">Cancel</button>
     </div>`;
   document.body.appendChild(panel);
@@ -180,9 +175,6 @@ function _showPanel(moduleName) {
   _el('mod-dl-title').innerHTML = `Downloading <strong>${moduleName}</strong>`;
   _el('mod-dl-percent').textContent = '0%';
   _el('mod-dl-bar').style.width = '0%';
-  _el('mod-dl-mb').textContent = '0 / — MB';
-  _el('mod-dl-speed').textContent = '—';
-  _el('mod-dl-eta').textContent = 'Time remaining: —';
   _hideStatusMsg();
   _showCancelOnly();
   panel.classList.add('mod-dl-panel--visible');
@@ -193,12 +185,9 @@ function _hidePanel() {
   if (panel) panel.classList.remove('mod-dl-panel--visible');
 }
 
-function _updateProgress({ receivedBytes, totalBytes, speedBps, etaSeconds, percent }) {
+function _updateProgress({ percent }) {
   _el('mod-dl-percent').textContent = `${percent}%`;
   _el('mod-dl-bar').style.width     = `${percent}%`;
-  _el('mod-dl-mb').textContent      = `${_fmtMB(receivedBytes)} / ${totalBytes > 0 ? _fmtMB(totalBytes) : '— MB'}`;
-  _el('mod-dl-speed').textContent   = speedBps > 0 ? `${_fmtMB(speedBps)}/s` : '—';
-  _el('mod-dl-eta').textContent     = etaSeconds > 0 ? `Time remaining: ${_fmtEta(etaSeconds)}` : 'Time remaining: —';
 }
 
 function _showStatusMsg(msg, isInfo) {
@@ -218,7 +207,6 @@ function _showResumeButton() {
   const actions = _el('mod-dl-actions');
   if (!actions) return;
   actions.innerHTML = `
-    <span class="mod-dl-eta" id="mod-dl-eta">Download paused</span>
     <span style="display:flex;gap:14px;align-items:center">
       <button class="mod-dl-btn--cancel" id="mod-dl-cancel-btn2">Cancel</button>
       <button class="mod-dl-btn--resume" id="mod-dl-resume-btn">Resume</button>
@@ -248,7 +236,6 @@ function _showCancelOnly() {
   const actions = _el('mod-dl-actions');
   if (!actions) return;
   actions.innerHTML = `
-    <span class="mod-dl-eta" id="mod-dl-eta">Time remaining: —</span>
     <button class="mod-dl-btn--cancel" id="mod-dl-cancel-btn">Cancel</button>`;
   actions.querySelector('#mod-dl-cancel-btn').addEventListener('click', () => {
     if (window.electronAPI && window.electronAPI.cancelModuleDownload) {

@@ -53,8 +53,10 @@
       "package.json"
     ]
   },
+  "dependencies": {
+    "adm-zip": "^0.6.0"
+  },
   "devDependencies": {
-    "adm-zip": "^0.6.0",
     "electron": "latest",
     "electron-builder": "^26.0.0",
     "jimp": "^1.6.1"

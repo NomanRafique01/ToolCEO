@@ -8,7 +8,7 @@
 
 .notification-banner {
   position: fixed;
-  top: var(--topbar-height);
+  top: var(--header-height);
   left: var(--sidebar-width);
   right: 0;
   height: 42px;
@@ -339,12 +339,12 @@
 /* ─── MAIN CONTENT OFFSET ────────────────────────────────── */
 
 #main-content {
-  top: var(--topbar-height) !important;
+  top: var(--header-height) !important;
   transition: top 0.3s ease;
 }
 
 body.has-active-banner #main-content {
-  top: calc(var(--topbar-height) + 42px) !important;
+  top: calc(var(--header-height) + 42px) !important;
 }
 
 /* ─── NOTIFICATION MODAL OVERLAY ─────────────────────────── */
@@ -358,7 +358,7 @@ body.has-active-banner #main-content {
   display: flex;
   align-items: flex-start;
   justify-content: flex-end;
-  padding-top: calc(var(--topbar-height) + 42px + 8px);
+  padding-top: calc(var(--header-height) + 42px + 8px);
   padding-right: 20px;
 }
 

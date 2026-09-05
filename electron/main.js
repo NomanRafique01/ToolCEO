@@ -57,6 +57,7 @@ const LINUX_MIME_ICON_DEST = path.join(LINUX_MIME_ICON_DIR, 'application-x-tceo.
 // ─── STATE ─────────────────────────────────────────────────────────────────────
 
 let mainWindow     = null;
+let splashWindow   = null;
 let backendProcess = null;
 
 /** .tceo path queued before the window was ready (cold-start or second-instance). */
@@ -615,6 +616,35 @@ function waitForBackend(url, retries, delay, callback) {
 
 // ─── WINDOW CREATION ──────────────────────────────────────────────────────────
 
+function createSplash() {
+  const appIconPath = getBundledAssetPath(APP_ICON_PNG_RELATIVE);
+  splashWindow = new BrowserWindow({
+    width: 1200,
+    height: 750,
+    frame: true,
+    transparent: false,
+    backgroundColor: '#0A1F1C',
+    alwaysOnTop: true,
+    skipTaskbar: false,
+    resizable: false,
+    center: true,
+    title: 'ToolCEO',
+    icon: appIconPath,
+    webPreferences: {
+      nodeIntegration: false,
+      contextIsolation: true,
+    },
+  });
+  splashWindow.setMenuBarVisibility(false);
+  splashWindow.loadFile(path.join(__dirname, '..', 'frontend', 'splash.html'));
+
+  // If user closes the splash manually, show the main window immediately
+  splashWindow.on('closed', () => {
+    splashWindow = null;
+    if (mainWindow && !mainWindow.isDestroyed()) mainWindow.show();
+  });
+}
+
 function createWindow() {
   const appIconPath = getBundledAssetPath(APP_ICON_PNG_RELATIVE);
   mainWindow = new BrowserWindow({
@@ -623,6 +653,15 @@ function createWindow() {
     minWidth: 1000,
     minHeight: 650,
     icon: appIconPath,
+    show: false,
+    backgroundColor: '#0A1F1C',
+    frame: false,
+    titleBarStyle: 'hidden',
+    titleBarOverlay: {
+      color: '#081918',
+      symbolColor: '#8FAAA6',
+      height: 32,
+    },
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -635,6 +674,20 @@ function createWindow() {
   if (!app.isPackaged) {
     mainWindow.webContents.session.clearCache();
   }
+
+  // Wait for both: 4s minimum splash time AND window ready-to-show
+  const timerDone   = new Promise(resolve => setTimeout(resolve, 10000));
+  const windowReady = new Promise(resolve => mainWindow.once('ready-to-show', resolve));
+
+  Promise.all([timerDone, windowReady]).then(() => {
+    if (splashWindow && !splashWindow.isDestroyed()) {
+      splashWindow.destroy();
+      splashWindow = null;
+    }
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.show();
+    }
+  });
 
   mainWindow.webContents.once('did-finish-load', () => {
     // A .tceo file was queued before the window was ready — send it now.
@@ -1157,15 +1210,12 @@ app.whenReady().then(async () => {
     return { ok: true };
   });
 
-  // ── Generate icons + register file association (all platforms) ────────────
-  await ensureVaultIcons();
-  registerFileAssociation();   // fire-and-forget — non-blocking for window open
-
-  // ── Start backend, then open window ───────────────────────────────────────
+  // ── Show splash immediately, then load main window + backend in parallel ──
+  createSplash();
+  createWindow();
   startBackend();
-  waitForBackend('http://127.0.0.1:8000/health', 20, 500, () => {
-    createWindow();
-  });
+  ensureVaultIcons();           // fire-and-forget — no await
+  registerFileAssociation();    // fire-and-forget
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow();

@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ToolCEO</title>
+  <style>
+    :root {
+      --bg-primary:   #0A1F1C;
+      --bg-surface:   #0F2D29;
+      --bg-card:      #112C28;
+      --accent:       #00E5C0;
+      --accent-hover: #00CCA8;
+      --text-primary: #F0EDE4;
+      --text-muted:   #8FAAA6;
+      --border:       #1A3D38;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html, body {
+      width: 100%; height: 100%;
+      overflow: hidden;
+      background: var(--bg-primary);
+      font-family: 'Segoe UI', sans-serif;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    /* ── Full wrapper ── */
+    .splash {
+      width: 100%; height: 100%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      opacity: 0;
+      animation: fadeIn 0.4s ease 0.05s forwards;
+    }
+
+    @keyframes fadeIn { to { opacity: 1; } }
+
+    /* ── Radial glow ── */
+    .glow {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -62%);
+      width: 520px; height: 520px;
+      background: radial-gradient(ellipse at center, rgba(0,229,192,0.08) 0%, transparent 68%);
+      pointer-events: none;
+    }
+
+    /* ── Content stack ── */
+    .content {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      position: relative;
+      z-index: 1;
+    }
+
+    /* ── Bare icon — no box ── */
+    .app-icon {
+      width: 110px; height: 110px;
+      margin-bottom: 28px;
+      object-fit: contain;
+      filter: drop-shadow(0 0 18px rgba(0,229,192,0.22));
+    }
+
+    /* ── App name ── */
+    .app-name {
+      font-size: 36px;
+      font-weight: 700;
+      letter-spacing: 0.22em;
+      color: var(--text-primary);
+      margin-bottom: 8px;
+      line-height: 1;
+    }
+
+    /* ── Subtitle ── */
+    .subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      letter-spacing: 0.08em;
+      margin-bottom: 52px;
+    }
+
+    /* ── Progress section ── */
+    .progress-section {
+      width: 400px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .progress-track {
+      width: 100%;
+      height: 3px;
+      background: var(--border);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      width: 0%;
+      border-radius: 999px;
+      background: linear-gradient(90deg, var(--accent), var(--accent-hover));
+      animation: fillBar 10s linear forwards;
+    }
+
+    @keyframes fillBar {
+      from { width: 0%; }
+      to   { width: 100%; }
+    }
+
+    /* ── Loading message ── */
+    .loading-msg {
+      height: 18px;
+      position: relative;
+      width: 100%;
+      text-align: center;
+    }
+
+    .loading-msg span {
+      position: absolute;
+      left: 0; right: 0;
+      font-size: 12px;
+      color: var(--text-muted);
+      letter-spacing: 0.03em;
+      opacity: 0;
+      transition: opacity 0.4s ease;
+    }
+
+    .loading-msg span.active { opacity: 1; }
+
+    /* ── Version pinned bottom-right ── */
+    .version {
+      position: absolute;
+      bottom: 22px; right: 28px;
+      font-size: 11px;
+      color: var(--border);
+      letter-spacing: 0.06em;
+    }
+
+    /* ── Bottom scan-line ── */
+    .bottom-line {
+      position: absolute;
+      bottom: 0; left: 0; right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, transparent 0%, var(--accent) 50%, transparent 100%);
+      opacity: 0.35;
+      animation: scanLine 10s linear forwards;
+      transform-origin: left;
+      transform: scaleX(0);
+    }
+
+    @keyframes scanLine {
+      from { transform: scaleX(0); opacity: 0.35; }
+      to   { transform: scaleX(1); opacity: 0.7; }
+    }
+  </style>
+</head>
+<body>
+  <div class="splash">
+    <div class="glow"></div>
+
+    <div class="content">
+      <img class="app-icon" src="assets/icon.png" alt="ToolCEO" draggable="false" />
+
+      <div class="app-name">TOOLCEO</div>
+      <div class="subtitle">Professional File Converter</div>
+
+      <div class="progress-section">
+        <div class="progress-track">
+          <div class="progress-fill"></div>
+        </div>
+        <div class="loading-msg">
+          <span id="msg0">Initializing core engine...</span>
+          <span id="msg1">Loading conversion tools...</span>
+          <span id="msg2">Setting up workspace...</span>
+          <span id="msg3">Almost ready...</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="version">v1.0.0</div>
+    <div class="bottom-line"></div>
+  </div>
+
+  <script>
+    // Cycling messages
+    const messages = ['msg0', 'msg1', 'msg2', 'msg3'];
+    let current = 0;
+
+    function showMessage(index) {
+      messages.forEach((id, i) =>
+        document.getElementById(id).classList.toggle('active', i === index)
+      );
+    }
+
+    showMessage(0);
+    const interval = setInterval(() => {
+      current++;
+      if (current >= messages.length) { clearInterval(interval); return; }
+      showMessage(current);
+    }, 2500);
+  </script>
+</body>
+</html>

@@ -100,37 +100,14 @@
   text-align: right;
 }
 
-/* ── Stats row: MB left · speed right ────────────────────────────────────── */
-
-.mod-dl-stats {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 10px;
-}
-
-.mod-dl-mb {
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-.mod-dl-speed {
-  font-size: 12px;
-  color: var(--text-muted);
-}
-
-/* ── Bottom row: time-remaining left · cancel right ──────────────────────── */
+/* ── Bottom row: cancel button ────────────────────────────────────────────── */
 
 .mod-dl-actions {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-end;
   align-items: center;
   gap: 8px;
-}
-
-.mod-dl-eta {
-  font-size: 12px;
-  color: var(--text-muted);
+  margin-top: 4px;
 }
 
 /* Cancel — text only, no box */

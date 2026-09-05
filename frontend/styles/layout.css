@@ -4,36 +4,50 @@
    main scrollable content area. No component-level rules here.
    ───────────────────────────────────────────────────────────── */
 
-/* ─── SIDEBAR SHELL ──────────────────────────────────────── */
-
-#sidebar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: var(--sidebar-width);
-  height: 100%;
-  background: var(--bg-sidebar);
-  display: flex;
-  flex-direction: column;
-  border-right: 1px solid var(--border);
-  overflow: hidden;
+/* ─── HEADER HEIGHT ──────────────────────────────────────── */
+/* Single source of truth — topbar + sidebar logo share this */
+:root {
+  --titlebar-height: 80px;
+  --header-height: 80px;
 }
 
-/* ─── TOP BAR ────────────────────────────────────────────── */
+/* ─── UNIFIED FULL-WIDTH HEADER ──────────────────────────── */
 
 #topbar {
   position: fixed;
   top: 0;
-  left: var(--sidebar-width);
+  left: 0;
   right: 0;
-  height: var(--topbar-height);
-  background: var(--bg-primary);
-  border-bottom: 1px solid var(--border);
+  height: var(--header-height);
+  background: var(--bg-sidebar);
+  border-bottom: 1px solid rgba(0, 245, 212, 0.45);
+  box-shadow: 0 1px 12px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 245, 212, 0.55);
+  display: flex;
+  align-items: center;
+  z-index: 20;
+  -webkit-app-region: drag;
+}
+
+/* Logo zone — exactly as wide as the sidebar */
+.topbar-logo {
+  flex-shrink: 0;
+  width: var(--sidebar-width);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 0 20px 0 10px;
+  -webkit-app-region: no-drag;
+}
+
+/* Right zone — page title + search */
+.topbar-main {
+  flex: 1;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 16px 0 24px;
-  z-index: 10;
+  padding: 0 20px 0 24px;
+  min-width: 0;
+  -webkit-app-region: no-drag;
 }
 
 #page-title {
@@ -47,19 +61,46 @@
   display: flex;
   align-items: center;
   gap: 12px;
+  /* Keep search bar clear of the native window controls overlay (~138px on Windows) */
+  margin-right: 148px;
+  -webkit-app-region: no-drag;
+}
+
+
+/* ─── SIDEBAR SHELL ──────────────────────────────────────── */
+
+#sidebar {
+  position: fixed;
+  top: var(--header-height);
+  left: 0;
+  width: var(--sidebar-width);
+  height: calc(100% - var(--header-height));
+  background: var(--bg-sidebar);
+  display: flex;
+  flex-direction: column;
+  border-right: 1px solid rgba(0, 229, 192, 0.12);
+  box-shadow: 2px 0 16px rgba(0, 229, 192, 0.04);
+  overflow: hidden;
 }
 
 .search-wrapper {
   display: flex;
   align-items: center;
   gap: 8px;
-  max-width: 340px;
-  flex: 1;
+  width: 280px;
   background: var(--bg-surface);
   border: 1px solid var(--border);
   border-radius: 8px;
-  height: 36px;
-  padding: 0 10px;
+  height: 34px;
+  padding: 0 12px;
+  /* nudge search bar ~5px below header center */
+  margin-top: 5px;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.search-wrapper:focus-within {
+  border-color: rgba(0, 229, 192, 0.45);
+  box-shadow: 0 0 0 3px rgba(0, 229, 192, 0.08);
 }
 
 .search-input {
@@ -98,16 +139,20 @@
   font-family: inherit;
   cursor: pointer;
   white-space: nowrap;
-  transition: background 120ms ease;
+  box-shadow: 0 4px 14px rgba(0, 229, 192, 0.22);
+  transition: background 120ms ease, box-shadow 120ms ease;
 }
 
-.btn-add-files:hover { background: var(--accent-hover); }
+.btn-add-files:hover {
+  background: var(--accent-hover);
+  box-shadow: 0 4px 18px rgba(0, 229, 192, 0.32);
+}
 
 /* ─── MAIN SCROLL AREA ───────────────────────────────────── */
 
 #main-content {
   position: fixed;
-  top: var(--topbar-height);
+  top: var(--header-height);
   left: var(--sidebar-width);
   right: 0;
   bottom: 0;

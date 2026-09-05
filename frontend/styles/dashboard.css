@@ -986,14 +986,21 @@
 .bc-label {
   color: var(--text-muted);
   font-weight: 400;
-  letter-spacing: 0.01em;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
   transition: color 120ms ease;
   white-space: nowrap;
 }
 
 .bc-label--active {
-  color: var(--text-primary);
+  color: #7a9490;
   font-weight: 500;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  padding-left: 8px;
+  border-left: 2px solid var(--accent);
 }
 
 .bc-sep {
@@ -1384,7 +1391,7 @@
 /* ─── EXPLORE TOOLS ──────────────────────────────────────── */
 
 .explore-section {
-  margin-top: 24px;
+  margin-top: 12px;
 }
 
 .explore-swap-fade {

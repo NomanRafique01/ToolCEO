@@ -75,16 +75,6 @@
        ════════════════════════════════════════════════════════ -->
   <aside id="sidebar">
 
-    <!-- Logo -->
-    <div class="sidebar-logo">
-      <div class="logo-icon-wrap">
-        <img src="../assets/icon.png" class="logo-icon" alt="ToolCEO" />
-      </div>
-      <div class="logo-text">
-        <span class="logo-name">ToolCEO</span>
-      </div>
-    </div>
-
     <!-- Navigation -->
     <nav class="sidebar-nav">
 
@@ -262,18 +252,27 @@
        TOP BAR
        ════════════════════════════════════════════════════════ -->
   <header id="topbar">
-    <span id="page-title">Dashboard</span>
-    <div class="topbar-right">
-      <div class="search-wrapper">
-        <input
-          class="search-input"
-          type="text"
-          placeholder="Search conversions or tools…"
-          spellcheck="false"
-        />
-        <span class="search-kbd">Ctrl+K</span>
+    <!-- Logo — left portion aligned with sidebar width -->
+    <div class="topbar-logo">
+      <div class="logo-icon-wrap">
+        <img src="../assets/icon.png" class="logo-icon" alt="ToolCEO" />
       </div>
-      <button class="btn-add-files">＋ Add Files</button>
+      <span class="logo-name">ToolCEO</span>
+    </div>
+    <!-- Right portion: page title + search -->
+    <div class="topbar-main">
+      <span id="page-title">Dashboard</span>
+      <div class="topbar-right">
+        <div class="search-wrapper">
+          <input
+            class="search-input"
+            type="text"
+            placeholder="Search conversions or tools…"
+            spellcheck="false"
+          />
+          <span class="search-kbd">Ctrl+K</span>
+        </div>
+      </div>
     </div>
   </header>
 
