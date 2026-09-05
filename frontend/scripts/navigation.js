@@ -18,6 +18,7 @@ import { renderAudioFormats,    setNavigateToModule as setAudioNav } from './aud
 import { renderImageFormats,    setNavigateToModule as setImgNav } from './images.js';
 import { renderModules, setPendingLockContext } from './modules.js';
 import { renderFavourites, setNavigateToModule as setFavNav } from './favourites.js';
+import { renderRecent } from './recent.js';
 import { setActiveTool }         from './toolstate.js';
 import { loadModuleStatuses }    from './modulelock.js';
 
@@ -31,6 +32,7 @@ const CATEGORY_RENDERERS = {
   Modules    : renderModules,
   Favorites  : renderFavourites,
   Favourites : renderFavourites,
+  Recent     : renderRecent,
 };
 
 // The original "Explore Tools" grid HTML is captured once on first load so we
@@ -115,6 +117,12 @@ export function initNavigation() {
       } else {
         dashPanel.classList.remove('modules-active');
       }
+
+      if (label === 'Recent') {
+        dashPanel.classList.add('recent-active');
+      } else {
+        dashPanel.classList.remove('recent-active');
+      }
     }
 
     // ── Explore-section swap ─────────────────────────────────────────────
@@ -149,6 +157,13 @@ export function initNavigation() {
   navItems.forEach((item) => {
     item.addEventListener('click', () => activateNav(item.dataset.label));
   });
+
+  // Bind View All link on dashboard recent panel
+  const viewAllBtn = document.querySelector('.recent-view-all');
+  if (viewAllBtn) {
+    viewAllBtn.style.cursor = 'pointer';
+    viewAllBtn.addEventListener('click', () => activateNav('Recent'));
+  }
 
   // Bind tool-card clicks on the default grid
   bindToolCardClicks(activateNav);

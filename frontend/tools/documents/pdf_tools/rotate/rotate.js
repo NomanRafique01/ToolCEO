@@ -8,6 +8,7 @@
 import { pushNotification } from '../../../../scripts/notificationStore.js';
 import { getActiveTool, setBgJob, getBgJob, syncBgJobBar, clearBgJob } from '../../../../scripts/toolstate.js';
 import { showProgress, updateProgress, showDownloadBlobCard, showError, resetZoneContent } from '../../../shared/progress.js';
+import { buildConversionMeta } from '../../../../scripts/historyTracker.js';
 import { ensurePdfJs, loadPdfDocument } from '../../../shared/pdfRenderer.js';
 
 const BACKEND = 'http://127.0.0.1:8000';
@@ -121,7 +122,8 @@ function _fileToBase64(file) {
 
 function _downloadBase64Pdf(base64, filename) {
   if (window.toolceo && window.toolceo.saveFileAs) {
-    return window.toolceo.saveFileAs(filename, base64);
+    const meta = buildConversionMeta({ outputFilename: filename });
+    return window.toolceo.saveFileAs(filename, base64, meta);
   }
 
   const bytes = atob(base64);

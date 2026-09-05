@@ -244,7 +244,20 @@ async function _saveBlobFile(blob, filename) {
   const base64 = btoa(binary);
 
   if (window.toolceo && window.toolceo.saveFileAs) {
-    const savedPath = await window.toolceo.saveFileAs(filename, base64);
+    const outExt = filename.includes('.') ? filename.split('.').pop().toLowerCase() : '';
+    const tool = _activeTool;
+    let inExt = '';
+    let origName = '';
+    let cat = '';
+    if (tool) {
+      if (tool.sourceFilename) { origName = tool.sourceFilename; inExt = origName.includes('.') ? origName.split('.').pop().toLowerCase() : ''; }
+      if (tool.category) cat = tool.category.toLowerCase();
+      if (!inExt && tool.id) { const p = String(tool.id).toLowerCase().split(/[-_]/); if (p.length >= 2 && p[0] !== p[1]) inExt = p[0]; }
+    }
+    if (!inExt) inExt = outExt || 'file';
+    if (!origName) origName = (filename.replace(/\.[^/.]+$/, '') || 'input') + '.' + inExt;
+    const meta = { original_filename: origName, input_format: inExt, category: cat || 'document' };
+    const savedPath = await window.toolceo.saveFileAs(filename, base64, meta);
     if (!savedPath) throw new Error('Save cancelled');
   } else {
     const url = URL.createObjectURL(blob);

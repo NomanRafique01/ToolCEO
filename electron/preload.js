@@ -16,8 +16,8 @@ contextBridge.exposeInMainWorld('toolceo', {
   saveToDownloads: (filename, base64Data) =>
     ipcRenderer.invoke('save-to-downloads', filename, base64Data),
 
-  saveFileAs: (filename, base64Data) =>
-    ipcRenderer.invoke('save-file-dialog', filename, base64Data),
+  saveFileAs: (filename, base64Data, conversionMeta) =>
+    ipcRenderer.invoke('save-file-dialog', filename, base64Data, conversionMeta),
 
   // ── Vault file: read a local .tceo file into a JS File object ────────────────
   // Returns { ok, buffer, name, size } or { ok: false, error }
@@ -66,4 +66,34 @@ contextBridge.exposeInMainWorld('electronAPI', {
     ipcRenderer.on('module-download-error', handler);
     return () => ipcRenderer.removeListener('module-download-error', handler);
   },
+
+  // ── Database & History API ───────────────────────────────────────────────────
+  addConversion:       (data)     => ipcRenderer.invoke('db:add-conversion', data),
+  getAllConversions:   ()         => ipcRenderer.invoke('db:get-all-conversions'),
+  deleteConversion:    (id)       => ipcRenderer.invoke('db:delete-conversion', id),
+  clearAll:            ()         => ipcRenderer.invoke('db:clear-all'),
+  clearAllConversions: ()         => ipcRenderer.invoke('db:clear-all'),
+  checkFileExists:     (filePath) => ipcRenderer.invoke('db:check-file-exists', filePath),
+
+  // Conversion events
+  onConversionRecorded: (cb) => {
+    const handler = (_e, payload) => cb(payload);
+    ipcRenderer.on('conversion-recorded', handler);
+    return () => ipcRenderer.removeListener('conversion-recorded', handler);
+  },
+  onConversionCleared: (cb) => {
+    const handler = () => cb();
+    ipcRenderer.on('conversion-history-cleared', handler);
+    return () => ipcRenderer.removeListener('conversion-history-cleared', handler);
+  },
+  onConversionDeleted: (cb) => {
+    const handler = (_e, id) => cb(id);
+    ipcRenderer.on('conversion-deleted', handler);
+    return () => ipcRenderer.removeListener('conversion-deleted', handler);
+  },
+
+  // ── OS / Shell helpers ───────────────────────────────────────────────────────
+  showItemInFolder:    (filePath) => ipcRenderer.invoke('shell:showItemInFolder', filePath),
+  openPath:            (filePath) => ipcRenderer.invoke('shell:openPath', filePath),
+  getFileIcon:         (filePath) => ipcRenderer.invoke('shell:getFileIcon', filePath),
 });

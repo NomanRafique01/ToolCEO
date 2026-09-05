@@ -17,12 +17,13 @@
 
 'use strict';
 
-const { app, BrowserWindow, ipcMain, dialog, nativeImage, net, Notification } = require('electron');
+const { app, BrowserWindow, ipcMain, dialog, nativeImage, net, Notification, shell } = require('electron');
 const path      = require('path');
 const fs        = require('fs');
 const os        = require('os');
 const https     = require('https');
 const AdmZip    = require('adm-zip');
+const historyDb = require('./database');
 const { spawn, execFile, execFileSync } = require('child_process');
 
 // ─── CONSTANTS ─────────────────────────────────────────────────────────────────
@@ -1144,18 +1145,154 @@ app.commandLine.appendSwitch('disable-gpu-shader-disk-cache');
 app.commandLine.appendSwitch('disable-http-cache');
 
 app.whenReady().then(async () => {
+  // ── Initialize SQLite History Database ─────────────────────────────────────
+  try {
+    historyDb.initDatabase(app);
+  } catch (err) {
+    console.error('[database] Failed to initialize history DB:', err);
+  }
+
+  // ── IPC: History Database handlers ─────────────────────────────────────────
+  ipcMain.handle('db:add-conversion', (_event, data) => {
+    const res = historyDb.addConversion(data);
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('conversion-recorded', {
+        ...data,
+        id: res.id,
+        converted_at: new Date().toISOString()
+      });
+    }
+    return res;
+  });
+
+  ipcMain.handle('db:get-all-conversions', () => {
+    return historyDb.getAllConversions();
+  });
+
+  ipcMain.handle('db:delete-conversion', (_event, id) => {
+    const res = historyDb.deleteConversion(id);
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('conversion-deleted', id);
+    }
+    return res;
+  });
+
+  ipcMain.handle('db:clear-all', () => {
+    const res = historyDb.clearAllConversions();
+    if (mainWindow && !mainWindow.isDestroyed()) {
+      mainWindow.webContents.send('conversion-history-cleared');
+    }
+    return res;
+  });
+
+  ipcMain.handle('db:check-file-exists', (_event, filePath) => {
+    if (!filePath || typeof filePath !== 'string') return false;
+    return fs.existsSync(filePath);
+  });
+
+  // ── IPC: Shell / OS helpers for Recent page ────────────────────────────────
+  ipcMain.handle('shell:openPath', async (_event, filePath) => {
+    if (!filePath || !fs.existsSync(filePath)) return { ok: false, error: 'File not found' };
+    const err = await shell.openPath(filePath);
+    return { ok: !err, error: err || null };
+  });
+
+  ipcMain.handle('shell:showItemInFolder', (_event, filePath) => {
+    if (!filePath) return false;
+    try {
+      if (fs.existsSync(filePath)) {
+        shell.showItemInFolder(filePath);
+        return true;
+      }
+      const dir = path.dirname(filePath);
+      if (fs.existsSync(dir)) {
+        shell.openPath(dir);
+        return true;
+      }
+    } catch (err) {
+      console.warn('[main] showItemInFolder failed:', err.message);
+    }
+    return false;
+  });
+
+  ipcMain.handle('shell:getFileIcon', async (_event, filePath) => {
+    if (!filePath) return null;
+    try {
+      // If file exists, get its actual icon
+      if (fs.existsSync(filePath)) {
+        const icon = await app.getFileIcon(filePath, { size: 'large' });
+        return icon ? icon.toDataURL() : null;
+      }
+      // If file doesn't exist on disk, fallback to checking if we can get icon for its extension
+      const ext = path.extname(filePath);
+      if (ext) {
+        // Try getting icon from a temp stub or standard association
+        const tempStub = path.join(app.getPath('temp'), `_tceo_icon_probe${ext}`);
+        if (!fs.existsSync(tempStub)) {
+          try { fs.writeFileSync(tempStub, ''); } catch (_) {}
+        }
+        if (fs.existsSync(tempStub)) {
+          const icon = await app.getFileIcon(tempStub, { size: 'large' });
+          return icon ? icon.toDataURL() : null;
+        }
+      }
+      return null;
+    } catch (err) {
+      console.warn('[main] Failed to get file icon for:', filePath, err.message);
+      return null;
+    }
+  });
+
   // ── IPC: Save file to downloads ───────────────────────────────────────────
-  ipcMain.handle('save-to-downloads', (_event, filename, base64Data) => {
+  ipcMain.handle('save-to-downloads', (_event, filename, base64Data, conversionMeta) => {
     const downloadsDir = app.getPath('downloads');
     let outName = (filename || 'compressed.pdf').trim();
     if (!outName.toLowerCase().endsWith('.pdf')) outName += '.pdf';
     const filePath = path.join(downloadsDir, outName);
-    fs.writeFileSync(filePath, Buffer.from(base64Data, 'base64'));
+    const buf = Buffer.from(base64Data, 'base64');
+    fs.writeFileSync(filePath, buf);
+    const savedTo = notifySavedFile(filePath);
+
+    if (savedTo && conversionMeta && typeof conversionMeta === 'object') {
+      try {
+        const actualName = path.basename(savedTo);
+        const actualExt  = path.extname(actualName).replace('.', '').toLowerCase();
+        const record = historyDb.addConversion({
+          original_filename: conversionMeta.original_filename || outName,
+          input_format:      conversionMeta.input_format || actualExt,
+          output_filename:   actualName,
+          output_format:     actualExt,
+          output_path:       savedTo,
+          file_size_bytes:   buf.length,
+          category:          conversionMeta.category || 'document',
+          status:            'success',
+          error_message:     null,
+        });
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('conversion-recorded', {
+            id: record.id,
+            original_filename: conversionMeta.original_filename || outName,
+            input_format:      conversionMeta.input_format || actualExt,
+            output_filename:   actualName,
+            output_format:     actualExt,
+            output_path:       savedTo,
+            file_size_bytes:   buf.length,
+            category:          conversionMeta.category || 'document',
+            status:            'success',
+            converted_at:      new Date().toISOString(),
+          });
+        }
+      } catch (dbErr) {
+        console.warn('[main] Failed to record conversion in history:', dbErr.message);
+      }
+    }
     return filePath;
   });
 
   // ── IPC: Save file via system dialog ──────────────────────────────────────
-  ipcMain.handle('save-file-dialog', async (_event, filename, base64Data) => {
+  // 3rd arg `conversionMeta` is optional — if provided, the conversion is
+  // automatically recorded in the SQLite history database after a successful save.
+  ipcMain.handle('save-file-dialog', async (_event, filename, base64Data, conversionMeta) => {
     const downloadsDir = app.getPath('downloads');
     let outName = (filename || 'output.pdf').trim();
     const ext = path.extname(outName).replace('.', '').toLowerCase() || 'pdf';
@@ -1172,9 +1309,10 @@ app.whenReady().then(async () => {
     if (canceled || !filePath) return null;
 
     const buffer = Buffer.from(base64Data, 'base64');
+    let savedTo = null;
     try {
       fs.writeFileSync(filePath, buffer);
-      return notifySavedFile(filePath);
+      savedTo = notifySavedFile(filePath);
     } catch (_err) {
       // Try incrementing the filename if the target is locked
       const dir  = path.dirname(filePath);
@@ -1182,12 +1320,51 @@ app.whenReady().then(async () => {
       const base = path.basename(filePath, fext);
       for (let i = 1; i < 100; i++) {
         const alt = path.join(dir, `${base} (${i})${fext}`);
-        try { fs.writeFileSync(alt, buffer); return notifySavedFile(alt); } catch (_) {}
+        try { fs.writeFileSync(alt, buffer); savedTo = notifySavedFile(alt); break; } catch (_) {}
       }
-      const fallback = path.join(dir, `${base}_${Date.now()}${fext}`);
-      fs.writeFileSync(fallback, buffer);
-      return notifySavedFile(fallback);
+      if (!savedTo) {
+        const fallback = path.join(dir, `${base}_${Date.now()}${fext}`);
+        fs.writeFileSync(fallback, buffer);
+        savedTo = notifySavedFile(fallback);
+      }
     }
+
+    // ── Record conversion in history DB if metadata was provided ──────────
+    if (savedTo && conversionMeta && typeof conversionMeta === 'object') {
+      try {
+        const actualName = path.basename(savedTo);
+        const actualExt  = path.extname(actualName).replace('.', '').toLowerCase();
+        const record = historyDb.addConversion({
+          original_filename: conversionMeta.original_filename || outName,
+          input_format:      conversionMeta.input_format || actualExt,
+          output_filename:   actualName,
+          output_format:     actualExt,
+          output_path:       savedTo,
+          file_size_bytes:   buffer.length,
+          category:          conversionMeta.category || 'document',
+          status:            'success',
+          error_message:     null,
+        });
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.webContents.send('conversion-recorded', {
+            id: record.id,
+            original_filename: conversionMeta.original_filename || outName,
+            input_format:      conversionMeta.input_format || actualExt,
+            output_filename:   actualName,
+            output_format:     actualExt,
+            output_path:       savedTo,
+            file_size_bytes:   buffer.length,
+            category:          conversionMeta.category || 'document',
+            status:            'success',
+            converted_at:      new Date().toISOString(),
+          });
+        }
+      } catch (dbErr) {
+        console.warn('[main] Failed to record conversion in history:', dbErr.message);
+      }
+    }
+
+    return savedTo;
   });
 
   // ── IPC: Read a local .tceo file and return its bytes to the renderer ─────
@@ -1835,8 +2012,18 @@ app.on('window-all-closed', () => {
   stopBackend();
   if (process.platform !== 'darwin') app.quit();
 });
-app.on('before-quit', () => stopBackend());
-app.on('will-quit', () => stopBackend());
+app.on('before-quit', () => {
+  stopBackend();
+  try {
+    historyDb.closeDatabase();
+  } catch (_) {}
+});
+app.on('will-quit', () => {
+  stopBackend();
+  try {
+    historyDb.closeDatabase();
+  } catch (_) {}
+});
 
 // Handle force close and crash
 process.on('exit', () => stopBackend());

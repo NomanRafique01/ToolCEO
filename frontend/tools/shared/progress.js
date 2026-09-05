@@ -21,6 +21,7 @@
  */
 
 import { clearBgJob, getActiveTool, getBgJob } from '../../scripts/toolstate.js';
+import { buildConversionMeta } from '../../scripts/historyTracker.js';
 
 const BACKEND = 'http://127.0.0.1:8000';
 
@@ -276,7 +277,8 @@ export function showDownload(zone, filename, jobId, color, onReset) {
       const base64 = btoa(binary);
 
       if (window.toolceo && window.toolceo.saveFileAs) {
-        const savedPath = await window.toolceo.saveFileAs(filename, base64);
+        const meta = buildConversionMeta({ outputFilename: filename });
+        const savedPath = await window.toolceo.saveFileAs(filename, base64, meta);
         if (savedPath) {
           btn.style.display = 'none';
           wrap.querySelector('.dz-save-done').classList.add('dz-save-done--visible');
@@ -415,7 +417,8 @@ export function showDownloadBlobCard(zone, blob, filename, color, onReset) {
       const base64 = btoa(binary);
 
       if (window.toolceo && window.toolceo.saveFileAs) {
-        const savedPath = await window.toolceo.saveFileAs(filename, base64);
+        const meta = buildConversionMeta({ outputFilename: filename });
+        const savedPath = await window.toolceo.saveFileAs(filename, base64, meta);
         if (savedPath) {
           btn.style.display = 'none';
           wrap.querySelector('.dz-save-done').classList.add('dz-save-done--visible');

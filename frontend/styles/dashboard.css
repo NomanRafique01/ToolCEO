@@ -1058,13 +1058,46 @@
 .recent-item {
   display: flex;
   align-items: center;
-  height: 44px;
+  height: 48px;
   gap: 10px;
+  padding: 0 6px;
   border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  border-radius: 6px;
+  transition: background-color 150ms ease, transform 120ms ease;
 }
 
 .recent-item:last-child {
   border-bottom: none;
+}
+
+.recent-item:hover {
+  background: rgba(0, 229, 192, 0.06);
+}
+
+.recent-item:hover .file-name {
+  color: var(--accent);
+}
+
+.recent-item:active {
+  transform: scale(0.99);
+}
+
+.recent-empty-compact {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 36px 16px;
+  gap: 10px;
+  color: var(--text-muted);
+  font-size: 13px;
+  text-align: center;
+}
+
+.recent-empty-compact .recent-empty-icon {
+  color: var(--text-muted);
+  opacity: 0.6;
 }
 
 .file-type-icon {
@@ -1097,6 +1130,7 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  transition: color 150ms ease;
 }
 
 .file-conv {

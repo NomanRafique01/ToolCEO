@@ -64,6 +64,8 @@
   <link rel="stylesheet" href="styles/module-download.css" />
   <!-- Notification banner -->
   <link rel="stylesheet" href="styles/notification-banner.css" />
+  <!-- Recent conversions history page -->
+  <link rel="stylesheet" href="styles/recent.css" />
   <!-- Offline PDF.js Core Engine & Worker -->
   <script src="vendor/pdfjs/pdf.min.js"></script>
   <script src="vendor/pdfjs/pdf.worker.min.js"></script>
@@ -303,84 +305,14 @@
               <span class="recent-title">Recent Conversions</span>
               <span class="recent-view-all">View All</span>
             </div>
-            <ul class="recent-list">
-
-              <li class="recent-item">
-                <div class="file-type-icon" style="--icon-bg:#1A3D38;--icon-color:#00E5C0">PDF</div>
-                <div class="file-info">
-                  <span class="file-name">Project_Proposal.pdf</span>
-                  <span class="file-conv">PDF → DOCX</span>
-                </div>
-                <div class="file-meta">
-                  <span class="file-time">2 mins ago</span>
-                  <svg class="check-icon" viewBox="0 0 16 16" width="16" height="16" fill="none">
-                    <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/>
-                    <path d="M5 8l2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                </div>
-              </li>
-
-              <li class="recent-item">
-                <div class="file-type-icon" style="--icon-bg:#1A3D2A;--icon-color:#00E5C0">PNG</div>
-                <div class="file-info">
-                  <span class="file-name">Vacation_Photo.png</span>
-                  <span class="file-conv">PNG → JPG</span>
-                </div>
-                <div class="file-meta">
-                  <span class="file-time">10 mins ago</span>
-                  <svg class="check-icon" viewBox="0 0 16 16" width="16" height="16" fill="none">
-                    <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/>
-                    <path d="M5 8l2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                </div>
-              </li>
-
-              <li class="recent-item">
-                <div class="file-type-icon" style="--icon-bg:#1A2E3D;--icon-color:#5BB8F5">DOCX</div>
-                <div class="file-info">
-                  <span class="file-name">Meeting_Notes.docx</span>
-                  <span class="file-conv">DOCX → PDF</span>
-                </div>
-                <div class="file-meta">
-                  <span class="file-time">1 hour ago</span>
-                  <svg class="check-icon" viewBox="0 0 16 16" width="16" height="16" fill="none">
-                    <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/>
-                    <path d="M5 8l2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                </div>
-              </li>
-
-              <li class="recent-item">
-                <div class="file-type-icon" style="--icon-bg:#2A1A3D;--icon-color:#A78BFA">MP3</div>
-                <div class="file-info">
-                  <span class="file-name">Audio_Track.mp3</span>
-                  <span class="file-conv">MP3 → WAV</span>
-                </div>
-                <div class="file-meta">
-                  <span class="file-time">2 hours ago</span>
-                  <svg class="check-icon" viewBox="0 0 16 16" width="16" height="16" fill="none">
-                    <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/>
-                    <path d="M5 8l2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                </div>
-              </li>
-
-              <li class="recent-item">
-                <div class="file-type-icon" style="--icon-bg:#3D2A1A;--icon-color:#F5A35B">MP4</div>
-                <div class="file-info">
-                  <span class="file-name">Video_Clip.mp4</span>
-                  <span class="file-conv">MP4 → MKV</span>
-                </div>
-                <div class="file-meta">
-                  <span class="file-time">5 hours ago</span>
-                  <svg class="check-icon" viewBox="0 0 16 16" width="16" height="16" fill="none">
-                    <circle cx="8" cy="8" r="7" stroke="currentColor" stroke-width="1.5"/>
-                    <path d="M5 8l2 2 4-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                </div>
-              </li>
-
-            </ul>
+            <ul class="recent-list" id="dashboard-recent-list"></ul>
+            <div class="recent-empty-compact" id="dashboard-recent-empty" style="display: none;">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" class="recent-empty-icon">
+                <circle cx="12" cy="12" r="9" stroke-dasharray="3 3"/>
+                <path d="M12 7v5l3 3" stroke-linecap="round"/>
+              </svg>
+              <span>No recent conversions yet</span>
+            </div>
           </div><!-- /recent-panel -->
 
           <!-- ── DOWNLOAD PANEL — hidden by CSS; shown via JS when a conversion completes ── -->

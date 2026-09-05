@@ -13,6 +13,7 @@
 import { getActiveTool, setActiveTool, onToolChange, setBgJob, getBgJob, syncBgJobBar, clearBgJob } from './toolstate.js';
 import { pushNotification } from './notificationStore.js';
 import { showDownloadBlobCard } from '../tools/shared/progress.js';
+import { buildConversionMeta } from './historyTracker.js';
 import {
   handleSplitFilePicked,
   removeSplitPanel,
@@ -771,7 +772,8 @@ async function _dlPanelSave(jobId, filename, color, panel) {
     const base64 = btoa(binary);
 
     if (window.toolceo && window.toolceo.saveFileAs) {
-      const savedPath = await window.toolceo.saveFileAs(filename, base64);
+      const meta = buildConversionMeta({ outputFilename: filename });
+      const savedPath = await window.toolceo.saveFileAs(filename, base64, meta);
       if (savedPath) {
         if (btn) { btn.disabled = false; btn.style.display = 'none'; }
         panel.classList.add('dl-panel--saved');
@@ -1031,7 +1033,8 @@ function _showDownload(zone, filename, jobId, color) {
       const base64 = btoa(binary);
 
       if (window.toolceo && window.toolceo.saveFileAs) {
-        const savedPath = await window.toolceo.saveFileAs(filename, base64);
+        const meta = buildConversionMeta({ outputFilename: filename });
+        const savedPath = await window.toolceo.saveFileAs(filename, base64, meta);
         if (savedPath) {
           btn.style.display = 'none';
           wrap.querySelector('.dz-save-done').classList.add('dz-save-done--visible');
@@ -1115,7 +1118,8 @@ async function _downloadFile(jobId, filename, color, wrap) {
 
     // Use Electron "Save As" dialog if available; fall back to browser anchor download
     if (window.toolceo && window.toolceo.saveFileAs) {
-      const savedPath = await window.toolceo.saveFileAs(filename, base64);
+      const meta = buildConversionMeta({ outputFilename: filename });
+      const savedPath = await window.toolceo.saveFileAs(filename, base64, meta);
       if (savedPath) {
         if (btn) { btn.disabled = false; btn.textContent = '✓ Saved'; btn.style.opacity = '0.6'; }
         const zone = document.getElementById('drop-zone');

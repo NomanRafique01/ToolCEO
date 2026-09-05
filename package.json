@@ -63,7 +63,8 @@
     ]
   },
   "dependencies": {
-    "adm-zip": "^0.6.0"
+    "adm-zip": "^0.6.0",
+    "better-sqlite3": "^13.0.3"
   },
   "devDependencies": {
     "electron": "latest",
