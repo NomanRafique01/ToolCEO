@@ -1,4 +1,4 @@
-/**
+﻿/**
  * tools/documents/pdf_tools/extractor/extractor.js
  *
  * Owns the Extract Images flow: PDF scan, drop-zone thumbnail, rotate-style
@@ -502,7 +502,7 @@ async function _loadPdfIntoViewer(container, file) {
   _activeContainer = container || document.getElementById('explore-section') || document.body;
   _pdfDoc = info.pdfDoc || null;
 
-  updateProgress(zone, 100, color);
+  updateProgress(zone, 100, color, tool.id);
   resetZoneContent(zone);
   _showPdfThumbnail(zone, file, color, info.thumbnail || null);
   _showExtractorPanel(color);
@@ -612,14 +612,14 @@ async function _submitExtract() {
     }
 
     if (state === 'running' || state === 'pending') {
-      if (zone) updateProgress(zone, Math.max(10, Math.min(90, pct)), color);
+      if (zone) updateProgress(zone, Math.max(10, Math.min(90, pct)), color, tool.id);
       return;
     }
 
     sse.close();
 
     if (state === 'done') {
-      if (zone) updateProgress(zone, 100, color);
+      if (zone) updateProgress(zone, 100, color, tool.id);
       const dlName = data.filename || outputName;
       const onReset = () => {
         removeExtractorPanel();
@@ -630,7 +630,7 @@ async function _submitExtract() {
           }).catch(() => {});
         }
       };
-      setTimeout(() => showDownload(zone, dlName, jobId, color, onReset), 200);
+      setTimeout(() => showDownload(zone, dlName, jobId, color, onReset, tool.id), 200);
       pushNotification({
         type: 'success',
         message: 'Images Extracted',

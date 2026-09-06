@@ -1,4 +1,4 @@
-/**
+﻿/**
  * tools/documents/pdf_tools/editor/editor.js
  *
  * Owns the Edit PDF load flow: PDF scan, page grid, and in-browser page
@@ -678,7 +678,7 @@ async function _loadPdfIntoViewer(container, file) {
   _activeContainer = container || document.getElementById('explore-section') || document.body;
   _pdfDoc = info.pdfDoc || null;
 
-  updateProgress(zone, 100, color);
+  updateProgress(zone, 100, color, tool.id);
   resetZoneContent(zone);
   _showPdfThumbnail(zone, file, color, info.thumbnail);
 
@@ -1026,7 +1026,7 @@ async function _saveEditedPdf(viewer) {
 
   try {
     const file = await _fileToBase64(_selectedFile);
-    if (zone) updateProgress(zone, 45, color);
+    if (zone) updateProgress(zone, 45, color, tool.id);
     const bgMid = getBgJob();
     if (bgMid) {
       bgMid.progress = 45;
@@ -1048,7 +1048,7 @@ async function _saveEditedPdf(viewer) {
 
     const blob = _dataUriToBlob(output, 'application/pdf');
 
-    if (zone) updateProgress(zone, 100, color);
+    if (zone) updateProgress(zone, 100, color, tool.id);
     const bgDone = getBgJob();
     if (bgDone) {
       bgDone.progress = 100;

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * tools/documents/pdf_convertor/pdf_images/pdf_images.js
  *
  * PDF → Images Converter — single-file flow.
@@ -325,7 +325,7 @@ async function _submitConvert(file, outputFilename) {
     sse.close();
 
     if (state === 'done') {
-      updateProgress(zone, 100, color);
+      updateProgress(zone, 100, color, tool.id);
       removePdfImagesPanel();
       const dlName = data.filename || earlyFilename;
       const onReset = () => {
@@ -337,7 +337,7 @@ async function _submitConvert(file, outputFilename) {
           }).catch(() => {});
         }
       };
-      setTimeout(() => showDownload(zone, dlName, jobId, color, onReset), 200);
+      setTimeout(() => showDownload(zone, dlName, jobId, color, onReset, tool.id), 200);
       document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }

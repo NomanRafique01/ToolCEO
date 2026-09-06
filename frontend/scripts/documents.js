@@ -1541,7 +1541,7 @@ function cardHTML(item, extraClass = '') {
   const lockedAttr = locked ? ` data-locked-module="${getLockedModuleId(item.id)}"` : '';
   const bottom = item.ext
     ? `<div class="fmt-ext">${item.ext}</div>`
-    : `<div class="fmt-tag fmt-tag--${item.tag.toLowerCase()}">${item.tag}</div>`;
+    : (item.tag ? `<div class="fmt-tag fmt-tag--${String(item.tag).toLowerCase()}">${item.tag}</div>` : '');
 
   let starBtn = '';
   if (!isEntry) {

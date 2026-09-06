@@ -1,4 +1,4 @@
-/**
+﻿/**
  * tools/ebooks/shared/ebook_base.js
  *
  * Single shared base for every eBook conversion tool.
@@ -333,14 +333,14 @@ async function _submitConvert(file, outputFilename) {
       // Allow up to 98% while still running — the backend's staged milestones
       // go up to 95, so clamping at 90 would freeze the bar for the final
       // packaging stage.  We reserve 99-100 for the done transition.
-      updateProgress(zone, Math.max(10, Math.min(98, pct)), color);
+      updateProgress(zone, Math.max(10, Math.min(98, pct)), color, tool.id);
       return;
     }
 
     sse.close();
 
     if (state === 'done') {
-      updateProgress(zone, 100, color);
+      updateProgress(zone, 100, color, tool.id);
       removeEbookPanel();
       const dlName = data.filename || earlyFilename;
       const onReset = () => {
@@ -352,7 +352,7 @@ async function _submitConvert(file, outputFilename) {
           }).catch(() => {});
         }
       };
-      setTimeout(() => showDownload(zone, dlName, jobId, color, onReset), 200);
+      setTimeout(() => showDownload(zone, dlName, jobId, color, onReset, tool.id), 200);
       document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }

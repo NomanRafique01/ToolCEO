@@ -44,7 +44,7 @@ export function escHtml(str) {
 export function resetZoneContent(zone) {
   if (!zone) return;
   zone.querySelectorAll(
-    '.dz-progress-wrap, .dz-download-wrap, .dz-error-wrap, .dz-pdf-thumb-wrap, .dz-compress-thumb-wrap, .dz-encrypt-thumb-wrap, .dz-merge-thumb-strip, .dz-pdf-word-thumb-wrap, .dz-pdf-excel-thumb-wrap, .dz-pdf-html-thumb-wrap, .dz-pdf-txt-thumb-wrap, .dz-ebook-thumb-wrap, .dz-docx-thumb-wrap, .dz-pptx-thumb-wrap, .dz-xlsx-thumb-wrap, .dz-txt-thumb-wrap, .dz-odt-thumb-wrap, .dz-csv-thumb-wrap, .dz-img-preview-wrap, .dz-jpg-thumb-strip, .dz-png-thumb-strip, .dz-webp-thumb-strip, .dz-svg-thumb-strip'
+    '.dz-progress-wrap, .dz-download-wrap, .dz-error-wrap, .dz-pdf-thumb-wrap, .dz-compress-thumb-wrap, .dz-encrypt-thumb-wrap, .dz-merge-thumb-strip, .dz-queue-toolbar, .dz-pdf-word-thumb-wrap, .dz-pdf-excel-thumb-wrap, .dz-pdf-html-thumb-wrap, .dz-pdf-txt-thumb-wrap, .dz-ebook-thumb-wrap, .dz-docx-thumb-wrap, .dz-pptx-thumb-wrap, .dz-xlsx-thumb-wrap, .dz-txt-thumb-wrap, .dz-odt-thumb-wrap, .dz-csv-thumb-wrap, .dz-img-preview-wrap, .dz-jpg-thumb-strip, .dz-png-thumb-strip, .dz-webp-thumb-strip, .dz-svg-thumb-strip'
   ).forEach((el) => el.remove());
   zone.classList.remove(
     'dz-state-processing', 'dz-state-done', 'dz-state-error',
@@ -60,7 +60,7 @@ export function resetZoneContent(zone) {
 // ─── PROGRESS RING ────────────────────────────────────────────────────────────
 
 /** Build the circular ring SVG + centre text, returns wrap element. */
-export function buildRingWrap(color, pct, label, indeterminate) {
+export function buildRingWrap(color, pct, label, indeterminate, toolId) {
   const offset  = indeterminate ? 0 : _RING_CIRC * (1 - pct / 100);
   const dashArr = indeterminate
     ? `${_RING_CIRC * 0.35} ${_RING_CIRC * 0.65}`
@@ -68,6 +68,8 @@ export function buildRingWrap(color, pct, label, indeterminate) {
 
   const wrap = document.createElement('div');
   wrap.className = 'dz-progress-wrap';
+  const owner = toolId || getActiveTool()?.id;
+  if (owner) wrap.dataset.toolId = owner;
   wrap.style.setProperty('--dz-ring-color', color);
 
   wrap.innerHTML = `
@@ -98,19 +100,21 @@ export function buildRingWrap(color, pct, label, indeterminate) {
 }
 
 /** Show the circular ring progress — centred inside the drop zone. */
-export function showProgress(zone, pct, color, label) {
+export function showProgress(zone, pct, color, label, toolId) {
   resetZoneContent(zone);
   zone.classList.add('dz-state-processing');
-  const wrap = buildRingWrap(color, pct, label || 'Processing', false);
+  const owner = toolId || getActiveTool()?.id;
+  const wrap = buildRingWrap(color, pct, label || 'Processing', false, owner);
   zone.appendChild(wrap);
   _wireCancelBtn(wrap, zone);
 }
 
 /** Show an indeterminate scanning ring — spinning arc. */
-export function showScanProgress(zone, color, label = 'Scanning') {
+export function showScanProgress(zone, color, label = 'Scanning', toolId) {
   resetZoneContent(zone);
   zone.classList.add('dz-state-scanning');
-  const wrap = buildRingWrap(color, 0, label, true);
+  const owner = toolId || getActiveTool()?.id;
+  const wrap = buildRingWrap(color, 0, label, true, owner);
   zone.appendChild(wrap);
   _wireCancelBtn(wrap, zone);
 }
@@ -128,8 +132,34 @@ function _wireCancelBtn(wrap, zone) {
   });
 }
 
-/** Update just the ring fill + percentage text without rebuilding the overlay. */
-export function updateProgress(zone, pct, color) {
+/**
+ * Update just the ring fill + percentage text without rebuilding the overlay.
+ * @param {HTMLElement} zone
+ * @param {number}      pct
+ * @param {string}      color
+ * @param {string}      [toolId]  When provided, silently skips the update if the
+ *                                user has navigated away from that tool. This prevents
+ *                                a background job from overwriting a different tool's
+ *                                progress ring with its own colour/percentage.
+ */
+export function updateProgress(zone, pct, color, toolId) {
+  if (!zone) return;
+  const activeTool = getActiveTool();
+
+  // If the caller tells us which tool owns this update, bail out when the user
+  // has switched to a different tool.
+  if (toolId && activeTool && activeTool.id !== toolId) return;
+
+  const wrap = zone.querySelector('.dz-progress-wrap');
+  if (!wrap) return;
+
+  // If the progress wrap in the drop zone belongs to a different tool, bail out!
+  const wrapToolId = wrap.dataset.toolId;
+  if (wrapToolId) {
+    if (toolId && wrapToolId !== toolId) return;
+    if (activeTool && wrapToolId !== activeTool.id) return;
+  }
+
   const ring  = zone.querySelector('.dz-ring-fill');
   const label = zone.querySelector('.dz-pct');
   if (ring) {
@@ -138,9 +168,9 @@ export function updateProgress(zone, pct, color) {
     ring.setAttribute('stroke', color);
   }
   if (label) label.textContent = `${pct}%`;
-  const wrap = zone.querySelector('.dz-progress-wrap');
-  if (wrap) wrap.style.setProperty('--dz-ring-color', color);
+  wrap.style.setProperty('--dz-ring-color', color);
 }
+
 
 // ─── AFTER-SAVE RESET ─────────────────────────────────────────────────────────
 
@@ -169,15 +199,17 @@ export function resetAfterSave(zone, onReset) {
  * @param {string}      jobId
  * @param {string}      color
  * @param {Function}    [onReset]  optional callback invoked after zone reset post-save
+ * @param {string}      [toolId]   ID of the tool that owns this job. When provided,
+ *                                 the download card is suppressed if the user has
+ *                                 navigated to a different tool.
  */
-export function showDownload(zone, filename, jobId, color, onReset) {
-  // If the user navigated away from the tool that owns this job, don't
-  // clobber their current drop zone. The bg-job-bar already provides
-  // a "Save As…" button for background-completed jobs.
-  const bgJob = getBgJob(jobId);
-  if (bgJob && bgJob.tool) {
+export function showDownload(zone, filename, jobId, color, onReset, toolId) {
+  // Use caller-supplied toolId first (most reliable), fall back to bgJob lookup.
+  const ownerToolId = toolId || getBgJob(jobId)?.tool?.id;
+  if (ownerToolId) {
     const activeTool = getActiveTool();
-    if (activeTool && activeTool.id !== bgJob.tool.id) return;
+    // Only suppress when activeTool is set and points to a different tool.
+    if (activeTool && activeTool.id !== ownerToolId) return;
   }
 
   resetZoneContent(zone);
@@ -315,7 +347,17 @@ export function showDownload(zone, filename, jobId, color, onReset) {
 // ─── ERROR ────────────────────────────────────────────────────────────────────
 
 /** Show error state. */
-export function showError(zone, message) {
+export function showError(zone, message, toolId) {
+  if (!zone) return;
+  const activeTool = getActiveTool();
+  if (toolId && activeTool && activeTool.id !== toolId) return;
+
+  const currentWrap = zone.querySelector('.dz-progress-wrap');
+  if (currentWrap && currentWrap.dataset.toolId) {
+    if (toolId && currentWrap.dataset.toolId !== toolId) return;
+    if (activeTool && currentWrap.dataset.toolId !== activeTool.id) return;
+  }
+
   resetZoneContent(zone);
   zone.classList.add('dz-state-error');
 
@@ -341,8 +383,17 @@ export function showError(zone, message) {
  * @param {string}      filename
  * @param {string}      color
  * @param {Function}    [onReset]
+ * @param {string}      [toolId]   ID of the tool that owns this job. When provided,
+ *                                 the download card is suppressed if the user has
+ *                                 navigated to a different tool.
  */
-export function showDownloadBlobCard(zone, blob, filename, color, onReset) {
+export function showDownloadBlobCard(zone, blob, filename, color, onReset, toolId) {
+  // Suppress the download card when the user is on a different tool's page.
+  if (toolId) {
+    const activeTool = getActiveTool();
+    if (activeTool && activeTool.id !== toolId) return;
+  }
+
   resetZoneContent(zone);
   zone.classList.add('dz-state-done');
 

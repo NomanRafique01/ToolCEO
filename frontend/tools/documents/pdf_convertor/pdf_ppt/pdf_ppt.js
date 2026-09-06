@@ -1,4 +1,4 @@
-/**
+﻿/**
  * tools/documents/pdf_convertor/pdf_ppt/pdf_ppt.js
  *
  * PDF → PPT Converter — single-file flow.
@@ -326,7 +326,7 @@ async function _submitConvert(file, outputFilename) {
     sse.close();
 
     if (state === 'done') {
-      updateProgress(zone, 100, color);
+      updateProgress(zone, 100, color, tool.id);
       removePdfPptPanel();
       const dlName = data.filename || earlyFilename;
       const onReset = () => {
@@ -338,7 +338,7 @@ async function _submitConvert(file, outputFilename) {
           }).catch(() => {});
         }
       };
-      setTimeout(() => showDownload(zone, dlName, jobId, color, onReset), 200);
+      setTimeout(() => showDownload(zone, dlName, jobId, color, onReset, tool.id), 200);
       document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }

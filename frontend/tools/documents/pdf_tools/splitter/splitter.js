@@ -1,4 +1,4 @@
-/**
+﻿/**
  * tools/documents/pdf_tools/splitter/splitter.js
  *
  * Self-contained Splitter tool module.
@@ -373,14 +373,14 @@ async function _submitSplitFile(file, fromVal, toVal) {
 
     if (state === 'running' || state === 'pending') {
       const displayPct = Math.max(10, Math.min(90, pct));
-      updateProgress(zone, displayPct, color);
+      updateProgress(zone, displayPct, color, tool.id);
       return;
     }
 
     sse.close();
 
     if (state === 'done') {
-      updateProgress(zone, 100, color);
+      updateProgress(zone, 100, color, tool.id);
       // Capture base name before removeSplitPanel clears it
       const currentBase = _splitBaseName || baseName;
       // Remove the split panel on success
@@ -399,7 +399,7 @@ async function _submitSplitFile(file, fromVal, toVal) {
           }).catch(() => {});
         }
       };
-      setTimeout(() => showDownload(zone, dlName, jobId, color, onReset), 200);
+      setTimeout(() => showDownload(zone, dlName, jobId, color, onReset, tool.id), 200);
       document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }

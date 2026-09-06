@@ -1,4 +1,4 @@
-/**
+﻿/**
  * tools/documents/docx_convertor/docx_convertor.js
  *
  * Shared base for all 6 DOCX conversion tools.
@@ -324,14 +324,14 @@ async function _submitConvert(file, outputFilename) {
     }
 
     if (state === 'running' || state === 'pending') {
-      updateProgress(zone, Math.max(10, Math.min(90, pct)), color);
+      updateProgress(zone, Math.max(10, Math.min(90, pct)), color, tool.id);
       return;
     }
 
     sse.close();
 
     if (state === 'done') {
-      updateProgress(zone, 100, color);
+      updateProgress(zone, 100, color, tool.id);
       removeDocxPanel();
       const dlName = data.filename || earlyName;
       const onReset = () => {
@@ -343,7 +343,7 @@ async function _submitConvert(file, outputFilename) {
           }).catch(() => {});
         }
       };
-      setTimeout(() => showDownload(zone, dlName, jobId, color, onReset), 200);
+      setTimeout(() => showDownload(zone, dlName, jobId, color, onReset, tool.id), 200);
       document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }

@@ -1,4 +1,4 @@
-/**
+﻿/**
  * tools/documents/pdf_convertor/images_pdf/images_pdf.js
  *
  * Images → PDF Converter — multi-file queue flow.
@@ -488,7 +488,7 @@ export async function handleImagesPdfFilesPicked(files) {
     if (isFirstBatch && zone) {
       const currentCount = Math.min(i + chunk.length, newImages.length);
       const pct = Math.round((currentCount / newImages.length) * 100);
-      updateProgress(zone, pct, color);
+      updateProgress(zone, pct, color, tool.id);
       const label = zone.querySelector('.dz-progress-label');
       if (label) label.textContent = `Loading ${currentCount} of ${newImages.length}`;
     }
@@ -577,14 +577,14 @@ async function _submitConvert(outputFilename) {
     }
 
     if (state === 'running' || state === 'pending') {
-      updateProgress(zone, Math.max(10, Math.min(90, pct)), color);
+      updateProgress(zone, Math.max(10, Math.min(90, pct)), color, tool.id);
       return;
     }
 
     sse.close();
 
     if (state === 'done') {
-      updateProgress(zone, 100, color);
+      updateProgress(zone, 100, color, tool.id);
 
       const dlName = data.filename || earlyFilename;
       const onReset = () => {
@@ -596,7 +596,7 @@ async function _submitConvert(outputFilename) {
           }).catch(() => {});
         }
       };
-      setTimeout(() => showDownload(zone, dlName, jobId, color, onReset), 200);
+      setTimeout(() => showDownload(zone, dlName, jobId, color, onReset, tool.id), 200);
       document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }

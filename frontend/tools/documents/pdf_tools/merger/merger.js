@@ -641,7 +641,9 @@ async function _submitMerge(outputFilename) {
   const zone  = document.getElementById('drop-zone');
   const color = tool.color || '#FF6B6B';
 
-  // Remove thumbnail strip and merge panel immediately — restore zone to original size
+  // Remove toolbar, thumbnail strip and merge panel immediately — restore zone to original size
+  const toolbar = zone ? zone.querySelector('.dz-queue-toolbar') : null;
+  if (toolbar) toolbar.remove();
   const strip = zone ? zone.querySelector('.dz-merge-thumb-strip') : null;
   if (strip) strip.remove();
   if (zone) zone.classList.remove('dz-has-merge-thumbs');
@@ -705,14 +707,14 @@ async function _submitMerge(outputFilename) {
     }
 
     if (state === 'running' || state === 'pending') {
-      updateProgress(zone, Math.max(10, Math.min(90, pct)), color);
+      updateProgress(zone, Math.max(10, Math.min(90, pct)), color, tool.id);
       return;
     }
 
     sse.close();
 
     if (state === 'done') {
-      updateProgress(zone, 100, color);
+      updateProgress(zone, 100, color, tool.id);
 
       const dlName = data.filename || `${outputFilename}.pdf`;
 
@@ -726,7 +728,7 @@ async function _submitMerge(outputFilename) {
         }
       };
 
-      setTimeout(() => showDownload(zone, dlName, jobId, color, onReset), 200);
+      setTimeout(() => showDownload(zone, dlName, jobId, color, onReset, tool.id), 200);
       document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'smooth' });
       return;
     }

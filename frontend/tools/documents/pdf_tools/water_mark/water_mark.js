@@ -1,4 +1,4 @@
-/**
+﻿/**
  * tools/documents/pdf_tools/water_mark/water_mark.js
  *
  * Interactive PDF Watermark Editor — ToolCEO
@@ -1034,7 +1034,7 @@ async function _loadPdfIntoViewer(container, file) {
     _activeContainer = container || document.getElementById('explore-section') || document.body;
 
     if (zone) {
-      updateProgress(zone, 100, color);
+      updateProgress(zone, 100, color, tool.id);
       resetZoneContent(zone);
       _showWatermarkThumbnail(zone, file, color, info.thumbnail);
     }
@@ -1209,14 +1209,14 @@ async function _submitWatermark(file, opts, outputFilename) {
     }
 
     if (state === 'running' || state === 'pending') {
-      updateProgress(zone, Math.max(10, Math.min(90, pct)), color);
+      updateProgress(zone, Math.max(10, Math.min(90, pct)), color, tool.id);
       return;
     }
 
     sse.close();
 
     if (state === 'done') {
-      updateProgress(zone, 100, color);
+      updateProgress(zone, 100, color, tool.id);
       removeWatermarkPanel();
       const dlName = data.filename || earlyFilename;
       const onReset = () => {
@@ -1228,7 +1228,7 @@ async function _submitWatermark(file, opts, outputFilename) {
             .catch(() => { });
         }
       };
-      setTimeout(() => showDownload(zone, dlName, jobId, color, onReset), 200);
+      setTimeout(() => showDownload(zone, dlName, jobId, color, onReset, tool.id), 200);
       _scrollMainToTool();
       return;
     }

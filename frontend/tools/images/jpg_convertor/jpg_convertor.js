@@ -1,4 +1,4 @@
-/**
+﻿/**
  * tools/images/jpg_convertor/jpg_convertor.js
  *
  * Multi-image queue flow for all 8 JPG conversion tools.
@@ -523,14 +523,14 @@ async function _submitConvert(outputFilename) {
     }
 
     if (state === 'running' || state === 'pending') {
-      updateProgress(zone, Math.max(10, Math.min(90, pct)), color);
+      updateProgress(zone, Math.max(10, Math.min(90, pct)), color, tool.id);
       return;
     }
 
     sse.close();
 
     if (state === 'done') {
-      updateProgress(zone, 100, color);
+      updateProgress(zone, 100, color, tool.id);
       const dlName = data.filename || earlyName;
 
       const onReset = () => {
@@ -543,7 +543,7 @@ async function _submitConvert(outputFilename) {
         }
       };
 
-      showDownload(zone, dlName, jobId, color, onReset);
+      showDownload(zone, dlName, jobId, color, onReset, tool.id);
       clearBgJob(true);
       document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'smooth' });
       return;

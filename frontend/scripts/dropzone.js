@@ -10,7 +10,7 @@
  *   electron/ui/tools/documents/pdf_tools/splitter/splitter.js
  */
 
-import { getActiveTool, setActiveTool, onToolChange, setBgJob, getBgJob, syncBgJobBar, clearBgJob } from './toolstate.js';
+import { getActiveTool, setActiveTool, onToolChange, setBgJob, getBgJob, getBgJobForTool, syncBgJobBar, clearBgJob } from './toolstate.js';
 import { pushNotification } from './notificationStore.js';
 import { showDownloadBlobCard } from '../tools/shared/progress.js';
 import { buildConversionMeta } from './historyTracker.js';
@@ -509,10 +509,10 @@ function _updateDropZone(tool) {
 
   // Check if there is an active background job for this tool.
   // If so, restore the normal progress ring (or download card) inside the drop zone!
-  const bgJob = getBgJob();
-  if (bgJob && bgJob.tool && bgJob.tool.id === tool.id) {
+  const bgJob = getBgJobForTool(tool.id);
+  if (bgJob) {
     if (bgJob.state === 'running' || bgJob.state === 'pending' || bgJob.state === 'submitting') {
-      _showProgress(zone, bgJob.progress || 10, color, 'Processing…');
+      _showProgress(zone, bgJob.progress || 10, color, 'Processing…', tool.id);
       return;
     }
     if (bgJob.state === 'done') {
@@ -800,13 +800,20 @@ async function _dlPanelSave(jobId, filename, color, panel) {
 function _resetZoneContent(zone) {
   zone.querySelectorAll(
     '.dz-progress-wrap, .dz-download-wrap, .dz-error-wrap, .dz-pdf-thumb-wrap, ' +
-    '.dz-pdf-word-thumb-wrap, .dz-pdf-excel-thumb-wrap, .dz-pdf-html-thumb-wrap, .dz-pdf-txt-thumb-wrap'
+    '.dz-compress-thumb-wrap, .dz-encrypt-thumb-wrap, .dz-merge-thumb-strip, .dz-queue-toolbar, ' +
+    '.dz-pdf-word-thumb-wrap, .dz-pdf-excel-thumb-wrap, .dz-pdf-html-thumb-wrap, .dz-pdf-txt-thumb-wrap, ' +
+    '.dz-ebook-thumb-wrap, .dz-docx-thumb-wrap, .dz-pptx-thumb-wrap, .dz-xlsx-thumb-wrap, ' +
+    '.dz-txt-thumb-wrap, .dz-odt-thumb-wrap, .dz-csv-thumb-wrap, .dz-img-preview-wrap, ' +
+    '.dz-jpg-thumb-strip, .dz-png-thumb-strip, .dz-webp-thumb-strip, .dz-svg-thumb-strip'
   ).forEach((el) => el.remove());
   zone.classList.remove(
     'dz-state-processing', 'dz-state-done', 'dz-state-error',
-    'dz-state-scanning',   'dz-has-thumb',
-    'dz-has-pdf-word-thumb', 'dz-has-pdf-excel-thumb',
-    'dz-has-pdf-html-thumb', 'dz-has-pdf-txt-thumb'
+    'dz-state-scanning',   'dz-has-thumb',  'dz-has-compress-thumb',
+    'dz-has-encrypt-thumb', 'dz-has-merge-thumbs', 'dz-has-pdf-word-thumb',
+    'dz-has-pdf-excel-thumb', 'dz-has-pdf-html-thumb', 'dz-has-pdf-txt-thumb',
+    'dz-has-ebook-thumb', 'dz-has-docx-thumb', 'dz-has-pptx-thumb', 'dz-has-xlsx-thumb',
+    'dz-has-txt-thumb', 'dz-has-odt-thumb', 'dz-has-csv-thumb', 'dz-has-img-preview',
+    'dz-has-jpg-thumbs', 'dz-has-png-thumbs', 'dz-has-webp-thumbs', 'dz-has-svg-thumbs'
   );
 }
 
@@ -815,7 +822,7 @@ const _RING_R    = 40;   // circle radius
 const _RING_CIRC = 2 * Math.PI * _RING_R;  // ≈ 251.3
 
 /** Build the circular ring SVG + center text, returns {wrapEl, ringFill, pctEl} */
-function _buildRingWrap(color, pct, label, indeterminate) {
+function _buildRingWrap(color, pct, label, indeterminate, toolId) {
   // dashoffset encodes progress: 0 = full, CIRC = empty
   const offset   = indeterminate ? 0 : _RING_CIRC * (1 - pct / 100);
   const dashArr  = indeterminate
@@ -824,6 +831,8 @@ function _buildRingWrap(color, pct, label, indeterminate) {
 
   const wrap = document.createElement('div');
   wrap.className = 'dz-progress-wrap';
+  const owner = toolId || getActiveTool()?.id;
+  if (owner) wrap.dataset.toolId = owner;
   // Set ring colour as CSS var so the SVG filter + glow use it
   wrap.style.setProperty('--dz-ring-color', color);
 
@@ -858,19 +867,21 @@ function _buildRingWrap(color, pct, label, indeterminate) {
 }
 
 /** Show the circular ring progress — centred inside the drop zone. */
-function _showProgress(zone, pct, color, label) {
+function _showProgress(zone, pct, color, label, toolId) {
   _resetZoneContent(zone);
   zone.classList.add('dz-state-processing');
-  const wrap = _buildRingWrap(color, pct, label || 'Processing', false);
+  const owner = toolId || getActiveTool()?.id;
+  const wrap = _buildRingWrap(color, pct, label || 'Processing', false, owner);
   zone.appendChild(wrap);
   _wireDzCancelBtn(wrap, zone);
 }
 
 /** Show an indeterminate scanning ring — spinning arc. */
-function _showScanProgress(zone, color) {
+function _showScanProgress(zone, color, toolId) {
   _resetZoneContent(zone);
   zone.classList.add('dz-state-scanning');
-  const wrap = _buildRingWrap(color, 0, 'Scanning', true);
+  const owner = toolId || getActiveTool()?.id;
+  const wrap = _buildRingWrap(color, 0, 'Scanning', true, owner);
   zone.appendChild(wrap);
   _wireDzCancelBtn(wrap, zone);
 }
@@ -888,7 +899,20 @@ function _wireDzCancelBtn(wrap, zone) {
 }
 
 /** Update just the ring fill + percentage text without rebuilding the overlay. */
-function _updateProgress(zone, pct, color) {
+function _updateProgress(zone, pct, color, toolId) {
+  if (!zone) return;
+  const activeTool = getActiveTool();
+  if (toolId && activeTool && activeTool.id !== toolId) return;
+
+  const wrap = zone.querySelector('.dz-progress-wrap');
+  if (!wrap) return;
+
+  const wrapTool = wrap.dataset.toolId;
+  if (wrapTool) {
+    if (toolId && wrapTool !== toolId) return;
+    if (activeTool && wrapTool !== activeTool.id) return;
+  }
+
   const ring  = zone.querySelector('.dz-ring-fill');
   const label = zone.querySelector('.dz-pct');
   if (ring) {
@@ -898,8 +922,7 @@ function _updateProgress(zone, pct, color) {
   }
   if (label) label.textContent = `${pct}%`;
   // Also sync the SVG filter colour var
-  const wrap = zone.querySelector('.dz-progress-wrap');
-  if (wrap) wrap.style.setProperty('--dz-ring-color', color);
+  wrap.style.setProperty('--dz-ring-color', color);
 }
 
 /**
@@ -1427,7 +1450,9 @@ async function _submitFile(files) {
 
     if (state === 'running' || state === 'pending') {
       const displayPct = Math.max(10, Math.min(90, pct));
-      _updateProgress(zone, displayPct, color);
+      if (getActiveTool()?.id === tool.id) {
+        _updateProgress(zone, displayPct, color, tool.id);
+      }
       return;
     }
 
@@ -1437,7 +1462,7 @@ async function _submitFile(files) {
       // Only update the drop zone if the user is still on this tool.
       // If they navigated away, the bg-job-bar already provides the Save button.
       if (getActiveTool()?.id === tool.id) {
-        _updateProgress(zone, 100, color);
+        _updateProgress(zone, 100, color, tool.id);
         const dlName = data.filename || `output_${jobId.slice(0, 8)}`;
         setTimeout(() => _showDownload(zone, dlName, jobId, color), 200);
         document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1446,13 +1471,17 @@ async function _submitFile(files) {
     }
 
     if (state === 'error') {
-      _showError(zone, error || 'Processing failed. Please try again.');
+      if (getActiveTool()?.id === tool.id) {
+        _showError(zone, error || 'Processing failed. Please try again.');
+      }
     }
   };
 
   sse.onerror = () => {
     sse.close();
-    _showError(zone, 'Lost connection to backend. Is the server running?');
+    if (getActiveTool()?.id === tool.id) {
+      _showError(zone, 'Lost connection to backend. Is the server running?');
+    }
   };
 }
 

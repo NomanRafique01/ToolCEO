@@ -1,4 +1,4 @@
-/**
+﻿/**
  * tools/documents/pdf_tools/encrypt/encrypt.js
  *
  * PDF Encrypt / Decrypt & ToolCEO Vault (.tceo) Tool module.
@@ -947,7 +947,7 @@ async function _submitEncrypt(opts) {
   fd.append('allow_forms', allow_forms);
 
   try {
-    updateProgress(zone, 50, color);
+    updateProgress(zone, 50, color, tool.id);
     const bgMid = getBgJob();
     if (bgMid) { bgMid.progress = 50; syncBgJobBar(); }
 
@@ -963,7 +963,7 @@ async function _submitEncrypt(opts) {
 
     const blob = await res.blob();
 
-    updateProgress(zone, 100, color);
+    updateProgress(zone, 100, color, tool.id);
     const bgDone = getBgJob();
     if (bgDone) {
       bgDone.progress = 100;
@@ -1158,7 +1158,7 @@ async function _submitVaultLock(opts) {
   if (hint) fd.append('hint', hint);
 
   try {
-    updateProgress(zone, 50, color);
+    updateProgress(zone, 50, color, tool.id);
     const bgMid = getBgJob();
     if (bgMid) { bgMid.progress = 50; syncBgJobBar(); }
 
@@ -1174,7 +1174,7 @@ async function _submitVaultLock(opts) {
 
     const blob = await res.blob();
 
-    updateProgress(zone, 100, color);
+    updateProgress(zone, 100, color, tool.id);
     const bgDone = getBgJob();
     if (bgDone) {
       bgDone.progress = 100;
@@ -1293,12 +1293,12 @@ async function _submitVaultUnlock(opts) {
       return;
     }
 
-    updateProgress(zone, 50, color);
+    updateProgress(zone, 50, color, tool.id);
     const bgMid = getBgJob();
     if (bgMid) { bgMid.progress = 50; syncBgJobBar(); }
 
     const blob = await res.blob();
-    updateProgress(zone, 100, color);
+    updateProgress(zone, 100, color, tool.id);
 
     const bgDone = getBgJob();
     if (bgDone) {

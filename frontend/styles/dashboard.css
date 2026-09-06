@@ -1756,52 +1756,66 @@
   --bg-job-bg: rgba(0, 229, 192, 0.12);
 
   position: fixed;
-  bottom: 28px;
-  right: 28px;
+  bottom: 24px;
+  right: 24px;
   z-index: 9998;
-  min-width: 360px;
-  max-width: 420px;
-  width: 380px;
+  min-width: 370px;
+  max-width: 440px;
+  width: 410px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   pointer-events: auto;
+  max-height: calc(100vh - 120px);
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 4px;
+  scrollbar-width: none;
+}
+
+.bg-job-bar::-webkit-scrollbar {
+  display: none;
 }
 
 .bg-job-card {
-  background: var(--bg-card, #0d1b18);
-  border: 1px solid color-mix(in srgb, var(--bg-job-color) 35%, var(--border, #1a2f2b));
+  background: var(--bg-card, #0f172a);
+  border: 1px solid color-mix(in srgb, var(--bg-job-color) 35%, var(--border, rgba(255, 255, 255, 0.12)));
   border-radius: 12px;
-  padding: 14px 18px 14px;
+  padding: 13px 16px 12px;
   display: flex;
   flex-direction: column;
-  gap: 9px;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.3),
-    0 0 24px color-mix(in srgb, var(--bg-job-color) 12%, transparent);
-  animation: bgJobCardFadeIn 0.25s ease forwards;
+  gap: 8px;
+  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.28),
+    0 0 20px color-mix(in srgb, var(--bg-job-color) 12%, transparent);
+  animation: bgJobCardFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  backdrop-filter: blur(12px);
 }
 
 @keyframes bgJobCardFadeIn {
-  from { opacity: 0; transform: translateY(16px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateY(14px) scale(0.98); }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .bg-job-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 10px;
 }
 
 .bg-job-left {
   display: flex;
   align-items: center;
   gap: 8px;
+  min-width: 0;
+  flex: 1;
 }
 
 .bg-job-icon {
-  width: 26px;
-  height: 26px;
-  border-radius: 6px;
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
   background: var(--bg-job-bg);
   color: var(--bg-job-color);
   display: flex;
@@ -1814,34 +1828,44 @@
   font-size: 13px;
   font-weight: 600;
   color: var(--text-primary, #ffffff);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.bg-job-badge-container {
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
 }
 
 .bg-job-badge {
   display: inline-flex;
   align-items: center;
-  padding: 2px 7px;
-  border-radius: 10px;
+  padding: 2px 8px;
+  border-radius: 12px;
   font-size: 10px;
-  font-weight: 500;
-  margin-left: 4px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  white-space: nowrap;
 }
 
 .bg-job-badge--running {
   background: color-mix(in srgb, var(--bg-job-color) 15%, transparent);
   color: var(--bg-job-color);
-  border: 1px solid color-mix(in srgb, var(--bg-job-color) 30%, transparent);
+  border: 1px solid color-mix(in srgb, var(--bg-job-color) 32%, transparent);
 }
 
 .bg-job-badge--done {
-  background: rgba(52, 211, 153, 0.15);
+  background: rgba(52, 211, 153, 0.16);
   color: #34D399;
-  border: 1px solid rgba(52, 211, 153, 0.3);
+  border: 1px solid rgba(52, 211, 153, 0.35);
 }
 
 .bg-job-badge--error {
-  background: rgba(248, 113, 113, 0.15);
+  background: rgba(248, 113, 113, 0.16);
   color: #F87171;
-  border: 1px solid rgba(248, 113, 113, 0.3);
+  border: 1px solid rgba(248, 113, 113, 0.35);
 }
 
 .bg-job-dot {
@@ -1853,13 +1877,10 @@
 }
 
 @keyframes bgJobDotPulse {
-
-  0%,
-  100% {
+  0%, 100% {
     opacity: 1;
     transform: scale(1);
   }
-
   50% {
     opacity: 0.4;
     transform: scale(0.7);
@@ -1869,23 +1890,34 @@
 .bg-job-right {
   display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .bg-job-pct {
   font-size: 13px;
   font-weight: 700;
   color: var(--bg-job-color);
+  min-width: 34px;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+
+.bg-job-action-container {
+  display: inline-flex;
+  align-items: center;
 }
 
 .bg-job-btn {
-  padding: 4px 10px;
-  border-radius: 6px;
+  padding: 4px 12px;
+  border-radius: 7px;
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
   border: none;
-  transition: transform 140ms ease, filter 140ms ease;
+  line-height: 1.4;
+  white-space: nowrap;
+  transition: transform 140ms ease, filter 140ms ease, box-shadow 140ms ease;
 }
 
 .bg-job-btn--view {
@@ -1902,7 +1934,8 @@
 .bg-job-btn--save {
   background: var(--bg-job-color);
   color: #08110e;
-  box-shadow: 0 2px 8px color-mix(in srgb, var(--bg-job-color) 35%, transparent);
+  font-weight: 700;
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--bg-job-color) 40%, transparent);
 }
 
 .bg-job-btn--save:hover {
@@ -1921,12 +1954,13 @@
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  line-height: 1.3;
 }
 
 .bg-job-track {
   width: 100%;
   height: 5px;
-  background: rgba(255, 255, 255, 0.07);
+  background: rgba(255, 255, 255, 0.08);
   border-radius: 8px;
   overflow: hidden;
 }
@@ -1934,7 +1968,7 @@
 .bg-job-fill {
   height: 100%;
   border-radius: 8px;
-  transition: width 260ms ease;
+  transition: width 240ms cubic-bezier(0.4, 0, 0.2, 1);
   box-shadow: 0 0 8px var(--bg-job-color);
 }
 
@@ -1945,20 +1979,19 @@
   justify-content: center;
   width: 22px;
   height: 22px;
-  border-radius: 5px;
+  border-radius: 6px;
   background: transparent;
   color: #64748b;
   border: none;
   cursor: pointer;
   flex-shrink: 0;
-  margin-left: 2px;
   transition: background 120ms ease, color 120ms ease, transform 120ms ease;
 }
 
 .bg-job-close-x:hover {
   background: rgba(248, 113, 113, 0.15);
   color: #F87171;
-  transform: scale(1.1);
+  transform: scale(1.08);
 }
 
 .bg-job-close-x:active {

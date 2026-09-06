@@ -1,4 +1,4 @@
-/**
+﻿/**
  * tools/documents/pdf_tools/rotate/rotate.js
  *
  * Owns the Rotate Pages view swap, PDF.js thumbnail rendering, rotation state,
@@ -626,7 +626,7 @@ async function _applyAndSave(viewer) {
   try {
     const file = await _fileToBase64(fileData);
 
-    if (zone) updateProgress(zone, 50, color);
+    if (zone) updateProgress(zone, 50, color, tool.id);
     const bgMid = getBgJob();
     if (bgMid) {
       bgMid.progress = 50;
@@ -659,7 +659,7 @@ async function _applyAndSave(viewer) {
     }
     const blob = new Blob([uint8], { type: 'application/pdf' });
 
-    if (zone) updateProgress(zone, 100, color);
+    if (zone) updateProgress(zone, 100, color, tool.id);
 
     const bgDone = getBgJob();
     if (bgDone) {
@@ -683,7 +683,7 @@ async function _applyAndSave(viewer) {
     };
 
     if (zone) {
-      setTimeout(() => showDownloadBlobCard(zone, blob, outName, color, onReset), 200);
+      setTimeout(() => showDownloadBlobCard(zone, blob, outName, color, onReset, tool.id), 200);
     }
 
     pushNotification({

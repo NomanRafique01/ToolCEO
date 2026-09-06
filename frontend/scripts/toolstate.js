@@ -36,10 +36,12 @@ function _pickFallbackJob() {
 function _visibleJobs() {
   const activeTool = getActiveTool();
   return [..._bgJobs.values()].filter((job) => {
-    if (!activeTool) return true;
-    // Hide ALL states for the currently active tool — the tool's own panel
-    // shows the result inline; showing it in the bg bar too is redundant/confusing.
-    return !job.tool || job.tool.id !== activeTool.id;
+    // Hide running/submitting jobs that belong to the tool the user is currently viewing
+    const isActiveToolJob =
+      activeTool && job.tool && job.tool.id === activeTool.id;
+    const isInProgress = job.state === 'running' || job.state === 'submitting';
+    if (isActiveToolJob && isInProgress) return false;
+    return true;
   });
 }
 
@@ -81,6 +83,12 @@ export function getBgJob(jobId = null) {
   return _pickFallbackJob();
 }
 
+export function getBgJobForTool(toolId) {
+  if (!toolId) return null;
+  const jobs = [..._bgJobs.values()].reverse();
+  return jobs.find((job) => job.tool && job.tool.id === toolId) || null;
+}
+
 export function clearBgJob(jobIdOrSilent = null, maybeSilent = false) {
   let key = null;
   let silent = maybeSilent;
@@ -106,6 +114,26 @@ export function clearBgJob(jobIdOrSilent = null, maybeSilent = false) {
   }
 }
 
+function _renderStatusBadge(state, color) {
+  if (state === 'done') {
+    return '<span class="bg-job-badge bg-job-badge--done">&#10003; Completed</span>';
+  }
+  if (state === 'error') {
+    return '<span class="bg-job-badge bg-job-badge--error">Failed</span>';
+  }
+  return '';
+}
+
+function _renderActionBtn(state, jobId, blob, key) {
+  if (state === 'done' && (jobId || blob)) {
+    return `<button type="button" class="bg-job-btn bg-job-btn--save" data-bg-save="${key}">Save As...</button>`;
+  }
+  if (state === 'running') {
+    return `<button type="button" class="bg-job-btn bg-job-btn--view" data-bg-view="${key}">View Tool</button>`;
+  }
+  return '';
+}
+
 export function syncBgJobBar() {
   const bar = document.getElementById('bg-job-bar');
   if (!bar) return;
@@ -118,9 +146,88 @@ export function syncBgJobBar() {
   }
 
   bar.style.display = 'flex';
-  bar.innerHTML = jobs.map(_renderBgJob).join('');
 
-  bar.querySelectorAll('[data-bg-view]').forEach((btn) => {
+  const existingCards = new Map();
+  bar.querySelectorAll('.bg-job-card[data-job-key]').forEach((card) => {
+    existingCards.set(card.dataset.jobKey, card);
+  });
+
+  const activeKeys = new Set();
+
+  jobs.forEach((job) => {
+    const key = String(job.clientId || job.jobId || '');
+    activeKeys.add(key);
+
+    const color = (job.tool && job.tool.color) || '#00E5C0';
+    const bg = (job.tool && job.tool.bg) || 'rgba(0,229,192,0.12)';
+    const label = (job.tool && job.tool.label) || 'Tool Task';
+    const pct = Math.max(5, Math.min(100, Math.round(job.progress || 5)));
+    const { state, filename, jobId } = job;
+
+    if ((state === 'done' || state === 'error') && !job.notified) {
+      job.notified = true;
+      pushNotification({
+        type: state === 'done' ? 'success' : 'error',
+        message: `${label} ${state === 'done' ? 'completed' : 'failed'}`,
+        detail: filename || '',
+        autoDismiss: false,
+      });
+    }
+
+    let card = existingCards.get(key);
+    if (!card) {
+      // Create new card
+      const temp = document.createElement('div');
+      temp.innerHTML = _renderBgJob(job);
+      card = temp.firstElementChild;
+      bar.appendChild(card);
+      _bindCardEvents(card);
+    } else {
+      // Surgically update existing card without re-animating or blinking
+      card.style.setProperty('--bg-job-color', color);
+      card.style.setProperty('--bg-job-bg', bg);
+
+      const nameEl = card.querySelector('.bg-job-name');
+      if (nameEl) nameEl.textContent = label;
+
+      const fileEl = card.querySelector('.bg-job-file');
+      if (fileEl) fileEl.textContent = filename || '';
+
+      const pctEl = card.querySelector('.bg-job-pct');
+      if (pctEl) pctEl.textContent = state === 'error' ? 'Err' : `${pct}%`;
+
+      const fillEl = card.querySelector('.bg-job-fill');
+      if (fillEl) {
+        fillEl.style.width = `${pct}%`;
+        fillEl.style.background = color;
+      }
+
+      const badgeContainer = card.querySelector('.bg-job-badge-container');
+      if (badgeContainer) {
+        badgeContainer.innerHTML = _renderStatusBadge(state, color);
+      }
+
+      const actionContainer = card.querySelector('.bg-job-action-container');
+      if (actionContainer) {
+        const expectedAction = _renderActionBtn(state, jobId, job.blob, key);
+        if (actionContainer.innerHTML !== expectedAction) {
+          actionContainer.innerHTML = expectedAction;
+          _bindCardEvents(card);
+        }
+      }
+    }
+  });
+
+  // Remove cards that are no longer in jobs
+  existingCards.forEach((card, key) => {
+    if (!activeKeys.has(key)) {
+      card.remove();
+    }
+  });
+}
+
+function _bindCardEvents(card) {
+  card.querySelectorAll('[data-bg-view]').forEach((btn) => {
     btn.onclick = (e) => {
       e.stopPropagation();
       const job = _bgJobs.get(btn.dataset.bgView);
@@ -130,7 +237,7 @@ export function syncBgJobBar() {
     };
   });
 
-  bar.querySelectorAll('[data-bg-save]').forEach((saveBtn) => {
+  card.querySelectorAll('[data-bg-save]').forEach((saveBtn) => {
     saveBtn.onclick = async (e) => {
       e.stopPropagation();
       const job = _bgJobs.get(saveBtn.dataset.bgSave);
@@ -152,7 +259,7 @@ export function syncBgJobBar() {
     };
   });
 
-  bar.querySelectorAll('[data-bg-close]').forEach((closeX) => {
+  card.querySelectorAll('[data-bg-close]').forEach((closeX) => {
     closeX.onclick = (e) => {
       e.stopPropagation();
       clearBgJob(closeX.dataset.bgClose);
@@ -193,7 +300,7 @@ function _renderBgJob(job) {
     ? '<span class="bg-job-badge bg-job-badge--done">&#10003; Completed</span>'
     : state === 'error'
       ? '<span class="bg-job-badge bg-job-badge--error">Failed</span>'
-      : `<span class="bg-job-badge bg-job-badge--running"><span class="bg-job-dot" style="background:${color}"></span>${state === 'submitting' ? 'Uploading...' : 'Executing in background'}</span>`;
+      : '';
 
   const actionBtn = state === 'done' && (jobId || job.blob)
     ? `<button type="button" class="bg-job-btn bg-job-btn--save" data-bg-save="${key}">Save As...</button>`
@@ -204,16 +311,16 @@ function _renderBgJob(job) {
   const clickableLeft = (job.tool) ? `data-bg-view="${key}" style="cursor:pointer" title="Switch to ${_esc(label)}"` : '';
 
   return `
-    <div class="bg-job-card" style="--bg-job-color:${color};--bg-job-bg:${bg}">
+    <div class="bg-job-card" data-job-key="${key}" style="--bg-job-color:${color};--bg-job-bg:${bg}">
       <div class="bg-job-header">
         <div class="bg-job-left" ${clickableLeft}>
           <div class="bg-job-icon">${iconHtml}</div>
           <span class="bg-job-name">${_esc(label)}</span>
-          ${statusBadge}
+          <span class="bg-job-badge-container">${_renderStatusBadge(state, color)}</span>
         </div>
         <div class="bg-job-right">
           <span class="bg-job-pct">${state === 'error' ? 'Err' : `${pct}%`}</span>
-          ${actionBtn}
+          <span class="bg-job-action-container">${_renderActionBtn(state, jobId, job.blob, key)}</span>
           <button type="button" class="bg-job-close-x" data-bg-close="${key}" title="Dismiss" aria-label="Dismiss background job">
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
               <line x1="1" y1="1" x2="11" y2="11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
