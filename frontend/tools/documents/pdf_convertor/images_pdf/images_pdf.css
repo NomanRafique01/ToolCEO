@@ -12,12 +12,15 @@
 /* ─── DROP ZONE: HAS-IMGPDF-THUMBS STATE ────────────────────────────────────── */
 
 .drop-zone.dz-has-imgpdf-thumbs {
-  padding-top: 12px;
-  padding-bottom: 12px;
-  height: auto;
-  min-height: 178px;
-  max-height: none;
-  overflow: visible;
+  padding: 0 !important;
+  height: auto !important;
+  min-height: 220px !important;
+  max-height: 520px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: flex-start !important;
+  align-items: stretch !important;
+  overflow: hidden !important;
 }
 
 .drop-zone.dz-has-imgpdf-thumbs .drop-icon,
@@ -31,15 +34,19 @@
 /* ─── THUMBNAIL STRIP ───────────────────────────────────────────────────────── */
 
 .dz-imgpdf-thumb-strip {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  gap: 14px 10px;
-  width: 100%;
-  overflow: visible;
-  padding: 10px 8px 6px;
-  box-sizing: border-box;
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
+  gap: 16px 12px !important;
+  width: 100% !important;
+  flex: 1 1 auto !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  max-height: 440px !important;
+  padding: 16px 16px 20px 16px !important;
+  box-sizing: border-box !important;
 }
 
 /* ─── INDIVIDUAL CARD ───────────────────────────────────────────────────────── */

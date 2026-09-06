@@ -870,14 +870,197 @@
   pointer-events: none !important;
 }
 
-/* Clear zone background so thumbnail reads cleanly */
+/* Clear zone background for single-thumbnail preview states */
 .drop-zone.dz-has-thumb,
 .drop-zone.dz-has-compress-thumb,
-.drop-zone.dz-has-encrypt-thumb,
-.drop-zone.dz-has-merge-thumbs {
+.drop-zone.dz-has-encrypt-thumb {
   background: transparent !important;
   box-shadow: none !important;
   cursor: default !important;
+}
+
+/* ── Multi-file Queue Drop Zone Layout (Merger, Images→PDF, Compressor, JPG/PNG/WEBP/SVG) ── */
+.drop-zone.dz-has-merge-thumbs,
+.drop-zone.dz-has-imgpdf-thumbs,
+.drop-zone.dz-has-imgcmp-thumbs,
+.drop-zone.dz-has-jpg-thumbs,
+.drop-zone.dz-has-png-thumbs,
+.drop-zone.dz-has-webp-thumbs,
+.drop-zone.dz-has-svg-thumbs,
+.drop-zone.dz-has-queue {
+  padding: 0 !important;
+  height: auto !important;
+  min-height: 220px !important;
+  max-height: 520px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: flex-start !important;
+  align-items: stretch !important;
+  overflow: hidden !important;
+  background: var(--bg-card, #0f172a) !important;
+  cursor: default !important;
+  contain: layout style !important;
+}
+
+
+/* ── Queue Toolbar inside Drop Zone ── */
+.dz-queue-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: rgba(0, 0, 0, 0.28);
+  border-bottom: 1px solid color-mix(in srgb, var(--dz-color, var(--accent, #00E5C0)) 25%, var(--border, rgba(255, 255, 255, 0.08)));
+  border-top-left-radius: 11px;
+  border-top-right-radius: 11px;
+  flex-shrink: 0;
+  z-index: 4;
+  box-sizing: border-box;
+}
+
+.dz-queue-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 0;
+}
+
+.dz-queue-count-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  background: var(--dz-color, #00E5C0);
+  color: #0A1F1C;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.dz-queue-info-text {
+  font-size: 12px;
+  color: var(--text-muted, #8FAAA6);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.dz-queue-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.dz-queue-add-btn,
+.dz-queue-clear-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 140ms ease;
+  font-family: inherit;
+  white-space: nowrap;
+}
+
+.dz-queue-add-btn {
+  background: color-mix(in srgb, var(--dz-color, #00E5C0) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--dz-color, #00E5C0) 35%, transparent);
+  color: var(--dz-color, #00E5C0);
+}
+
+.dz-queue-add-btn:hover {
+  background: color-mix(in srgb, var(--dz-color, #00E5C0) 22%, transparent);
+  border-color: var(--dz-color, #00E5C0);
+}
+
+.dz-queue-clear-btn {
+  background: transparent;
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.12));
+  color: var(--text-muted, #8FAAA6);
+}
+
+.dz-queue-clear-btn:hover {
+  border-color: #F87171;
+  color: #F87171;
+  background: rgba(248, 113, 113, 0.08);
+}
+
+/* ── Universal Scrollable Queue Strip inside Drop Zone ── */
+.dz-merge-thumb-strip,
+.dz-imgpdf-thumb-strip,
+.dz-imgcmp-thumb-strip,
+.dz-jpg-thumb-strip,
+.dz-png-thumb-strip,
+.dz-webp-thumb-strip,
+.dz-svg-thumb-strip {
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
+  gap: 16px 12px !important;
+  width: 100% !important;
+  flex: 1 1 auto !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  max-height: 440px !important;
+  padding: 16px 16px 20px 16px !important;
+  box-sizing: border-box !important;
+  will-change: transform !important;
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior: auto !important;
+}
+
+
+/* Scrollbars */
+.dz-merge-thumb-strip::-webkit-scrollbar,
+.dz-imgpdf-thumb-strip::-webkit-scrollbar,
+.dz-imgcmp-thumb-strip::-webkit-scrollbar,
+.dz-jpg-thumb-strip::-webkit-scrollbar,
+.dz-png-thumb-strip::-webkit-scrollbar,
+.dz-webp-thumb-strip::-webkit-scrollbar,
+.dz-svg-thumb-strip::-webkit-scrollbar {
+  width: 6px;
+}
+
+.dz-merge-thumb-strip::-webkit-scrollbar-track,
+.dz-imgpdf-thumb-strip::-webkit-scrollbar-track,
+.dz-imgcmp-thumb-strip::-webkit-scrollbar-track,
+.dz-jpg-thumb-strip::-webkit-scrollbar-track,
+.dz-png-thumb-strip::-webkit-scrollbar-track,
+.dz-webp-thumb-strip::-webkit-scrollbar-track,
+.dz-svg-thumb-strip::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+.dz-merge-thumb-strip::-webkit-scrollbar-thumb,
+.dz-imgpdf-thumb-strip::-webkit-scrollbar-thumb,
+.dz-imgcmp-thumb-strip::-webkit-scrollbar-thumb,
+.dz-jpg-thumb-strip::-webkit-scrollbar-thumb,
+.dz-png-thumb-strip::-webkit-scrollbar-thumb,
+.dz-webp-thumb-strip::-webkit-scrollbar-thumb,
+.dz-svg-thumb-strip::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--dz-color, var(--accent, #00E5C0)) 50%, var(--border, rgba(255, 255, 255, 0.2)));
+  border-radius: 4px;
+}
+
+.dz-merge-thumb-strip::-webkit-scrollbar-thumb:hover,
+.dz-imgpdf-thumb-strip::-webkit-scrollbar-thumb:hover,
+.dz-imgcmp-thumb-strip::-webkit-scrollbar-thumb:hover,
+.dz-jpg-thumb-strip::-webkit-scrollbar-thumb:hover,
+.dz-png-thumb-strip::-webkit-scrollbar-thumb:hover,
+.dz-webp-thumb-strip::-webkit-scrollbar-thumb:hover,
+.dz-svg-thumb-strip::-webkit-scrollbar-thumb:hover {
+  background: var(--dz-color, var(--accent, #00E5C0));
 }
 
 .dz-pdf-thumb-wrap {

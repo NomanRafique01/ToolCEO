@@ -14,6 +14,7 @@
 import { getActiveTool, setBgJob, getBgJob, syncBgJobBar, clearBgJob } from '../../../../scripts/toolstate.js';
 import { pushNotification } from '../../../../scripts/notificationStore.js';
 import {
+  showScanProgress,
   showProgress,
   updateProgress,
   resetZoneContent,
@@ -33,16 +34,15 @@ const IMAGE_EXTS = new Set(['.png', '.jpg', '.jpeg', '.webp', '.bmp', '.gif', '.
 
 // ─── HELPERS ──────────────────────────────────────────────────────────────────
 
-function _escHtml(str) {
+function _esc(str) {
   return String(str)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;')
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 function _isImage(file) {
-  if (!file) return false;
   if (file.type && file.type.startsWith('image/')) return true;
-  const ext = ('.' + file.name.split('.').pop()).toLowerCase();
+  const ext = '.' + file.name.split('.').pop().toLowerCase();
   return IMAGE_EXTS.has(ext);
 }
 
@@ -51,7 +51,7 @@ function _readDataUri(file) {
   return new Promise((resolve, reject) => {
     const reader = new FileReader();
     reader.onload  = () => resolve(reader.result);
-    reader.onerror = () => reject(new Error('Could not read file'));
+    reader.onerror = reject;
     reader.readAsDataURL(file);
   });
 }
@@ -64,6 +64,8 @@ export function removeImagesPdfPanel() {
 
   const zone = document.getElementById('drop-zone');
   if (zone) {
+    const toolbar = zone.querySelector('.dz-queue-toolbar');
+    if (toolbar) toolbar.remove();
     const strip = zone.querySelector('.dz-imgpdf-thumb-strip');
     if (strip) strip.remove();
     zone.classList.remove('dz-has-imgpdf-thumbs');
@@ -81,6 +83,8 @@ function _renderThumbStrip() {
   const tool  = getActiveTool();
   const color = tool ? (tool.color || '#F472B6') : '#F472B6';
 
+  const oldToolbar = zone.querySelector('.dz-queue-toolbar');
+  if (oldToolbar) oldToolbar.remove();
   const old = zone.querySelector('.dz-imgpdf-thumb-strip');
   if (old) old.remove();
 
@@ -91,6 +95,51 @@ function _renderThumbStrip() {
 
   zone.classList.add('dz-has-imgpdf-thumbs');
 
+  // Queue Toolbar at top of drop-zone
+  const toolbar = document.createElement('div');
+  toolbar.className = 'dz-queue-toolbar';
+  toolbar.innerHTML = `
+    <div class="dz-queue-toolbar-left">
+      <span class="dz-queue-count-pill" style="background:${color}; color:#0A1F1C">
+        ${_queue.length} ${_queue.length === 1 ? 'Image' : 'Images'}
+      </span>
+      <span class="dz-queue-info-text">
+        Drag images to reorder PDF pages
+      </span>
+    </div>
+    <div class="dz-queue-toolbar-actions">
+      <button type="button" class="dz-queue-add-btn" id="dz-imgpdf-toolbar-add" title="Add more images" style="color:${color}; border-color:color-mix(in srgb, ${color} 35%, transparent); background:color-mix(in srgb, ${color} 12%, transparent)">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+        Add Image
+      </button>
+      <button type="button" class="dz-queue-clear-btn" id="dz-imgpdf-toolbar-clear" title="Clear all images">
+        Clear All
+      </button>
+    </div>
+  `;
+
+  toolbar.querySelector('#dz-imgpdf-toolbar-add').addEventListener('click', (e) => {
+    e.stopPropagation();
+    const inp = document.getElementById('file-input');
+    if (inp) { inp.multiple = true; inp.accept = 'image/*'; inp.click(); }
+  });
+
+  toolbar.querySelector('#dz-imgpdf-toolbar-clear').addEventListener('click', (e) => {
+    e.stopPropagation();
+    removeImagesPdfPanel();
+    const z = document.getElementById('drop-zone');
+    if (z) {
+      resetZoneContent(z);
+      import('../../../../scripts/dropzone.js').then(({ _updateDropZoneForTool }) => {
+        const t = getActiveTool();
+        if (t && _updateDropZoneForTool) _updateDropZoneForTool(t);
+      }).catch(() => {});
+    }
+  });
+
+  zone.appendChild(toolbar);
+
+  // Scrollable Strip
   const strip = document.createElement('div');
   strip.className = 'dz-imgpdf-thumb-strip';
 
@@ -179,7 +228,69 @@ function _buildThumbCard(item, idx, color) {
 // ─── DRAG-TO-REORDER ──────────────────────────────────────────────────────────
 
 function _initDragReorder(strip, color) {
-  let _dragSrcIdx = -1;
+  let _dragSrcIdx      = -1;
+  let _scrollRaf       = null;
+  let _lockedScrollTop = null;
+  let _isCardDragging  = false;
+  let _pinRaf          = null;
+
+  function _onWheelDuringDrag(e) {
+    if (_isCardDragging) {
+      e.preventDefault();
+    }
+  }
+
+  function _lockMainScroll() {
+    const mc = document.getElementById('main-content');
+    if (!mc) return;
+    _lockedScrollTop = mc.scrollTop;
+    _isCardDragging  = true;
+
+    if (!mc._dzScrollLockBound) {
+      mc._dzScrollLockBound = true;
+      mc.addEventListener('scroll', () => {
+        if (_isCardDragging && _lockedScrollTop !== null) {
+          if (mc.scrollTop !== _lockedScrollTop) {
+            mc.scrollTop = _lockedScrollTop;
+          }
+        }
+      }, { passive: false });
+    }
+
+    function _pinFrame() {
+      if (!_isCardDragging) return;
+      if (mc.scrollTop !== _lockedScrollTop) {
+        mc.scrollTop = _lockedScrollTop;
+      }
+      _pinRaf = requestAnimationFrame(_pinFrame);
+    }
+    _pinRaf = requestAnimationFrame(_pinFrame);
+
+    window.addEventListener('wheel', _onWheelDuringDrag, { passive: false });
+  }
+
+  function _unlockMainScroll() {
+    _isCardDragging = false;
+    if (_pinRaf !== null) {
+      cancelAnimationFrame(_pinRaf);
+      _pinRaf = null;
+    }
+    window.removeEventListener('wheel', _onWheelDuringDrag);
+    const mc = document.getElementById('main-content');
+    if (mc && _lockedScrollTop !== null) {
+      mc.scrollTop = _lockedScrollTop;
+    }
+    _lockedScrollTop = null;
+  }
+
+  function _lockDropZone() {
+    const zone = document.getElementById('drop-zone');
+    if (zone) zone.dataset.cardDragging = '1';
+  }
+  function _unlockDropZone() {
+    const zone = document.getElementById('drop-zone');
+    if (zone) delete zone.dataset.cardDragging;
+  }
 
   strip.querySelectorAll('.dz-imgpdf-card').forEach((card) => {
     card.addEventListener('dragstart', (e) => {
@@ -187,16 +298,21 @@ function _initDragReorder(strip, color) {
       card.classList.add('dz-imgpdf-card--dragging');
       e.dataTransfer.effectAllowed = 'move';
       e.dataTransfer.setData('text/plain', String(_dragSrcIdx));
+      _lockDropZone();
+      _lockMainScroll();
     });
 
     card.addEventListener('dragend', () => {
       card.classList.remove('dz-imgpdf-card--dragging');
       strip.querySelectorAll('.dz-imgpdf-card--drag-over')
            .forEach((c) => c.classList.remove('dz-imgpdf-card--drag-over'));
+      _unlockMainScroll();
+      _unlockDropZone();
     });
 
     card.addEventListener('dragover', (e) => {
       e.preventDefault();
+      e.stopPropagation();
       e.dataTransfer.dropEffect = 'move';
       strip.querySelectorAll('.dz-imgpdf-card--drag-over')
            .forEach((c) => c.classList.remove('dz-imgpdf-card--drag-over'));
@@ -210,15 +326,42 @@ function _initDragReorder(strip, color) {
     card.addEventListener('drop', (e) => {
       e.preventDefault();
       e.stopPropagation();
-      const targetIdx = parseInt(card.dataset.idx, 10);
-      if (_dragSrcIdx === targetIdx || _dragSrcIdx < 0) return;
+      _unlockMainScroll();
+      _unlockDropZone();
 
+      strip.querySelectorAll('.dz-imgpdf-card--drag-over')
+           .forEach((c) => c.classList.remove('dz-imgpdf-card--drag-over'));
+
+      const targetIdx = parseInt(card.dataset.idx, 10);
+      if (_dragSrcIdx === targetIdx || _dragSrcIdx < 0) {
+        _dragSrcIdx = -1;
+        return;
+      }
+
+      // Reorder _queue
       const moved = _queue.splice(_dragSrcIdx, 1)[0];
       _queue.splice(targetIdx, 0, moved);
-      _dragSrcIdx = -1;
 
-      _renderThumbStrip();
-      _renderQueuePanel();
+      // Reorder card DOM nodes in-place without destroying/recreating
+      const cards = Array.from(strip.querySelectorAll('.dz-imgpdf-card'));
+      const srcCard = cards[_dragSrcIdx];
+      const tgtCard = cards[targetIdx];
+      if (srcCard && tgtCard) {
+        if (_dragSrcIdx < targetIdx) {
+          tgtCard.after(srcCard);
+        } else {
+          tgtCard.before(srcCard);
+        }
+        strip.querySelectorAll('.dz-imgpdf-card').forEach((c, idx) => {
+          c.dataset.idx = String(idx);
+          const ord = c.querySelector('.dz-imgpdf-ordinal');
+          if (ord) {
+            ord.textContent = String(idx + 1);
+            ord.setAttribute('aria-label', `Position ${idx + 1}`);
+          }
+        });
+      }
+      _dragSrcIdx = -1;
     });
   });
 }
@@ -313,6 +456,7 @@ function _renderQueuePanel() {
 export async function handleImagesPdfFilesPicked(files) {
   const tool  = getActiveTool();
   const color = tool ? (tool.color || '#F472B6') : '#F472B6';
+  const zone  = document.getElementById('drop-zone');
 
   const allFiles   = Array.from(files);
   const imageFiles = allFiles.filter(_isImage);
@@ -332,15 +476,36 @@ export async function handleImagesPdfFilesPicked(files) {
   const newImages = imageFiles.filter((f) => !existing.has(_key(f)));
   if (newImages.length === 0) return;
 
-  // Load thumbnails from each image
-  for (const file of newImages) {
-    let thumbnail = null;
-    try {
-      thumbnail = await _readDataUri(file);
-    } catch (_) {
-      thumbnail = null;
+  const isFirstBatch = _queue.length === 0;
+  if (isFirstBatch && zone) {
+    showScanProgress(zone, color, `Loading ${newImages.length} Images…`);
+  }
+
+  // Load thumbnails concurrently in batches with live progress updates
+  const BATCH_SIZE = 6;
+  for (let i = 0; i < newImages.length; i += BATCH_SIZE) {
+    const chunk = newImages.slice(i, i + BATCH_SIZE);
+    if (isFirstBatch && zone) {
+      const currentCount = Math.min(i + chunk.length, newImages.length);
+      const pct = Math.round((currentCount / newImages.length) * 100);
+      updateProgress(zone, pct, color);
+      const label = zone.querySelector('.dz-progress-label');
+      if (label) label.textContent = `Loading ${currentCount} of ${newImages.length}`;
     }
-    _queue.push({ file, thumbnail });
+
+    await Promise.all(chunk.map(async (file) => {
+      let thumbnail = null;
+      try {
+        thumbnail = await _readDataUri(file);
+      } catch (_) {
+        thumbnail = null;
+      }
+      _queue.push({ file, thumbnail });
+    }));
+  }
+
+  if (isFirstBatch && zone) {
+    resetZoneContent(zone);
   }
 
   _renderThumbStrip();

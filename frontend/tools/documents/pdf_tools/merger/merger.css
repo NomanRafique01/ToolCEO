@@ -15,17 +15,17 @@
 
 /* ─── DROP ZONE: HAS-MERGE-THUMBS STATE ────────────────────────────────────── */
 
-/*
-  When the merge strip is present, let the zone expand vertically to fit
-  as many rows of cards as needed. No fixed or max height.
-*/
 .drop-zone.dz-has-merge-thumbs {
-  padding-top: 12px;
-  padding-bottom: 12px;
-  height: auto;
-  min-height: 178px;
-  max-height: none;
-  overflow: visible;
+  padding: 0 !important;
+  height: auto !important;
+  min-height: 220px !important;
+  max-height: 520px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: flex-start !important;
+  align-items: stretch !important;
+  overflow: hidden !important;
+  contain: layout style !important;
 }
 
 .drop-zone.dz-has-merge-thumbs .drop-icon,
@@ -39,16 +39,19 @@
 /* ─── THUMBNAIL STRIP ───────────────────────────────────────────────────────── */
 
 .dz-merge-thumb-strip {
-  display: flex;
-  flex-direction: row;
-  /* Wrap onto new rows when cards don't fit — zone grows vertically */
-  flex-wrap: wrap;
-  align-items: flex-start;
-  gap: 14px 10px;
-  width: 100%;
-  overflow: visible;
-  padding: 10px 8px 6px;
-  box-sizing: border-box;
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
+  gap: 16px 12px !important;
+  width: 100% !important;
+  flex: 1 1 auto !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  max-height: 440px !important;
+  padding: 16px 16px 20px 16px !important;
+  box-sizing: border-box !important;
 }
 
 
@@ -65,6 +68,11 @@
   cursor: grab;
   user-select: none;
   transition: transform 140ms ease, opacity 140ms ease;
+  /* layout containment stops children from affecting surrounding layout.
+     Do NOT use 'paint' here — it would clip the ordinal badge at top:-8px. */
+  contain: layout style;
+  /* Extra top padding so the ordinal badge (top:-8px) isn't clipped by the strip */
+  padding-top: 10px;
 }
 
 .dz-merge-card:active { cursor: grabbing; }
@@ -88,20 +96,23 @@
 
 .dz-merge-ordinal {
   position: absolute;
-  top: -8px;
+  top: 2px;
   left: 50%;
   transform: translateX(-50%);
   background: var(--merge-color, #FF6B6B);
   color: #fff;
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 500;
   line-height: 1;
-  padding: 2px 6px;
+  padding: 3px 8px;
   border-radius: 20px;
   letter-spacing: 0.02em;
-  z-index: 2;
+  z-index: 10;
   pointer-events: none;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.45);
+  white-space: nowrap;
 }
+
 
 /* ── Thumbnail frame ── */
 
@@ -116,7 +127,7 @@
   background: #fff;
   border: 2px solid var(--merge-color, #FF6B6B);
   box-shadow: 0 3px 12px rgba(0, 0, 0, 0.35);
-  transition: box-shadow 130ms ease, transform 130ms ease;
+  /* NO transition — box-shadow transition causes repaints on scroll-hover */
   flex-shrink: 0;
 }
 
@@ -131,9 +142,13 @@
   display: block;
   border-radius: 3px;
   pointer-events: none;
-  image-rendering: -webkit-optimize-contrast; /* Chromium/Electron: crisp bicubic downscale */
+  image-rendering: -webkit-optimize-contrast;
   image-rendering: high-quality;
+  /* GPU-rasterize once — prevents repaint during scroll */
+  transform: translateZ(0);
+  backface-visibility: hidden;
 }
+
 
 .dz-merge-thumb-fallback {
   width: 90px;
@@ -186,8 +201,8 @@
 
 .dz-merge-card-remove {
   position: absolute;
-  top: -7px;
-  right: -7px;
+  top: 3px;
+  right: -2px;
   width: 20px;
   height: 20px;
   border-radius: 50%;
@@ -227,6 +242,7 @@
   font-weight: 500;
   cursor: pointer;
   transition: border-color 130ms ease, background 130ms ease, color 130ms ease;
+  margin-top: 10px;
   margin-bottom: 0;
 }
 

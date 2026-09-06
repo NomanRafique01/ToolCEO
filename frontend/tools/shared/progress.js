@@ -107,10 +107,10 @@ export function showProgress(zone, pct, color, label) {
 }
 
 /** Show an indeterminate scanning ring — spinning arc. */
-export function showScanProgress(zone, color) {
+export function showScanProgress(zone, color, label = 'Scanning') {
   resetZoneContent(zone);
   zone.classList.add('dz-state-scanning');
-  const wrap = buildRingWrap(color, 0, 'Scanning', true);
+  const wrap = buildRingWrap(color, 0, label, true);
   zone.appendChild(wrap);
   _wireCancelBtn(wrap, zone);
 }

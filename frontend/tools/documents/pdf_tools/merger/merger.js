@@ -46,6 +46,8 @@ export function removeMergePanel() {
 
   const zone = document.getElementById('drop-zone');
   if (zone) {
+    const toolbar = zone.querySelector('.dz-queue-toolbar');
+    if (toolbar) toolbar.remove();
     const strip = zone.querySelector('.dz-merge-thumb-strip');
     if (strip) strip.remove();
     zone.classList.remove('dz-has-merge-thumbs');
@@ -72,26 +74,91 @@ function _renderThumbStrip() {
   const tool  = getActiveTool();
   const color = tool ? (tool.color || '#FF6B6B') : '#FF6B6B';
 
-  // Remove old strip
-  const old = zone.querySelector('.dz-merge-thumb-strip');
-  if (old) old.remove();
-
   if (_queue.length === 0) {
+    const oldToolbar = zone.querySelector('.dz-queue-toolbar');
+    if (oldToolbar) oldToolbar.remove();
+    const oldStrip = zone.querySelector('.dz-merge-thumb-strip');
+    if (oldStrip) oldStrip.remove();
     zone.classList.remove('dz-has-merge-thumbs');
     return;
   }
 
   zone.classList.add('dz-has-merge-thumbs');
 
-  const strip = document.createElement('div');
-  strip.className = 'dz-merge-thumb-strip';
+  const totalPages = _queue.reduce((s, it) => s + (it.pageCount || 1), 0);
 
+  // Queue Toolbar at the top of the drop zone - update in-place if exists
+  let toolbar = zone.querySelector('.dz-queue-toolbar');
+  if (toolbar) {
+    const countPill = toolbar.querySelector('.dz-queue-count-pill');
+    if (countPill) {
+      countPill.textContent = `${_queue.length} ${_queue.length === 1 ? 'PDF' : 'PDFs'}`;
+      countPill.style.background = color;
+    }
+    const infoText = toolbar.querySelector('.dz-queue-info-text');
+    if (infoText) {
+      infoText.textContent = `${totalPages} pages total · Drag PDF to reorder`;
+    }
+  } else {
+    toolbar = document.createElement('div');
+    toolbar.className = 'dz-queue-toolbar';
+    toolbar.innerHTML = `
+      <div class="dz-queue-toolbar-left">
+        <span class="dz-queue-count-pill" style="background:${color}; color:#0A1F1C">
+          ${_queue.length} ${_queue.length === 1 ? 'PDF' : 'PDFs'}
+        </span>
+        <span class="dz-queue-info-text">
+          ${totalPages} pages total · Drag PDF to reorder
+        </span>
+      </div>
+      <div class="dz-queue-toolbar-actions">
+        <button type="button" class="dz-queue-add-btn" id="dz-merge-toolbar-add" title="Add more PDFs" style="color:${color}; border-color:color-mix(in srgb, ${color} 35%, transparent); background:color-mix(in srgb, ${color} 12%, transparent)">
+          <svg width="12" height="12" viewBox="0 0 16 16" fill="none"><path d="M8 2v12M2 8h12" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
+          Add PDF
+        </button>
+        <button type="button" class="dz-queue-clear-btn" id="dz-merge-toolbar-clear" title="Clear all PDFs">
+          Clear All
+        </button>
+      </div>
+    `;
+
+    toolbar.querySelector('#dz-merge-toolbar-add').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const inp = document.getElementById('file-input');
+      if (inp) { inp.multiple = true; inp.accept = '.pdf,application/pdf'; inp.click(); }
+    });
+
+    toolbar.querySelector('#dz-merge-toolbar-clear').addEventListener('click', (e) => {
+      e.stopPropagation();
+      removeMergePanel();
+      const z = document.getElementById('drop-zone');
+      if (z) {
+        resetZoneContent(z);
+        import('../../../../scripts/dropzone.js').then(({ _updateDropZoneForTool }) => {
+          const t = getActiveTool();
+          if (t && _updateDropZoneForTool) _updateDropZoneForTool(t);
+        }).catch(() => {});
+      }
+    });
+
+    zone.appendChild(toolbar);
+  }
+
+  // Scrollable Strip Container: update in-place without removing from zone
+  let strip = zone.querySelector('.dz-merge-thumb-strip');
+  if (!strip) {
+    strip = document.createElement('div');
+    strip.className = 'dz-merge-thumb-strip';
+    zone.appendChild(strip);
+  }
+
+  strip.innerHTML = '';
   _queue.forEach((item, idx) => {
     const card = _buildThumbCard(item, idx, color);
     strip.appendChild(card);
   });
 
-  // "Add more" button at the end
+  // "Add more" card at the end of the strip
   const addBtn = document.createElement('button');
   addBtn.className = 'dz-merge-add-btn';
   addBtn.title = 'Add more PDFs';
@@ -108,8 +175,6 @@ function _renderThumbStrip() {
     if (inp) { inp.multiple = true; inp.accept = '.pdf,application/pdf'; inp.click(); }
   });
   strip.appendChild(addBtn);
-
-  zone.appendChild(strip);
 
   // Wire drag-and-drop reorder on the new strip
   _initDragReorder(strip, color);
@@ -176,28 +241,149 @@ function _buildThumbCard(item, idx, color) {
 // ─── DRAG-TO-REORDER ──────────────────────────────────────────────────────────
 
 function _initDragReorder(strip, color) {
-  let _dragSrcIdx = -1;
+  let _dragSrcIdx      = -1;
+  let _scrollRaf       = null;
+  let _lockedScrollTop = null;
+  let _isCardDragging  = false;
+  let _pinRaf          = null;
 
+  function _onWheelDuringDrag(e) {
+    if (_isCardDragging) {
+      e.preventDefault();
+    }
+  }
+
+  // Lock / unlock the outer scrollable container (#main-content).
+  // We pin scrollTop in place without touching overflowY, so the scrollbar
+  // never disappears, the drop-zone width never shifts, and the window
+  // never scrolls/jumps to the top while reordering.
+  function _lockMainScroll() {
+    const mc = document.getElementById('main-content');
+    if (!mc) return;
+    _lockedScrollTop = mc.scrollTop;
+    _isCardDragging  = true;
+
+    // Attach synchronous scroll-clamping listener if not already bound
+    if (!mc._dzScrollLockBound) {
+      mc._dzScrollLockBound = true;
+      mc.addEventListener('scroll', () => {
+        if (_isCardDragging && _lockedScrollTop !== null) {
+          if (mc.scrollTop !== _lockedScrollTop) {
+            mc.scrollTop = _lockedScrollTop;
+          }
+        }
+      }, { passive: false });
+    }
+
+    // Continuously clamp scrollTop via requestAnimationFrame during drag
+    function _pinFrame() {
+      if (!_isCardDragging) return;
+      if (mc.scrollTop !== _lockedScrollTop) {
+        mc.scrollTop = _lockedScrollTop;
+      }
+      _pinRaf = requestAnimationFrame(_pinFrame);
+    }
+    _pinRaf = requestAnimationFrame(_pinFrame);
+
+    window.addEventListener('wheel', _onWheelDuringDrag, { passive: false });
+  }
+
+  function _unlockMainScroll() {
+    _isCardDragging = false;
+    if (_pinRaf !== null) {
+      cancelAnimationFrame(_pinRaf);
+      _pinRaf = null;
+    }
+    window.removeEventListener('wheel', _onWheelDuringDrag);
+    const mc = document.getElementById('main-content');
+    if (mc && _lockedScrollTop !== null) {
+      mc.scrollTop = _lockedScrollTop;
+    }
+    _lockedScrollTop = null;
+  }
+
+  // Flag / unflag the drop zone during card drag so dropzone.js skips
+  // adding/removing 'drag-active' class (which causes unnecessary reflow).
+  function _lockDropZone() {
+    const zone = document.getElementById('drop-zone');
+    if (zone) zone.dataset.cardDragging = '1';
+  }
+  function _unlockDropZone() {
+    const zone = document.getElementById('drop-zone');
+    if (zone) delete zone.dataset.cardDragging;
+  }
+
+  // ── Controlled edge-scroll during drag ──────────────────────────────────────
+  // The browser's native drag-scroll causes the strip to jump erratically.
+  // We implement smooth edge-scroll ONLY if the strip actually has overflow.
+  function _stopScrollRaf() {
+    if (_scrollRaf !== null) { cancelAnimationFrame(_scrollRaf); _scrollRaf = null; }
+  }
+
+  function _edgeScroll(clientY) {
+    _stopScrollRaf();
+    if (strip.scrollHeight <= strip.clientHeight) return;
+
+    const rect      = strip.getBoundingClientRect();
+    const ZONE      = 60;   // px from edge to activate scroll
+    const MAX_SPEED = 8;    // px per frame at the very edge
+
+    function _frame() {
+      const distTop = clientY - rect.top;
+      const distBot = rect.bottom - clientY;
+      let delta = 0;
+      if (distTop < ZONE && distTop > 0)  delta = -MAX_SPEED * (1 - distTop / ZONE);
+      if (distBot < ZONE && distBot > 0)  delta =  MAX_SPEED * (1 - distBot / ZONE);
+      if (delta !== 0 && strip.scrollHeight > strip.clientHeight) {
+        strip.scrollTop += delta;
+        _scrollRaf = requestAnimationFrame(_frame);
+      }
+    }
+    _scrollRaf = requestAnimationFrame(_frame);
+  }
+
+  // Prevent dragover from bubbling up to drop-zone
+  strip.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    e.stopPropagation();
+    _edgeScroll(e.clientY);
+  }, { passive: false });
+
+  strip.addEventListener('dragleave', (e) => {
+    if (!strip.contains(e.relatedTarget)) _stopScrollRaf();
+  });
+
+  strip.addEventListener('dragend', () => { _stopScrollRaf(); _unlockMainScroll(); _unlockDropZone(); });
+  strip.addEventListener('drop',    () => { _stopScrollRaf(); _unlockMainScroll(); _unlockDropZone(); });
+
+  // ── Per-card drag handlers ──────────────────────────────────────────────────
   strip.querySelectorAll('.dz-merge-card').forEach((card) => {
     card.addEventListener('dragstart', (e) => {
       _dragSrcIdx = parseInt(card.dataset.idx, 10);
       card.classList.add('dz-merge-card--dragging');
       e.dataTransfer.effectAllowed = 'move';
       e.dataTransfer.setData('text/plain', String(_dragSrcIdx));
+      _lockDropZone();
+      _lockMainScroll();
     });
 
     card.addEventListener('dragend', () => {
       card.classList.remove('dz-merge-card--dragging');
       strip.querySelectorAll('.dz-merge-card--drag-over')
            .forEach((c) => c.classList.remove('dz-merge-card--drag-over'));
+      _stopScrollRaf();
+      _unlockMainScroll();
+      _unlockDropZone();
     });
 
     card.addEventListener('dragover', (e) => {
       e.preventDefault();
+      e.stopPropagation();    // stop bubbling to drop-zone
       e.dataTransfer.dropEffect = 'move';
       strip.querySelectorAll('.dz-merge-card--drag-over')
            .forEach((c) => c.classList.remove('dz-merge-card--drag-over'));
       card.classList.add('dz-merge-card--drag-over');
+      _edgeScroll(e.clientY);
     });
 
     card.addEventListener('dragleave', () => {
@@ -207,19 +393,48 @@ function _initDragReorder(strip, color) {
     card.addEventListener('drop', (e) => {
       e.preventDefault();
       e.stopPropagation();
+      _stopScrollRaf();
+      _unlockMainScroll();
+      _unlockDropZone();
+
+      strip.querySelectorAll('.dz-merge-card--drag-over')
+           .forEach((c) => c.classList.remove('dz-merge-card--drag-over'));
+
       const targetIdx = parseInt(card.dataset.idx, 10);
-      if (_dragSrcIdx === targetIdx || _dragSrcIdx < 0) return;
+      if (_dragSrcIdx === targetIdx || _dragSrcIdx < 0) {
+        _dragSrcIdx = -1;
+        return;
+      }
 
       // Reorder _queue
       const moved = _queue.splice(_dragSrcIdx, 1)[0];
       _queue.splice(targetIdx, 0, moved);
-      _dragSrcIdx = -1;
 
-      _renderThumbStrip();
-      _renderMergePanel();
+      // Reorder the DOM card nodes in-place without destroying/recreating anything
+      const cards = Array.from(strip.querySelectorAll('.dz-merge-card'));
+      const srcCard = cards[_dragSrcIdx];
+      const tgtCard = cards[targetIdx];
+      if (srcCard && tgtCard) {
+        if (_dragSrcIdx < targetIdx) {
+          tgtCard.after(srcCard);
+        } else {
+          tgtCard.before(srcCard);
+        }
+        strip.querySelectorAll('.dz-merge-card').forEach((c, idx) => {
+          c.dataset.idx = String(idx);
+          const ord = c.querySelector('.dz-merge-ordinal');
+          if (ord) {
+            ord.textContent = String(idx + 1);
+            ord.setAttribute('aria-label', `Position ${idx + 1}`);
+          }
+        });
+      }
+      _dragSrcIdx = -1;
     });
   });
 }
+
+
 
 // ─── MERGE PANEL (below drop zone) ────────────────────────────────────────────
 
@@ -261,11 +476,10 @@ function _renderMergePanel() {
       <button class="mqp-clear-btn" id="mqp-clear-btn" title="Remove all files">Clear all</button>
     </div>
 
+    ${!canMerge ? `
     <div class="mqp-hint" id="mqp-hint">
-      ${canMerge
-        ? `Drag the PDFs above to change the merge order.`
-        : `<span style="color:#F87171">Add at least one more PDF to merge.</span>`}
-    </div>
+      <span style="color:#F87171">Add at least one more PDF to merge.</span>
+    </div>` : ''}
 
     <div class="mqp-actions">
       <input class="mqp-filename-input" id="mqp-filename-input"
@@ -350,50 +564,65 @@ export async function handleMergeFilesPicked(files) {
   // so the existing thumbnail strip stays visible while new files are scanned.
   const isFirstBatch = _queue.length === 0;
   if (isFirstBatch) {
-    showScanProgress(zone, color);
+    showScanProgress(zone, color, `Scanning ${newPdfs.length} PDFs…`);
   }
 
-  // Scan each new (non-duplicate) file sequentially to keep progress honest
-  for (const file of newPdfs) {
-    const fd1 = new FormData(); fd1.append('file', file);
-    const fd2 = new FormData(); fd2.append('file', file);
-
-    let pageCount = null;
-    let thumbnail = null;
-
-    try {
-      const [countRes, thumbRes] = await Promise.all([
-        fetch(`${BACKEND}/api/pdf/page-count`, { method: 'POST', body: fd1 }).catch(() => null),
-        fetch(`${BACKEND}/api/pdf/thumbnail`,  { method: 'POST', body: fd2 }).catch(() => null),
-      ]);
-      if (countRes && countRes.ok) {
-        const cj = await countRes.json();
-        pageCount = cj.page_count || 1;
-      }
-      if (thumbRes && thumbRes.ok) {
-        const tj = await thumbRes.json();
-        thumbnail = tj.thumbnail || null;
-      }
-    } catch (_) {
-      pageCount = null;
+  // Process files in concurrent batches of 4 with live progress label.
+  // Do NOT call updateProgress() — it mutates stroke-dashoffset which fights the
+  // CSS @keyframes spin animation and causes it to stutter/freeze.
+  const BATCH_SIZE = 4;
+  let processed = 0;
+  for (let i = 0; i < newPdfs.length; i += BATCH_SIZE) {
+    const chunk = newPdfs.slice(i, i + BATCH_SIZE);
+    if (isFirstBatch) {
+      const label = zone ? zone.querySelector('.dz-progress-label') : null;
+      if (label) label.textContent = `Scanning ${processed} of ${newPdfs.length}…`;
     }
 
-    if (!pageCount) {
+    await Promise.all(chunk.map(async (file) => {
+      const fd1 = new FormData(); fd1.append('file', file);
+      const fd2 = new FormData(); fd2.append('file', file);
+
+      let pageCount = null;
+      let thumbnail = null;
+
       try {
-        const offlineInfo = await getOfflinePdfInfo(file, 0.5);
-        pageCount = offlineInfo.pageCount || 1;
-        thumbnail = offlineInfo.thumbnail || null;
+        const [countRes, thumbRes] = await Promise.all([
+          fetch(`${BACKEND}/api/pdf/page-count`, { method: 'POST', body: fd1 }).catch(() => null),
+          fetch(`${BACKEND}/api/pdf/thumbnail`,  { method: 'POST', body: fd2 }).catch(() => null),
+        ]);
+        if (countRes && countRes.ok) {
+          const cj = await countRes.json();
+          pageCount = cj.page_count || 1;
+        }
+        if (thumbRes && thumbRes.ok) {
+          const tj = await thumbRes.json();
+          thumbnail = tj.thumbnail || null;
+        }
       } catch (_) {
-        pageCount = 1;
+        pageCount = null;
       }
-    }
 
-    _queue.push({ file, pageCount, thumbnail });
+      if (!pageCount) {
+        try {
+          const offlineInfo = await getOfflinePdfInfo(file, 0.5);
+          pageCount = offlineInfo.pageCount || 1;
+          thumbnail = offlineInfo.thumbnail || null;
+        } catch (_) {
+          pageCount = 1;
+        }
+      }
+
+      _queue.push({ file, pageCount, thumbnail });
+    }));
+
+    processed += chunk.length;
+
+    // Yield a paint frame so the browser can keep the spin animation smooth.
+    await new Promise((r) => setTimeout(r, 0));
   }
 
   // Only remove the scan-ring overlay if we actually showed one (first batch).
-  // For subsequent batches the zone never entered scanning state, so calling
-  // resetZoneContent would be a no-op at best and could flicker at worst.
   if (isFirstBatch) {
     resetZoneContent(zone);
   }

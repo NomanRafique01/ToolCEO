@@ -86,6 +86,7 @@
   bottom: 0;
   background: var(--bg-primary);
   overflow-y: auto;
+  scrollbar-gutter: stable;
   padding: 8px 24px 24px;
 }
 

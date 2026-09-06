@@ -17,6 +17,7 @@ import { getActiveTool, setBgJob, getBgJob, syncBgJobBar, clearBgJob } from '../
 import { pushNotification } from '../../../scripts/notificationStore.js';
 import {
   showProgress,
+  showScanProgress,
   updateProgress,
   resetZoneContent,
   showDownload,
@@ -398,10 +399,37 @@ async function _addFiles(fileArray) {
   const fresh = jpgFiles.filter((f) => !existing.has(key(f)));
   if (fresh.length === 0) return;
 
-  for (const file of fresh) {
-    let thumbnail = null;
-    try { thumbnail = await _readDataUri(file); } catch (_) {}
-    _queue.push({ file, thumbnail });
+  const zone = document.getElementById('drop-zone');
+  const tool = getActiveTool();
+  const color = tool ? (tool.color || _FALLBACK_COLOR) : _FALLBACK_COLOR;
+
+  const isFirstBatch = _queue.length === 0;
+  if (isFirstBatch && zone) {
+    showScanProgress(zone, color, `Loading ${fresh.length} image${fresh.length !== 1 ? 's' : ''}…`);
+  }
+
+  const BATCH_SIZE = 6;
+  let processed = 0;
+  for (let i = 0; i < fresh.length; i += BATCH_SIZE) {
+    const chunk = fresh.slice(i, i + BATCH_SIZE);
+
+    if (isFirstBatch && zone) {
+      const label = zone.querySelector('.dz-progress-label');
+      if (label) label.textContent = `Loading ${processed} of ${fresh.length}…`;
+    }
+
+    await Promise.all(chunk.map(async (file) => {
+      let thumbnail = null;
+      try { thumbnail = await _readDataUri(file); } catch (_) {}
+      _queue.push({ file, thumbnail });
+    }));
+
+    processed += chunk.length;
+    await new Promise((r) => setTimeout(r, 0));
+  }
+
+  if (isFirstBatch && zone) {
+    resetZoneContent(zone);
   }
 
   _renderStrip();

@@ -1794,12 +1794,16 @@ export function initDropZone() {
 
   // ── Drag over ─────────────────────────────────────────────────────────────
   dropZone.addEventListener('dragover', (e) => {
+    // Skip if a card reorder drag is in progress — prevents the zone from
+    // adding drag-active class and reflowing/expanding during PDF reordering.
+    if (dropZone.dataset.cardDragging) { e.preventDefault(); return; }
     e.preventDefault();
     dropZone.classList.add('drag-active');
   });
 
   // ── Drag leave ────────────────────────────────────────────────────────────
   dropZone.addEventListener('dragleave', () => {
+    if (dropZone.dataset.cardDragging) return;
     dropZone.classList.remove('drag-active');
   });
 
@@ -1832,4 +1836,89 @@ export function initDropZone() {
       _submitFile(e.dataTransfer.files);
     }
   });
+
+  // ── Smart Nested Wheel Scrolling for Drop Zone & Multi-file Strips ─────────
+  // 1. If cursor is at the drop zone and there is NO inner scrollbar (few files or single file),
+  //    scrolling the wheel scrolls the app UI (#main-content) up and down.
+  // 2. If files are many and an inner scrollbar is present inside the drop zone:
+  //    - Scrolling reaches the bottom of the inner strip -> app UI scrolls down.
+  //    - Scrolling reaches the top of the inner strip -> app UI scrolls up.
+  //    - Continuous gestures smoothly chain from inner strip to app UI.
+  function _findInnerScrollableStrip(zone) {
+    if (!zone) return null;
+    const known = zone.querySelector(
+      '.dz-merge-thumb-strip, .dz-imgpdf-thumb-strip, .dz-imgcmp-thumb-strip, ' +
+      '.dz-jpg-thumb-strip, .dz-png-thumb-strip, .dz-webp-thumb-strip, .dz-svg-thumb-strip, ' +
+      '[class*="-thumb-strip"]'
+    );
+    if (known && known.scrollHeight > known.clientHeight + 2) return known;
+
+    const children = zone.querySelectorAll('*');
+    for (const el of children) {
+      if (el.scrollHeight > el.clientHeight + 2) {
+        const style = window.getComputedStyle(el);
+        if (style.overflowY === 'auto' || style.overflowY === 'scroll') {
+          return el;
+        }
+      }
+    }
+    return null;
+  }
+
+  dropZone.addEventListener('wheel', (e) => {
+    if (dropZone.dataset.cardDragging) return;
+    if (Math.abs(e.deltaY) < 0.1) return;
+
+    const mc = document.getElementById('main-content');
+    if (!mc) return;
+
+    const strip = _findInnerScrollableStrip(dropZone);
+
+    // Case 1: No scrollbar inside drop zone (all files fit or single-file view)
+    if (!strip || strip.scrollHeight <= strip.clientHeight + 2) {
+      e.preventDefault();
+      mc.scrollTop += e.deltaY;
+      return;
+    }
+
+    // Case 2: Inner scrollbar exists
+    const maxScroll = strip.scrollHeight - strip.clientHeight;
+    const currentScroll = strip.scrollTop;
+    const scrollingDown = e.deltaY > 0;
+    const scrollingUp   = e.deltaY < 0;
+
+    if (scrollingDown) {
+      if (currentScroll >= maxScroll - 1.5) {
+        // At bottom of inner strip -> scroll main content down
+        e.preventDefault();
+        mc.scrollTop += e.deltaY;
+      } else {
+        const remainingInStrip = maxScroll - currentScroll;
+        if (e.deltaY > remainingInStrip) {
+          e.preventDefault();
+          strip.scrollTop = maxScroll;
+          mc.scrollTop += (e.deltaY - remainingInStrip);
+        } else {
+          e.preventDefault();
+          strip.scrollTop += e.deltaY;
+        }
+      }
+    } else if (scrollingUp) {
+      if (currentScroll <= 1.5) {
+        // At top of inner strip -> scroll main content up
+        e.preventDefault();
+        mc.scrollTop += e.deltaY;
+      } else {
+        const remainingToTop = currentScroll;
+        if (-e.deltaY > remainingToTop) {
+          e.preventDefault();
+          strip.scrollTop = 0;
+          mc.scrollTop += (e.deltaY + remainingToTop);
+        } else {
+          e.preventDefault();
+          strip.scrollTop += e.deltaY;
+        }
+      }
+    }
+  }, { passive: false });
 }

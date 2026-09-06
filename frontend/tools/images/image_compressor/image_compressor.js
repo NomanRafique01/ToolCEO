@@ -18,6 +18,7 @@ import { getActiveTool, setBgJob, getBgJob, syncBgJobBar, clearBgJob } from '../
 import { pushNotification } from '../../../scripts/notificationStore.js';
 import {
   showProgress,
+  showScanProgress,
   updateProgress,
   resetZoneContent,
   showDownload,
@@ -30,7 +31,7 @@ const _COLOR = '#F472B6';
 const _BG    = 'rgba(244,114,182,0.15)';
 
 const _SUPPORT_TEXT =
-  'Supports offline image compression for JPG • PNG • WEBP • AVIF • SVG • BMP • TIFF • GIF • ICO • HEIC/HEIF | Output: ZIP if multiple files';
+  'Supports offline image compression for JPG • PNG • WEBP • AVIF • SVG • BMP • TIFF • GIF • ICO • HEIC/HEIF';
 
 const _ACCEPT =
   'image/*,.jpg,.jpeg,.png,.webp,.avif,.gif,.bmp,.dib,.tiff,.tif,.ico,.heic,.heif,.svg';
@@ -359,6 +360,7 @@ function _renderPanel() {
   panel.addEventListener('click', (e) => e.stopPropagation());
 }
 
+
 // ─── ADD FILES ───────────────────────────────────────────────────────────────
 
 async function _addFiles(fileArray) {
@@ -378,16 +380,51 @@ async function _addFiles(fileArray) {
   const fresh = accepted.filter((f) => !existing.has(key(f)));
   if (fresh.length === 0) return;
 
-  for (const file of fresh) {
-    const format = await _detectFormat(file);
-    let thumbnail = null;
-    try { thumbnail = await _readDataUri(file); } catch (_) {}
-    _queue.push({ file, format, thumbnail });
+  const zone = document.getElementById('drop-zone');
+  const tool  = getActiveTool();
+  const color = tool ? (tool.color || _COLOR) : _COLOR;
+
+  // Only show scan ring on first load (queue was empty before this batch).
+  const isFirstBatch = _queue.length === 0;
+  if (isFirstBatch) {
+    showScanProgress(zone, color, `Loading ${fresh.length} image${fresh.length !== 1 ? 's' : ''}…`);
+  }
+
+  // Process in concurrent batches of 6 to avoid blocking the main thread.
+  const BATCH_SIZE = 6;
+  let processed = 0;
+  for (let i = 0; i < fresh.length; i += BATCH_SIZE) {
+    const chunk = fresh.slice(i, i + BATCH_SIZE);
+
+    // Only update the label text — do NOT touch stroke-dashoffset via updateProgress()
+    // because that fights the CSS @keyframes spin animation and causes it to stutter.
+    if (isFirstBatch) {
+      const label = zone ? zone.querySelector('.dz-progress-label') : null;
+      if (label) label.textContent = `Loading ${processed} of ${fresh.length}…`;
+    }
+
+    await Promise.all(chunk.map(async (file) => {
+      const format = await _detectFormat(file);
+      let thumbnail = null;
+      try { thumbnail = await _readDataUri(file); } catch (_) {}
+      _queue.push({ file, format, thumbnail });
+    }));
+
+    processed += chunk.length;
+
+    // Yield a paint frame between batches so the browser can keep the spin animation smooth.
+    await new Promise((r) => setTimeout(r, 0));
+  }
+
+  // Remove the scan ring once all images are loaded.
+  if (isFirstBatch) {
+    resetZoneContent(zone);
   }
 
   _renderStrip();
   _renderPanel();
 }
+
 
 // ─── PUBLIC: FILES PICKED ─────────────────────────────────────────────────────
 

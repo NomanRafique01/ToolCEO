@@ -23,13 +23,18 @@
 /* ── Drop zone: has thumbnails state ─────────────────────────────────────── */
 
 .drop-zone.dz-has-imgcmp-thumbs {
-  padding-top: 12px;
-  padding-bottom: 12px;
-  height: auto;
-  min-height: 178px;
-  max-height: none;
-  overflow: visible;
+  padding: 0 !important;
+  height: auto !important;
+  min-height: 220px !important;
+  max-height: 520px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  justify-content: flex-start !important;
+  align-items: stretch !important;
+  overflow: hidden !important;
+  contain: layout style !important;
 }
+
 
 .drop-zone.dz-has-imgcmp-thumbs .drop-icon,
 .drop-zone.dz-has-imgcmp-thumbs .drop-main-text,
@@ -42,23 +47,31 @@
 /* ── Thumbnail strip ─────────────────────────────────────────────────────── */
 
 .dz-imgcmp-thumb-strip {
-  display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  align-items: flex-start;
-  gap: 14px 10px;
-  width: 100%;
-  padding: 10px 8px 6px;
-  box-sizing: border-box;
-  overflow: visible;
+  display: flex !important;
+  flex-direction: row !important;
+  flex-wrap: wrap !important;
+  align-items: flex-start !important;
+  justify-content: flex-start !important;
+  gap: 16px 12px !important;
+  width: 100% !important;
+  flex: 1 1 auto !important;
+  overflow-y: auto !important;
+  overflow-x: hidden !important;
+  max-height: 440px !important;
+  padding: 16px 16px 20px 16px !important;
+  box-sizing: border-box !important;
+  will-change: transform !important;
+  -webkit-overflow-scrolling: touch !important;
+  overscroll-behavior: auto !important;
 }
+
 
 .dz-imgcmp-card {
   position: relative;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 4px;
+  gap: 5px;
   flex-shrink: 0;
   width: 96px;
   user-select: none;
@@ -75,9 +88,10 @@
   border: 2px solid var(--imgcmp-color, #F472B6);
   box-shadow: 0 3px 12px rgba(0, 0, 0, 0.35);
   flex-shrink: 0;
-  transition: box-shadow 130ms ease;
+  /* NO transition here — box-shadow transitions fire on scroll-hover and cause repaints */
 }
 
+/* Glow effect uses ::after pseudo-element so it doesn't repaint the frame itself */
 .dz-imgcmp-card:hover .dz-imgcmp-thumb-frame {
   box-shadow: 0 4px 18px color-mix(in srgb, var(--imgcmp-color, #F472B6) 55%, transparent);
 }
@@ -90,9 +104,15 @@
   display: block;
   border-radius: 4px;
   pointer-events: none;
+  /* GPU-rasterize each image once — prevents repaint during scroll */
+  transform: translateZ(0);
+  backface-visibility: hidden;
+  will-change: auto;
 }
 
 .dz-imgcmp-format-badge {
+
+
   position: absolute;
   bottom: 4px;
   left: 4px;
