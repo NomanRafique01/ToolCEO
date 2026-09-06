@@ -2,27 +2,27 @@
   "modules": {
     "office": {
       "name": "Office Module",
-      "status": "not_installed",
+      "status": "installed",
       "downloadUrl": "https://github.com/NomanRafique01/ToolCEO/releases/download/modules-v1.0/office-module.zip"
     },
     "ocr": {
       "name": "OCR Module",
-      "status": "not_installed",
+      "status": "installed",
       "downloadUrl": "https://github.com/NomanRafique01/ToolCEO/releases/download/modules-v1.0/ocr-module.zip"
     },
     "document": {
       "name": "Document Module",
-      "status": "not_installed",
+      "status": "installed",
       "downloadUrl": "https://github.com/NomanRafique01/ToolCEO/releases/download/modules-v1.0/document-module.zip"
     },
     "ebook": {
       "name": "eBook Module",
-      "status": "not_installed",
+      "status": "installed",
       "downloadUrl": "https://github.com/NomanRafique01/ToolCEO/releases/download/modules-v1.0/ebook-module.zip"
     },
     "media": {
       "name": "Media Module",
-      "status": "not_installed",
+      "status": "installed",
       "downloadUrl": "https://github.com/NomanRafique01/ToolCEO/releases/download/modules-v1.0/media-module.zip"
     }
   }

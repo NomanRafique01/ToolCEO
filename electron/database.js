@@ -119,9 +119,21 @@ function deleteConversion(id) {
 
 function clearAllConversions() {
   if (!db) return { success: false };
-  const stmt = db.prepare('DELETE FROM conversions');
-  stmt.run();
-  return { success: true };
+  try {
+    const stmt = db.prepare('DELETE FROM conversions');
+    stmt.run();
+    try {
+      db.prepare("DELETE FROM sqlite_sequence WHERE name = 'conversions'").run();
+    } catch (_) {}
+    try {
+      db.pragma('vacuum');
+    } catch (_) {}
+    console.log('[database] All conversions and auto-increment sequence cleared successfully.');
+    return { success: true };
+  } catch (err) {
+    console.error('[database] Failed to clear all conversions:', err.message);
+    return { success: false, error: err.message };
+  }
 }
 
 function closeDatabase() {

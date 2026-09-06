@@ -86,31 +86,51 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  padding: 3px 9px;
+  padding: 3px 10px;
   border-radius: 20px;
-  font-size: 10px;
+  font-size: 10.5px;
   font-weight: 600;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.03em;
   white-space: nowrap;
+  transition: all 150ms ease;
 }
 
-.mod-card-badge--installed {
-  background: color-mix(in srgb, var(--mod-color, #00E5C0) 14%, transparent);
-  color: var(--mod-color, #00E5C0);
-  border: 1px solid color-mix(in srgb, var(--mod-color, #00E5C0) 35%, transparent);
-}
-
+/* Not Downloaded — muted gray */
+.mod-card-badge--not-downloaded,
 .mod-card-badge--not-installed {
-  background: color-mix(in srgb, var(--mod-color, #8FAAA6) 8%, rgba(143,170,166,0.08));
-  color: color-mix(in srgb, var(--mod-color, #8FAAA6) 70%, var(--text-muted));
-  border: 1px solid color-mix(in srgb, var(--mod-color, #8FAAA6) 24%, rgba(143,170,166,0.20));
+  background: rgba(148, 163, 184, 0.10);
+  color: #94A3B8;
+  border: 1px solid rgba(148, 163, 184, 0.25);
 }
 
-.mod-card-badge--installing {
-  background: color-mix(in srgb, var(--mod-color, #00E5C0) 16%, transparent);
-  color: var(--mod-color, #00E5C0);
-  border: 1px solid color-mix(in srgb, var(--mod-color, #00E5C0) 40%, transparent);
+/* Downloading — blue */
+.mod-card-badge--downloading {
+  background: rgba(96, 165, 250, 0.15);
+  color: #60A5FA;
+  border: 1px solid rgba(96, 165, 250, 0.38);
   animation: mod-badge-pulse 1.8s ease-in-out infinite;
+}
+
+/* Downloaded — amber / yellow */
+.mod-card-badge--downloaded {
+  background: rgba(251, 191, 36, 0.14);
+  color: #FBBF24;
+  border: 1px solid rgba(251, 191, 36, 0.40);
+}
+
+/* Installing — blue */
+.mod-card-badge--installing {
+  background: rgba(96, 165, 250, 0.15);
+  color: #60A5FA;
+  border: 1px solid rgba(96, 165, 250, 0.38);
+  animation: mod-badge-pulse 1.8s ease-in-out infinite;
+}
+
+/* Installed — teal / green */
+.mod-card-badge--installed {
+  background: rgba(0, 229, 192, 0.14);
+  color: #00E5C0;
+  border: 1px solid rgba(0, 229, 192, 0.35);
 }
 
 @keyframes mod-badge-pulse {
@@ -178,48 +198,82 @@
   display: none;
 }
 
-/* ─── INSTALL BUTTON ─────────────────────────────────────── */
+/* ─── CARD ACTION BUTTONS ─────────────────────────────────── */
+
+.mod-card-actions {
+  margin-top: auto;
+  padding-top: 10px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 42px;
+}
 
 .mod-card-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  margin-top: 6px;
-  padding: 7px 14px;
+  padding: 7px 15px;
   border-radius: 8px;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   border: 1.5px solid transparent;
-  transition: background 120ms ease, border-color 120ms ease, color 120ms ease;
-  align-self: flex-start;
+  transition: all 120ms ease;
   line-height: 1;
+  box-sizing: border-box;
 }
 
+/* Download Module button */
+.mod-card-btn--download,
 .mod-card-btn--install {
   background: color-mix(in srgb, var(--mod-color, #00E5C0) 15%, transparent);
   color: var(--mod-color, #00E5C0);
   border-color: color-mix(in srgb, var(--mod-color, #00E5C0) 35%, transparent);
 }
 
+.mod-card-btn--download:hover,
 .mod-card-btn--install:hover {
   background: color-mix(in srgb, var(--mod-color, #00E5C0) 25%, transparent);
   border-color: var(--mod-color, #00E5C0);
 }
 
+/* Install Now button */
+.mod-card-btn--install-now {
+  background: rgba(251, 191, 36, 0.16);
+  color: #FBBF24;
+  border-color: rgba(251, 191, 36, 0.45);
+}
+
+.mod-card-btn--install-now:hover {
+  background: rgba(251, 191, 36, 0.26);
+  border-color: #FBBF24;
+}
+
+/* Cancel button — styled dark secondary button */
+.mod-card-btn--cancel {
+  background: rgba(244, 63, 94, 0.12);
+  color: #FB7185;
+  border-color: rgba(244, 63, 94, 0.35);
+}
+
+.mod-card-btn--cancel:hover {
+  background: rgba(244, 63, 94, 0.22);
+  border-color: #F43F5E;
+}
+
+/* Installed button */
 .mod-card-btn--installed {
-  background: color-mix(in srgb, var(--mod-color, #00E5C0) 12%, transparent);
-  color: var(--mod-color, #00E5C0);
-  border-color: color-mix(in srgb, var(--mod-color, #00E5C0) 30%, transparent);
+  background: rgba(0, 229, 192, 0.12);
+  color: #00E5C0;
+  border-color: rgba(0, 229, 192, 0.30);
   cursor: default;
   opacity: 0.95;
 }
 
-.mod-card-btn--installing {
-  background: color-mix(in srgb, var(--mod-color, #00E5C0) 20%, transparent);
-  color: var(--mod-color, #00E5C0);
-  border-color: color-mix(in srgb, var(--mod-color, #00E5C0) 45%, transparent);
+.mod-card-btn--busy {
   cursor: wait;
+  opacity: 0.85;
 }
 
 .mod-spinner {
@@ -381,30 +435,49 @@
   line-height: 1;
 }
 
+.mod-modal-btn--download,
 .mod-modal-btn--install {
   background: color-mix(in srgb, var(--mod-color, #00E5C0) 18%, transparent);
   color: var(--mod-color, #00E5C0);
   border-color: color-mix(in srgb, var(--mod-color, #00E5C0) 40%, transparent);
 }
 
+.mod-modal-btn--download:hover:not(:disabled),
 .mod-modal-btn--install:hover:not(:disabled) {
   background: color-mix(in srgb, var(--mod-color, #00E5C0) 28%, transparent);
   border-color: var(--mod-color, #00E5C0);
 }
 
-.mod-modal-btn--install:disabled {
-  opacity: 0.6;
-  cursor: default;
+.mod-modal-btn--install-now {
+  background: rgba(251, 191, 36, 0.18);
+  color: #FBBF24;
+  border-color: rgba(251, 191, 36, 0.45);
+}
+
+.mod-modal-btn--install-now:hover:not(:disabled) {
+  background: rgba(251, 191, 36, 0.28);
+  border-color: #FBBF24;
+}
+
+.mod-modal-btn--cancel {
+  background: rgba(244, 63, 94, 0.12);
+  color: #FB7185;
+  border-color: rgba(244, 63, 94, 0.35);
+}
+
+.mod-modal-btn--cancel:hover {
+  background: rgba(244, 63, 94, 0.22);
+  border-color: #F43F5E;
 }
 
 .mod-modal-btn--installed {
-  background: color-mix(in srgb, var(--mod-color, #00E5C0) 12%, transparent);
-  color: var(--mod-color, #00E5C0);
-  border-color: color-mix(in srgb, var(--mod-color, #00E5C0) 30%, transparent);
+  background: rgba(0, 229, 192, 0.14);
+  color: #00E5C0;
+  border-color: rgba(0, 229, 192, 0.35);
   cursor: default;
 }
 
-.mod-modal-btn--installing {
+.mod-modal-btn--busy {
   background: color-mix(in srgb, var(--mod-color, #00E5C0) 20%, transparent);
   color: var(--mod-color, #00E5C0);
   border-color: color-mix(in srgb, var(--mod-color, #00E5C0) 45%, transparent);

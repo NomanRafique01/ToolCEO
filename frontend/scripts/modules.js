@@ -1,15 +1,20 @@
 /**
  * modules.js
  * Renders the Modules page — shows installable engine modules with
- * status badges, install buttons, and a detail modal.
- *
- * Module install status is read from modules.json (project root) via
- * the Electron IPC bridge.  Clicking "Install Module" sets the status
- * to "installed" in that file and updates the UI in-place.
+ * two-step Download → Install workflow, status badges, action buttons,
+ * and a detail modal.
  */
 
-import { pushNotification }                          from './notificationStore.js';
-import { startModuleDownload, isDownloadActive, getActiveDownloadModuleId, syncActiveDownload } from './moduleDownload.js';
+import { pushNotification } from './notificationStore.js';
+import {
+  startModuleDownload,
+  startModuleInstall,
+  cancelActiveOperation,
+  isDownloadActive,
+  getActivePhase,
+  getActiveDownloadModuleId,
+  syncActiveDownload
+} from './moduleDownload.js';
 
 /** Thin local wrapper — avoids circular import with navigation.js */
 function setBreadcrumb(segments) {
@@ -153,54 +158,96 @@ const MODULES = [
   },
 ];
 
+// In-memory status map { office: 'installed'|'downloaded'|'not_downloaded', ... }
+let _currentStatuses = {};
+
 // ─── MODULE STATUS ────────────────────────────────────────────────────────────
 
 /**
- * Load module statuses from modules.json.
- * In Electron the file is read via IPC; in browser dev we fall back to fetch.
- * Returns a map: { office: 'not_installed', ... }
+ * Load module statuses from modules.json / filesystem via IPC.
  */
 async function _loadStatuses() {
   try {
     if (window.electronAPI && window.electronAPI.readModulesJson) {
-      return await window.electronAPI.readModulesJson();
+      _currentStatuses = await window.electronAPI.readModulesJson();
+      return _currentStatuses;
     }
-    // Fallback: fetch from the same origin (works in browser dev mode)
     const res  = await fetch('../modules.json');
     const data = await res.json();
-    return Object.fromEntries(
-      Object.entries(data.modules).map(([k, v]) => [k, v.status])
+    _currentStatuses = Object.fromEntries(
+      Object.entries(data.modules || {}).map(([k, v]) => [k, v.status])
     );
+    return _currentStatuses;
   } catch (_) {
-    // If the file can't be read, treat everything as not_installed
+    _currentStatuses = {};
     return {};
-  }
-}
-
-/**
- * Persist updated status back to modules.json.
- * Only wired up when running inside Electron.
- */
-async function _saveStatus(moduleId, status) {
-  try {
-    if (window.electronAPI && window.electronAPI.writeModulesJson) {
-      await window.electronAPI.writeModulesJson(moduleId, status);
-    }
-  } catch (_) {
-    // silently ignore if IPC not available
   }
 }
 
 // ─── MODAL ────────────────────────────────────────────────────────────────────
 
-function _openModal(mod, isInstalled) {
-  // Remove any existing modal
+function _openModal(mod, status) {
   const existing = document.getElementById('modules-modal-overlay');
   if (existing) existing.remove();
 
   const overlay = document.createElement('div');
   overlay.id = 'modules-modal-overlay';
   overlay.className = 'mod-modal-overlay';
+  overlay.dataset.moduleId = mod.id;
+
+  const isInstalling = (isDownloadActive() && getActiveDownloadModuleId() === mod.id && getActivePhase() === 'installing') || status === 'installing';
+  const isDownloading = (isDownloadActive() && getActiveDownloadModuleId() === mod.id && getActivePhase() === 'downloading') || status === 'downloading';
+  const isInstalled = status === 'installed';
+  const isDownloaded = status === 'downloaded';
+
+  let footerButtonsHTML = '';
+  if (isInstalled) {
+    footerButtonsHTML = `
+      <button class="mod-modal-btn mod-modal-btn--installed" disabled>
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+          <path d="M3 8l4 4 6-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        ✓ Installed
+      </button>
+      <button class="mod-modal-btn mod-modal-btn--secondary" id="mod-modal-close-btn">Close</button>`;
+  } else if (isInstalling) {
+    footerButtonsHTML = `
+      <button class="mod-modal-btn mod-modal-btn--busy" disabled>
+        <svg class="mod-spinner" width="14" height="14" viewBox="0 0 16 16" fill="none">
+          <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="2" stroke-dasharray="28" stroke-dashoffset="10"/>
+        </svg>
+        Installing…
+      </button>
+      <button class="mod-modal-btn mod-modal-btn--cancel" id="mod-modal-cancel-op">Cancel</button>`;
+  } else if (isDownloading) {
+    footerButtonsHTML = `
+      <button class="mod-modal-btn mod-modal-btn--busy" disabled>
+        <svg class="mod-spinner" width="14" height="14" viewBox="0 0 16 16" fill="none">
+          <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="2" stroke-dasharray="28" stroke-dashoffset="10"/>
+        </svg>
+        Downloading…
+      </button>
+      <button class="mod-modal-btn mod-modal-btn--cancel" id="mod-modal-cancel-op">Cancel</button>`;
+  } else if (isDownloaded) {
+    footerButtonsHTML = `
+      <button class="mod-modal-btn mod-modal-btn--install-now" id="mod-modal-install-btn">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Install Now
+      </button>
+      <button class="mod-modal-btn mod-modal-btn--secondary" id="mod-modal-later-btn">Install Later</button>`;
+  } else {
+    footerButtonsHTML = `
+      <button class="mod-modal-btn mod-modal-btn--download" id="mod-modal-download-btn" style="--mod-color:${mod.color};--mod-bg:${mod.bg}">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+          <path d="M12 3v13M7 11l5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+          <path d="M5 20h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+        </svg>
+        Download Module
+      </button>
+      <button class="mod-modal-btn mod-modal-btn--secondary" id="mod-modal-close-btn">Cancel</button>`;
+  }
 
   overlay.innerHTML = `
     <div class="mod-modal" role="dialog" aria-modal="true" aria-label="${mod.name} details">
@@ -217,7 +264,7 @@ function _openModal(mod, isInstalled) {
 
       <div class="mod-modal-body">
         <p class="mod-modal-intro">
-          By downloading this module you will get access to these tools:
+          By downloading and installing this module you unlock these conversion tools:
         </p>
         <ul class="mod-modal-tool-list">
           ${mod.unlocks.map((u) => `
@@ -230,49 +277,43 @@ function _openModal(mod, isInstalled) {
         </ul>
       </div>
 
-      <div class="mod-modal-footer">
-        ${isInstalled
-          ? `<button class="mod-modal-btn mod-modal-btn--installed" disabled style="--mod-color:${mod.color};--mod-bg:${mod.bg}">
-               <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-                 <path d="M3 8l4 4 6-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-               </svg>
-               Installed
-             </button>`
-          : isDownloadActive() && getActiveDownloadModuleId() === mod.id
-            ? `<button class="mod-modal-btn mod-modal-btn--installing" disabled style="--mod-color:${mod.color};--mod-bg:${mod.bg}">
-                 <svg class="mod-spinner" width="14" height="14" viewBox="0 0 16 16" fill="none">
-                   <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="2" stroke-dasharray="28" stroke-dashoffset="10"/>
-                 </svg>
-                 Installing…
-               </button>`
-            : isDownloadActive()
-              ? `<button class="mod-modal-btn mod-modal-btn--install" disabled title="A download is already in progress" style="--mod-color:${mod.color};--mod-bg:${mod.bg}">
-                   A download is already in progress
-                 </button>`
-              : `<button class="mod-modal-btn mod-modal-btn--install" data-module-id="${mod.id}" style="--mod-color:${mod.color};--mod-bg:${mod.bg}">
-                   <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-                     <path d="M12 3v13M7 11l5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-                     <path d="M5 20h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-                   </svg>
-                   Install Module
-                 </button>`}
-        <button class="mod-modal-btn mod-modal-btn--secondary" id="mod-modal-cancel">Cancel</button>
+      <div class="mod-modal-footer" id="mod-modal-footer">
+        ${footerButtonsHTML}
       </div>
     </div>`;
 
   document.body.appendChild(overlay);
 
-  // Close handlers
   const close = () => overlay.remove();
   overlay.querySelector('.mod-modal-close').addEventListener('click', close);
-  overlay.querySelector('#mod-modal-cancel').addEventListener('click', close);
   overlay.addEventListener('click', (e) => { if (e.target === overlay) close(); });
 
-  // Install handler — starts the real download and closes the modal
-  const installBtn = overlay.querySelector('.mod-modal-btn--install');
-  if (installBtn && !installBtn.disabled) {
-    installBtn.addEventListener('click', () => {
+  const closeBtn = overlay.querySelector('#mod-modal-close-btn');
+  if (closeBtn) closeBtn.addEventListener('click', close);
+
+  const laterBtn = overlay.querySelector('#mod-modal-later-btn');
+  if (laterBtn) laterBtn.addEventListener('click', close);
+
+  const downloadBtn = overlay.querySelector('#mod-modal-download-btn');
+  if (downloadBtn) {
+    downloadBtn.addEventListener('click', () => {
       startModuleDownload(mod);
+      close();
+    });
+  }
+
+  const installBtn = overlay.querySelector('#mod-modal-install-btn');
+  if (installBtn) {
+    installBtn.addEventListener('click', () => {
+      startModuleInstall(mod);
+      close();
+    });
+  }
+
+  const cancelOpBtn = overlay.querySelector('#mod-modal-cancel-op');
+  if (cancelOpBtn) {
+    cancelOpBtn.addEventListener('click', () => {
+      cancelActiveOperation(mod.id);
       close();
     });
   }
@@ -280,27 +321,16 @@ function _openModal(mod, isInstalled) {
 
 // ─── MAIN RENDERER ───────────────────────────────────────────────────────────
 
-/**
- * Pending locked-tool context — set by navigation.js before calling renderModules.
- * Shape: { moduleId: string, toolLabel: string } | null
- */
 let _pendingLockContext = null;
 
-/**
- * Called by navigation.js when a locked card was clicked.
- * The next renderModules() call will scroll to and highlight the given module.
- */
 export function setPendingLockContext(ctx) {
   _pendingLockContext = ctx;
 }
 
 export async function renderModules(container, activateNav) {
-  // Stash activateNav for the modal's install handler
   window.__modulesActivateNav = activateNav;
-
   setBreadcrumb(['Dashboard', 'Modules']);
 
-  // Show loading state immediately
   container.innerHTML = `
     <div class="explore-header">
       <button class="fmt-back-btn" title="Back to Dashboard">
@@ -325,7 +355,7 @@ export async function renderModules(container, activateNav) {
 
   const statuses = await _loadStatuses();
 
-  // Sync active download from Electron if in progress
+  // Sync active operation from Electron if running
   if (window.electronAPI && window.electronAPI.getActiveModuleDownload) {
     try {
       const activeDl = await window.electronAPI.getActiveModuleDownload();
@@ -337,49 +367,60 @@ export async function renderModules(container, activateNav) {
 
   // Build module cards
   const cardsHTML = MODULES.map((mod) => {
-    const installed = statuses[mod.id] === 'installed';
-    const isInstalling = isDownloadActive() && getActiveDownloadModuleId() === mod.id;
+    const rawStatus = statuses[mod.id] || 'not_downloaded';
+    const isInstalling = isDownloadActive() && getActiveDownloadModuleId() === mod.id && getActivePhase() === 'installing';
+    const isDownloading = isDownloadActive() && getActiveDownloadModuleId() === mod.id && getActivePhase() === 'downloading';
+    const isInstalled = rawStatus === 'installed';
+    const isDownloaded = rawStatus === 'downloaded';
 
-    let badgeClass = 'mod-card-badge--not-installed';
-    let badgeText  = 'Not Installed';
-    if (installed) {
+    let badgeClass = 'mod-card-badge--not-downloaded';
+    let badgeText  = 'Not Downloaded';
+    let btnHTML    = '';
+
+    if (isInstalled) {
       badgeClass = 'mod-card-badge--installed';
       badgeText  = 'Installed';
-    } else if (isInstalling) {
-      badgeClass = 'mod-card-badge--installing';
-      badgeText  = 'Installing…';
-    }
-
-    let btnHTML = '';
-    if (installed) {
       btnHTML = `
-        <button class="mod-card-btn mod-card-btn--installed"
-                disabled
-                data-module-id="${mod.id}">
+        <button class="mod-card-btn mod-card-btn--installed" disabled data-module-id="${mod.id}">
           <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
             <path d="M3 8l4 4 6-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
-          Installed
+          ✓ Installed
         </button>`;
     } else if (isInstalling) {
+      badgeClass = 'mod-card-badge--installing';
+      badgeText  = 'Installing… 0%';
       btnHTML = `
-        <button class="mod-card-btn mod-card-btn--installing"
-                disabled
-                data-module-id="${mod.id}">
-          <svg class="mod-spinner" width="12" height="12" viewBox="0 0 16 16" fill="none">
-            <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="2" stroke-dasharray="28" stroke-dashoffset="10"/>
+        <button class="mod-card-btn mod-card-btn--cancel" data-action="cancel" data-module-id="${mod.id}">
+          Cancel
+        </button>`;
+    } else if (isDownloading) {
+      badgeClass = 'mod-card-badge--downloading';
+      badgeText  = 'Downloading… 0%';
+      btnHTML = `
+        <button class="mod-card-btn mod-card-btn--cancel" data-action="cancel" data-module-id="${mod.id}">
+          Cancel
+        </button>`;
+    } else if (isDownloaded) {
+      badgeClass = 'mod-card-badge--downloaded';
+      badgeText  = 'Downloaded';
+      btnHTML = `
+        <button class="mod-card-btn mod-card-btn--install-now" data-action="install" data-module-id="${mod.id}">
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+            <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
-          Installing…
+          Install Now
         </button>`;
     } else {
+      badgeClass = 'mod-card-badge--not-downloaded';
+      badgeText  = 'Not Downloaded';
       btnHTML = `
-        <button class="mod-card-btn mod-card-btn--install"
-                data-module-id="${mod.id}">
+        <button class="mod-card-btn mod-card-btn--download" data-action="download" data-module-id="${mod.id}">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
             <path d="M12 3v13M7 11l5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             <path d="M5 20h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
           </svg>
-          Install Module
+          Download Module
         </button>`;
     }
 
@@ -397,7 +438,9 @@ export async function renderModules(container, activateNav) {
           ${mod.unlocks.slice(0, 3).map((u) => `<li>${u}</li>`).join('')}
           ${mod.unlocks.length > 3 ? `<li class="mod-card-unlocks-more">+${mod.unlocks.length - 3} more…</li>` : ''}
         </ul>
-        ${btnHTML}
+        <div class="mod-card-actions">
+          ${btnHTML}
+        </div>
       </div>`;
   }).join('');
 
@@ -439,66 +482,67 @@ export async function renderModules(container, activateNav) {
   const modGrid = container.querySelector('.mod-grid');
   if (modGrid) {
     modGrid.addEventListener('click', (e) => {
-      const installBtn = e.target.closest('.mod-card-btn--install');
-      if (installBtn) {
+      // 1. Check if action button was clicked
+      const actionBtn = e.target.closest('.mod-card-btn');
+      if (actionBtn) {
         e.stopPropagation();
-        const modId = installBtn.dataset.moduleId;
-        const mod   = MODULES.find((m) => m.id === modId);
-        if (mod) _openModal(mod, false);
+        const modId = actionBtn.dataset.moduleId;
+        const mod = MODULES.find((m) => m.id === modId);
+        const action = actionBtn.dataset.action;
+
+        if (!mod) return;
+
+        if (action === 'download') {
+          startModuleDownload(mod);
+        } else if (action === 'install') {
+          startModuleInstall(mod);
+        } else if (action === 'cancel') {
+          cancelActiveOperation(mod.id);
+        }
         return;
       }
 
+      // 2. Check if card was clicked (open modal)
       const card = e.target.closest('.mod-card');
       if (card) {
-        if (e.target.closest('.mod-card-btn')) return;
         const modId = card.dataset.moduleId;
-        const mod   = MODULES.find((m) => m.id === modId);
-        const isInstalled = card.querySelector('.mod-card-badge--installed') !== null;
-        if (mod) _openModal(mod, isInstalled);
+        const mod = MODULES.find((m) => m.id === modId);
+        const currentSt = _currentStatuses[modId] || 'not_downloaded';
+        if (mod) _openModal(mod, currentSt);
       }
     });
   }
 
-  // ── Locked-tool highlight ──────────────────────────────────────────────────
-  // If the user clicked a locked tool card elsewhere, we were given context
-  // specifying which module to scroll to and highlight.
+  // Locked-tool highlight context
   const ctx = _pendingLockContext;
-  _pendingLockContext = null; // consume it
+  _pendingLockContext = null;
 
   if (ctx && ctx.moduleId) {
-    // Find the matching module card
     const targetCard = container.querySelector(`.mod-card[data-module-id="${ctx.moduleId}"]`);
-
-    // Build the notification message
-    const mod       = MODULES.find((m) => m.id === ctx.moduleId);
+    const mod = MODULES.find((m) => m.id === ctx.moduleId);
     const toolLabel = ctx.toolLabel || 'This tool';
-    const modName   = mod ? mod.name : 'this module';
+    const modName = mod ? mod.name : 'this module';
     const toolCount = mod ? (mod.unlocks.length - 1) : 0;
 
     pushNotification({
-      type      : 'warning',
-      message   : `You tried to open ${toolLabel}. This tool requires the ${modName} to be installed.`,
-      detail    : `Install the ${modName} below to get access to this and ${toolCount} other conversion tools.`,
+      type: 'warning',
+      message: `You tried to open ${toolLabel}. This tool requires the ${modName} to be installed.`,
+      detail: `Download and install the ${modName} below to access this and ${toolCount} other conversion tools.`,
       autoDismiss: true,
     });
 
     if (targetCard) {
-      // Remove any previous highlight
       container.querySelectorAll('.mod-card--highlighted').forEach((c) => {
         c.classList.remove('mod-card--highlighted');
       });
-
-      // Add highlight class (CSS drives the pulse animation)
       targetCard.classList.add('mod-card--highlighted');
-
-      // Scroll to the target card smoothly
       setTimeout(() => {
         const mainContent = document.getElementById('main-content');
         if (mainContent && targetCard) {
           const cardTop = targetCard.getBoundingClientRect().top
             + mainContent.scrollTop
             - (mainContent.getBoundingClientRect().top || 0)
-            - 80; // offset for header
+            - 80;
           mainContent.scrollTo({ top: Math.max(0, cardTop), behavior: 'smooth' });
         } else if (targetCard) {
           targetCard.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -509,101 +553,160 @@ export async function renderModules(container, activateNav) {
 }
 
 /**
- * Directly update a module card and its modal in the DOM without re-rendering the whole page.
+ * Directly update a module card and any open modal in the DOM without re-rendering the whole page.
  * @param {string} moduleId
- * @param {'not_installed' | 'installing' | 'installed'} state
+ * @param {'not_downloaded' | 'downloading' | 'downloaded' | 'installing' | 'installed'} state
+ * @param {number|null} percent
  */
-export function updateModuleCardDOM(moduleId, state) {
+export function updateModuleCardDOM(moduleId, state, percent = null) {
+  _currentStatuses[moduleId] = state;
   const card = document.querySelector(`.mod-card[data-module-id="${moduleId}"]`);
 
   if (card) {
     const badge = card.querySelector('.mod-card-badge');
-    const btn = card.querySelector('.mod-card-btn');
-    if (state === 'installing') {
+    const actions = card.querySelector('.mod-card-actions');
+    const cleanPct = percent !== null ? Math.max(0, Math.min(100, Math.round(percent))) : 0;
+
+    if (state === 'downloading') {
+      if (badge) {
+        badge.className = 'mod-card-badge mod-card-badge--downloading';
+        badge.textContent = `Downloading… ${cleanPct}%`;
+      }
+      if (actions) {
+        actions.innerHTML = `
+          <button class="mod-card-btn mod-card-btn--cancel" data-action="cancel" data-module-id="${moduleId}">
+            Cancel
+          </button>`;
+      }
+    } else if (state === 'downloaded') {
+      if (badge) {
+        badge.className = 'mod-card-badge mod-card-badge--downloaded';
+        badge.textContent = 'Downloaded';
+      }
+      if (actions) {
+        actions.innerHTML = `
+          <button class="mod-card-btn mod-card-btn--install-now" data-action="install" data-module-id="${moduleId}">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Install Now
+          </button>`;
+      }
+    } else if (state === 'installing') {
       if (badge) {
         badge.className = 'mod-card-badge mod-card-badge--installing';
-        badge.textContent = 'Installing…';
+        badge.textContent = `Installing… ${cleanPct}%`;
       }
-      if (btn) {
-        btn.className = 'mod-card-btn mod-card-btn--installing';
-        btn.disabled = true;
-        btn.innerHTML = `
-          <svg class="mod-spinner" width="12" height="12" viewBox="0 0 16 16" fill="none">
-            <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="2" stroke-dasharray="28" stroke-dashoffset="10"/>
-          </svg>
-          Installing…`;
+      if (actions) {
+        actions.innerHTML = `
+          <button class="mod-card-btn mod-card-btn--cancel" data-action="cancel" data-module-id="${moduleId}">
+            Cancel
+          </button>`;
       }
     } else if (state === 'installed') {
       if (badge) {
         badge.className = 'mod-card-badge mod-card-badge--installed';
         badge.textContent = 'Installed';
       }
-      if (btn) {
-        btn.className = 'mod-card-btn mod-card-btn--installed';
-        btn.disabled = true;
-        btn.innerHTML = `
-          <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
-            <path d="M3 8l4 4 6-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          Installed`;
+      if (actions) {
+        actions.innerHTML = `
+          <button class="mod-card-btn mod-card-btn--installed" disabled data-module-id="${moduleId}">
+            <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
+              <path d="M3 8l4 4 6-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            ✓ Installed
+          </button>`;
       }
     } else {
+      // not_downloaded
       if (badge) {
-        badge.className = 'mod-card-badge mod-card-badge--not-installed';
-        badge.textContent = 'Not Installed';
+        badge.className = 'mod-card-badge mod-card-badge--not-downloaded';
+        badge.textContent = 'Not Downloaded';
       }
-      if (btn) {
-        btn.className = 'mod-card-btn mod-card-btn--install';
-        btn.disabled = false;
-        btn.innerHTML = `
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
-            <path d="M12 3v13M7 11l5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M5 20h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-          Install Module`;
+      if (actions) {
+        actions.innerHTML = `
+          <button class="mod-card-btn mod-card-btn--download" data-action="download" data-module-id="${moduleId}">
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
+              <path d="M12 3v13M7 11l5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M5 20h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            Download Module
+          </button>`;
       }
     }
   }
 
-  // Also check if modal is open for this module
+  // Update open modal if for this module
   const overlay = document.getElementById('modules-modal-overlay');
-  if (overlay) {
-    const modalInstallBtn = overlay.querySelector('.mod-modal-btn--installing, .mod-modal-btn--installed, .mod-modal-btn--install');
-    if (modalInstallBtn) {
-      const mod = MODULES.find((m) => m.id === moduleId);
-      const color = mod ? mod.color : '#00E5C0';
-      const bg = mod ? mod.bg : 'rgba(0,229,192,0.15)';
-      if (state === 'installing') {
-        modalInstallBtn.className = 'mod-modal-btn mod-modal-btn--installing';
-        modalInstallBtn.disabled = true;
-        modalInstallBtn.style.setProperty('--mod-color', color);
-        modalInstallBtn.style.setProperty('--mod-bg', bg);
-        modalInstallBtn.innerHTML = `
-          <svg class="mod-spinner" width="14" height="14" viewBox="0 0 16 16" fill="none">
-            <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="2" stroke-dasharray="28" stroke-dashoffset="10"/>
-          </svg>
-          Installing…`;
+  if (overlay && overlay.dataset.moduleId === moduleId) {
+    const footer = overlay.querySelector('#mod-modal-footer');
+    if (footer) {
+      const cleanPct = percent !== null ? Math.max(0, Math.min(100, Math.round(percent))) : 0;
+      if (state === 'downloading') {
+        footer.innerHTML = `
+          <button class="mod-modal-btn mod-modal-btn--busy" disabled>
+            <svg class="mod-spinner" width="14" height="14" viewBox="0 0 16 16" fill="none">
+              <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="2" stroke-dasharray="28" stroke-dashoffset="10"/>
+            </svg>
+            Downloading… ${cleanPct}%
+          </button>
+          <button class="mod-modal-btn mod-modal-btn--cancel" id="mod-modal-cancel-op">Cancel</button>`;
+        const cancelBtn = footer.querySelector('#mod-modal-cancel-op');
+        if (cancelBtn) cancelBtn.addEventListener('click', () => { cancelActiveOperation(moduleId); overlay.remove(); });
+      } else if (state === 'downloaded') {
+        footer.innerHTML = `
+          <button class="mod-modal-btn mod-modal-btn--install-now" id="mod-modal-install-btn">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+              <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            Install Now
+          </button>
+          <button class="mod-modal-btn mod-modal-btn--secondary" id="mod-modal-later-btn">Install Later</button>`;
+        const installBtn = footer.querySelector('#mod-modal-install-btn');
+        if (installBtn) {
+          const mod = MODULES.find((m) => m.id === moduleId);
+          installBtn.addEventListener('click', () => { if (mod) startModuleInstall(mod); overlay.remove(); });
+        }
+        const laterBtn = footer.querySelector('#mod-modal-later-btn');
+        if (laterBtn) laterBtn.addEventListener('click', () => overlay.remove());
+      } else if (state === 'installing') {
+        footer.innerHTML = `
+          <button class="mod-modal-btn mod-modal-btn--busy" disabled>
+            <svg class="mod-spinner" width="14" height="14" viewBox="0 0 16 16" fill="none">
+              <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="2" stroke-dasharray="28" stroke-dashoffset="10"/>
+            </svg>
+            Installing… ${cleanPct}%
+          </button>
+          <button class="mod-modal-btn mod-modal-btn--cancel" id="mod-modal-cancel-op">Cancel</button>`;
+        const cancelBtn = footer.querySelector('#mod-modal-cancel-op');
+        if (cancelBtn) cancelBtn.addEventListener('click', () => { cancelActiveOperation(moduleId); overlay.remove(); });
       } else if (state === 'installed') {
-        modalInstallBtn.className = 'mod-modal-btn mod-modal-btn--installed';
-        modalInstallBtn.disabled = true;
-        modalInstallBtn.style.setProperty('--mod-color', color);
-        modalInstallBtn.style.setProperty('--mod-bg', bg);
-        modalInstallBtn.innerHTML = `
-          <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-            <path d="M3 8l4 4 6-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-          Installed`;
+        footer.innerHTML = `
+          <button class="mod-modal-btn mod-modal-btn--installed" disabled>
+            <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+              <path d="M3 8l4 4 6-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            ✓ Installed
+          </button>
+          <button class="mod-modal-btn mod-modal-btn--secondary" id="mod-modal-close-btn">Close</button>`;
+        const closeBtn = footer.querySelector('#mod-modal-close-btn');
+        if (closeBtn) closeBtn.addEventListener('click', () => overlay.remove());
       } else {
-        modalInstallBtn.className = 'mod-modal-btn mod-modal-btn--install';
-        modalInstallBtn.disabled = false;
-        modalInstallBtn.style.setProperty('--mod-color', color);
-        modalInstallBtn.style.setProperty('--mod-bg', bg);
-        modalInstallBtn.innerHTML = `
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
-            <path d="M12 3v13M7 11l5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M5 20h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
-          </svg>
-          Install Module`;
+        // not_downloaded
+        const mod = MODULES.find((m) => m.id === moduleId);
+        footer.innerHTML = `
+          <button class="mod-modal-btn mod-modal-btn--download" id="mod-modal-download-btn" style="--mod-color:${mod?.color || '#00E5C0'};--mod-bg:${mod?.bg || 'rgba(0,229,192,0.15)'}">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none">
+              <path d="M12 3v13M7 11l5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M5 20h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+            Download Module
+          </button>
+          <button class="mod-modal-btn mod-modal-btn--secondary" id="mod-modal-close-btn">Cancel</button>`;
+        const dlBtn = footer.querySelector('#mod-modal-download-btn');
+        if (dlBtn) dlBtn.addEventListener('click', () => { if (mod) startModuleDownload(mod); overlay.remove(); });
+        const closeBtn = footer.querySelector('#mod-modal-close-btn');
+        if (closeBtn) closeBtn.addEventListener('click', () => overlay.remove());
       }
     }
   }
@@ -614,8 +717,7 @@ if (typeof window !== 'undefined' && !window.__moduleStateListenerRegistered) {
   window.__moduleStateListenerRegistered = true;
   window.addEventListener('module-state-changed', (e) => {
     if (e.detail && e.detail.moduleId) {
-      updateModuleCardDOM(e.detail.moduleId, e.detail.state);
+      updateModuleCardDOM(e.detail.moduleId, e.detail.state, e.detail.percent);
     }
   });
 }
-

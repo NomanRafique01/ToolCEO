@@ -45,12 +45,16 @@ contextBridge.exposeInMainWorld('electronAPI', {
   getBuildInfo:     ()                    => ipcRenderer.invoke('get-build-info'),
 
   // Download lifecycle
-  startModuleDownload:     ({ moduleId, downloadUrl }) => ipcRenderer.invoke('start-module-download', { moduleId, downloadUrl }),
-  cancelModuleDownload:    ()                           => ipcRenderer.invoke('cancel-module-download'),
-  resumeModuleDownload:    ()                           => ipcRenderer.invoke('resume-module-download'),
-  getActiveModuleDownload: ()                           => ipcRenderer.invoke('get-active-module-download'),
+  startModuleDownload:      ({ moduleId, downloadUrl }) => ipcRenderer.invoke('start-module-download', { moduleId, downloadUrl }),
+  cancelModuleDownload:     ()                           => ipcRenderer.invoke('cancel-module-download'),
+  resumeModuleDownload:     ()                           => ipcRenderer.invoke('resume-module-download'),
+  getActiveModuleDownload:  ()                           => ipcRenderer.invoke('get-active-module-download'),
 
-  // Progress / status events (renderer subscribes to these)
+  // Install lifecycle (Step 2 of 2)
+  startModuleInstall:       ({ moduleId })               => ipcRenderer.invoke('start-module-install', { moduleId }),
+  cancelModuleInstall:      ()                           => ipcRenderer.invoke('cancel-module-install'),
+
+  // Download events (renderer subscribes to these)
   onModuleDownloadProgress: (cb) => {
     const handler = (_e, payload) => cb(payload);
     ipcRenderer.on('module-download-progress', handler);
@@ -65,6 +69,33 @@ contextBridge.exposeInMainWorld('electronAPI', {
     const handler = (_e, payload) => cb(payload);
     ipcRenderer.on('module-download-error', handler);
     return () => ipcRenderer.removeListener('module-download-error', handler);
+  },
+  onModuleDownloadCancelled: (cb) => {
+    const handler = (_e, payload) => cb(payload);
+    ipcRenderer.on('module-download-cancelled', handler);
+    return () => ipcRenderer.removeListener('module-download-cancelled', handler);
+  },
+
+  // Install events (renderer subscribes to these)
+  onModuleInstallProgress: (cb) => {
+    const handler = (_e, payload) => cb(payload);
+    ipcRenderer.on('module-install-progress', handler);
+    return () => ipcRenderer.removeListener('module-install-progress', handler);
+  },
+  onModuleInstallComplete: (cb) => {
+    const handler = (_e, payload) => cb(payload);
+    ipcRenderer.on('module-install-complete', handler);
+    return () => ipcRenderer.removeListener('module-install-complete', handler);
+  },
+  onModuleInstallError: (cb) => {
+    const handler = (_e, payload) => cb(payload);
+    ipcRenderer.on('module-install-error', handler);
+    return () => ipcRenderer.removeListener('module-install-error', handler);
+  },
+  onModuleInstallCancelled: (cb) => {
+    const handler = (_e, payload) => cb(payload);
+    ipcRenderer.on('module-install-cancelled', handler);
+    return () => ipcRenderer.removeListener('module-install-cancelled', handler);
   },
 
   // ── Database & History API ───────────────────────────────────────────────────

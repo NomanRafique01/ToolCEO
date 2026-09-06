@@ -23,6 +23,7 @@
 
 import { setBreadcrumb } from './navigation.js';
 import { getOfflinePdfInfo } from '../tools/shared/pdfRenderer.js';
+import { getToolFamily, getToolFamilyColor } from './toolFamily.js';
 
 // Cache for generated data URLs to avoid re-rendering
 const THUMB_CACHE = new Map();
@@ -135,13 +136,13 @@ const FORMAT_COLORS = {
 };
 
 const CATEGORY_COLORS = {
-  document: '#38BDF8',
-  data:     '#34D399',
-  ebook:    '#F472B6',
-  archive:  '#EAB308',
-  audio:    '#A78BFA',
-  video:    '#F5A35B',
-  image:    '#00E5C0',
+  document: '#FF6B6B',
+  data:     '#2DD4BF',
+  ebook:    '#FBBF24',
+  archive:  '#84CC16',
+  audio:    '#FB923C',
+  video:    '#38BDF8',
+  image:    '#A78BFA',
 };
 
 /**
@@ -316,13 +317,14 @@ export function getDropZoneDocThumbSvg(format, color) {
   `;
 }
 
+
+
 /**
  * Generates file preview tile HTML for Recent conversions.
  * Sized 90×116 matching the PDF thumbnail size.
  */
-function renderPreviewTile(category, format, filename) {
+function renderPreviewTile(category, format, filename, inputFormat, originalFilename) {
   let fmt = (format || '').toUpperCase().trim();
-  const cat = (category || 'document').toLowerCase().trim();
   const fname = (filename || '').toLowerCase().trim();
 
   // If format is not directly passed, derive from filename extension
@@ -331,8 +333,11 @@ function renderPreviewTile(category, format, filename) {
   }
   if (!fmt) fmt = 'FILE';
 
+  const family = getToolFamily(inputFormat, originalFilename, fmt, category);
+  const color = getToolFamilyColor(inputFormat, originalFilename, fmt, category);
+
   // 1. ZIP / Archive: Custom SVG thumbnail equal to PDF thumbnail size (90×116)
-  if (fmt === 'ZIP' || cat === 'archive' || fname.endsWith('.zip') || ['RAR', '7Z', 'TAR', 'GZ'].includes(fmt)) {
+  if (fmt === 'ZIP' || fname.endsWith('.zip') || ['RAR', '7Z', 'TAR', 'GZ'].includes(fmt)) {
     return `
       <div class="win-tile-container win-tile--zip">
         <div class="win-zip-preview-sheet">
@@ -342,38 +347,33 @@ function renderPreviewTile(category, format, filename) {
     `;
   }
 
-  // 2. PDF: Drop zone document thumbnail as immediate display & fallback
-  // (Asynchronously upgraded to page 1 rendered preview via getOfflinePdfInfo)
+  // 2. PDF: Drop zone document thumbnail — tinted with input family theme color
   if (fmt === 'PDF') {
     return `
       <div class="win-tile-container win-tile--pdf">
         <div class="win-pdf-preview-sheet">
-          ${getDropZoneDocThumbSvg('PDF', '#EF4444')}
+          ${getDropZoneDocThumbSvg('PDF', color)}
         </div>
       </div>
     `;
   }
 
-  // 3. Images: Direct preview sheet (asynchronously loaded with real image)
-  if (['PNG', 'JPG', 'JPEG', 'WEBP', 'SVG', 'GIF', 'BMP', 'TIFF', 'TIF', 'ICO', 'AVIF'].includes(fmt) || cat === 'image') {
+  // 3. Images: Direct preview sheet — frame tinted with input family theme color
+  if (['PNG', 'JPG', 'JPEG', 'WEBP', 'SVG', 'GIF', 'BMP', 'TIFF', 'TIF', 'ICO', 'AVIF'].includes(fmt) || fname.match(/\.(png|jpg|jpeg|webp|svg|gif|bmp|tiff|tif|ico|avif)$/i)) {
     return `
       <div class="win-tile-container win-tile--image">
         <div class="win-image-frame">
           <svg class="win-img-placeholder" viewBox="0 0 48 38" fill="none">
-            <rect x="1" y="1" width="46" height="36" rx="2" fill="#1E293B" stroke="#475569" stroke-width="1.5"/>
-            <circle cx="14" cy="12" r="4" fill="#38BDF8"/>
-            <path d="M4 32L16 16L27 28L34 20L44 32H4Z" fill="#0284C7"/>
+            <rect x="1" y="1" width="46" height="36" rx="2" fill="#1E293B" stroke="${color}" stroke-width="1.5" stroke-opacity="0.5"/>
+            <circle cx="14" cy="12" r="4" fill="${color}"/>
+            <path d="M4 32L16 16L27 28L34 20L44 32H4Z" fill="${color}" fill-opacity="0.6"/>
           </svg>
         </div>
       </div>
     `;
   }
 
-  // 4. All other formats (XLSX, CSV, DOCX, TXT, ODT, PPTX, EPUB, MOBI, JSON, HTML, etc.):
-  // Drop zone style document thumbnail with format color and border!
-  const fmtLower = fmt.toLowerCase();
-  const color = FORMAT_COLORS[fmtLower] || CATEGORY_COLORS[cat] || '#00E5C0';
-
+  // 4. All other formats (Documents #FF6B6B, Data #2DD4BF, Ebooks #FBBF24, Audio #FB923C, Video #38BDF8)
   return `
     <div class="win-tile-container win-tile--doc">
       <div class="win-doc-preview-sheet" style="border:2px solid ${color};">
@@ -490,8 +490,104 @@ export async function renderRecent(container, activateNav) {
       const isSuccess = item.status === 'success';
       const inFmt = (item.input_format || '').toUpperCase();
       const outFmt = (item.output_format || '').toUpperCase();
-      const formatBadge = inFmt && outFmt ? `${inFmt} → ${outFmt}` : outFmt || inFmt || 'FILE';
-      const tileHtml = renderPreviewTile(item.category, item.output_format || item.input_format, item.output_filename || item.original_filename);
+
+      // ── Smart format badge label ──────────────────────────────
+      let formatBadge = '';
+      const outFileLower = (item.output_filename || '').toLowerCase();
+      const origFileLower = (item.original_filename || '').toLowerCase();
+      let cat = (item.category || '').toLowerCase();
+
+      // Derive actual input extension from original filename
+      let origExt = origFileLower.includes('.')
+        ? origFileLower.split('.').pop().toUpperCase()
+        : inFmt;
+      // Derive actual output extension from output filename
+      let outExt = outFileLower.includes('.')
+        ? outFileLower.split('.').pop().toUpperCase()
+        : outFmt;
+
+      // Inner format if the output is a ZIP holding files (from AdmZip inspection)
+      let zipInner = (item.zip_inner_format || '').toUpperCase();
+      if (!zipInner && outExt === 'ZIP') {
+        if (outFileLower.includes('split_pdf') || origFileLower.includes('split_pdf')) {
+          zipInner = 'PDF';
+        } else if (outFileLower.includes('to_png') || origFileLower.includes('to_png')) {
+          zipInner = 'PNG';
+        } else if (outFileLower.includes('to_webp') || origFileLower.includes('to_webp')) {
+          zipInner = 'WEBP';
+        } else if (outFileLower.includes('to_jpg') || origFileLower.includes('to_jpg')) {
+          zipInner = 'JPG';
+        }
+      }
+
+      // Check if this conversion was performed in an archive family tool
+      // (e.g. converting ZIP to another archive format, extracting an archive, or RAR/7Z to ZIP)
+      const isArchiveFamily =
+        (cat === 'archive' && !zipInner && ['ZIP', 'RAR', '7Z', 'TAR', 'GZ'].includes(origExt)) ||
+        (cat === 'archive' && ['RAR', '7Z', 'TAR', 'GZ'].includes(origExt)) ||
+        (cat === 'archive' && ['TAR', '7Z', 'RAR', 'GZ'].includes(outExt) && origExt === 'ZIP');
+
+      let resolvedInExt = origExt || inFmt || 'FILE';
+      let resolvedCat = cat;
+
+      // Case 1: Output is a ZIP holding converted files (Images, Documents, Split PDFs, etc.)
+      if (outExt === 'ZIP' && !isArchiveFamily) {
+        let displayIn = origExt;
+        if (!displayIn || displayIn === 'ZIP') {
+          if (zipInner === 'PDF') {
+            displayIn = 'PDF';
+          } else if (['WEBP', 'PNG', 'JPG', 'JPEG', 'AVIF', 'SVG', 'GIF'].includes(zipInner)) {
+            displayIn = 'JPG';
+          } else {
+            displayIn = inFmt && inFmt !== 'ZIP' ? inFmt : 'FILE';
+          }
+        }
+
+        const displayInner = zipInner || (outFmt !== 'ZIP' ? outFmt : 'FILE');
+        formatBadge = `${displayIn} → ${displayInner}`;
+        resolvedInExt = displayIn;
+        if (cat === 'archive') {
+          resolvedCat = displayInner === 'PDF' ? 'document' : 'image';
+        }
+      }
+      // Case 2: Same input and output format → special operation (compress, rotate, etc.)
+      else if (inFmt && outFmt && inFmt === outFmt && inFmt !== 'ZIP') {
+        const outNameLower = outFileLower;
+        if (outNameLower.includes('compress') || outNameLower.includes('compre')) {
+          formatBadge = `${outFmt} → Compressed`;
+        } else if (outNameLower.includes('rotat')) {
+          formatBadge = `${outFmt} → Rotated`;
+        } else if (outNameLower.includes('merge') || outNameLower.includes('combined')) {
+          formatBadge = `${outFmt} → Merged`;
+        } else if (outNameLower.includes('split')) {
+          formatBadge = `${outFmt} → Split`;
+        } else if (outNameLower.includes('watermark')) {
+          formatBadge = `${outFmt} → Watermarked`;
+        } else if (outNameLower.includes('protect') || outNameLower.includes('encrypt')) {
+          formatBadge = `${outFmt} → Protected`;
+        } else if (outNameLower.includes('unlock') || outNameLower.includes('decrypt')) {
+          formatBadge = `${outFmt} → Unlocked`;
+        } else {
+          formatBadge = `${outFmt} → Processed`;
+        }
+      }
+      // Case 3: Archive family tools (e.g. ZIP → TAR) or normal conversions
+      else {
+        const displayIn = origExt || inFmt || 'FILE';
+        const displayOut = outExt || outFmt || 'FILE';
+        formatBadge = `${displayIn} → ${displayOut}`;
+      }
+
+      // ── Badge color & thumbnail from input tool family theme ────────
+      const badgeColor = getToolFamilyColor(resolvedInExt, item.original_filename, outExt || outFmt, resolvedCat);
+
+      const tileHtml = renderPreviewTile(
+        resolvedCat,
+        outExt || outFmt || inFmt,
+        item.output_filename || item.original_filename,
+        resolvedInExt,
+        item.original_filename
+      );
       const dateStr = formatConversionDate(item.converted_at);
       const filename = item.output_filename || item.original_filename || 'Converted File';
 
@@ -516,7 +612,7 @@ export async function renderRecent(container, activateNav) {
           <div class="recent-card-body">
             <div class="recent-card-filename" title="${escapeAttr(filename)}">${escapeHtml(filename)}</div>
             <div class="recent-card-meta">
-              <span class="recent-format-badge">${escapeHtml(formatBadge)}</span>
+              <span class="recent-format-badge" style="color:${badgeColor};background:${badgeColor}1a;">${escapeHtml(formatBadge)}</span>
               <span class="recent-status-dot ${isSuccess ? 'status-dot--success' : 'status-dot--failed'}" title="${isSuccess ? 'Converted successfully' : 'Conversion failed'}"></span>
             </div>
             <div class="recent-card-date">${dateStr}</div>

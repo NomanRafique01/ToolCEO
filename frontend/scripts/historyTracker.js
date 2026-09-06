@@ -113,12 +113,26 @@ export function buildConversionMeta(opts = {}) {
   }
 
   // Fallbacks
-  if (!inExt) inExt = outExt || 'file';
+  if (!inExt) {
+    if (outExt === 'zip') {
+      if (outName.toLowerCase().includes('split_pdf') || origName.toLowerCase().includes('split_pdf')) {
+        inExt = 'pdf';
+      } else if (cat === 'image') {
+        inExt = 'jpg';
+      } else {
+        inExt = 'file';
+      }
+    } else {
+      inExt = outExt || 'file';
+    }
+  }
   if (!origName) {
     const stem = outName.replace(/\.[^/.]+$/, '') || 'input';
     origName = `${stem}.${inExt}`;
   }
-  if (!cat) cat = getCategoryFromFormat(outExt);
+  if (!cat) {
+    cat = outExt === 'zip' && inExt && inExt !== 'file' ? getCategoryFromFormat(inExt) : getCategoryFromFormat(outExt);
+  }
 
   return {
     original_filename: origName,

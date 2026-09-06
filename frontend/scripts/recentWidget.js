@@ -159,7 +159,64 @@ export async function renderDashboardRecent() {
     const filename = item.output_filename || item.original_filename || 'Converted File';
     const inFmt = (item.input_format || '').toUpperCase();
     const outFmt = (item.output_format || '').toUpperCase();
-    const convText = inFmt && outFmt ? `${inFmt} → ${outFmt}` : (outFmt || inFmt || 'FILE');
+
+    // ── Smart conversion label (same logic as Recent page) ──────
+    let convText = '';
+    const outFileLower = (item.output_filename || '').toLowerCase();
+    const origFileLower = (item.original_filename || '').toLowerCase();
+    let cat = (item.category || '').toLowerCase();
+    let origExt = origFileLower.includes('.') ? origFileLower.split('.').pop().toUpperCase() : inFmt;
+    let outExt = outFileLower.includes('.') ? outFileLower.split('.').pop().toUpperCase() : outFmt;
+
+    let zipInner = (item.zip_inner_format || '').toUpperCase();
+    if (!zipInner && outExt === 'ZIP') {
+      if (outFileLower.includes('split_pdf') || origFileLower.includes('split_pdf')) {
+        zipInner = 'PDF';
+      } else if (outFileLower.includes('to_png') || origFileLower.includes('to_png')) {
+        zipInner = 'PNG';
+      } else if (outFileLower.includes('to_webp') || origFileLower.includes('to_webp')) {
+        zipInner = 'WEBP';
+      } else if (outFileLower.includes('to_jpg') || origFileLower.includes('to_jpg')) {
+        zipInner = 'JPG';
+      }
+    }
+
+    const isArchiveFamily =
+      (cat === 'archive' && !zipInner && ['ZIP', 'RAR', '7Z', 'TAR', 'GZ'].includes(origExt)) ||
+      (cat === 'archive' && ['RAR', '7Z', 'TAR', 'GZ'].includes(origExt)) ||
+      (cat === 'archive' && ['TAR', '7Z', 'RAR', 'GZ'].includes(outExt) && origExt === 'ZIP');
+
+    if (outExt === 'ZIP' && !isArchiveFamily) {
+      let displayIn = origExt;
+      if (!displayIn || displayIn === 'ZIP') {
+        if (zipInner === 'PDF') {
+          displayIn = 'PDF';
+        } else if (['WEBP', 'PNG', 'JPG', 'JPEG', 'AVIF', 'SVG', 'GIF'].includes(zipInner)) {
+          displayIn = 'JPG';
+        } else {
+          displayIn = inFmt && inFmt !== 'ZIP' ? inFmt : 'FILE';
+        }
+      }
+      const displayInner = zipInner || (outFmt !== 'ZIP' ? outFmt : 'FILE');
+      convText = `${displayIn} → ${displayInner}`;
+    } else if (inFmt && outFmt && inFmt === outFmt && inFmt !== 'ZIP') {
+      if (outFileLower.includes('compress') || outFileLower.includes('compre')) {
+        convText = `${outFmt} → Compressed`;
+      } else if (outFileLower.includes('rotat')) {
+        convText = `${outFmt} → Rotated`;
+      } else if (outFileLower.includes('merge') || outFileLower.includes('combined')) {
+        convText = `${outFmt} → Merged`;
+      } else if (outFileLower.includes('split')) {
+        convText = `${outFmt} → Split`;
+      } else {
+        convText = `${outFmt} → Processed`;
+      }
+    } else {
+      const displayIn = origExt || inFmt || 'FILE';
+      const displayOut = outExt || outFmt || 'FILE';
+      convText = `${displayIn} → ${displayOut}`;
+    }
+
     const badge = getFormatBadge(item.output_format || item.input_format, item.category);
     const timeAgo = formatTimeAgo(item.converted_at);
 
