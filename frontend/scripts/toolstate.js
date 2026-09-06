@@ -117,7 +117,7 @@ export function syncBgJobBar() {
     return;
   }
 
-  bar.style.display = 'block';
+  bar.style.display = 'flex';
   bar.innerHTML = jobs.map(_renderBgJob).join('');
 
   bar.querySelectorAll('[data-bg-view]').forEach((btn) => {
