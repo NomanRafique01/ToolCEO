@@ -103,34 +103,34 @@
   border: 1px solid rgba(148, 163, 184, 0.25);
 }
 
-/* Downloading — blue */
+/* Downloading — themed to module */
 .mod-card-badge--downloading {
-  background: rgba(96, 165, 250, 0.15);
-  color: #60A5FA;
-  border: 1px solid rgba(96, 165, 250, 0.38);
+  background: color-mix(in srgb, var(--mod-color, #60A5FA) 15%, transparent);
+  color: var(--mod-color, #60A5FA);
+  border: 1px solid color-mix(in srgb, var(--mod-color, #60A5FA) 38%, transparent);
   animation: mod-badge-pulse 1.8s ease-in-out infinite;
 }
 
-/* Downloaded — amber / yellow */
+/* Downloaded — themed to module */
 .mod-card-badge--downloaded {
-  background: rgba(251, 191, 36, 0.14);
-  color: #FBBF24;
-  border: 1px solid rgba(251, 191, 36, 0.40);
+  background: color-mix(in srgb, var(--mod-color, #00E5C0) 14%, transparent);
+  color: var(--mod-color, #00E5C0);
+  border: 1px solid color-mix(in srgb, var(--mod-color, #00E5C0) 38%, transparent);
 }
 
-/* Installing — blue */
+/* Installing — themed to module */
 .mod-card-badge--installing {
-  background: rgba(96, 165, 250, 0.15);
-  color: #60A5FA;
-  border: 1px solid rgba(96, 165, 250, 0.38);
+  background: color-mix(in srgb, var(--mod-color, #60A5FA) 15%, transparent);
+  color: var(--mod-color, #60A5FA);
+  border: 1px solid color-mix(in srgb, var(--mod-color, #60A5FA) 38%, transparent);
   animation: mod-badge-pulse 1.8s ease-in-out infinite;
 }
 
-/* Installed — teal / green */
+/* Installed — themed to respective module */
 .mod-card-badge--installed {
-  background: rgba(0, 229, 192, 0.14);
-  color: #00E5C0;
-  border: 1px solid rgba(0, 229, 192, 0.35);
+  background: color-mix(in srgb, var(--mod-color, #00E5C0) 14%, transparent);
+  color: var(--mod-color, #00E5C0);
+  border: 1px solid color-mix(in srgb, var(--mod-color, #00E5C0) 35%, transparent);
 }
 
 @keyframes mod-badge-pulse {
@@ -238,16 +238,26 @@
   border-color: var(--mod-color, #00E5C0);
 }
 
-/* Install Now button */
+/* Install Now button — themed to module */
 .mod-card-btn--install-now {
-  background: rgba(251, 191, 36, 0.16);
-  color: #FBBF24;
-  border-color: rgba(251, 191, 36, 0.45);
+  background: color-mix(in srgb, var(--mod-color, #00E5C0) 15%, transparent);
+  color: var(--mod-color, #00E5C0);
+  border-color: color-mix(in srgb, var(--mod-color, #00E5C0) 35%, transparent);
 }
 
 .mod-card-btn--install-now:hover {
-  background: rgba(251, 191, 36, 0.26);
-  border-color: #FBBF24;
+  background: color-mix(in srgb, var(--mod-color, #00E5C0) 25%, transparent);
+  border-color: var(--mod-color, #00E5C0);
+}
+
+/* Downloading and Installing labels on card — themed to module */
+.mod-card-btn--downloading,
+.mod-card-btn--installing {
+  background: color-mix(in srgb, var(--mod-color, #00E5C0) 15%, transparent);
+  color: var(--mod-color, #00E5C0);
+  border-color: color-mix(in srgb, var(--mod-color, #00E5C0) 35%, transparent);
+  cursor: default;
+  opacity: 0.95;
 }
 
 /* Cancel button — styled dark secondary button */
@@ -262,11 +272,11 @@
   border-color: #F43F5E;
 }
 
-/* Installed button */
+/* Installed button — themed to respective module */
 .mod-card-btn--installed {
-  background: rgba(0, 229, 192, 0.12);
-  color: #00E5C0;
-  border-color: rgba(0, 229, 192, 0.30);
+  background: color-mix(in srgb, var(--mod-color, #00E5C0) 12%, transparent);
+  color: var(--mod-color, #00E5C0);
+  border-color: color-mix(in srgb, var(--mod-color, #00E5C0) 30%, transparent);
   cursor: default;
   opacity: 0.95;
 }
@@ -449,14 +459,14 @@
 }
 
 .mod-modal-btn--install-now {
-  background: rgba(251, 191, 36, 0.18);
-  color: #FBBF24;
-  border-color: rgba(251, 191, 36, 0.45);
+  background: color-mix(in srgb, var(--mod-color, #00E5C0) 18%, transparent);
+  color: var(--mod-color, #00E5C0);
+  border-color: color-mix(in srgb, var(--mod-color, #00E5C0) 40%, transparent);
 }
 
 .mod-modal-btn--install-now:hover:not(:disabled) {
-  background: rgba(251, 191, 36, 0.28);
-  border-color: #FBBF24;
+  background: color-mix(in srgb, var(--mod-color, #00E5C0) 28%, transparent);
+  border-color: var(--mod-color, #00E5C0);
 }
 
 .mod-modal-btn--cancel {
@@ -471,9 +481,9 @@
 }
 
 .mod-modal-btn--installed {
-  background: rgba(0, 229, 192, 0.14);
-  color: #00E5C0;
-  border-color: rgba(0, 229, 192, 0.35);
+  background: color-mix(in srgb, var(--mod-color, #00E5C0) 14%, transparent);
+  color: var(--mod-color, #00E5C0);
+  border-color: color-mix(in srgb, var(--mod-color, #00E5C0) 35%, transparent);
   cursor: default;
 }
 

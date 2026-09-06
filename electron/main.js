@@ -1826,13 +1826,14 @@ app.whenReady().then(async () => {
     _writeModuleStatus(moduleId, 'downloaded');
 
     const modName = moduleId.charAt(0).toUpperCase() + moduleId.slice(1) + ' Module';
-    _notify(modName + ' downloaded', `${modName} downloaded successfully. Click Install Now to complete setup.`);
+    _notify(modName + ' downloaded', `${modName} downloaded successfully. Starting installation…`);
+
+    _activeDownload = null;
 
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('module-download-complete', { moduleId });
     }
 
-    _activeDownload = null;
     return { ok: true, status: 'downloaded' };
   });
 
@@ -2006,12 +2007,14 @@ app.whenReady().then(async () => {
     _writeModuleStatus(moduleId, 'downloaded');
 
     const modName = moduleId.charAt(0).toUpperCase() + moduleId.slice(1) + ' Module';
-    _notify(modName + ' downloaded', `${modName} downloaded successfully. Click Install Now to complete setup.`);
+    _notify(modName + ' downloaded', `${modName} downloaded successfully. Starting installation…`);
+
+    _activeDownload = null;
+
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('module-download-complete', { moduleId });
     }
 
-    _activeDownload = null;
     return { ok: true, status: 'downloaded' };
   });
 

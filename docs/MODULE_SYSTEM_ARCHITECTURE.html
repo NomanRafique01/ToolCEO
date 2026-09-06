@@ -1,0 +1,857 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>ToolCEO Engine Module System: Architecture & Extension Guide</title>
+<style>
+  @page {
+    size: A4;
+    margin: 16mm 16mm 18mm 16mm;
+    @bottom-right {
+      content: counter(page);
+    }
+  }
+
+  * {
+    box-sizing: border-box;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    font-size: 13px;
+    line-height: 1.6;
+    color: #1E293B;
+    background: #FFFFFF;
+    margin: 0;
+    padding: 0;
+  }
+
+  .doc-header {
+    border-bottom: 2px solid #0EA5E9;
+    padding-bottom: 12px;
+    margin-bottom: 24px;
+  }
+
+  .doc-badge {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    background: #E0F2FE;
+    color: #0369A1;
+    margin-bottom: 8px;
+  }
+
+  h1 {
+    font-size: 24px;
+    font-weight: 800;
+    color: #0F172A;
+    margin: 0 0 8px 0;
+    letter-spacing: -0.02em;
+  }
+
+  h2 {
+    font-size: 17px;
+    font-weight: 700;
+    color: #0F172A;
+    border-bottom: 1px solid #E2E8F0;
+    padding-bottom: 6px;
+    margin-top: 26px;
+    margin-bottom: 12px;
+    page-break-after: avoid;
+  }
+
+  h3 {
+    font-size: 14px;
+    font-weight: 600;
+    color: #1E293B;
+    margin-top: 18px;
+    margin-bottom: 8px;
+    page-break-after: avoid;
+  }
+
+  p, ul, ol {
+    margin: 0 0 10px 0;
+  }
+
+  ul, ol {
+    padding-left: 22px;
+  }
+
+  li {
+    margin-bottom: 4px;
+  }
+
+  blockquote {
+    margin: 12px 0;
+    padding: 10px 14px;
+    background: #F8FAFC;
+    border-left: 4px solid #0EA5E9;
+    color: #475569;
+    font-size: 12.5px;
+    border-radius: 0 6px 6px 0;
+  }
+
+  blockquote p {
+    margin: 0;
+  }
+
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 14px 0;
+    font-size: 12px;
+    page-break-inside: avoid;
+  }
+
+  th {
+    background: #F1F5F9;
+    color: #0F172A;
+    font-weight: 700;
+    text-align: left;
+    padding: 8px 10px;
+    border: 1px solid #CBD5E1;
+  }
+
+  td {
+    padding: 7px 10px;
+    border: 1px solid #E2E8F0;
+    vertical-align: top;
+  }
+
+  tr:nth-child(even) td {
+    background: #F8FAFC;
+  }
+
+  code {
+    font-family: "Cascadia Code", "Fira Code", Consolas, Courier, monospace;
+    font-size: 11.5px;
+    background: #F1F5F9;
+    color: #0F172A;
+    padding: 2px 5px;
+    border-radius: 4px;
+    border: 1px solid #E2E8F0;
+  }
+
+  pre {
+    font-family: "Cascadia Code", "Fira Code", Consolas, Courier, monospace;
+    font-size: 11px;
+    line-height: 1.45;
+    background: #0F172A;
+    color: #F8FAFC;
+    padding: 12px 14px;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin: 12px 0;
+    page-break-inside: avoid;
+  }
+
+  pre code {
+    background: transparent;
+    color: inherit;
+    padding: 0;
+    border: none;
+    font-size: inherit;
+  }
+
+  .formula {
+    background: #F0FDF4;
+    border: 1px solid #BBF7D0;
+    color: #166534;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-family: monospace;
+    font-size: 12px;
+    margin: 8px 0;
+  }
+
+  hr {
+    border: none;
+    border-top: 1px solid #E2E8F0;
+    margin: 20px 0;
+  }
+
+  .doc-footer {
+    margin-top: 30px;
+    padding-top: 10px;
+    border-top: 1px solid #E2E8F0;
+    font-size: 11px;
+    color: #94A3B8;
+    display: flex;
+    justify-content: space-between;
+  }
+</style>
+</head>
+<body>
+<div class="doc-header">
+  <div class="doc-badge">ToolCEO Engineering Specifications</div>
+  <h1>ToolCEO Engine Module System: Architecture & Extension Guide</h1>
+  <div style="color: #64748B; font-size: 12px;">Complete Technical Reference, State Machine, IPC Protocol & New Module Integration</div>
+</div>
+
+<h1
+id="toolceo-engine-module-system-architecture--extension-guide">ToolCEO
+Engine Module System: Architecture &amp; Extension Guide</h1>
+<blockquote>
+<p><strong>Document Version</strong>: 2.0<br />
+<strong>Target Audience</strong>: AI Coding Assistants, Lead Engineers,
+System Architects<br />
+<strong>Applies to</strong>: ToolCEO Desktop (Electron + Vanilla JS +
+Python Backend)</p>
+</blockquote>
+<hr />
+<h2 id="1-executive-summary">1. Executive Summary</h2>
+<p>ToolCEO uses an on-demand engine architecture to keep its initial
+installer lightweight (~45 MB). Heavy third-party conversion binaries
+(LibreOffice, Tesseract, Pandoc, Calibre, FFmpeg, 7-Zip) are modularized
+into separate packages.</p>
+<p>The system features a <strong>two-step lifecycle</strong>:</p>
+<ol type="1">
+<li><strong>Download Phase</strong>: Downloads the engine archive
+<code>.zip</code> from GitHub Releases into persistent user data storage
+(<code>app.getPath('userData')/modules/</code>).</li>
+<li><strong>Install Phase</strong>: Extracts the engine binaries into
+<code>engines/&lt;engine-name&gt;/</code> with real-time progress
+tracking (0%–100%) and directory junction linking.</li>
+</ol>
+<p>This document serves as the complete technical specification for how
+modules are downloaded, verified, installed, tracked, and how new
+modules can be added in the future.</p>
+<hr />
+<h2 id="2-architecture-overview">2. Architecture Overview</h2>
+<pre class="mermaid"><code>graph TD
+    subgraph Frontend [&quot;Renderer Process (UI)&quot;]
+        UI[modules.js&lt;br/&gt;Cards &amp; Detail Modal]
+        DLM[moduleDownload.js&lt;br/&gt;Floating Progress Panel]
+        LOCK[modulelock.js&lt;br/&gt;Tool Lock State &amp; Routing]
+    end
+
+    subgraph Preload [&quot;Preload Bridge (electron/preload.js)&quot;]
+        API[&quot;window.electronAPI&lt;br/&gt;Context Isolated IPC Wrapper&quot;]
+    end
+
+    subgraph Main [&quot;Electron Main Process (electron/main.js)&quot;]
+        IPC[IPC Dispatcher &amp; State Machine]
+        NET[_httpsGetFollow / Range Streamer]
+        EXT[_extractZip: 7z / tar / AdmZip Worker]
+        VER[_isModuleInstalled / _isModuleDownloaded]
+        REC[_ensureCleanInstallState]
+    end
+
+    subgraph Storage [&quot;File System &amp; Storage&quot;]
+        JSON[modules.json&lt;br/&gt;Status Manifest]
+        ARCH[&quot;&amp;lt;userData&amp;gt;/modules/&amp;lt;id&amp;gt;-module.zip&lt;br/&gt;Persistent Archive Cache&quot;]
+        ENG[&quot;engines/&amp;lt;engine&amp;gt;/&lt;br/&gt;Executable Binaries&quot;]
+    end
+
+    UI --&gt; API
+    DLM --&gt; API
+    API --&gt; IPC
+    IPC --&gt; NET
+    IPC --&gt; EXT
+    IPC --&gt; VER
+    NET --&gt; ARCH
+    EXT --&gt; ENG
+    VER --&gt; ENG
+    VER --&gt; ARCH
+    IPC --&gt; JSON
+    LOCK --&gt; API</code></pre>
+<hr />
+<h2 id="3-the-5-state-machine">3. The 5-State Machine</h2>
+<p>Every module in ToolCEO exists in exactly one of five states:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">State Key</th>
+<th style="text-align: left;">UI Badge Label</th>
+<th style="text-align: left;">Badge Style</th>
+<th style="text-align: left;">Primary Action Button</th>
+<th style="text-align: left;">Notes / Behavior</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>not_downloaded</code></td>
+<td style="text-align: left;"><strong>Not Downloaded</strong></td>
+<td style="text-align: left;">Muted Gray (<code>#94A3B8</code>)</td>
+<td style="text-align: left;"><strong>Download Module</strong></td>
+<td style="text-align: left;">Archive does not exist locally; engines
+not present.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>downloading</code></td>
+<td style="text-align: left;"><strong>Downloading… X%</strong></td>
+<td style="text-align: left;">Module Accent (Pulsing)</td>
+<td style="text-align: left;"><strong>Cancel</strong></td>
+<td style="text-align: left;">Streaming <code>.zip.part</code> file;
+displays speed &amp; ETA.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>downloaded</code></td>
+<td style="text-align: left;"><strong>Downloaded</strong></td>
+<td style="text-align: left;">Amber / Gold (<code>#FBBF24</code>)</td>
+<td style="text-align: left;"><strong>Install Now</strong></td>
+<td style="text-align: left;">Full <code>.zip</code> archive verified in
+<code>&lt;userData&gt;/modules/</code>.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>installing</code></td>
+<td style="text-align: left;"><strong>Installing… X%</strong></td>
+<td style="text-align: left;">Module Accent (Pulsing)</td>
+<td style="text-align: left;"><strong>Cancel</strong></td>
+<td style="text-align: left;">Extracting files to <code>engines/</code>;
+displays real-time progress.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>installed</code></td>
+<td style="text-align: left;"><strong>Installed</strong></td>
+<td style="text-align: left;">Module Accent
+(<code>--mod-color</code>)</td>
+<td style="text-align: left;"><strong>✓ Installed</strong>
+(Disabled)</td>
+<td style="text-align: left;">Binary verified on disk; tools
+unlocked.</td>
+</tr>
+</tbody>
+</table>
+<h3 id="state-transitions--cancellation-matrix">State Transitions &amp;
+Cancellation Matrix</h3>
+<pre class="mermaid"><code>stateDiagram-v2
+    [*] --&gt; not_downloaded
+    not_downloaded --&gt; downloading: start-module-download
+    downloading --&gt; not_downloaded: cancel-module-download (deletes .part file)
+    downloading --&gt; downloading: connection-lost (auto-pauses &amp; auto-resumes)
+    downloading --&gt; downloaded: download finished &amp; renamed to .zip
+    downloaded --&gt; installing: start-module-install
+    installing --&gt; downloaded: cancel-module-install (kills extractor, cleans engines/, keeps .zip)
+    installing --&gt; installed: extraction verified (binary check passed)
+    installed --&gt; [*]</code></pre>
+<hr />
+<h2 id="4-download-pipeline-step-1-of-2">4. Download Pipeline (Step 1 of
+2)</h2>
+<h3 id="41-storage--file-paths">4.1 Storage &amp; File Paths</h3>
+<ul>
+<li><strong>Storage Directory</strong>:
+<code>app.getPath('userData')/modules</code> (resolved via
+<code>_getModulesStorageDir()</code>).</li>
+<li><strong>Temporary File</strong>:
+<code>&lt;storageDir&gt;/&lt;moduleId&gt;-module.zip.part</code></li>
+<li><strong>Final Archive</strong>:
+<code>&lt;storageDir&gt;/&lt;moduleId&gt;-module.zip</code></li>
+<li><em>Design Principle</em>: Downloaded zip archives are saved in
+<code>userData</code>, which is <strong>never wiped</strong> on app
+restarts or standard cleanups.</li>
+</ul>
+<h3 id="42-streaming--chunk-processing">4.2 Streaming &amp; Chunk
+Processing</h3>
+<ul>
+<li>Initiated via IPC:
+<code>start-module-download({ moduleId, downloadUrl })</code>.</li>
+<li>Handles redirects automatically via
+<code>_httpsGetFollow()</code>.</li>
+<li>Reads <code>content-length</code> from headers. If unavailable,
+falls back to progressive streaming.</li>
+<li>Calculates speed and ETA dynamically using a rolling window of
+recent byte chunks: <span class="math display">$$\text{Speed (B/s)} =
+\frac{\Delta \text{Bytes}}{\Delta \text{Time}}$$</span> <span
+class="math display">$$\text{ETA (seconds)} = \frac{\text{Total Bytes} -
+\text{Received Bytes}}{\text{Speed (B/s)}}$$</span></li>
+<li>Throttles IPC progress emissions to the renderer window to
+<strong>150 ms</strong> to eliminate UI rendering overhead.</li>
+</ul>
+<h3 id="43-resilience--network-interruption">4.3 Resilience &amp;
+Network Interruption</h3>
+<ul>
+<li>If network connectivity drops (<code>res.on('error')</code> or
+connection timeout):
+<ol type="1">
+<li>Main process marks download as <code>paused</code> and preserves
+<code>receivedBytes</code>.</li>
+<li>Sends <code>module-download-error</code> with
+<code>{ reason: 'connection-lost' }</code> to renderer.</li>
+<li>Spawns an automatic background heartbeat timer
+(<code>net.isOnline()</code>).</li>
+<li>Once network connectivity returns, sends
+<code>connection-restored</code> event and auto-resumes using HTTP Range
+headers:
+<pre class="http"><code>Range: bytes=&lt;pausedAt&gt;-</code></pre></li>
+<li>Appends incoming bytes to <code>.part</code> file
+(<code>fs.createWriteStream(tempPath, { flags: 'a' })</code>).</li>
+</ol></li>
+</ul>
+<h3 id="44-cancellation">4.4 Cancellation</h3>
+<ul>
+<li>Initiated via IPC: <code>cancel-module-download</code>.</li>
+<li>Immediately destroys HTTP request stream
+(<code>req.destroy()</code>).</li>
+<li>Closes and removes the incomplete <code>.part</code> file from disk
+using <code>_safeUnlink()</code>.</li>
+<li>Updates <code>modules.json</code> status to
+<code>not_downloaded</code>.</li>
+<li>Dispatches <code>module-download-cancelled</code> event to
+renderer.</li>
+</ul>
+<hr />
+<h2 id="5-installation--extraction-pipeline-step-2-of-2">5. Installation
+&amp; Extraction Pipeline (Step 2 of 2)</h2>
+<h3 id="51-the-95-freeze-problem--complete-resolution">5.1 The 95%
+Freeze Problem &amp; Complete Resolution</h3>
+<p>In legacy systems, extraction stalled at 95% due to two bugs:</p>
+<ol type="1">
+<li>Running slow CLI counting commands (<code>tar -tf</code> or
+<code>7z l</code>) which timed out or blocked on large archives (such as
+LibreOffice with 17,900+ files).</li>
+<li>Windows BSDTAR exiting with code <code>1</code> due to non-fatal
+NTFS file attribute warnings, causing the process handler to reject
+before reaching 100%.</li>
+</ol>
+<p><strong>The Modern ToolCEO Extraction Pipeline</strong>:</p>
+<ol type="1">
+<li><strong>Instant Entry Count</strong>: Opens the zip header with
+<code>AdmZip(zipPath).getEntries().length</code> (&lt;20 ms for 18,000
+files). No CLI subprocess needed for counting.</li>
+<li><strong>Three-Tier Extraction Strategy</strong>:
+<ul>
+<li><strong>Tier 1 (7-Zip CLI)</strong>: If <code>7z.exe</code> is found
+in <code>engines/7zip/</code> or resources, spawns
+<code>7z x zipPath -o&lt;enginesDir&gt; -y -aoa -bsp1</code>. Parses
+console output <code>%</code> directly.</li>
+<li><strong>Tier 2 (Native OS Tar)</strong>: On Windows 10/11, spawns
+native <code>tar.exe -vxf zipPath -C &lt;enginesDir&gt;</code>. Counts
+streaming output lines against <code>totalFiles</code>: <span
+class="math display">$$\text{Percent} = \min\left(99, \left\lfloor
+\frac{\text{Lines Extracted}}{\text{Total Files}} \times 100
+\right\rfloor\right)$$</span> Treats exit code <code>0</code> or
+verified disk binaries as success (even if tar returns code 1 for
+non-critical warnings).</li>
+<li><strong>Tier 3 (Worker Thread AdmZip)</strong>: Offloads extraction
+to a Node.js <code>worker_threads.Worker</code> to prevent freezing the
+Electron main thread.</li>
+</ul></li>
+<li><strong>Engine Binary Disk Verification</strong>: Inspects disk
+directly using <code>_isModuleInstalled(moduleId)</code>.</li>
+<li><strong>Guaranteed 100% Completion Step</strong>: Emits an explicit
+<code>100%</code> progress signal followed immediately by
+<code>module-install-complete</code>.</li>
+</ol>
+<h3 id="52-extraction-directory--junctions">5.2 Extraction Directory
+&amp; Junctions</h3>
+<p>Engines are extracted into <code>&lt;appRoot&gt;/engines/</code> (or
+<code>&lt;userData&gt;/engines/</code> in packaged builds). To guarantee
+compatibility regardless of whether conversion scripts look for flat
+paths (<code>engines/libreoffice/</code>) or module-nested paths
+(<code>engines/office/libreoffice/</code>), the installer automatically
+creates directory junctions on Windows:</p>
+<pre class="javascript"><code>// Creates junction if nested path does not exist
+fs.symlinkSync(sourceEngPath, nestedModPath, &#39;junction&#39;);</code></pre>
+<h3 id="53-cancellation-during-installation">5.3 Cancellation During
+Installation</h3>
+<ul>
+<li>Initiated via IPC: <code>cancel-module-install</code>.</li>
+<li>Terminates running extractor process via
+<code>taskkill /pid &lt;PID&gt; /f /t</code> on Windows or
+<code>child.kill('SIGKILL')</code> on Unix.</li>
+<li>Removes partial engine folder from
+<code>engines/&lt;engineName&gt;</code>.</li>
+<li><strong>PRESERVES the downloaded <code>.zip</code></strong> in
+<code>&lt;userData&gt;/modules/</code>.</li>
+<li>Reverts state back to <code>downloaded</code> (not
+<code>not_downloaded</code>), allowing the user to click <strong>Install
+Now</strong> anytime without redownloading.</li>
+</ul>
+<hr />
+<h2 id="6-startup-reconciliation--state-persistence">6. Startup
+Reconciliation &amp; State Persistence</h2>
+<h3 id="61-dynamic-status-detection-read-modules-json">6.1 Dynamic
+Status Detection (<code>read-modules-json</code>)</h3>
+<p>To avoid state desynchronization (e.g. if the user extracted an
+engine manually, moved files, or updated the app),
+<code>read-modules-json</code> queries the physical disk:</p>
+<pre class="javascript"><code>for (const id of allModuleIds) {
+  if (_isModuleInstalled(id)) {
+    resolved[id] = &#39;installed&#39;;
+  } else if (_isModuleDownloaded(id)) {
+    resolved[id] = &#39;downloaded&#39;;
+  } else {
+    resolved[id] = &#39;not_downloaded&#39;;
+  }
+}</code></pre>
+<h3 id="62-preserving-user-engines-across-new-app-builds">6.2 Preserving
+User Engines Across New App Builds</h3>
+<p><code>_ensureCleanInstallState()</code> runs on application
+startup:</p>
+<ul>
+<li>Checks <code>last_installed_build.json</code> in
+<code>userData</code>.</li>
+<li>When a new build is detected, it <strong>never deletes</strong>
+existing engines or downloaded zips.</li>
+<li>It reconciles <code>modules.json</code> to accurately reflect
+installed binaries and downloaded archives.</li>
+</ul>
+<hr />
+<h2 id="7-ipc-channel-reference">7. IPC Channel Reference</h2>
+<p>All communication between UI and Node.js passes through
+<code>electron/preload.js</code> via context-isolated channels.</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Channel Name</th>
+<th style="text-align: left;">Direction</th>
+<th style="text-align: left;">Payload</th>
+<th style="text-align: left;">Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>read-modules-json</code></td>
+<td style="text-align: left;">Renderer <span
+class="math inline">→</span> Main</td>
+<td style="text-align: left;"><em>(none)</em></td>
+<td style="text-align: left;">Returns resolved status map
+<code>{ [id]: 'installed'|'downloaded'|'not_downloaded' }</code>.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>write-modules-json</code></td>
+<td style="text-align: left;">Renderer <span
+class="math inline">→</span> Main</td>
+<td style="text-align: left;"><code>moduleId, status</code></td>
+<td style="text-align: left;">Writes status to
+<code>modules.json</code>.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>start-module-download</code></td>
+<td style="text-align: left;">Renderer <span
+class="math inline">→</span> Main</td>
+<td
+style="text-align: left;"><code>{ moduleId, downloadUrl }</code></td>
+<td style="text-align: left;">Initiates HTTP streaming download.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>cancel-module-download</code></td>
+<td style="text-align: left;">Renderer <span
+class="math inline">→</span> Main</td>
+<td style="text-align: left;"><em>(none)</em></td>
+<td style="text-align: left;">Cancels active download and deletes
+<code>.part</code>.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>resume-module-download</code></td>
+<td style="text-align: left;">Renderer <span
+class="math inline">→</span> Main</td>
+<td style="text-align: left;"><em>(none)</em></td>
+<td style="text-align: left;">Resumes paused download with HTTP Range
+header.</td>
+</tr>
+<tr>
+<td
+style="text-align: left;"><code>get-active-module-download</code></td>
+<td style="text-align: left;">Renderer <span
+class="math inline">→</span> Main</td>
+<td style="text-align: left;"><em>(none)</em></td>
+<td style="text-align: left;">Returns active operation state for UI
+hydration.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>start-module-install</code></td>
+<td style="text-align: left;">Renderer <span
+class="math inline">→</span> Main</td>
+<td style="text-align: left;"><code>{ moduleId }</code></td>
+<td style="text-align: left;">Starts extraction from local
+<code>.zip</code>.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>cancel-module-install</code></td>
+<td style="text-align: left;">Renderer <span
+class="math inline">→</span> Main</td>
+<td style="text-align: left;"><em>(none)</em></td>
+<td style="text-align: left;">Aborts extraction; keeps
+<code>.zip</code>; cleans partial engine files.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>module-download-progress</code></td>
+<td style="text-align: left;">Main <span class="math inline">→</span>
+Renderer</td>
+<td
+style="text-align: left;"><code>{ moduleId, percent, speedBps, etaSeconds, receivedBytes, totalBytes }</code></td>
+<td style="text-align: left;">Real-time download progress stream.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>module-download-complete</code></td>
+<td style="text-align: left;">Main <span class="math inline">→</span>
+Renderer</td>
+<td style="text-align: left;"><code>{ moduleId }</code></td>
+<td style="text-align: left;">Fired when archive is saved to disk.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>module-download-error</code></td>
+<td style="text-align: left;">Main <span class="math inline">→</span>
+Renderer</td>
+<td
+style="text-align: left;"><code>{ moduleId, reason, error }</code></td>
+<td style="text-align: left;">Fired on network errors or pauses.</td>
+</tr>
+<tr>
+<td
+style="text-align: left;"><code>module-download-cancelled</code></td>
+<td style="text-align: left;">Main <span class="math inline">→</span>
+Renderer</td>
+<td style="text-align: left;"><code>{ moduleId }</code></td>
+<td style="text-align: left;">Fired when download is aborted.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>module-install-progress</code></td>
+<td style="text-align: left;">Main <span class="math inline">→</span>
+Renderer</td>
+<td
+style="text-align: left;"><code>{ moduleId, percent, message }</code></td>
+<td style="text-align: left;">Real-time extraction progress
+(0%–100%).</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>module-install-complete</code></td>
+<td style="text-align: left;">Main <span class="math inline">→</span>
+Renderer</td>
+<td style="text-align: left;"><code>{ moduleId }</code></td>
+<td style="text-align: left;">Fired when binaries are verified on
+disk.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>module-install-error</code></td>
+<td style="text-align: left;">Main <span class="math inline">→</span>
+Renderer</td>
+<td
+style="text-align: left;"><code>{ moduleId, reason, error }</code></td>
+<td style="text-align: left;">Fired on extraction failure.</td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>module-install-cancelled</code></td>
+<td style="text-align: left;">Main <span class="math inline">→</span>
+Renderer</td>
+<td style="text-align: left;"><code>{ moduleId }</code></td>
+<td style="text-align: left;">Fired when installation is aborted.</td>
+</tr>
+</tbody>
+</table>
+<hr />
+<h2 id="8-frontend-architecture--theming">8. Frontend Architecture &amp;
+Theming</h2>
+<h3 id="81-module-theming-system">8.1 Module Theming System</h3>
+<p>Each module defines an accent color and translucent background:</p>
+<table>
+<thead>
+<tr>
+<th style="text-align: left;">Module ID</th>
+<th style="text-align: left;">Module Name</th>
+<th style="text-align: left;">Engine</th>
+<th style="text-align: left;">Theme Color
+(<code>--mod-color</code>)</th>
+<th style="text-align: left;">Translucent BG
+(<code>--mod-bg</code>)</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td style="text-align: left;"><code>office</code></td>
+<td style="text-align: left;"><strong>Office Module</strong></td>
+<td style="text-align: left;">LibreOffice</td>
+<td style="text-align: left;"><code>#60A5FA</code> (Blue)</td>
+<td style="text-align: left;"><code>rgba(96, 165, 250, 0.15)</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>ocr</code></td>
+<td style="text-align: left;"><strong>OCR Module</strong></td>
+<td style="text-align: left;">Tesseract</td>
+<td style="text-align: left;"><code>#F472B6</code> (Pink)</td>
+<td
+style="text-align: left;"><code>rgba(244, 114, 182, 0.15)</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>document</code></td>
+<td style="text-align: left;"><strong>Document Module</strong></td>
+<td style="text-align: left;">Pandoc</td>
+<td style="text-align: left;"><code>#34D399</code> (Emerald)</td>
+<td style="text-align: left;"><code>rgba(52, 211, 153, 0.15)</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>ebook</code></td>
+<td style="text-align: left;"><strong>eBook Module</strong></td>
+<td style="text-align: left;">Calibre</td>
+<td style="text-align: left;"><code>#FBBF24</code> (Amber)</td>
+<td style="text-align: left;"><code>rgba(251, 191, 36, 0.15)</code></td>
+</tr>
+<tr>
+<td style="text-align: left;"><code>media</code></td>
+<td style="text-align: left;"><strong>Media Module</strong></td>
+<td style="text-align: left;">FFmpeg + 7-Zip</td>
+<td style="text-align: left;"><code>#FB923C</code> (Orange)</td>
+<td style="text-align: left;"><code>rgba(251, 146, 60, 0.15)</code></td>
+</tr>
+</tbody>
+</table>
+<p>CSS rules in <code>frontend/styles/modules.css</code> use CSS
+<code>color-mix()</code> against <code>var(--mod-color)</code>:</p>
+<pre class="css"><code>/* Status badge reflects the module&#39;s accent */
+.mod-card-badge--installed {
+  background: color-mix(in srgb, var(--mod-color, #00E5C0) 14%, transparent);
+  color: var(--mod-color, #00E5C0);
+  border: 1px solid color-mix(in srgb, var(--mod-color, #00E5C0) 35%, transparent);
+}
+
+/* Installed button reflects the module&#39;s accent with single clean SVG checkmark */
+.mod-card-btn--installed {
+  background: color-mix(in srgb, var(--mod-color, #00E5C0) 12%, transparent);
+  color: var(--mod-color, #00E5C0);
+  border-color: color-mix(in srgb, var(--mod-color, #00E5C0) 30%, transparent);
+  cursor: default;
+}</code></pre>
+<h3 id="82-floating-downloadinstall-panel">8.2 Floating Download/Install
+Panel</h3>
+<p>Managed by <code>frontend/scripts/moduleDownload.js</code>:</p>
+<ul>
+<li>Renders in the bottom right corner when a module is downloading or
+installing.</li>
+<li>Stays active when navigating away from the Modules page to
+Dashboard, Documents, etc.</li>
+<li>Synchronizes with card UI: updating either updates both
+simultaneously.</li>
+</ul>
+<hr />
+<h2 id="9-developer-guide-how-to-add-a-new-module">9. Developer Guide:
+How to Add a New Module</h2>
+<p>Follow these 7 exact steps to add a new engine module (e.g.
+<code>audiopro</code> with <code>sox</code> engine):</p>
+<h3 id="step-1-register-in-modulesjson">Step 1: Register in
+<code>modules.json</code></h3>
+<p>Open <code>modules.json</code> and add the module definition:</p>
+<pre class="json"><code>{
+  &quot;modules&quot;: {
+    &quot;audiopro&quot;: {
+      &quot;name&quot;: &quot;Audio Pro Module&quot;,
+      &quot;status&quot;: &quot;not_downloaded&quot;,
+      &quot;downloadUrl&quot;: &quot;https://github.com/NomanRafique01/ToolCEO/releases/download/modules-v1.0/audiopro-module.zip&quot;
+    }
+  }
+}</code></pre>
+<h3 id="step-2-register-engine-binaries-in-electronmainjs">Step 2:
+Register Engine Binaries in <code>electron/main.js</code></h3>
+<ol type="1">
+<li>Add the executable relative paths to
+<code>MODULE_ENGINE_EXES</code>:</li>
+</ol>
+<pre class="javascript"><code>const MODULE_ENGINE_EXES = {
+  // ... existing modules
+  audiopro: [
+    path.join(&#39;sox&#39;, IS_WIN ? &#39;sox.exe&#39; : &#39;sox&#39;),
+    path.join(&#39;audiopro&#39;, &#39;sox&#39;, IS_WIN ? &#39;sox.exe&#39; : &#39;sox&#39;),
+  ],
+};</code></pre>
+<ol start="2" type="1">
+<li>Add the engine folder name to <code>MODULE_ENGINE_MAP</code>:</li>
+</ol>
+<pre class="javascript"><code>const MODULE_ENGINE_MAP = {
+  // ... existing modules
+  audiopro: [&#39;sox&#39;],
+};</code></pre>
+<ol start="3" type="1">
+<li>Add <code>'audiopro'</code> to <code>allModuleIds</code> in
+<code>ipcMain.handle('read-modules-json')</code>.</li>
+</ol>
+<h3 id="step-3-define-ui-card-in-frontendscriptsmodulesjs">Step 3:
+Define UI Card in <code>frontend/scripts/modules.js</code></h3>
+<p>Add the module definition object to the <code>MODULES</code>
+array:</p>
+<pre class="javascript"><code>{
+  id: &#39;audiopro&#39;,
+  name: &#39;Audio Pro Module&#39;,
+  engine: &#39;SoX Sound Engine&#39;,
+  size: &#39;~45 MB&#39;,
+  color: &#39;#A78BFA&#39;,                 // Purple accent
+  bg: &#39;rgba(167,139,250,0.15)&#39;,     // Subtle background
+  downloadUrl: &#39;https://github.com/NomanRafique01/ToolCEO/releases/download/modules-v1.0/audiopro-module.zip&#39;,
+  icon: `&lt;svg width=&quot;28&quot; height=&quot;28&quot; viewBox=&quot;0 0 16 16&quot; fill=&quot;none&quot;&gt;
+    &lt;path d=&quot;M2 8v0M5 5v6M8 2v12M11 5v6M14 8v0&quot; stroke=&quot;currentColor&quot; stroke-width=&quot;1.5&quot; stroke-linecap=&quot;round&quot;/&gt;
+  &lt;/svg&gt;`,
+  unlocks: [
+    &#39;Audio Normalization &amp; Amplification&#39;,
+    &#39;High-Precision Noise Reduction&#39;,
+    &#39;Multi-track Audio Merging&#39;,
+  ],
+  desc: &#39;Unlocks advanced studio-grade audio processing powered by SoX.&#39;,
+}</code></pre>
+<h3 id="step-4-map-locked-tools-in-frontendscriptsmodulelockjs">Step 4:
+Map Locked Tools in <code>frontend/scripts/modulelock.js</code></h3>
+<p>Associate tool IDs with the new module:</p>
+<pre class="javascript"><code>export const TOOL_MODULE_MAP = {
+  // ... existing tools
+  &#39;audio-normalize&#39;: &#39;audiopro&#39;,
+  &#39;audio-denoise&#39;  : &#39;audiopro&#39;,
+  &#39;audio-merge&#39;    : &#39;audiopro&#39;,
+};
+
+export const MODULE_INFO = {
+  // ... existing modules
+  audiopro: { name: &#39;Audio Pro Module&#39;, toolCount: 3 },
+};</code></pre>
+<h3 id="step-5-structure-the-engine-zip-archive">Step 5: Structure the
+Engine Zip Archive</h3>
+<p>Create the archive so it extracts into the engine folder:</p>
+<pre><code>audiopro-module.zip
+└── sox/
+    ├── sox.exe
+    ├── LICENSE.txt
+    └── ...</code></pre>
+<p>Upload the release asset to your GitHub Release URL matching
+<code>downloadUrl</code>.</p>
+<h3 id="step-6-verify-backend-invocation">Step 6: Verify Backend
+Invocation</h3>
+<p>In your python converter runner (e.g.
+<code>backend/converters/</code>), locate the binary:</p>
+<pre class="python"><code>import os, sys
+
+def get_sox_bin():
+    base = os.path.join(os.path.dirname(__file__), &quot;..&quot;, &quot;..&quot;, &quot;engines&quot;)
+    candidate1 = os.path.join(base, &quot;sox&quot;, &quot;sox.exe&quot;)
+    candidate2 = os.path.join(base, &quot;audiopro&quot;, &quot;sox&quot;, &quot;sox.exe&quot;)
+    if os.path.isfile(candidate1): return candidate1
+    if os.path.isfile(candidate2): return candidate2
+    raise FileNotFoundError(&quot;SoX engine not found. Please install the Audio Pro Module.&quot;)</code></pre>
+<h3 id="step-7-test-checklist">Step 7: Test Checklist</h3>
+<ul class="task-list">
+<li><label><input type="checkbox" />Card appears on Modules page with
+"Not Downloaded" badge.</label></li>
+<li><label><input type="checkbox" />Locked tools show lock icon on cards
+and prompt modal on click.</label></li>
+<li><label><input type="checkbox" />Clicking "Download Module" starts
+download; speed, ETA, and % update smoothly.</label></li>
+<li><label><input type="checkbox" />Cancelling download deletes
+<code>.part</code> and returns badge to "Not Downloaded".</label></li>
+<li><label><input type="checkbox" />Completing download flips badge to
+"Downloaded" (amber) with "Install Now" button.</label></li>
+<li><label><input type="checkbox" />Clicking "Install Now" extracts
+smoothly from 0% to 100% without stalling at 95%.</label></li>
+<li><label><input type="checkbox" />Cancelling installation kills
+extraction, leaves <code>.zip</code> intact, and reverts to
+"Downloaded".</label></li>
+<li><label><input type="checkbox" />On 100% extraction, badge flips to
+"Installed" with module color and single checkmark.</label></li>
+<li><label><input type="checkbox" />Locked tools automatically unlock
+across all pages without requiring app restart.</label></li>
+<li><label><input type="checkbox" />Restarting the app preserves the
+"Installed" state via dynamic disk detection.</label></li>
+</ul>
+<hr />
+<p><em>Authored for the ToolCEO Core Development Team &amp; AI Agent
+Orchestration.</em></p>
+
+
+<div class="doc-footer">
+  <span>ToolCEO v1.0 • Internal Engineering Guide</span>
+  <span>Proprietary & Confidential</span>
+</div>
+</body>
+</html>

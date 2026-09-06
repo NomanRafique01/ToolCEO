@@ -207,7 +207,7 @@ function _openModal(mod, status) {
         <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
           <path d="M3 8l4 4 6-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
-        ✓ Installed
+        Installed
       </button>
       <button class="mod-modal-btn mod-modal-btn--secondary" id="mod-modal-close-btn">Close</button>`;
   } else if (isInstalling) {
@@ -250,8 +250,8 @@ function _openModal(mod, status) {
   }
 
   overlay.innerHTML = `
-    <div class="mod-modal" role="dialog" aria-modal="true" aria-label="${mod.name} details">
-      <div class="mod-modal-header" style="--mod-color:${mod.color};--mod-bg:${mod.bg}">
+    <div class="mod-modal" role="dialog" aria-modal="true" aria-label="${mod.name} details" style="--mod-color:${mod.color};--mod-bg:${mod.bg}">
+      <div class="mod-modal-header">
         <div class="mod-modal-icon-wrap">
           <div class="mod-modal-icon" style="background:${mod.bg};color:${mod.color}">${mod.icon}</div>
         </div>
@@ -385,21 +385,27 @@ export async function renderModules(container, activateNav) {
           <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
             <path d="M3 8l4 4 6-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
           </svg>
-          ✓ Installed
+          Installed
         </button>`;
     } else if (isInstalling) {
       badgeClass = 'mod-card-badge--installing';
-      badgeText  = 'Installing… 0%';
+      badgeText  = 'Installing…';
       btnHTML = `
-        <button class="mod-card-btn mod-card-btn--cancel" data-action="cancel" data-module-id="${mod.id}">
-          Cancel
+        <button class="mod-card-btn mod-card-btn--installing" disabled data-module-id="${mod.id}">
+          <svg class="mod-spinner" width="12" height="12" viewBox="0 0 16 16" fill="none">
+            <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="2" stroke-dasharray="28" stroke-dashoffset="10"/>
+          </svg>
+          Installing…
         </button>`;
     } else if (isDownloading) {
       badgeClass = 'mod-card-badge--downloading';
-      badgeText  = 'Downloading… 0%';
+      badgeText  = 'Downloading…';
       btnHTML = `
-        <button class="mod-card-btn mod-card-btn--cancel" data-action="cancel" data-module-id="${mod.id}">
-          Cancel
+        <button class="mod-card-btn mod-card-btn--downloading" disabled data-module-id="${mod.id}">
+          <svg class="mod-spinner" width="12" height="12" viewBox="0 0 16 16" fill="none">
+            <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="2" stroke-dasharray="28" stroke-dashoffset="10"/>
+          </svg>
+          Downloading…
         </button>`;
     } else if (isDownloaded) {
       badgeClass = 'mod-card-badge--downloaded';
@@ -570,12 +576,15 @@ export function updateModuleCardDOM(moduleId, state, percent = null) {
     if (state === 'downloading') {
       if (badge) {
         badge.className = 'mod-card-badge mod-card-badge--downloading';
-        badge.textContent = `Downloading… ${cleanPct}%`;
+        badge.textContent = 'Downloading…';
       }
       if (actions) {
         actions.innerHTML = `
-          <button class="mod-card-btn mod-card-btn--cancel" data-action="cancel" data-module-id="${moduleId}">
-            Cancel
+          <button class="mod-card-btn mod-card-btn--downloading" disabled data-module-id="${moduleId}">
+            <svg class="mod-spinner" width="12" height="12" viewBox="0 0 16 16" fill="none">
+              <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="2" stroke-dasharray="28" stroke-dashoffset="10"/>
+            </svg>
+            Downloading…
           </button>`;
       }
     } else if (state === 'downloaded') {
@@ -595,12 +604,15 @@ export function updateModuleCardDOM(moduleId, state, percent = null) {
     } else if (state === 'installing') {
       if (badge) {
         badge.className = 'mod-card-badge mod-card-badge--installing';
-        badge.textContent = `Installing… ${cleanPct}%`;
+        badge.textContent = 'Installing…';
       }
       if (actions) {
         actions.innerHTML = `
-          <button class="mod-card-btn mod-card-btn--cancel" data-action="cancel" data-module-id="${moduleId}">
-            Cancel
+          <button class="mod-card-btn mod-card-btn--installing" disabled data-module-id="${moduleId}">
+            <svg class="mod-spinner" width="12" height="12" viewBox="0 0 16 16" fill="none">
+              <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="2" stroke-dasharray="28" stroke-dashoffset="10"/>
+            </svg>
+            Installing…
           </button>`;
       }
     } else if (state === 'installed') {
@@ -614,7 +626,7 @@ export function updateModuleCardDOM(moduleId, state, percent = null) {
             <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
               <path d="M3 8l4 4 6-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
-            ✓ Installed
+            Installed
           </button>`;
       }
     } else {
@@ -648,7 +660,7 @@ export function updateModuleCardDOM(moduleId, state, percent = null) {
             <svg class="mod-spinner" width="14" height="14" viewBox="0 0 16 16" fill="none">
               <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="2" stroke-dasharray="28" stroke-dashoffset="10"/>
             </svg>
-            Downloading… ${cleanPct}%
+            Downloading…
           </button>
           <button class="mod-modal-btn mod-modal-btn--cancel" id="mod-modal-cancel-op">Cancel</button>`;
         const cancelBtn = footer.querySelector('#mod-modal-cancel-op');
@@ -675,7 +687,7 @@ export function updateModuleCardDOM(moduleId, state, percent = null) {
             <svg class="mod-spinner" width="14" height="14" viewBox="0 0 16 16" fill="none">
               <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="2" stroke-dasharray="28" stroke-dashoffset="10"/>
             </svg>
-            Installing… ${cleanPct}%
+            Installing…
           </button>
           <button class="mod-modal-btn mod-modal-btn--cancel" id="mod-modal-cancel-op">Cancel</button>`;
         const cancelBtn = footer.querySelector('#mod-modal-cancel-op');
@@ -686,7 +698,7 @@ export function updateModuleCardDOM(moduleId, state, percent = null) {
             <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
               <path d="M3 8l4 4 6-7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
-            ✓ Installed
+            Installed
           </button>
           <button class="mod-modal-btn mod-modal-btn--secondary" id="mod-modal-close-btn">Close</button>`;
         const closeBtn = footer.querySelector('#mod-modal-close-btn');

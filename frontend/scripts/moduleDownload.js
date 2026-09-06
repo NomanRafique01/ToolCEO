@@ -300,22 +300,25 @@ export function initModuleDownloadPanel() {
     notifyModuleState(payload.moduleId, 'downloading', payload.percent);
   });
 
-  // Download complete (transitions to 'downloaded' — DOES NOT auto-install)
+  // Download complete — automatically triggers installation
   window.electronAPI.onModuleDownloadComplete(async (payload) => {
-    _hidePanel();
-    _active = false;
-    _paused = false;
     const completedModuleId = payload?.moduleId || _currentModuleId;
     const completedModuleName = _currentModuleName || (completedModuleId ? (MODULE_NAMES[completedModuleId] || completedModuleId.toUpperCase() + ' Module') : 'Module');
+
+    _active = false;
+    _paused = false;
     _currentModuleId = null;
     _currentModuleName = null;
 
-    notifyModuleState(completedModuleId, 'downloaded');
-
     pushNotification({
-      type: 'success',
-      message: `${completedModuleName} downloaded successfully. Click "Install Now" to complete setup.`,
+      type: 'info',
+      message: `${completedModuleName} downloaded. Starting installation…`,
+      autoDismiss: true,
     });
+
+    setTimeout(() => {
+      startModuleInstall({ id: completedModuleId, name: completedModuleName });
+    }, 50);
   });
 
   // Download cancelled
