@@ -14,13 +14,13 @@ Each async endpoint:
 
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 
 import jobs as job_store
+from job_executor import job_executor
 from tools.documents.pdf_tools.splitter.engine import (
     _auto_chunk_size,
     split_pdf,
@@ -29,7 +29,7 @@ from tools.documents.pdf_tools.splitter.engine import (
 )
 
 router = APIRouter(prefix="/pdf", tags=["PDF Splitter"])
-_pool = ThreadPoolExecutor(max_workers=4)
+_pool = job_executor
 
 
 # ---------------------------------------------------------------------------

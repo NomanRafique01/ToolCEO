@@ -40,13 +40,13 @@ Job lifecycle (standard pattern, shared with Splitter)
 from __future__ import annotations
 
 import asyncio
-from concurrent.futures import ThreadPoolExecutor
 from typing import List, Optional
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 
 import jobs as job_store
+from job_executor import job_executor
 from tools.documents.pdf_tools.merger.engine import (
     get_pdf_info,
     merge_pdf_pages,
@@ -54,7 +54,7 @@ from tools.documents.pdf_tools.merger.engine import (
 )
 
 router = APIRouter(prefix="/pdf/merger", tags=["PDF Merger"])
-_pool  = ThreadPoolExecutor(max_workers=4)
+_pool  = job_executor
 
 # ---------------------------------------------------------------------------
 # Internal helpers  (mirror the pattern used in splitter/router.py)

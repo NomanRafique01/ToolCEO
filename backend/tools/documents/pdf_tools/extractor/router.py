@@ -15,20 +15,20 @@ POST /api/pdf/extractor/extract
 from __future__ import annotations
 
 import json
-from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 
 import jobs as job_store
+from job_executor import job_executor
 from tools.documents.pdf_tools.extractor.engine import (
     extract_images_zip,
     get_pdf_info,
 )
 
 router = APIRouter(prefix="/pdf/extractor", tags=["PDF Image Extractor"])
-_pool = ThreadPoolExecutor(max_workers=4)
+_pool = job_executor
 
 
 async def _read(upload: UploadFile) -> bytes:

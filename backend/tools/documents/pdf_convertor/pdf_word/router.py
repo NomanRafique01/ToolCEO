@@ -26,20 +26,20 @@ POST /api/pdf/word/convert
 
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 
 import jobs as job_store
+from job_executor import job_executor
 from tools.documents.pdf_convertor.pdf_word.engine import (
     convert_pdf_to_word,
     get_pdf_info,
 )
 
 router = APIRouter(prefix="/pdf/word", tags=["PDF to Word"])
-_pool  = ThreadPoolExecutor(max_workers=4)
+_pool  = job_executor
 
 _DOCX_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
 

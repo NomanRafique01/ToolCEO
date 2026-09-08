@@ -18,17 +18,17 @@ POST /api/images/pdf/convert
 
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor
 from typing import List, Optional
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 
 import jobs as job_store
+from job_executor import job_executor
 from tools.documents.pdf_convertor.images_pdf.engine import convert_images_to_pdf
 
 router = APIRouter(prefix="/images/pdf", tags=["Images to PDF"])
-_pool  = ThreadPoolExecutor(max_workers=4)
+_pool  = job_executor
 
 
 # ---------------------------------------------------------------------------

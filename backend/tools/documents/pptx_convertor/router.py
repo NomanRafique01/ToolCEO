@@ -20,20 +20,20 @@ Supported targets: pdf, html, images, odp, txt, pptx
 
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 
 from fastapi import APIRouter, File, Form, UploadFile
 from fastapi.responses import JSONResponse
 
 import jobs as job_store
+from job_executor import job_executor
 from tools.documents.pptx_convertor.engine import (
     MEDIA_TYPES,
     convert_pptx,
 )
 
 router = APIRouter(prefix="/pptx", tags=["PPTX Conversions"])
-_pool  = ThreadPoolExecutor(max_workers=4)
+_pool  = job_executor
 
 _EXT_MAP = {
     "pdf":    ".pdf",

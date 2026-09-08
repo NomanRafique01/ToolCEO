@@ -20,20 +20,20 @@ Supported targets: pdf, docx, html, rtf, txt, epub, md
 
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 
 from fastapi import APIRouter, File, Form, UploadFile
 from fastapi.responses import JSONResponse
 
 import jobs as job_store
+from job_executor import job_executor
 from tools.documents.odt_convertor.engine import (
     MEDIA_TYPES,
     convert_odt,
 )
 
 router = APIRouter(prefix="/odt", tags=["ODT Conversions"])
-_pool  = ThreadPoolExecutor(max_workers=4)
+_pool  = job_executor
 
 _TARGETS = list(MEDIA_TYPES.keys())   # ["pdf", "docx", "html", "rtf", "txt", "epub", "md"]
 _EXT_MAP = {

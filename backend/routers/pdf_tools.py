@@ -12,13 +12,14 @@ Also provides a synchronous helper:
 from __future__ import annotations
 
 import asyncio
-from concurrent.futures import ThreadPoolExecutor
 from typing import List, Optional
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse
 
 import jobs as job_store
+from job_executor import job_executor
 from converters.pdf_engine import (
     add_watermark,
     compress_pdf,
@@ -38,7 +39,7 @@ from tools.documents.pdf_tools.splitter.engine import (
 )
 
 router = APIRouter(prefix="/pdf", tags=["PDF Tools"])
-_pool = ThreadPoolExecutor(max_workers=4)
+_pool = job_executor
 
 # ---------------------------------------------------------------------------
 # Helpers
@@ -65,18 +66,40 @@ def _submit(job_id: str, fn, *args, filename: str, media_type: str = "applicatio
     _pool.submit(_run_job, job_id, fn, *args, filename=filename, media_type=media_type)
 
 
+def _page_count(raw: bytes) -> int:
+    import fitz
+
+    doc = fitz.open(stream=raw, filetype="pdf")
+    try:
+        return doc.page_count
+    finally:
+        doc.close()
+
+
+def _thumbnail(raw: bytes) -> str:
+    import base64
+    import fitz
+
+    doc = fitz.open(stream=raw, filetype="pdf")
+    try:
+        page = doc[0]
+        pix = page.get_pixmap(matrix=fitz.Matrix(3.0, 3.0), alpha=False)
+        jpeg_bytes = pix.tobytes("jpeg", jpg_quality=92)
+    finally:
+        doc.close()
+    b64 = base64.b64encode(jpeg_bytes).decode()
+    return f"data:image/jpeg;base64,{b64}"
+
+
 # ---------------------------------------------------------------------------
 # 0a. Page count  (synchronous – no job, no SSE)
 # ---------------------------------------------------------------------------
 
 @router.post("/page-count", summary="Return the page count of a PDF without processing it")
 async def page_count(file: UploadFile = File(...)):
-    import fitz  # PyMuPDF
     raw = await _read(file)
     try:
-        doc = fitz.open(stream=raw, filetype="pdf")
-        count = doc.page_count
-        doc.close()
+        count = await run_in_threadpool(_page_count, raw)
     except Exception as exc:
         raise HTTPException(status_code=422, detail=f"Could not read PDF: {exc}")
     return JSONResponse({"page_count": count})
@@ -88,22 +111,12 @@ async def page_count(file: UploadFile = File(...)):
 
 @router.post("/thumbnail", summary="Render first page of a PDF as a base64 JPEG thumbnail")
 async def pdf_thumbnail(file: UploadFile = File(...)):
-    import fitz  # PyMuPDF
-    import base64
     raw = await _read(file)
     try:
-        doc = fitz.open(stream=raw, filetype="pdf")
-        page = doc[0]
-        # Render at 3× scale — source is large enough for the browser to
-        # downsample cleanly to the tiny thumbnail frame (~72–90 px wide).
-        mat = fitz.Matrix(3.0, 3.0)
-        pix = page.get_pixmap(matrix=mat, alpha=False)
-        jpeg_bytes = pix.tobytes("jpeg", jpg_quality=92)
-        doc.close()
+        thumbnail = await run_in_threadpool(_thumbnail, raw)
     except Exception as exc:
         raise HTTPException(status_code=422, detail=f"Could not render thumbnail: {exc}")
-    b64 = base64.b64encode(jpeg_bytes).decode()
-    return JSONResponse({"thumbnail": f"data:image/jpeg;base64,{b64}"})
+    return JSONResponse({"thumbnail": thumbnail})
 
 
 # ---------------------------------------------------------------------------

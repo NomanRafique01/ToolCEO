@@ -26,20 +26,20 @@ POST /api/pdf/txt/convert
 
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 
 import jobs as job_store
+from job_executor import job_executor
 from tools.documents.pdf_convertor.pdf_txt.engine import (
     convert_pdf_to_txt,
     get_pdf_info,
 )
 
 router = APIRouter(prefix="/pdf/txt", tags=["PDF to TXT"])
-_pool  = ThreadPoolExecutor(max_workers=4)
+_pool  = job_executor
 
 _TXT_TYPE = "text/plain; charset=utf-8"
 

@@ -250,7 +250,7 @@ ToolCEO's async background job system lets users **navigate away from a tool whi
 │                                                          │
 │  States:  "submitting" → "running" → "done" | "error"   │
 │                                                          │
-│  FastAPI background task updates the job in-memory      │
+│  Shared bounded worker queue updates the job in-memory  │
 │  GET /api/progress/{id} polls it every 0.25 s via SSE   │
 └─────────────────────────────────────────────────────────┘
 ```
@@ -280,6 +280,15 @@ Features:
 - **"Save As…"** button — triggers native Electron save dialog on completion
 - **Toast notification** — fires on completion or failure via `notificationStore.js`
 - **Dismiss (×)** — clears the banner
+
+### Responsiveness Guarantees
+
+- All long-running conversion routers submit to one shared bounded worker
+  queue. At most two heavy jobs run at once, preventing one background task
+  from saturating the machine and starving other tools.
+- PDF preview operations run off the FastAPI event loop.
+- Progress events are coalesced into one renderer update per animation frame,
+  so frequent SSE updates do not cause repeated layout work while navigating.
 
 ---
 

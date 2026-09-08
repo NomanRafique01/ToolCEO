@@ -18,6 +18,7 @@ export function onToolChange(fn) {
 
 const _bgJobs = new Map();
 let _bgSeq = 0;
+let _renderScheduled = false;
 
 function _makeClientId() {
   _bgSeq += 1;
@@ -36,11 +37,13 @@ function _pickFallbackJob() {
 function _visibleJobs() {
   const activeTool = getActiveTool();
   return [..._bgJobs.values()].filter((job) => {
-    // Hide running/submitting jobs that belong to the tool the user is currently viewing
+    // The active tool renders its own progress/result UI, so do not duplicate
+    // that job in the sidebar bar once it is running or completed.
     const isActiveToolJob =
       activeTool && job.tool && job.tool.id === activeTool.id;
-    const isInProgress = job.state === 'running' || job.state === 'submitting';
-    if (isActiveToolJob && isInProgress) return false;
+    const isOwnedByActiveTool =
+      job.state === 'running' || job.state === 'submitting' || job.state === 'done';
+    if (isActiveToolJob && isOwnedByActiveTool) return false;
     return true;
   });
 }
@@ -134,7 +137,7 @@ function _renderActionBtn(state, jobId, blob, key) {
   return '';
 }
 
-export function syncBgJobBar() {
+function _renderBgJobBar() {
   const bar = document.getElementById('bg-job-bar');
   if (!bar) return;
 
@@ -224,6 +227,18 @@ export function syncBgJobBar() {
       card.remove();
     }
   });
+}
+
+// Coalesce rapid SSE progress events into one DOM update per paint frame.
+export function syncBgJobBar() {
+  if (_renderScheduled) return;
+  _renderScheduled = true;
+  const render = () => {
+    _renderScheduled = false;
+    _renderBgJobBar();
+  };
+  if (typeof requestAnimationFrame === 'function') requestAnimationFrame(render);
+  else setTimeout(render, 16);
 }
 
 function _bindCardEvents(card) {

@@ -28,13 +28,14 @@ POST /api/pdf/compressor/compress
 
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse
 
 import jobs as job_store
+from job_executor import job_executor
 from tools.documents.pdf_tools.compressor.engine import (
     CompressOptions,
     compress_pdf,
@@ -42,7 +43,7 @@ from tools.documents.pdf_tools.compressor.engine import (
 )
 
 router = APIRouter(prefix="/pdf/compressor", tags=["PDF Compressor"])
-_pool  = ThreadPoolExecutor(max_workers=4)
+_pool  = job_executor
 
 
 # ---------------------------------------------------------------------------
@@ -96,7 +97,7 @@ async def pdf_compressor_info(
 ):
     raw = await _read(file)
     try:
-        info = get_pdf_info(raw, password or None)
+        info = await run_in_threadpool(get_pdf_info, raw, password or None)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
     except Exception as exc:

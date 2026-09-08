@@ -26,20 +26,20 @@ POST /api/pdf/html/convert
 
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 
 import jobs as job_store
+from job_executor import job_executor
 from tools.documents.pdf_convertor.pdf_html.engine import (
     convert_pdf_to_html,
     get_pdf_info,
 )
 
 router = APIRouter(prefix="/pdf/html", tags=["PDF to HTML"])
-_pool  = ThreadPoolExecutor(max_workers=4)
+_pool  = job_executor
 
 _HTML_TYPE = "text/html"
 

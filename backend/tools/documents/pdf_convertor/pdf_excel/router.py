@@ -26,20 +26,20 @@ POST /api/pdf/excel/convert
 
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 
 import jobs as job_store
+from job_executor import job_executor
 from tools.documents.pdf_convertor.pdf_excel.engine import (
     convert_pdf_to_excel,
     get_pdf_info,
 )
 
 router = APIRouter(prefix="/pdf/excel", tags=["PDF to Excel"])
-_pool  = ThreadPoolExecutor(max_workers=4)
+_pool  = job_executor
 
 _XLSX_TYPE = (
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"

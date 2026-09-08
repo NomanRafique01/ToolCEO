@@ -25,13 +25,13 @@ from __future__ import annotations
 
 import io
 import zipfile
-from concurrent.futures import ThreadPoolExecutor
 from typing import List, Optional
 
 from fastapi import APIRouter, File, Form, UploadFile
 from fastapi.responses import JSONResponse
 
 import jobs as job_store
+from job_executor import job_executor
 from tools.images.svg_convertor.engine import (
     MEDIA_TYPES,
     convert_svg,
@@ -39,7 +39,7 @@ from tools.images.svg_convertor.engine import (
 )
 
 router = APIRouter(prefix="/svg", tags=["SVG Conversions"])
-_pool  = ThreadPoolExecutor(max_workers=4)
+_pool  = job_executor
 
 # Extension for each target format
 _EXT_MAP = {

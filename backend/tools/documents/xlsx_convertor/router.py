@@ -20,13 +20,13 @@ Supported targets: pdf, csv, html, ods, txt, json
 
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 
 from fastapi import APIRouter, File, Form, UploadFile
 from fastapi.responses import JSONResponse
 
 import jobs as job_store
+from job_executor import job_executor
 from tools.documents.xlsx_convertor.engine import (
     MEDIA_TYPES,
     convert_xlsx,
@@ -34,7 +34,7 @@ from tools.documents.xlsx_convertor.engine import (
 )
 
 router = APIRouter(prefix="/xlsx", tags=["XLSX Conversions"])
-_pool  = ThreadPoolExecutor(max_workers=4)
+_pool  = job_executor
 
 _TARGETS = list(MEDIA_TYPES.keys())   # ["pdf", "csv", "html", "ods", "txt", "json"]
 _EXT_MAP = {

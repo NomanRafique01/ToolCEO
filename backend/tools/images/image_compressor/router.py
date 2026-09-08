@@ -25,20 +25,20 @@ from __future__ import annotations
 
 import io
 import zipfile
-from concurrent.futures import ThreadPoolExecutor
 from typing import List
 
 from fastapi import APIRouter, File, Form, UploadFile
 from fastapi.responses import JSONResponse
 
 import jobs as job_store
+from job_executor import job_executor
 from tools.images.image_compressor.engine import (
     VALID_LEVELS,
     compress_image,
 )
 
 router = APIRouter(prefix="/images/compress", tags=["Image Compressor"])
-_pool  = ThreadPoolExecutor(max_workers=4)
+_pool  = job_executor
 
 _EXT_MAP = {
     "jpg":  ".jpg",

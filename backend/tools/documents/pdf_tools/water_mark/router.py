@@ -16,13 +16,13 @@ POST /api/pdf/watermark/process
 
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 
 import jobs as job_store
+from job_executor import job_executor
 from tools.documents.pdf_tools.water_mark.engine import (
     WatermarkOptions,
     apply_watermark,
@@ -30,7 +30,7 @@ from tools.documents.pdf_tools.water_mark.engine import (
 )
 
 router = APIRouter(prefix="/pdf/watermark", tags=["PDF Watermark"])
-_pool = ThreadPoolExecutor(max_workers=4)
+_pool = job_executor
 
 
 async def _read(upload: UploadFile) -> bytes:

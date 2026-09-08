@@ -1,13 +1,17 @@
 {
   "name": "toolceo",
   "version": "1.0.0",
+  "description": "ToolCEO Desktop Application",
+  "author": "ToolCEO Team",
   "main": "electron/main.js",
   "scripts": {
     "start": "node start.js",
     "prebuild": "node scripts/prebuild.js",
     "build": "electron-builder --win --x64",
+    "build": "node scripts/build.js --win --x64",
     "predist": "node scripts/prebuild.js",
-    "dist": "electron-builder --win --x64"
+    "dist": "electron-builder --win --x64",
+    "dist": "node scripts/build.js --win --x64"
   },
   "build": {
     "appId": "com.nythris.toolceo",

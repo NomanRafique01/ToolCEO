@@ -31,7 +31,6 @@ import logging
 import tempfile
 import threading
 import time
-from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 from typing import Optional
 
@@ -39,6 +38,7 @@ from fastapi import APIRouter, File, Form, HTTPException, UploadFile
 from fastapi.responses import JSONResponse
 
 import jobs as job_store
+from job_executor import job_executor
 from tools.ebooks.utils.calibre_engine import (
     cleanup_temp_files,
     get_ebook_runtime_dir,
@@ -48,7 +48,7 @@ from tools.ebooks.utils.calibre_engine import (
 )
 
 router = APIRouter(prefix="/ebooks", tags=["eBooks"])
-_pool  = ThreadPoolExecutor(max_workers=4)
+_pool  = job_executor
 _log   = logging.getLogger(__name__)
 
 # MIME types for each supported output format

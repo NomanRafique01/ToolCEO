@@ -20,20 +20,20 @@ Supported targets: json, xlsx, html, md, pdf, txt, xml, sql
 
 from __future__ import annotations
 
-from concurrent.futures import ThreadPoolExecutor
 from typing import Optional
 
 from fastapi import APIRouter, File, Form, UploadFile
 from fastapi.responses import JSONResponse
 
 import jobs as job_store
+from job_executor import job_executor
 from tools.documents.csv_convertor.engine import (
     MEDIA_TYPES,
     convert_csv,
 )
 
 router = APIRouter(prefix="/csv", tags=["CSV Conversions"])
-_pool  = ThreadPoolExecutor(max_workers=4)
+_pool  = job_executor
 
 _TARGETS = list(MEDIA_TYPES.keys())   # ["json", "xlsx", "html", "md", "pdf", "txt", "xml", "sql"]
 _EXT_MAP = {
