@@ -1101,7 +1101,8 @@ function _collectOptsFromViewer(viewer) {
   };
 }
 
-function _scrollMainToTool() {
+function _scrollMainToTool(toolId) {
+  if (toolId && getActiveTool()?.id !== toolId) return;
   const mainContent = document.getElementById('main-content');
   if (!mainContent) return;
   mainContent.scrollTop = 0;
@@ -1229,7 +1230,7 @@ async function _submitWatermark(file, opts, outputFilename) {
         }
       };
       setTimeout(() => showDownload(zone, dlName, jobId, color, onReset, tool.id), 200);
-      _scrollMainToTool();
+      _scrollMainToTool(tool.id);
       return;
     }
 

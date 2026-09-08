@@ -534,7 +534,9 @@ async function _submitConvert(outputFilename) {
 
       showDownload(zone, dlName, jobId, color, onReset, tool.id);
       clearBgJob(true);
-      document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'smooth' });
+      if (getActiveTool()?.id === tool.id) {
+        document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'smooth' });
+      }
       return;
     }
 

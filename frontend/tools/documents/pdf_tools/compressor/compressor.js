@@ -400,7 +400,9 @@ async function _submitCompress(file, opts, outputFilename) {
         }
       };
       setTimeout(() => showDownload(zone, dlName, jobId, color, onReset, tool.id), 200);
-      document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'smooth' });
+      if (getActiveTool()?.id === tool.id) {
+        document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'smooth' });
+      }
       return;
     }
 

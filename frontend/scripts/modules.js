@@ -373,13 +373,9 @@ export async function renderModules(container, activateNav) {
     const isInstalled = rawStatus === 'installed';
     const isDownloaded = rawStatus === 'downloaded';
 
-    let badgeClass = 'mod-card-badge--not-downloaded';
-    let badgeText  = 'Not Downloaded';
     let btnHTML    = '';
 
     if (isInstalled) {
-      badgeClass = 'mod-card-badge--installed';
-      badgeText  = 'Installed';
       btnHTML = `
         <button class="mod-card-btn mod-card-btn--installed" disabled data-module-id="${mod.id}">
           <svg width="12" height="12" viewBox="0 0 16 16" fill="none">
@@ -388,8 +384,6 @@ export async function renderModules(container, activateNav) {
           Installed
         </button>`;
     } else if (isInstalling) {
-      badgeClass = 'mod-card-badge--installing';
-      badgeText  = 'Installing…';
       btnHTML = `
         <button class="mod-card-btn mod-card-btn--installing" disabled data-module-id="${mod.id}">
           <svg class="mod-spinner" width="12" height="12" viewBox="0 0 16 16" fill="none">
@@ -398,8 +392,6 @@ export async function renderModules(container, activateNav) {
           Installing…
         </button>`;
     } else if (isDownloading) {
-      badgeClass = 'mod-card-badge--downloading';
-      badgeText  = 'Downloading…';
       btnHTML = `
         <button class="mod-card-btn mod-card-btn--downloading" disabled data-module-id="${mod.id}">
           <svg class="mod-spinner" width="12" height="12" viewBox="0 0 16 16" fill="none">
@@ -408,8 +400,6 @@ export async function renderModules(container, activateNav) {
           Downloading…
         </button>`;
     } else if (isDownloaded) {
-      badgeClass = 'mod-card-badge--downloaded';
-      badgeText  = 'Downloaded';
       btnHTML = `
         <button class="mod-card-btn mod-card-btn--install-now" data-action="install" data-module-id="${mod.id}">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
@@ -418,8 +408,6 @@ export async function renderModules(container, activateNav) {
           Install Now
         </button>`;
     } else {
-      badgeClass = 'mod-card-badge--not-downloaded';
-      badgeText  = 'Not Downloaded';
       btnHTML = `
         <button class="mod-card-btn mod-card-btn--download" data-action="download" data-module-id="${mod.id}">
           <svg width="12" height="12" viewBox="0 0 24 24" fill="none">
@@ -435,7 +423,6 @@ export async function renderModules(container, activateNav) {
            style="--mod-color:${mod.color};--mod-bg:${mod.bg}">
         <div class="mod-card-header">
           <div class="mod-card-icon">${mod.icon}</div>
-          <span class="mod-card-badge ${badgeClass}">${badgeText}</span>
         </div>
         <div class="mod-card-name">${mod.name}</div>
         <div class="mod-card-engine">Engine: ${mod.engine}</div>
@@ -569,15 +556,10 @@ export function updateModuleCardDOM(moduleId, state, percent = null) {
   const card = document.querySelector(`.mod-card[data-module-id="${moduleId}"]`);
 
   if (card) {
-    const badge = card.querySelector('.mod-card-badge');
     const actions = card.querySelector('.mod-card-actions');
     const cleanPct = percent !== null ? Math.max(0, Math.min(100, Math.round(percent))) : 0;
 
     if (state === 'downloading') {
-      if (badge) {
-        badge.className = 'mod-card-badge mod-card-badge--downloading';
-        badge.textContent = 'Downloading…';
-      }
       if (actions) {
         actions.innerHTML = `
           <button class="mod-card-btn mod-card-btn--downloading" disabled data-module-id="${moduleId}">
@@ -588,10 +570,6 @@ export function updateModuleCardDOM(moduleId, state, percent = null) {
           </button>`;
       }
     } else if (state === 'downloaded') {
-      if (badge) {
-        badge.className = 'mod-card-badge mod-card-badge--downloaded';
-        badge.textContent = 'Downloaded';
-      }
       if (actions) {
         actions.innerHTML = `
           <button class="mod-card-btn mod-card-btn--install-now" data-action="install" data-module-id="${moduleId}">
@@ -602,10 +580,6 @@ export function updateModuleCardDOM(moduleId, state, percent = null) {
           </button>`;
       }
     } else if (state === 'installing') {
-      if (badge) {
-        badge.className = 'mod-card-badge mod-card-badge--installing';
-        badge.textContent = 'Installing…';
-      }
       if (actions) {
         actions.innerHTML = `
           <button class="mod-card-btn mod-card-btn--installing" disabled data-module-id="${moduleId}">
@@ -616,10 +590,6 @@ export function updateModuleCardDOM(moduleId, state, percent = null) {
           </button>`;
       }
     } else if (state === 'installed') {
-      if (badge) {
-        badge.className = 'mod-card-badge mod-card-badge--installed';
-        badge.textContent = 'Installed';
-      }
       if (actions) {
         actions.innerHTML = `
           <button class="mod-card-btn mod-card-btn--installed" disabled data-module-id="${moduleId}">
@@ -631,10 +601,6 @@ export function updateModuleCardDOM(moduleId, state, percent = null) {
       }
     } else {
       // not_downloaded
-      if (badge) {
-        badge.className = 'mod-card-badge mod-card-badge--not-downloaded';
-        badge.textContent = 'Not Downloaded';
-      }
       if (actions) {
         actions.innerHTML = `
           <button class="mod-card-btn mod-card-btn--download" data-action="download" data-module-id="${moduleId}">
