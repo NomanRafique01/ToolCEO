@@ -58,7 +58,6 @@ const LINUX_MIME_ICON_DEST = path.join(LINUX_MIME_ICON_DIR, 'application-x-tceo.
 // ─── STATE ─────────────────────────────────────────────────────────────────────
 
 let mainWindow     = null;
-let splashWindow   = null;
 let backendProcess = null;
 
 /** .tceo path queued before the window was ready (cold-start or second-instance). */
@@ -616,54 +615,6 @@ function waitForBackend(url, retries, delay, callback) {
 }
 
 // ─── WINDOW CREATION ──────────────────────────────────────────────────────────
-
-function createSplash() {
-  const appIconPath = getBundledAssetPath(APP_ICON_PNG_RELATIVE);
-  splashWindow = new BrowserWindow({
-    width: 1200,
-    height: 750,
-    show: false,
-    frame: false,
-    titleBarStyle: 'hidden',
-    titleBarOverlay: {
-      color: '#081918',
-      symbolColor: '#8FAAA6',
-      height: 32,
-    },
-    transparent: false,
-    backgroundColor: '#0A1F1C',
-    alwaysOnTop: true,
-    skipTaskbar: false,
-    resizable: true,
-    center: true,
-    title: 'ToolCEO',
-    icon: appIconPath,
-    webPreferences: {
-      nodeIntegration: false,
-      contextIsolation: true,
-    },
-  });
-  splashWindow.setMenuBarVisibility(false);
-  splashWindow.loadFile(path.join(__dirname, '..', 'frontend', 'splash.html'));
-
-  const showSplash = () => {
-    if (splashWindow && !splashWindow.isDestroyed() && !splashWindow.isVisible()) {
-      splashWindow.maximize();
-      splashWindow.show();
-    }
-  };
-  splashWindow.once('ready-to-show', showSplash);
-  setTimeout(showSplash, 300);
-
-  // If user closes the splash manually, show the main window immediately
-  splashWindow.on('closed', () => {
-    splashWindow = null;
-    if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.maximize();
-      mainWindow.show();
-    }
-  });
-}
 
 function createWindow() {
   const appIconPath = getBundledAssetPath(APP_ICON_PNG_RELATIVE);
@@ -2183,8 +2134,7 @@ app.whenReady().then(async () => {
   // ── Ensure clean modules on fresh install / new build ─────────────────────
   _ensureCleanInstallState();
 
-  // ── Show splash immediately, then load main window + backend in parallel ──
-  createSplash();
+  // ── Load the single renderer window + backend in parallel ──
   createWindow();
   startBackend();
   ensureVaultIcons();           // fire-and-forget — no await
