@@ -39,7 +39,7 @@ const MODULES = [
     id: 'office',
     name: 'Office Module',
     engine: 'LibreOffice',
-    size: '~350 MB',
+    size: '~302 MB',
     color: '#60A5FA',
     bg: 'rgba(96,165,250,0.15)',
     downloadUrl: 'https://github.com/NomanRafique01/ToolCEO/releases/download/modules-v1.0/office-module.zip',
@@ -64,7 +64,7 @@ const MODULES = [
     id: 'ocr',
     name: 'OCR Module',
     engine: 'Tesseract',
-    size: '~50 MB',
+    size: '~43 MB',
     color: '#F472B6',
     bg: 'rgba(244,114,182,0.15)',
     downloadUrl: 'https://github.com/NomanRafique01/ToolCEO/releases/download/modules-v1.0/ocr-module.zip',
@@ -87,7 +87,7 @@ const MODULES = [
     id: 'document',
     name: 'Document Module',
     engine: 'Pandoc',
-    size: '~30 MB',
+    size: '~40 MB',
     color: '#34D399',
     bg: 'rgba(52,211,153,0.15)',
     downloadUrl: 'https://github.com/NomanRafique01/ToolCEO/releases/download/modules-v1.0/document-module.zip',
@@ -114,7 +114,7 @@ const MODULES = [
     id: 'ebook',
     name: 'eBook Module',
     engine: 'Calibre',
-    size: '~150 MB',
+    size: '~267 MB',
     color: '#FBBF24',
     bg: 'rgba(251,191,36,0.15)',
     downloadUrl: 'https://github.com/NomanRafique01/ToolCEO/releases/download/modules-v1.0/ebook-module.zip',
@@ -138,7 +138,7 @@ const MODULES = [
     id: 'media',
     name: 'Media Module',
     engine: 'FFmpeg + 7-Zip',
-    size: '~82 MB',
+    size: '~40 MB',
     color: '#FB923C',
     bg: 'rgba(251,146,60,0.15)',
     downloadUrl: 'https://github.com/NomanRafique01/ToolCEO/releases/download/modules-v1.0/media-module.zip',
@@ -560,7 +560,7 @@ export function updateModuleCardDOM(moduleId, state, percent = null) {
     const cleanPct = percent !== null ? Math.max(0, Math.min(100, Math.round(percent))) : 0;
 
     if (state === 'downloading') {
-      if (actions) {
+      if (actions && !actions.querySelector('.mod-card-btn--downloading')) {
         actions.innerHTML = `
           <button class="mod-card-btn mod-card-btn--downloading" disabled data-module-id="${moduleId}">
             <svg class="mod-spinner" width="12" height="12" viewBox="0 0 16 16" fill="none">
@@ -580,7 +580,7 @@ export function updateModuleCardDOM(moduleId, state, percent = null) {
           </button>`;
       }
     } else if (state === 'installing') {
-      if (actions) {
+      if (actions && !actions.querySelector('.mod-card-btn--installing')) {
         actions.innerHTML = `
           <button class="mod-card-btn mod-card-btn--installing" disabled data-module-id="${moduleId}">
             <svg class="mod-spinner" width="12" height="12" viewBox="0 0 16 16" fill="none">

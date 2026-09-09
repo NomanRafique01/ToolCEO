@@ -41,18 +41,6 @@
 
     @keyframes fadeIn { to { opacity: 1; } }
 
-    /* ── Radial glow ── */
-    .glow {
-      position: absolute;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -62%);
-      width: 520px; height: 520px;
-      background: radial-gradient(ellipse at center, rgba(0,229,192,0.08) 0%, transparent 68%);
-      pointer-events: none;
-      z-index: 0;
-    }
-
-
     /* ── Content stack ── */
     .content {
       display: flex;
@@ -67,7 +55,9 @@
       width: 110px; height: 110px;
       margin-bottom: 28px;
       object-fit: contain;
-      filter: drop-shadow(0 0 18px rgba(0,229,192,0.22));
+      filter:
+        drop-shadow(0 8px 12px rgba(0, 0, 0, 0.28))
+        drop-shadow(0 0 7px rgba(0, 229, 192, 0.42));
     }
 
     /* ── App name ── */
@@ -151,8 +141,6 @@
 </head>
 <body>
   <div class="splash">
-    <div class="glow"></div>
-
     <div class="content">
       <img class="app-icon" src="assets/icon.png" alt="ToolCEO" draggable="false" />
 

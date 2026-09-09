@@ -24,15 +24,14 @@
 }
 
 .logo-name {
-  font-size: 23px;
-  font-weight: 800;
-  letter-spacing: 0.12em;
+  font-family: inherit;
+  font-size: 22px;
+  font-weight: 700;
+  letter-spacing: 0.14em;
   text-transform: uppercase;
-  background: linear-gradient(90deg, var(--accent), var(--accent-hover));
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  background-clip: text;
+  color: var(--accent);
   line-height: 1;
+  text-shadow: 0 0 14px rgba(0, 229, 192, 0.2);
   -webkit-app-region: no-drag;
 }
 

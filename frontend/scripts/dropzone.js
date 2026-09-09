@@ -308,7 +308,7 @@ const DEFAULT_ICON_SVG = `
 const DEFAULT_MAIN  = 'Drop files anywhere to convert';
 const DEFAULT_SUB   = 'or click to browse';
 const DEFAULT_PRIV  = 'Your files never leave your device.';
-const DEFAULT_TITLE = 'Welcome back, CEO';
+const DEFAULT_TITLE = 'Your workspace is ready';
 const DEFAULT_HINT  = 'Drag anywhere';
 const DEFAULT_SUBT  = 'The all-in-one offline file converter for Windows, macOS, and Linux.';
 

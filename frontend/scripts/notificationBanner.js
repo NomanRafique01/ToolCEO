@@ -247,7 +247,7 @@ function _render(banner, notifications) {
     });
   });
 
-  // Auto-dismiss all non-progress pills after 3s with slide-out animation.
+  // Auto-dismiss all non-progress pills after 6s with slide-out animation.
   banner.querySelectorAll('.nb-pill:not(.nb-pill--progress)').forEach((pill) => {
     const id = pill.dataset.id;
     setTimeout(() => {
@@ -258,7 +258,7 @@ function _render(banner, notifications) {
           dismissOne(id);
         }, { once: true });
       }
-    }, 3000);
+    }, 6000);
   });
 }
 

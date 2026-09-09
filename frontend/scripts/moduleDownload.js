@@ -16,6 +16,7 @@ let _paused = false;        // true while paused (connection lost)
 let _currentModuleId = null;
 let _currentModuleName = null;
 let _currentPhase = 'downloading'; // 'downloading' | 'installing'
+let _cancelRequested = false;
 
 const MODULE_NAMES = {
   office: 'Office Module',
@@ -96,6 +97,7 @@ export function startModuleDownload(mod) {
   }
   if (!window.electronAPI || !window.electronAPI.startModuleDownload) return;
 
+  _cancelRequested = false;
   _active = true;
   _paused = false;
   _currentPhase = 'downloading';
@@ -107,6 +109,7 @@ export function startModuleDownload(mod) {
 
   window.electronAPI.startModuleDownload({ moduleId: mod.id, downloadUrl: mod.downloadUrl })
     .then((result) => {
+      if (_cancelRequested) return;
       if (!result || !result.ok) {
         const failedModId = mod.id;
         if (result && result.reason === 'offline') {
@@ -141,6 +144,7 @@ export function startModuleDownload(mod) {
       }
     })
     .catch((err) => {
+      if (_cancelRequested) return;
       const failedModId = mod.id;
       pushNotification({
         type: 'error',
@@ -166,6 +170,7 @@ export function startModuleInstall(mod) {
   }
   if (!window.electronAPI || !window.electronAPI.startModuleInstall) return;
 
+  _cancelRequested = false;
   _active = true;
   _paused = false;
   _currentPhase = 'installing';
@@ -177,6 +182,7 @@ export function startModuleInstall(mod) {
 
   window.electronAPI.startModuleInstall({ moduleId: mod.id })
     .then((result) => {
+      if (_cancelRequested) return;
       if (!result || !result.ok) {
         const failedModId = mod.id;
         if (result && result.reason === 'busy') {
@@ -195,6 +201,7 @@ export function startModuleInstall(mod) {
       }
     })
     .catch((err) => {
+      if (_cancelRequested) return;
       const failedModId = mod.id;
       pushNotification({
         type: 'error',
@@ -215,6 +222,7 @@ export function cancelActiveOperation(moduleId = null) {
   const targetId = moduleId || _currentModuleId;
   if (!targetId) return;
 
+  _cancelRequested = true;
   if (_currentPhase === 'installing') {
     if (window.electronAPI && window.electronAPI.cancelModuleInstall) {
       window.electronAPI.cancelModuleInstall();
@@ -408,6 +416,8 @@ export function initModuleDownloadPanel() {
   window.electronAPI.onModuleDownloadError((payload = {}) => {
     const { reason, error } = payload;
     const currentModId = _currentModuleId;
+
+    if (_cancelRequested) return;
 
     if (reason === 'connection-lost') {
       _paused = true;

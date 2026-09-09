@@ -235,6 +235,7 @@
 
 .mod-spinner {
   animation: mod-spin 0.8s linear infinite;
+  transform-box: fill-box;
   transform-origin: center;
   flex-shrink: 0;
 }
@@ -468,9 +469,12 @@
  *  - Never applied to built-in tools
  */
 .fmt-card--locked {
-  opacity: 0.78;
   position: relative;
   cursor: default !important;
+}
+
+.fmt-card--locked > * {
+  opacity: 0.55;
 }
 
 /* Restore pointer cursor on hover but don't brighten the card */
@@ -501,6 +505,7 @@
           mask-position: center;
   pointer-events: none;
   display: block !important;
+  z-index: 2;
 }
 
 /* ─── MODULE HIGHLIGHT ON MODULES PAGE ────────────────────── */

@@ -20,9 +20,7 @@
  *
  * Deduplication & Auto-dismiss rules:
  *   - Duplicate messages of same type refresh timestamp & timer instead of creating new pills
- *   - warning : auto-dismiss after 4 seconds (4000ms)
- *   - success : auto-dismiss after 8 seconds (8000ms)
- *   - info    : auto-dismiss after 5 seconds (5000ms)
+ *   - all non-progress notifications remain visible for 6 seconds
  *   - error   : persistent until manually dismissed (or 10s if autoDismiss is true)
  */
 
@@ -71,12 +69,12 @@ export function pushNotification({ type = 'success', message = '', detail = '', 
   }
 
   // ── Auto-dismiss scheduling ────────────────────────────────────────────────
-  // All notification types auto-dismiss after 3s (+ 300ms animation buffer).
+  // Keep notifications visible for 6s, then allow the banner exit animation.
   // Progress pills are exempt — they are managed by the bg-job lifecycle.
   if (type !== 'progress') {
     const tid = setTimeout(() => {
       dismissOne(item.id);
-    }, 3300);
+    }, 6300);
     _timers.set(item.id, tid);
   }
 

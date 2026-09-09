@@ -637,33 +637,27 @@ function createWindow() {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
       nodeIntegration: false,
+      // Keep the native window hidden until the loading screen has rendered.
+      paintWhenInitiallyHidden: false,
     },
   });
 
+  // Size the hidden window before the first paint so the desktop cannot show
+  // beside it while Windows completes the maximize transition.
+  mainWindow.maximize();
   mainWindow.loadFile(path.join(__dirname, '..', 'frontend', 'index.html'));
 
   if (!app.isPackaged) {
     mainWindow.webContents.session.clearCache();
   }
 
-  // Wait for both: minimum splash time (4s) AND window ready-to-show
-  const timerDone   = splashWindow
-    ? new Promise(resolve => setTimeout(resolve, 4000))
-    : Promise.resolve();
-  const windowReady = new Promise(resolve => mainWindow.once('ready-to-show', resolve));
-
-  Promise.all([timerDone, windowReady]).then(() => {
-    if (splashWindow && !splashWindow.isDestroyed()) {
-      splashWindow.destroy();
-      splashWindow = null;
-    }
+  mainWindow.webContents.once('did-finish-load', () => {
+    // Reveal only after the inline loading screen has been painted, avoiding
+    // a blank native frame during Electron startup.
     if (mainWindow && !mainWindow.isDestroyed()) {
-      mainWindow.maximize();
       mainWindow.show();
     }
-  });
 
-  mainWindow.webContents.once('did-finish-load', () => {
     // A .tceo file was queued before the window was ready — send it now.
     if (_pendingVaultFile) {
       // Small delay to let the renderer finish its DOMContentLoaded bootstrap
@@ -912,6 +906,29 @@ function _ensureCleanInstallState() {
     }
   } catch (err) {
     console.error('[ToolCEO] Failed to check/reconcile clean install state:', err);
+  }
+}
+
+/**
+ * Clear development module artifacts when launched through `npm start` so
+ * module download/install states can be tested from a clean slate.
+ */
+function _resetDevelopmentModules() {
+  if (app.isPackaged || process.env.TOOLCEO_RESET_MODULES_ON_START !== '1') return;
+
+  const moduleDirs = ['libreoffice', 'ocr', 'pandoc', 'calibre', 'ffmpeg', '7zip', 'tesseract'];
+  const enginesDir = _getEnginesDir();
+  const paths = [
+    _getModulesStorageDir(),
+    ...moduleDirs.map((dir) => path.join(enginesDir, dir)),
+    ...['office', 'document', 'ebook', 'media'].map((dir) => path.join(enginesDir, dir)),
+    ...['office', 'ocr', 'document', 'ebook', 'media'].map((id) => path.join(enginesDir, `${id}-module.zip`)),
+  ];
+
+  for (const target of paths) {
+    try { fs.rmSync(target, { recursive: true, force: true }); } catch (err) {
+      console.warn(`[ToolCEO] Could not reset module path ${target}:`, err.message);
+    }
   }
 }
 
@@ -2132,6 +2149,7 @@ app.whenReady().then(async () => {
   });
 
   // ── Ensure clean modules on fresh install / new build ─────────────────────
+  _resetDevelopmentModules();
   _ensureCleanInstallState();
 
   // ── Load the single renderer window + backend in parallel ──

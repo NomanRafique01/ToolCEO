@@ -120,6 +120,7 @@ export function initNavigation() {
 
       if (label === 'Recent') {
         dashPanel.classList.add('recent-active');
+        setActiveTool(null);
       } else {
         dashPanel.classList.remove('recent-active');
       }
