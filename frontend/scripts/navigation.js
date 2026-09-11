@@ -19,6 +19,7 @@ import { renderImageFormats,    setNavigateToModule as setImgNav } from './image
 import { renderModules, setPendingLockContext } from './modules.js';
 import { renderFavourites, setNavigateToModule as setFavNav } from './favourites.js';
 import { renderRecent } from './recent.js';
+import { renderArchives, setNavigateToModule as setArchiveNav } from './archives.js';
 import { setActiveTool }         from './toolstate.js';
 import { loadModuleStatuses }    from './modulelock.js';
 
@@ -33,6 +34,7 @@ const CATEGORY_RENDERERS = {
   Favorites  : renderFavourites,
   Favourites : renderFavourites,
   Recent     : renderRecent,
+  Archives   : renderArchives,
 };
 
 // The original "Explore Tools" grid HTML is captured once on first load so we
@@ -89,6 +91,7 @@ export function initNavigation() {
   setEbookNav(navigateToModule);
   setAudioNav(navigateToModule);
   setImgNav(navigateToModule);
+  setArchiveNav(navigateToModule);
   setFavNav(navigateToModule);
 
   function activateNav(label) {

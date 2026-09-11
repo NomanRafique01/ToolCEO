@@ -68,8 +68,10 @@ import re
 import shutil
 import subprocess
 import zipfile
+import xml.etree.ElementTree as ET
 from pathlib import Path
 from typing import Generator, Optional
+from urllib.parse import unquote
 from xml.sax.saxutils import escape as _xml_escape
 
 # ---------------------------------------------------------------------------
@@ -616,6 +618,15 @@ def run_conversion(
         "--authors", "Unknown",
     ]
 
+    cover_path = None
+    if input_fmt == "epub" and output_fmt == "rtf":
+        cover_path = extract_epub_cover(clean_input_path, str(_calibre_work_dir(output_path)))
+        if cover_path:
+            cmd += ["--cover", cover_path]
+        # RTF's default chapter/page-break handling can create empty pages
+        # between the preserved cover and the first chapter.
+        cmd += ["--chapter-mark", "none", "--page-breaks-before", "//*[false()]"]
+
     cmd.append("-v")
     _log.debug("Calibre command: %s", " ".join(cmd))
 
@@ -631,7 +642,7 @@ def run_conversion(
     # Attach context so stream_progress can perform post-processing and cleanup
     # after conversion completes, without changing the public function signature.
     process._toolceo_clean_input  = clean_input_path   # type: ignore[attr-defined]
-    process._toolceo_cover_path   = None                # type: ignore[attr-defined]
+    process._toolceo_cover_path   = cover_path          # type: ignore[attr-defined]
     process._toolceo_output_path  = str(output_path)   # type: ignore[attr-defined]
     process._toolceo_target_fmt   = target_format.lower()  # type: ignore[attr-defined]
     process._toolceo_source_fmt   = input_fmt           # type: ignore[attr-defined]
@@ -742,6 +753,59 @@ def extract_pdf_cover(pdf_path: str, dest_dir: str) -> Optional[str]:
         return cover_path
     except Exception as exc:  # noqa: BLE001
         _log.debug("extract_pdf_cover: failed for %s: %s", pdf_path, exc)
+        return None
+
+
+def extract_epub_cover(epub_path: str, dest_dir: str) -> Optional[str]:
+    """Extract the cover image declared by an EPUB, if it has one."""
+    try:
+        with zipfile.ZipFile(epub_path) as archive:
+            container = ET.fromstring(archive.read("META-INF/container.xml"))
+            rootfile = container.find(".//{*}rootfile")
+            if rootfile is None:
+                return None
+
+            opf_path = rootfile.attrib.get("full-path", "")
+            if not opf_path:
+                return None
+            opf_dir = Path(opf_path).parent
+            opf = ET.fromstring(archive.read(opf_path))
+
+            metadata_cover_id = None
+            for meta in opf.findall(".//{*}meta"):
+                if meta.attrib.get("name") == "cover":
+                    metadata_cover_id = meta.attrib.get("content")
+                    break
+
+            cover_item = None
+            for item in opf.findall(".//{*}item"):
+                properties = item.attrib.get("properties", "").split()
+                if (
+                    item.attrib.get("id") == metadata_cover_id
+                    or "cover-image" in properties
+                    or item.attrib.get("id", "").lower() == "cover"
+                ):
+                    cover_item = item
+                    break
+            if cover_item is None:
+                for item in opf.findall(".//{*}item"):
+                    if item.attrib.get("media-type", "").startswith("image/"):
+                        cover_item = item
+                        break
+            if cover_item is None:
+                return None
+
+            href = cover_item.attrib.get("href", "")
+            if not href:
+                return None
+            image_path = (opf_dir / unquote(href.split("#", 1)[0].split("?", 1)[0])).as_posix()
+            image_bytes = archive.read(image_path)
+            suffix = Path(href).suffix.lower() or ".jpg"
+            cover_path = Path(dest_dir) / f"epub_cover{suffix}"
+            cover_path.write_bytes(image_bytes)
+            return str(cover_path)
+    except (KeyError, OSError, ET.ParseError, zipfile.BadZipFile) as exc:
+        _log.debug("extract_epub_cover: failed for %s: %s", epub_path, exc)
         return None
 
 
