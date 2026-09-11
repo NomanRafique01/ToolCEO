@@ -1298,6 +1298,17 @@
   letter-spacing: 0.03em;
 }
 
+.file-type-icon--archive {
+  padding: 0;
+  overflow: hidden;
+}
+
+.file-type-icon--archive .archive-family-file-svg {
+  width: 32px;
+  height: 40px;
+  flex: 0 0 auto;
+}
+
 .file-info {
   flex: 1;
   min-width: 0;

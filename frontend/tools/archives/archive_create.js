@@ -2,6 +2,7 @@ import { getActiveTool, setBgJob, getBgJob, syncBgJobBar, clearBgJob } from '../
 import { pushNotification } from '../../scripts/notificationStore.js';
 import { showScanProgress, showProgress, updateProgress, resetZoneContent, showDownload, showError } from '../shared/progress.js';
 import { loadPdfDocument, renderPdfPageToDataUri } from '../shared/pdfRenderer.js';
+import { getArchiveFileIconSvg, getArchiveFormatLabel } from '../shared/archiveIcon.js';
 
 const BACKEND = 'http://127.0.0.1:8000';
 const ARCHIVE_IDS = new Set([
@@ -59,6 +60,10 @@ function _ext(filename) {
   return dot >= 0 ? filename.slice(dot).toLowerCase() : '';
 }
 
+function _archiveLabel(filename) {
+  return getArchiveFormatLabel(filename);
+}
+
 // ─── THUMBNAIL RESOLVER ────────────────────────────────────────────────────────
 
 /**
@@ -96,6 +101,20 @@ async function _resolveThumbnail(file) {
 
 // ─── THUMBNAIL CARD CONTENT ────────────────────────────────────────────────────
 
+function _pageThumbSvg(label, color) {
+  return `<svg class="archive-ebook-icon-svg" viewBox="0 0 76 92" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <rect x="0" y="0" width="76" height="92" rx="5" fill="#ffffff"/>
+    <polygon points="58,0 76,18 58,18" fill="#e2e2e2"/>
+    <polyline points="58,0 58,18 76,18" fill="none" stroke="#cccccc" stroke-width="1"/>
+    <rect x="0" y="32" width="76" height="22" fill="${color}"/>
+    <text x="38" y="47" font-family="Arial,sans-serif" font-size="11" font-weight="700"
+          fill="#081918" text-anchor="middle" dominant-baseline="middle">${esc(label)}</text>
+    <line x1="10" y1="62" x2="66" y2="62" stroke="${color}" stroke-width="1.5" stroke-linecap="round" opacity="0.45"/>
+    <line x1="10" y1="70" x2="66" y2="70" stroke="${color}" stroke-width="1.5" stroke-linecap="round" opacity="0.3"/>
+    <line x1="10" y1="78" x2="44" y2="78" stroke="${color}" stroke-width="1.5" stroke-linecap="round" opacity="0.2"/>
+  </svg>`;
+}
+
 /**
  * Returns the inner HTML of the icon/thumbnail area for a queue item.
  * Static after first render — no lazy-loads, no listeners.
@@ -114,59 +133,24 @@ function _thumbHTML(item, color) {
   // Ebook — coloured badge with ebook-style SVG fallback icon
   if (_EBOOK_EXTS.has(ext)) {
     const label = ext.replace('.', '').toUpperCase().slice(0, 5);
-    return `<div class="archive-file-icon archive-file-icon--archive" style="--archive-color:${color}">
-      <svg class="archive-ebook-icon-svg" viewBox="0 0 76 92" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <rect x="0" y="0" width="76" height="92" rx="5" fill="color-mix(in srgb, ${color} 12%, var(--bg-card, #0d1117))"/>
-        <rect x="0" y="32" width="76" height="22" fill="${color}"/>
-        <text x="38" y="47" font-family="Arial,sans-serif" font-size="11" font-weight="700"
-              fill="#081918" text-anchor="middle" dominant-baseline="middle">${esc(label)}</text>
-        <line x1="10" y1="62" x2="66" y2="62" stroke="${color}" stroke-width="1.5" stroke-linecap="round" opacity="0.45"/>
-        <line x1="10" y1="70" x2="66" y2="70" stroke="${color}" stroke-width="1.5" stroke-linecap="round" opacity="0.3"/>
-        <line x1="10" y1="78" x2="44" y2="78" stroke="${color}" stroke-width="1.5" stroke-linecap="round" opacity="0.2"/>
-      </svg>
+    return `<div class="archive-file-icon archive-file-icon--ebook" style="--archive-color:${color}">
+      ${_pageThumbSvg(label, color)}
     </div>`;
   }
 
   // Archive (ZIP, RAR, 7Z, TAR, GZ …) — distinctive zipper file icon
   if (_ARCHIVE_EXTS.has(ext)) {
-    const label = ext.replace('.', '').toUpperCase().slice(0, 5);
-    return `<div class="archive-file-icon archive-file-icon--ebook" style="--archive-color:${color}">
-      <svg class="archive-ebook-icon-svg" viewBox="0 0 76 92" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <g transform="translate(8 5) scale(1.06)">
-        <!-- File body -->
-        <rect x="3" y="3" width="56" height="74" rx="5"
-              fill="color-mix(in srgb, ${color} 13%, var(--bg-card, #0d1117))"/>
-        <!-- Folded corner dog-ear -->
-        <polygon points="43,3 59,19 43,19" fill="${color}" opacity="0.35"/>
-        <polyline points="43,3 43,19 59,19" fill="none" stroke="${color}" stroke-width="1.1" opacity="0.55"/>
-        <!-- Zipper centre track -->
-        <rect x="28" y="10" width="6" height="48" rx="2.5"
-              fill="color-mix(in srgb, ${color} 25%, var(--bg-card, #0d1117))"/>
-        <!-- Left teeth -->
-        <rect x="19" y="13" width="11" height="6" rx="2.5" fill="${color}"/>
-        <rect x="19" y="25" width="11" height="6" rx="2.5" fill="${color}"/>
-        <rect x="19" y="37" width="11" height="6" rx="2.5" fill="${color}"/>
-        <!-- Right teeth -->
-        <rect x="32" y="19" width="11" height="6" rx="2.5" fill="${color}" opacity="0.6"/>
-        <rect x="32" y="31" width="11" height="6" rx="2.5" fill="${color}" opacity="0.6"/>
-        <rect x="32" y="43" width="11" height="6" rx="2.5" fill="${color}" opacity="0.6"/>
-        <!-- Pull tab -->
-        <rect x="24" y="51" width="14" height="9" rx="3.5" fill="${color}"/>
-        <line x1="31" y1="54" x2="31" y2="57" stroke="rgba(0,0,0,0.38)" stroke-width="2.2" stroke-linecap="round"/>
-        <!-- Label band -->
-        <rect x="3" y="63" width="56" height="14" fill="${color}"/>
-        <text x="31" y="71" font-family="Arial,sans-serif" font-size="10" font-weight="700"
-              fill="#081918" text-anchor="middle" dominant-baseline="middle">${esc(label)}</text>
-        </g>
-      </svg>
+    const label = _archiveLabel(item.file.name);
+    return `<div class="archive-file-icon archive-file-icon--archive" style="--archive-color:${color}">
+      ${getArchiveFileIconSvg(label, color)}
     </div>`;
   }
 
-  // Generic — existing text-badge (dir or unrecognised extension)
+  // Generic formats use the same white folded-page thumbnail as ebooks.
   const isFolder = item.file.webkitRelativePath && item.file.webkitRelativePath.includes('/');
   const badgeLabel = isFolder ? 'DIR' : (item.file.name.split('.').pop() || 'FILE').slice(0, 5).toUpperCase();
-  return `<div class="archive-file-icon" style="--archive-color:${color}">
-    <span>${esc(badgeLabel)}</span>
+  return `<div class="archive-file-icon archive-file-icon--ebook" style="--archive-color:${color}">
+    ${_pageThumbSvg(badgeLabel, color)}
   </div>`;
 }
 
@@ -186,6 +170,7 @@ function renderQueue() {
     strip.className = 'dz-archive-thumb-strip';
     zone.appendChild(strip);
   }
+  strip.style.setProperty('--archive-color', color);
 
   strip.innerHTML = _queue.map((item, index) => `
     <div class="dz-archive-card" draggable="true" data-index="${index}" style="--archive-color:${color}">
@@ -399,6 +384,9 @@ async function submit() {
   const tool = getActiveTool();
   const zone = document.getElementById('drop-zone');
   if (!tool || !zone || !_queue.length) return;
+
+  // Keep conversion progress visible when the create panel is lower on the page.
+  document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'smooth' });
 
   const format     = FORMAT_BY_ID[tool.id];
   const outputName = document.getElementById('archive-output-name')?.value.trim() || `archive.${format}`;

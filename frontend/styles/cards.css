@@ -156,13 +156,11 @@
 
 .card-fav-btn.is-favourite {
   opacity: 1 !important;
-  box-shadow: 0 0 6px currentColor !important;
 }
 
 .card-fav-btn.is-favourite:hover {
   transform: scale(1.15) !important;
   opacity: 1 !important;
-  box-shadow: 0 0 6px currentColor !important;
 }
 
 /* ── 7. Favourites View Empty State ── */

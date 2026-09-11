@@ -131,7 +131,7 @@
   border-radius: 5px;
   /* Explicitly paint static so scrolling never triggers a decode */
   content-visibility: auto;
-  contain-intrinsic-size: 76px 92px;
+  contain-intrinsic-size: 90px 116px;
 }
 
 /* Ebook badge icon fills the frame the same way */
@@ -139,6 +139,12 @@
   padding: 0;
 }
 .archive-file-icon--archive { padding: 0; }
+.archive-file-icon .archive-family-file-svg {
+  width: 90px;
+  height: 116px;
+  display: block;
+  flex: 0 0 90px;
+}
 .archive-ebook-icon-svg {
   width: 100%;
   height: 100%;

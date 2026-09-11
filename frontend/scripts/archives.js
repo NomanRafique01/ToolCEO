@@ -211,6 +211,11 @@ function scrollToArchiveTools() {
   }, 60);
 }
 
+function scrollToDropZone() {
+  const mainContent = document.getElementById('main-content');
+  if (mainContent) mainContent.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
 function toolRecords(category) {
   const archiveCreateIds = [
     'archive-files-zip', 'archive-files-tar', 'archive-files-tar-gz', 'archive-files-tar-bz2',
@@ -246,7 +251,7 @@ function renderLanding(container, activateNav) {
   container.innerHTML = `
     <div class="explore-header">
       <button class="fmt-back-btn" title="Back to Dashboard">${backIcon()}</button>
-      <div class="fmt-category-icon" style="background:${COLORS.navy};color:${COLORS.cyan}">${ICONS.archive}</div>
+      <div class="fmt-category-icon" style="background:${COLOR_BACKGROUNDS[COLORS.archive]};color:${COLORS.archive}">${ICONS.archive}</div>
       <span class="explore-title">Archives — Choose a category</span>
     </div>
     <div class="fmt-grid archive-category-grid">
@@ -293,7 +298,7 @@ function renderCategory(container, activateNav, category) {
         container.querySelectorAll('.fmt-card').forEach((item) => item.classList.remove('selected'));
         card.classList.add('selected');
         setActiveTool(tool);
-        scrollToArchiveTools();
+        scrollToDropZone();
       } else if (tool) {
         renderPlaceholder(container, activateNav, category, tool);
       }

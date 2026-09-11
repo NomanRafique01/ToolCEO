@@ -1,3 +1,4 @@
+import { handleArchiveFilesPicked, removeArchiveCreatePanel, isArchiveCreateTool } from '../tools/archives/archive_create.js';
 /**
  * dropzone.js
  * Wires up the file drop zone: click-to-browse, drag-over highlight,
@@ -320,6 +321,7 @@ function _scaledIcon(svgString, color) {
     .replace(/height="26"/, 'height="48"')
     .replace(/class="[^"]*"/, '')
     .replace('<svg', `<svg class="drop-icon" style="color:${color}"`)
+    .replace('<svg class="drop-icon"', '<svg width="48" height="48" class="drop-icon"')
     .replace(/stroke="currentColor"/g, `stroke="${color}"`)
     .replace(/fill="currentColor"/g,   `fill="${color}"`);
 }
@@ -369,6 +371,7 @@ function _updateDropZone(tool) {
     removePdfPptPanel();
     removePdfImagesPanel();
     removeImagesPdfPanel();
+    removeArchiveCreatePanel();
     // Clean up any active DOCX conversion panel
     removeDocxPdfPanel(); removeDocxHtmlPanel(); removeDocxTxtPanel();
     removeDocxOdtPanel(); removeDocxEpubPanel(); removeDocxMdPanel();
@@ -441,6 +444,7 @@ function _updateDropZone(tool) {
   removePdfPptPanel();       // hide previous PDF→PPT settings panel if tool changed
   removePdfImagesPanel();    // hide previous PDF→Images settings panel if tool changed
   removeImagesPdfPanel();    // hide previous Images→PDF queue panel if tool changed
+  removeArchiveCreatePanel(); // hide previous archive queue panel if tool changed
   // Clean up any active DOCX conversion panel when switching tools
   removeDocxPdfPanel(); removeDocxHtmlPanel(); removeDocxTxtPanel();
   removeDocxOdtPanel(); removeDocxEpubPanel(); removeDocxMdPanel();
@@ -804,7 +808,8 @@ function _resetZoneContent(zone) {
     '.dz-pdf-word-thumb-wrap, .dz-pdf-excel-thumb-wrap, .dz-pdf-html-thumb-wrap, .dz-pdf-txt-thumb-wrap, ' +
     '.dz-ebook-thumb-wrap, .dz-docx-thumb-wrap, .dz-pptx-thumb-wrap, .dz-xlsx-thumb-wrap, ' +
     '.dz-txt-thumb-wrap, .dz-odt-thumb-wrap, .dz-csv-thumb-wrap, .dz-img-preview-wrap, ' +
-    '.dz-jpg-thumb-strip, .dz-png-thumb-strip, .dz-webp-thumb-strip, .dz-svg-thumb-strip'
+    '.dz-jpg-thumb-strip, .dz-png-thumb-strip, .dz-webp-thumb-strip, .dz-svg-thumb-strip, ' +
+    '.dz-archive-thumb-strip'
   ).forEach((el) => el.remove());
   zone.classList.remove(
     'dz-state-processing', 'dz-state-done', 'dz-state-error',
@@ -813,7 +818,8 @@ function _resetZoneContent(zone) {
     'dz-has-pdf-excel-thumb', 'dz-has-pdf-html-thumb', 'dz-has-pdf-txt-thumb',
     'dz-has-ebook-thumb', 'dz-has-docx-thumb', 'dz-has-pptx-thumb', 'dz-has-xlsx-thumb',
     'dz-has-txt-thumb', 'dz-has-odt-thumb', 'dz-has-csv-thumb', 'dz-has-img-preview',
-    'dz-has-jpg-thumbs', 'dz-has-png-thumbs', 'dz-has-webp-thumbs', 'dz-has-svg-thumbs'
+    'dz-has-jpg-thumbs', 'dz-has-png-thumbs', 'dz-has-webp-thumbs', 'dz-has-svg-thumbs',
+    'dz-has-archive-thumbs'
   );
 }
 
@@ -1276,6 +1282,12 @@ async function _submitFile(files) {
   // Images → PDF converter has its own multi-image queue flow
   if (tool.id === 'images-pdf') {
     handleImagesPdfFilesPicked(files);
+    return;
+  }
+
+  // Archive create tools share the local multi-file queue flow.
+  if (isArchiveCreateTool(tool.id)) {
+    handleArchiveFilesPicked(files);
     return;
   }
 
@@ -1744,6 +1756,7 @@ export function initDropZone() {
     }
     // For merge tool with existing queue, a zone click adds more files
     const tool = getActiveTool();
+    fileInput.webkitdirectory = false;
     // PNG/WEBP tools with an existing queue: clicking zone opens the picker to add more
     if (
       (tool && tool.id.startsWith('png-') && dropZone.classList.contains('dz-has-png-thumbs')) ||
@@ -1786,6 +1799,10 @@ export function initDropZone() {
     } else if (tool && tool.id === 'image_compressor') {
       fileInput.multiple = true;
       fileInput.accept   = 'image/*,.jpg,.jpeg,.png,.webp,.avif,.gif,.bmp,.dib,.tiff,.tif,.ico,.heic,.heif,.svg';
+    } else if (tool && isArchiveCreateTool(tool.id)) {
+      fileInput.multiple = true;
+      fileInput.accept = '*/*';
+      fileInput.webkitdirectory = tool.id.startsWith('archive-folder-');
     } else if (tool) {
       // ── Per-format image accept filters ──────────────────────────────────────
       const _IMG_ACCEPT = {

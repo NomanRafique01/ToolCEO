@@ -12,6 +12,7 @@
  */
 
 import { showToast } from './recent.js';
+import { getArchiveFileIconSvg, getArchiveFormatLabel } from '../tools/shared/archiveIcon.js';
 
 // Format -> category / color mapping for badges
 const FORMAT_THEMES = {
@@ -218,11 +219,16 @@ export async function renderDashboardRecent() {
     }
 
     const badge = getFormatBadge(item.output_format || item.input_format, item.category);
+    const archiveLabel = getArchiveFormatLabel(item.output_filename || item.output_format || outExt);
+    const isArchiveOutput = ['ZIP', 'RAR', '7Z', 'TAR', 'TAR.GZ', 'TAR.BZ2'].includes(archiveLabel);
+    const archiveIcon = isArchiveOutput
+      ? `<span class="file-type-icon file-type-icon--archive" aria-label="${archiveLabel} archive">${getArchiveFileIconSvg(archiveLabel, '#84CC16')}</span>`
+      : `<div class="file-type-icon" style="${badge.style}">${escapeHtml(badge.label)}</div>`;
     const timeAgo = formatTimeAgo(item.converted_at);
 
     return `
       <li class="recent-item" data-path="${escapeAttr(item.output_path || '')}" data-id="${item.id}" data-time="${escapeAttr(item.converted_at || '')}" title="Open containing folder in Explorer: ${escapeAttr(item.output_path || filename)}">
-        <div class="file-type-icon" style="${badge.style}">${escapeHtml(badge.label)}</div>
+        ${archiveIcon}
         <div class="file-info">
           <span class="file-name" title="${escapeAttr(filename)}">${escapeHtml(filename)}</span>
           <span class="file-conv">${escapeHtml(convText)}</span>

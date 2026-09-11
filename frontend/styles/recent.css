@@ -258,6 +258,12 @@
   display: block;
 }
 
+.archive-family-file-svg {
+  width: 90px;
+  height: 116px;
+  display: block;
+}
+
 .recent-card:hover .win-zip-preview-sheet {
   transform: scale(1.05);
 }

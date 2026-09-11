@@ -174,6 +174,43 @@
   flex-shrink: 0;
 }
 
+/* ─── ARCHIVES PLACEHOLDER TOOL PANEL ─────────────────────── */
+
+.archive-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  min-height: 220px;
+  padding: 32px 24px;
+  border: 1.5px dashed var(--fmt-color);
+  border-radius: 12px;
+  background: var(--fmt-bg);
+  color: var(--text-muted);
+  text-align: center;
+}
+
+.archive-placeholder .tool-icon-box {
+  background: var(--fmt-bg);
+  color: var(--fmt-color);
+}
+
+.archive-placeholder h3,
+.archive-placeholder p {
+  margin: 0;
+}
+
+.archive-placeholder h3 {
+  color: var(--text-primary);
+  font-size: 16px;
+}
+
+.archive-placeholder p {
+  max-width: 440px;
+  font-size: 13px;
+}
+
 /* ─── IMAGES CATEGORY — Coming Soon placeholder ─────────────── */
 
 .img-coming-soon {

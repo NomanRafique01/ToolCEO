@@ -17,6 +17,15 @@
 // Built-in tools (PyMuPDF, Pillow, pikepdf, pandas, etc.) are NOT in this map.
 
 export const TOOL_MODULE_MAP = {
+    // ── Media Module (7-Zip archive tools) ───────────────────────────────────
+    'archive-files-zip': 'media',
+    'archive-files-tar': 'media',
+    'archive-files-tar-gz': 'media',
+    'archive-files-tar-bz2': 'media',
+    'archive-files-7z': 'media',
+    'archive-folder-zip': 'media',
+    'archive-folder-7z': 'media',
+  
   // ── Office Module (LibreOffice) ───────────────────────────────────────────
   'docx-pdf'    : 'office',
   'docx-html'   : 'office',

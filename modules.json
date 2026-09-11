@@ -2,17 +2,17 @@
   "modules": {
     "office": {
       "name": "Office Module",
-      "status": "installed",
+      "status": "not_downloaded",
       "downloadUrl": "https://github.com/NomanRafique01/ToolCEO/releases/download/modules-v1.0/office-module.zip"
     },
     "ocr": {
       "name": "OCR Module",
-      "status": "installed",
+      "status": "not_downloaded",
       "downloadUrl": "https://github.com/NomanRafique01/ToolCEO/releases/download/modules-v1.0/ocr-module.zip"
     },
     "document": {
       "name": "Document Module",
-      "status": "installed",
+      "status": "not_downloaded",
       "downloadUrl": "https://github.com/NomanRafique01/ToolCEO/releases/download/modules-v1.0/document-module.zip"
     },
     "ebook": {

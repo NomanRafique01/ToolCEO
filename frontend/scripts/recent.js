@@ -23,6 +23,7 @@
 
 import { setBreadcrumb } from './navigation.js';
 import { getOfflinePdfInfo } from '../tools/shared/pdfRenderer.js';
+import { getArchiveFileIconSvg, getArchiveFormatLabel } from '../tools/shared/archiveIcon.js';
 import { getToolFamily, getToolFamilyColor } from './toolFamily.js';
 
 // Cache for generated data URLs to avoid re-rendering
@@ -333,15 +334,18 @@ function renderPreviewTile(category, format, filename, inputFormat, originalFile
   }
   if (!fmt) fmt = 'FILE';
 
+  const archiveLabel = getArchiveFormatLabel(filename || fmt);
+  const isArchive = ['ZIP', 'RAR', '7Z', 'TAR', 'TAR.GZ', 'TAR.BZ2'].includes(archiveLabel);
+
   const family = getToolFamily(inputFormat, originalFilename, fmt, category);
   const color = getToolFamilyColor(inputFormat, originalFilename, fmt, category);
 
-  // 1. ZIP / Archive: Custom SVG thumbnail equal to PDF thumbnail size (90×116)
-  if (fmt === 'ZIP' || fname.endsWith('.zip') || ['RAR', '7Z', 'TAR', 'GZ'].includes(fmt)) {
+  // 1. Archive: shared format-specific SVG thumbnail (90×116)
+  if (isArchive) {
     return `
       <div class="win-tile-container win-tile--zip">
         <div class="win-zip-preview-sheet">
-          ${getCustomZipFolderSvg()}
+          ${getArchiveFileIconSvg(archiveLabel, '#84CC16')}
         </div>
       </div>
     `;

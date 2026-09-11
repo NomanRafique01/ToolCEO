@@ -20,7 +20,7 @@ import contextlib
 import threading
 import time
 import uuid
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Optional
 
 
@@ -33,6 +33,8 @@ class Job:
     filename: Optional[str] = None
     media_type: Optional[str] = None
     error: Optional[str] = None
+    cancel_event: threading.Event = field(default_factory=threading.Event, repr=False)
+    cancelled: bool = False
 
 
 _store: dict[str, Job] = {}
@@ -70,6 +72,27 @@ def set_error(job_id: str, message: str) -> None:
     if job:
         job.state = "error"
         job.error = message
+
+
+def is_cancelled(job_id: str) -> bool:
+    job = _store.get(job_id)
+    return bool(job and job.cancel_event.is_set())
+
+
+def set_cancelled(job_id: str) -> None:
+    job = _store.get(job_id)
+    if job:
+        job.cancelled = True
+        job.state = "error"
+        job.error = "Operation cancelled."
+
+
+def cancel_job(job_id: str) -> bool:
+    job = _store.get(job_id)
+    if not job or job.state in ("done", "error"):
+        return False
+    job.cancel_event.set()
+    return True
 
 
 @contextlib.contextmanager
