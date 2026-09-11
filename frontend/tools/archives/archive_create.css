@@ -1,0 +1,319 @@
+/* ─────────────────────────────────────────────────────────────────────────
+   tools/archives/archive_create.css
+   Styles for the Compress / Create (Files to ZIP, TAR, 7Z …) tools.
+   ───────────────────────────────────────────────────────────────────────── */
+
+/* ─── DROP ZONE STATE: thumbs are showing ──────────────────────────────── */
+
+.drop-zone.dz-has-archive-thumbs {
+  padding: 0 !important;
+  min-height: 220px !important;
+  height: auto !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
+  overflow: hidden !important;
+  /* Contain layout so child size changes don't affect surrounding layout */
+  contain: layout style !important;
+}
+
+/* Hide the idle-state content while thumbnails are displayed */
+.drop-zone.dz-has-archive-thumbs > .drop-icon,
+.drop-zone.dz-has-archive-thumbs > .drop-main-text,
+.drop-zone.dz-has-archive-thumbs > .drop-browse,
+.drop-zone.dz-has-archive-thumbs > .drop-private,
+.drop-zone.dz-has-archive-thumbs > .dz-paste-btn {
+  display: none !important;
+}
+
+/* ─── SCROLLABLE THUMB STRIP ─────────────────────────────────────────────── */
+
+.dz-archive-thumb-strip {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: 16px 12px;
+  width: 100%;
+  flex: 1 1 auto;
+  max-height: 440px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 16px 16px 20px;
+  box-sizing: border-box;
+  /* GPU-composite scrolling — prevents repaint on each scroll tick */
+  will-change: transform;
+  contain: layout style;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: auto;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, var(--archive-color, #84CC16) 60%, transparent) rgba(0, 0, 0, 0.3);
+}
+
+.dz-archive-thumb-strip::-webkit-scrollbar { width: 8px; }
+.dz-archive-thumb-strip::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.3); border-radius: 8px; }
+.dz-archive-thumb-strip::-webkit-scrollbar-thumb {
+  background: color-mix(in srgb, var(--archive-color, #84CC16) 60%, transparent);
+  border-radius: 8px;
+}
+.dz-archive-thumb-strip::-webkit-scrollbar-thumb:hover {
+  background: var(--archive-color, #84CC16);
+}
+
+/* ─── INDIVIDUAL CARD ────────────────────────────────────────────────────── */
+
+.dz-archive-card {
+  position: relative;
+  width: 96px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  cursor: grab;
+  user-select: none;
+  /* Extra top room for the ordinal badge that sits above the card */
+  padding-top: 10px;
+  /* Contain layout/style changes; do NOT use 'paint' — it clips the badge */
+  contain: layout style;
+  transition: transform 140ms ease, opacity 140ms ease;
+}
+
+.dz-archive-card:active { cursor: grabbing; }
+
+.dz-archive-card.is-dragging {
+  opacity: 0.35;
+  transform: scale(0.95);
+}
+
+/* ── Ordinal badge (1, 2, 3…) ── */
+
+.dz-archive-ordinal {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  z-index: 2;
+  transform: translateX(-50%);
+  min-width: 22px;
+  padding: 3px 6px;
+  border-radius: 12px;
+  background: var(--archive-color, #84CC16);
+  color: #081918;
+  font-size: 10px;
+  font-weight: 700;
+  text-align: center;
+}
+
+/* ─── FILE ICON / THUMBNAIL FRAME ─────────────────────────────────────────── */
+
+.archive-file-icon {
+  width: 90px;
+  height: 116px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid color-mix(in srgb, var(--archive-color, #84CC16) 55%, var(--border, #333));
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--archive-color, #84CC16) 10%, var(--bg-card, #0d1117));
+  color: var(--archive-color, #84CC16);
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+  /* Clip thumbnails to the rounded card bounds */
+  overflow: hidden;
+  /* Pre-composite on its own layer to avoid repaints while scrolling */
+  will-change: transform;
+}
+
+/* Thumbnail image — fills the card, no lazy layout shifts */
+.archive-thumb-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: top center;
+  display: block;
+  border-radius: 5px;
+  /* Explicitly paint static so scrolling never triggers a decode */
+  content-visibility: auto;
+  contain-intrinsic-size: 76px 92px;
+}
+
+/* Ebook badge icon fills the frame the same way */
+.archive-file-icon--ebook {
+  padding: 0;
+}
+.archive-file-icon--archive { padding: 0; }
+.archive-ebook-icon-svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  border-radius: 5px;
+}
+
+/* Generic text badge label */
+.archive-file-icon span {
+  max-width: 66px;
+  overflow: hidden;
+  color: var(--archive-color, #84CC16);
+  font-size: 11px;
+  font-weight: 700;
+  text-align: center;
+  text-overflow: ellipsis;
+}
+
+/* ─── CARD META ─────────────────────────────────────────────────────────────── */
+
+.dz-archive-card-name {
+  width: 100%;
+  overflow: hidden;
+  color: var(--text-primary, #e2e8f0);
+  font-size: 10px;
+  text-align: center;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dz-archive-card-size {
+  color: var(--text-muted, #64748b);
+  font-size: 9px;
+}
+
+/* ─── REMOVE BUTTON ─────────────────────────────────────────────────────────── */
+
+.dz-archive-card-remove {
+  position: absolute;
+  top: -2px;
+  right: 4px;
+  width: 19px;
+  height: 19px;
+  border: 1px solid var(--border, #333);
+  border-radius: 50%;
+  background: var(--bg-surface, #1a1a2e);
+  color: var(--text-muted, #64748b);
+  cursor: pointer;
+  font-size: 13px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+}
+
+.dz-archive-card-remove:hover {
+  color: var(--archive-color, #84CC16);
+  border-color: var(--archive-color, #84CC16);
+}
+
+/* ─── ADD-MORE BUTTON (last card slot) ────────────────────────────────────── */
+
+.dz-archive-add-btn {
+  flex-shrink: 0;
+  width: 90px;
+  height: 116px;
+  margin-top: 10px;    /* align with card tops (padding-top accounts for badge) */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+  border: 2px dashed color-mix(in srgb, var(--archive-color, #84CC16) 45%, transparent);
+  border-radius: 7px;
+  background: color-mix(in srgb, var(--archive-color, #84CC16) 7%, transparent);
+  color: var(--archive-color, #84CC16);
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 500;
+  transition: border-color 130ms ease, background 130ms ease, color 130ms ease;
+}
+
+.dz-archive-add-btn:hover {
+  border-color: var(--archive-color, #84CC16);
+  background: color-mix(in srgb, var(--archive-color, #84CC16) 12%, transparent);
+  color: var(--archive-color, #84CC16);
+}
+
+.dz-archive-add-btn span:first-child {
+  font-size: 24px;
+  line-height: 1;
+}
+
+/* ─── ARCHIVE CREATE PANEL (below drop zone) ────────────────────────────────── */
+
+.archive-create-panel {
+  margin-top: 14px;
+  background: var(--bg-surface);
+  border: 1px solid color-mix(in srgb, var(--archive-create-color, #84CC16) 28%, var(--border));
+  border-radius: 12px;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.archive-create-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.archive-create-summary {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  color: var(--text-muted, #64748b);
+  font-size: 11px;
+}
+.archive-create-summary strong { color: var(--text-primary, #e2e8f0); }
+
+.archive-output-label {
+  color: var(--text-muted, #64748b);
+  font-size: 12px;
+}
+
+.archive-create-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.archive-output-input {
+  flex: 1;
+  min-width: 120px;
+  background: var(--bg-card);
+  padding: 6px 10px;
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  background: var(--bg-card, #0d1117);
+  color: var(--text-primary, #e2e8f0);
+  font-size: 13px;
+  outline: none;
+}
+
+.archive-output-input:focus {
+  border-color: var(--archive-create-color, #84CC16);
+}
+
+/* Button inherits tool color set inline — this is the base style */
+.archive-create-button {
+  background: var(--archive-create-color, #84CC16);
+  color: #081918;
+  border: 0;
+  border-radius: 8px;
+  padding: 7px 18px;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 600;
+  transition: filter 150ms ease, transform 80ms ease;
+  white-space: nowrap;
+}
+
+.archive-create-button:hover {
+  filter: brightness(1.12);
+}
+.archive-create-button:active { transform: scale(0.97); }
+
+/* ─── RESPONSIVE ────────────────────────────────────────────────────────────── */
+
+@media (max-width: 650px) {
+  .archive-create-actions { align-items: stretch; }
+  .archive-output-input,
+  .archive-create-button { width: 100%; }
+}
