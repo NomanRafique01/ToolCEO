@@ -1690,31 +1690,72 @@ export function initDropZone() {
     if (tool) setActiveTool(tool);
   });
 
-  // When background job is cleared or saved, reset drop zone overlays
-  document.addEventListener('bg-job-cleared', () => {
+  // When a background job is cleared or dismissed:
+  // 1. NEVER touch the active tool's drop zone or loaded files if the cleared job
+  //    belongs to a different tool!
+  // 2. Even if it belongs to the active tool, NEVER remove any loaded files, queues,
+  //    or active configuration panels (e.g. split, merge, archive, compressor panels).
+  // 3. Only remove that specific job's progress ring or completed download card overlay.
+  document.addEventListener('bg-job-cleared', (e) => {
     const zone = document.getElementById('drop-zone');
-    if (zone) {
-      _resetZoneContent(zone);
-      removeSplitPanel();
-      removeMergePanel();
-      removeCompressPanel();
-      removeEncryptPanel();
-      removeRotatePanel();
-      removeEditorPanel();
-      removeWatermarkPanel();
-      removeExtractorPanel();
-      removePdfWordPanel();
-      removePdfExcelPanel();
-      removePdfHtmlPanel();
-      removePdfTxtPanel();
-      removeImagePreview();
-      removeImageCompressorPanel();
-      removeSvgPngPanel();
-      removeSvgJpgPanel();
-      removeSvgWebpPanel();
-      removeSvgPdfPanel();
-      const tool = getActiveTool();
-      if (tool) _updateDropZone(tool);
+    if (!zone) return;
+
+    const activeTool = getActiveTool();
+    const clearedToolId = e && e.detail && e.detail.toolId;
+    const clearedJobId = e && e.detail && (e.detail.jobId || e.detail.clientId);
+
+    // If the cleared job belongs to a different tool, NEVER touch the active tool's drop zone!
+    if (!activeTool || !clearedToolId || activeTool.id !== clearedToolId) {
+      return;
+    }
+
+    // Even on the same tool: if the user currently has an active panel or loaded files,
+    // NEVER remove those panels or loaded files!
+    const hasLoadedPanel = document.querySelector(
+      '#split-panel, #merge-panel, #compress-panel, #encrypt-panel, #rotate-panel, ' +
+      '#editor-panel, #watermark-panel, #extractor-panel, ' +
+      '#archive-create-panel, #archive-extract-panel, #archive-convert-panel, #archive-inspector-panel, #archive-splitter-panel, #archive-merger-panel, ' +
+      '#image-compressor-panel, .split-info-panel, .merge-queue-panel, .compress-settings-panel, .encrypt-settings-panel, ' +
+      '.extractor-info-panel, .imgcmp-panel, .cmp-panel, .enc-panel, .image-preview-container, .ebook-settings-panel, ' +
+      '.docx-panel, .xlsx-panel, .pptx-panel, .txt-panel, .odt-panel, .csv-panel'
+    );
+    const hasLoadedThumb = zone.querySelector(
+      '.dz-pdf-thumb-wrap, .dz-compress-thumb-wrap, .dz-encrypt-thumb-wrap, .dz-merge-thumb-strip, ' +
+      '.dz-pdf-word-thumb-wrap, .dz-pdf-excel-thumb-wrap, .dz-pdf-html-thumb-wrap, .dz-pdf-txt-thumb-wrap, ' +
+      '.dz-ebook-thumb-wrap, .dz-docx-thumb-wrap, .dz-pptx-thumb-wrap, .dz-xlsx-thumb-wrap, .dz-txt-thumb-wrap, ' +
+      '.dz-odt-thumb-wrap, .dz-csv-thumb-wrap, .dz-img-preview-wrap, .dz-jpg-thumb-strip, .dz-png-thumb-strip, ' +
+      '.dz-webp-thumb-strip, .dz-svg-thumb-strip, .dz-archive-thumb-strip, .dz-extract-thumb-wrap, .dz-arc-conv-thumb-wrap, ' +
+      '.dz-inspect-thumb-wrap, .dz-split-thumb-wrap, .dz-merge-arc-strip'
+    );
+
+    // If the tool has loaded file(s) or panels ready for execution, do not wipe them
+    if (hasLoadedPanel || hasLoadedThumb) {
+      return;
+    }
+
+    // Only clean up the progress ring or download card overlay if it belongs to this cleared job
+    const progressWrap = zone.querySelector('.dz-progress-wrap');
+    if (progressWrap) {
+      const wrapOwner = progressWrap.dataset.toolId;
+      if (!wrapOwner || wrapOwner === clearedToolId) {
+        progressWrap.remove();
+        zone.classList.remove('dz-state-processing', 'dz-state-scanning');
+      }
+    }
+
+    const downloadCard = zone.querySelector('.dz-download-card, .dz-download-wrap');
+    if (downloadCard) {
+      const cardJobId = downloadCard.dataset.jobId || downloadCard.querySelector('[data-job-id]')?.dataset?.jobId;
+      if (!cardJobId || !clearedJobId || String(cardJobId) === String(clearedJobId)) {
+        downloadCard.remove();
+        zone.classList.remove('dz-state-done');
+      }
+    }
+
+    const errorCard = zone.querySelector('.dz-error-card, .dz-error-wrap');
+    if (errorCard) {
+      errorCard.remove();
+      zone.classList.remove('dz-state-error');
     }
   });
 

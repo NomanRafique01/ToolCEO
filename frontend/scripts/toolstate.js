@@ -27,9 +27,12 @@ function _makeClientId() {
 
 function _pickFallbackJob() {
   const activeTool = getActiveTool();
+  if (activeTool) {
+    const jobs = [..._bgJobs.values()].reverse();
+    return jobs.find((job) => job.tool && job.tool.id === activeTool.id) || null;
+  }
   const jobs = [..._bgJobs.values()].reverse();
-  return jobs.find((job) => activeTool && job.tool && job.tool.id === activeTool.id)
-    || jobs.find((job) => job.state === 'running' || job.state === 'submitting')
+  return jobs.find((job) => job.state === 'running' || job.state === 'submitting')
     || jobs[0]
     || null;
 }
@@ -124,22 +127,55 @@ export function clearBgJob(jobIdOrSilent = null, maybeSilent = false) {
 
   if (typeof jobIdOrSilent === 'boolean') {
     silent = jobIdOrSilent;
+    const fallback = _pickFallbackJob();
+    key = fallback ? (fallback.clientId || fallback.jobId) : null;
   } else if (jobIdOrSilent) {
     key = String(jobIdOrSilent);
   } else {
     const fallback = _pickFallbackJob();
-    key = fallback ? fallback.clientId : null;
+    key = fallback ? (fallback.clientId || fallback.jobId) : null;
   }
 
-  const job = key ? _bgJobs.get(key) : null;
+  let job = key ? _bgJobs.get(key) : null;
+  if (!job && key) {
+    for (const [k, candidate] of _bgJobs.entries()) {
+      if (String(candidate.jobId) === key || String(candidate.clientId) === key) {
+        job = candidate;
+        key = k;
+        break;
+      }
+    }
+  }
+
   if (job && job.sse) {
     try { job.sse.close(); } catch (_) {}
   }
+
+  // If the job was actively running or submitting, notify the backend to cancel it
+  if (job && (job.state === 'running' || job.state === 'submitting')) {
+    if (job.jobId) {
+      fetch(`http://127.0.0.1:8000/api/cancel/${job.jobId}`, { method: 'POST' }).catch(() => {});
+      fetch(`http://127.0.0.1:8000/api/archives/cancel/${job.jobId}`, { method: 'POST' }).catch(() => {});
+    }
+    if (job.abortController) {
+      try { job.abortController.abort(); } catch (_) {}
+    }
+  }
+
   if (key) _bgJobs.delete(key);
 
   syncBgJobBar();
-  if (!silent) {
-    document.dispatchEvent(new CustomEvent('bg-job-cleared', { detail: { jobId: key } }));
+  if (!silent && job) {
+    document.dispatchEvent(new CustomEvent('bg-job-cleared', {
+      detail: {
+        jobId: job.jobId || key,
+        clientId: job.clientId || key,
+        toolId: job.tool ? job.tool.id : null,
+        tool: job.tool,
+        filename: job.filename,
+        state: job.state,
+      }
+    }));
   }
 }
 
@@ -361,7 +397,7 @@ function _renderBgJob(job) {
         <div class="bg-job-right">
           <span class="bg-job-pct">${state === 'error' ? 'Err' : `${pct}%`}</span>
           <span class="bg-job-action-container">${_renderActionBtn(state, jobId, job.blob, key, job.noSave)}</span>
-          <button type="button" class="bg-job-close-x" data-bg-close="${key}" title="Dismiss" aria-label="Dismiss background job">
+          <button type="button" class="bg-job-close-x" data-bg-close="${key}" title="${state === 'running' || state === 'submitting' ? 'Cancel task' : 'Dismiss'}" aria-label="${state === 'running' || state === 'submitting' ? 'Cancel task' : 'Dismiss background job'}">
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
               <line x1="1" y1="1" x2="11" y2="11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
               <line x1="11" y1="1" x2="1" y2="11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>

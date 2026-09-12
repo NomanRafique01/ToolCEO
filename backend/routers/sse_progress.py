@@ -61,6 +61,16 @@ async def stream_progress(job_id: str):
     )
 
 
+
+@router.post("/cancel/{job_id}")
+def cancel_job_endpoint(job_id: str):
+    """Cancel a running background job."""
+    from jobs import cancel_job, set_cancelled
+    cancelled = cancel_job(job_id)
+    set_cancelled(job_id)
+    return {"ok": True, "cancelled": cancelled}
+
+
 @router.get("/download/{job_id}")
 def download_result(job_id: str):
     """Return the finished file bytes for a completed job."""
