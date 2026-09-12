@@ -567,6 +567,59 @@ export function showDownloadBlobCard(zone, blob, filename, color, onReset, toolI
     });
   }
 
+  // ── ZIP-only: inject "Extract ZIP" button + hint text ──────────────────────
+  const isZip = filename.toLowerCase().endsWith('.zip');
+  if (isZip && _zipExtractRouter) {
+    const card = wrap.querySelector('.dz-save-card');
+
+    const extractBtn = document.createElement('button');
+    extractBtn.className = 'dz-extract-zip-btn';
+    extractBtn.type = 'button';
+    extractBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+         style="display:inline;vertical-align:middle;margin-right:6px" aria-hidden="true">
+      <rect x="3" y="13" width="18" height="8" rx="2" stroke="currentColor" stroke-width="1.8" fill="none"/>
+      <path d="M12 3v10M8 9l4 4 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M7 17h2M11 17h2M15 17h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.55"/>
+    </svg>Extract ZIP`;
+
+    const hintEl = document.createElement('p');
+    hintEl.className = 'dz-extract-hint';
+    hintEl.textContent = 'Click Extract ZIP to unpack your file using the ZIP Extractor';
+
+    const doneDiv = card.querySelector('.dz-save-done');
+    card.insertBefore(extractBtn, doneDiv);
+    card.insertBefore(hintEl, doneDiv);
+
+    const _EXTRACT_BTN_INNER = extractBtn.innerHTML;
+
+    extractBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const saveBtn = wrap.querySelector('.dz-save-btn');
+      extractBtn.disabled = true;
+      if (saveBtn) saveBtn.disabled = true;
+      extractBtn.textContent = 'Loading…';
+
+      try {
+        const file = new File([blob], filename, { type: 'application/zip' });
+        const job = toolId ? getBgJobForTool(toolId) : null;
+        if (job) clearBgJob(job.jobId, true);
+        else clearBgJob();
+        resetZoneContent(zone);
+        if (typeof onReset === 'function') onReset();
+        _zipExtractRouter(file);
+      } catch (err) {
+        extractBtn.disabled = false;
+        if (saveBtn) saveBtn.disabled = false;
+        extractBtn.innerHTML = _EXTRACT_BTN_INNER;
+
+        const errEl = document.createElement('div');
+        errEl.className = 'dz-save-inline-err';
+        errEl.textContent = `Failed to load ZIP: ${err.message}`;
+        card.appendChild(errEl);
+      }
+    });
+  }
+
   const btn = wrap.querySelector('.dz-save-btn');
   btn.addEventListener('click', async (e) => {
     e.stopPropagation();
@@ -583,11 +636,17 @@ export function showDownloadBlobCard(zone, blob, filename, color, onReset, toolI
       }
       const base64 = btoa(binary);
 
+      const _hideZipExtras = () => {
+        wrap.querySelector('.dz-extract-zip-btn')?.remove();
+        wrap.querySelector('.dz-extract-hint')?.remove();
+      };
+
       if (window.toolceo && window.toolceo.saveFileAs) {
         const meta = buildConversionMeta({ outputFilename: filename });
         const savedPath = await window.toolceo.saveFileAs(filename, base64, meta);
         if (savedPath) {
           btn.style.display = 'none';
+          _hideZipExtras();
           wrap.querySelector('.dz-save-done').classList.add('dz-save-done--visible');
           clearBgJob();
           resetAfterSave(zone, onReset);
@@ -606,6 +665,7 @@ export function showDownloadBlobCard(zone, blob, filename, color, onReset, toolI
         a.href = url; a.download = filename; a.click();
         URL.revokeObjectURL(url);
         btn.style.display = 'none';
+        _hideZipExtras();
         wrap.querySelector('.dz-save-done').classList.add('dz-save-done--visible');
         clearBgJob();
         resetAfterSave(zone, onReset);

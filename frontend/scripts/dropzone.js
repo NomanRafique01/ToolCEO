@@ -18,7 +18,7 @@ import { handleArchiveMergerFilesPicked, removeArchiveMergerPanel } from '../too
 
 import { getActiveTool, setActiveTool, onToolChange, setBgJob, getBgJob, getBgJobForTool, syncBgJobBar, clearBgJob } from './toolstate.js';
 import { pushNotification } from './notificationStore.js';
-import { showDownloadBlobCard } from '../tools/shared/progress.js';
+import { showDownload, showDownloadBlobCard } from '../tools/shared/progress.js';
 import { buildConversionMeta } from './historyTracker.js';
 import {
   handleSplitFilePicked,
@@ -549,29 +549,17 @@ function _updateDropZone(tool) {
         return;
       }
       if (bgJob.blob) {
-        showDownloadBlobCard(zone, bgJob.blob, bgJob.filename, color, () => {
+        const onReset = () => {
           _resetZoneContent(zone);
-          clearBgJob();
-          removeSplitPanel();
-          removeMergePanel();
-          removeCompressPanel();
-          removeEncryptPanel();
-          removeRotatePanel();
-          removeEditorPanel();
-          removeWatermarkPanel();
-          removeExtractorPanel();
-          removePdfWordPanel();
-          removePdfExcelPanel();
-          removePdfHtmlPanel();
-          removePdfTxtPanel();
-          removeArchiveCreatePanel();
-          removeArchiveExtractPanel();
+          clearBgJob(bgJob.jobId, true);
+          _removeAllPanels();
           const t = getActiveTool();
           if (t) _updateDropZone(t);
-        });
+        };
+        showDownloadBlobCard(zone, bgJob.blob, bgJob.filename, color, onReset, tool.id);
         return;
       }
-      _showDownload(zone, bgJob.filename, bgJob.jobId, color);
+      _showDownload(zone, bgJob.filename, bgJob.jobId, color, tool.id);
       return;
     }
     if (bgJob.state === 'error') {
@@ -969,165 +957,67 @@ function _updateProgress(zone, pct, color, toolId) {
  * After a successful save, wait briefly so the user sees "Saved successfully",
  * then reset the drop zone back to its tool-selected idle state ready for a new file.
  */
+/** Remove all secondary tool panels (PDF tools, archive tools, image tools). */
+function _removeAllPanels() {
+  if (typeof removeSplitPanel === 'function') removeSplitPanel();
+  if (typeof removeMergePanel === 'function') removeMergePanel();
+  if (typeof removeCompressPanel === 'function') removeCompressPanel();
+  if (typeof removeEncryptPanel === 'function') removeEncryptPanel();
+  if (typeof removeRotatePanel === 'function') removeRotatePanel();
+  if (typeof removeEditorPanel === 'function') removeEditorPanel();
+  if (typeof removeWatermarkPanel === 'function') removeWatermarkPanel();
+  if (typeof removeExtractorPanel === 'function') removeExtractorPanel();
+  if (typeof removePdfWordPanel === 'function') removePdfWordPanel();
+  if (typeof removePdfExcelPanel === 'function') removePdfExcelPanel();
+  if (typeof removePdfHtmlPanel === 'function') removePdfHtmlPanel();
+  if (typeof removePdfTxtPanel === 'function') removePdfTxtPanel();
+  if (typeof removePdfPptPanel === 'function') removePdfPptPanel();
+  if (typeof removePdfImagesPanel === 'function') removePdfImagesPanel();
+  if (typeof removeImagesPdfPanel === 'function') removeImagesPdfPanel();
+  if (typeof removeArchiveCreatePanel === 'function') removeArchiveCreatePanel();
+  if (typeof removeArchiveExtractPanel === 'function') removeArchiveExtractPanel();
+  if (typeof removeArchiveInspectorPanel === 'function') removeArchiveInspectorPanel();
+  if (typeof removeArchiveSplitterPanel === 'function') removeArchiveSplitterPanel();
+  if (typeof removeArchiveMergerPanel === 'function') removeArchiveMergerPanel();
+  if (typeof removeArchiveConvertPanel === 'function') removeArchiveConvertPanel();
+  if (typeof removeImagePreview === 'function') removeImagePreview();
+  if (typeof removeImageCompressorPanel === 'function') removeImageCompressorPanel();
+}
+
+/**
+ * After a successful save, wait briefly so the user sees "Saved successfully",
+ * then reset the drop zone back to its tool-selected idle state ready for a new file.
+ */
 function _resetAfterSave(zone) {
   setTimeout(() => {
     _resetZoneContent(zone);
     clearBgJob();
-    removeSplitPanel();
-    removeMergePanel();
-    removeCompressPanel();
-    removeEncryptPanel();
-    removeRotatePanel();
-    removeEditorPanel();
-    removeWatermarkPanel();
-    removeExtractorPanel();
-    removePdfWordPanel();
-    removePdfExcelPanel();
-    removePdfHtmlPanel();
-    removePdfTxtPanel();
-    removeImagePreview();
-    removeImageCompressorPanel();
+    _removeAllPanels();
     const tool = getActiveTool();
     if (tool) _updateDropZone(tool);
   }, 1800);
 }
 
 /** Show download-ready state — card is centred inside the drop zone. */
-function _showDownload(zone, filename, jobId, color) {
-  const currentBgJob = getBgJob(jobId);
+function _showDownload(zone, filename, jobId, color, toolId) {
+  const currentBgJob = jobId ? getBgJob(jobId) : (toolId ? getBgJobForTool(toolId) : null);
+  const activeT = getActiveTool();
+  const tid = toolId || currentBgJob?.tool?.id || activeT?.id;
+  const onReset = () => {
+    _resetZoneContent(zone);
+    if (jobId) clearBgJob(jobId, true);
+    else clearBgJob();
+    _removeAllPanels();
+    const t = getActiveTool();
+    if (t) _updateDropZone(t);
+  };
+
   if (currentBgJob && currentBgJob.blob) {
-    showDownloadBlobCard(zone, currentBgJob.blob, filename, color, () => {
-      _resetZoneContent(zone);
-      clearBgJob();
-      const t = getActiveTool();
-      if (t) _updateDropZone(t);
-    });
+    showDownloadBlobCard(zone, currentBgJob.blob, filename, color, onReset, tid);
     return;
   }
 
-  _resetZoneContent(zone);
-  zone.classList.add('dz-state-done');
-
-  const ext     = filename.includes('.') ? filename.split('.').pop().toUpperCase() : '';
-  const extText = ext ? `${ext} file — ready to save` : 'File ready to save';
-
-  const wrap = document.createElement('div');
-  wrap.className = 'dz-download-wrap';
-  wrap.innerHTML = `
-    <div class="dz-save-card" style="--save-color:${color}">
-      <button class="dz-save-close" type="button" title="Close download window" aria-label="Close download window">
-        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="18" y1="6" x2="6" y2="18"></line>
-          <line x1="6" y1="6" x2="18" y2="18"></line>
-        </svg>
-      </button>
-      <div class="dz-save-icon" aria-hidden="true">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
-          <path d="M12 3v13M7 11l5 5 5-5" stroke="currentColor" stroke-width="1.8"
-                stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M5 20h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-        </svg>
-      </div>
-      <div class="dz-save-info">
-        <span class="dz-save-name" title="${_escHtml(filename)}">${_escHtml(filename)}</span>
-        <span class="dz-save-ext">${_escHtml(extText)}</span>
-      </div>
-      <button class="dz-save-btn" type="button">
-        <svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-             style="display:inline;vertical-align:middle;margin-right:5px" aria-hidden="true">
-          <path d="M12 3v13M7 11l5 5 5-5" stroke="currentColor" stroke-width="2.2"
-                stroke-linecap="round" stroke-linejoin="round"/>
-          <path d="M5 20h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
-        </svg>Save As…
-      </button>
-      <div class="dz-save-done">
-        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
-          <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/>
-          <path d="M8 12l3 3 5-5" stroke="currentColor" stroke-width="1.9"
-                stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-        Saved successfully
-      </div>
-    </div>`;
-
-  zone.appendChild(wrap);
-
-  const closeBtn = wrap.querySelector('.dz-save-close');
-  if (closeBtn) {
-    closeBtn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      _resetZoneContent(zone);
-      clearBgJob();
-      removeSplitPanel();
-      removeMergePanel();
-      removeCompressPanel();
-      removeEncryptPanel();
-      removeRotatePanel();
-      removeEditorPanel();
-      removeWatermarkPanel();
-      removeExtractorPanel();
-      removePdfWordPanel();
-      removePdfExcelPanel();
-      removePdfHtmlPanel();
-      removePdfTxtPanel();
-      const tool = getActiveTool();
-      if (tool) _updateDropZone(tool);
-    });
-  }
-
-  const btn = wrap.querySelector('.dz-save-btn');
-  btn.addEventListener('click', async (e) => {
-    e.stopPropagation();
-    btn.disabled = true;
-    btn.textContent = 'Saving…';
-
-    try {
-      const res = await fetch(`${BACKEND}/api/download/${jobId}`);
-      if (!res.ok) throw new Error(`Download failed (${res.status})`);
-
-      const blob      = await res.blob();
-      const arrayBuf  = await blob.arrayBuffer();
-      const uint8     = new Uint8Array(arrayBuf);
-      const chunkSize = 8192;
-      let binary = '';
-      for (let i = 0; i < uint8.length; i += chunkSize) {
-        binary += String.fromCharCode(...uint8.subarray(i, i + chunkSize));
-      }
-      const base64 = btoa(binary);
-
-      if (window.toolceo && window.toolceo.saveFileAs) {
-        const meta = buildConversionMeta({ outputFilename: filename });
-        const savedPath = await window.toolceo.saveFileAs(filename, base64, meta);
-        if (savedPath) {
-          btn.style.display = 'none';
-          wrap.querySelector('.dz-save-done').classList.add('dz-save-done--visible');
-          clearBgJob();
-          _resetAfterSave(zone);
-        } else {
-          btn.disabled = false;
-          btn.innerHTML = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none"
-               style="display:inline;vertical-align:middle;margin-right:5px" aria-hidden="true">
-            <path d="M12 3v13M7 11l5 5 5-5" stroke="currentColor" stroke-width="2.2"
-                  stroke-linecap="round" stroke-linejoin="round"/>
-            <path d="M5 20h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
-          </svg>Save As…`;
-        }
-      } else {
-        const url = URL.createObjectURL(blob);
-        const a   = document.createElement('a');
-        a.href = url; a.download = filename; a.click();
-        URL.revokeObjectURL(url);
-        btn.style.display = 'none';
-        wrap.querySelector('.dz-save-done').classList.add('dz-save-done--visible');
-        clearBgJob();
-        _resetAfterSave(zone);
-      }
-    } catch (err) {
-      btn.disabled = false;
-      btn.textContent = 'Save As…';
-      _showError(zone, `Download failed: ${err.message}`);
-    }
-  });
+  showDownload(zone, filename, jobId, color, onReset, tid);
 }
 
 /** Show error state. */
@@ -1540,7 +1430,7 @@ async function _submitFile(files) {
       if (getActiveTool()?.id === tool.id) {
         _updateProgress(zone, 100, color, tool.id);
         const dlName = data.filename || `output_${jobId.slice(0, 8)}`;
-        setTimeout(() => _showDownload(zone, dlName, jobId, color), 200);
+        setTimeout(() => _showDownload(zone, dlName, jobId, color, tool.id), 200);
         document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'smooth' });
       }
       return;
