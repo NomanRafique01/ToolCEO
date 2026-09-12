@@ -79,43 +79,46 @@ export function getArchiveFileIconSvg(label = 'ZIP', color = '#84CC16') {
   const c = color;
 
   /* ───────────────────────────────────────────────────────────────────────────
-   * ZIP — Classic metallic zipper running down a document
+   * ZIP — Precision zipped sleeve with interlocking teeth and metallic pull
    * ─────────────────────────────────────────────────────────────────────────── */
   if (format === 'ZIP') {
     const body = `
       <defs>
-        <linearGradient id="zip_track_${uid}" x1="0" y1="0" x2="1" y2="0">
-          <stop offset="0%" stop-color="#1e293b"/>
-          <stop offset="48%" stop-color="#475569"/>
-          <stop offset="100%" stop-color="#1e293b"/>
+        <linearGradient id="zip_body_${uid}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="${c}" stop-opacity="0.75"/>
+          <stop offset="100%" stop-color="${c}" stop-opacity="0.45"/>
         </linearGradient>
-        <linearGradient id="zip_pull_${uid}" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#f1f5f9"/>
+        <linearGradient id="zip_slider_${uid}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="#ffffff"/>
           <stop offset="100%" stop-color="#94a3b8"/>
         </linearGradient>
       </defs>
-      <!-- zipper track down center -->
-      <rect x="42" y="10" width="6" height="75" rx="2" fill="url(#zip_track_${uid})"/>
-      <!-- teeth LEFT — solid color -->
-      <rect x="33" y="13" width="9" height="5" rx="1.5" fill="${c}"/>
-      <rect x="33" y="24" width="9" height="5" rx="1.5" fill="${c}"/>
-      <rect x="33" y="35" width="9" height="5" rx="1.5" fill="${c}"/>
-      <rect x="33" y="46" width="9" height="5" rx="1.5" fill="${c}"/>
-      <rect x="33" y="57" width="9" height="5" rx="1.5" fill="${c}"/>
-      <rect x="33" y="68" width="9" height="5" rx="1.5" fill="${c}"/>
-      <!-- teeth RIGHT — slightly dimmer -->
-      <rect x="48" y="18" width="9" height="5" rx="1.5" fill="${c}" opacity="0.58"/>
-      <rect x="48" y="29" width="9" height="5" rx="1.5" fill="${c}" opacity="0.58"/>
-      <rect x="48" y="40" width="9" height="5" rx="1.5" fill="${c}" opacity="0.58"/>
-      <rect x="48" y="51" width="9" height="5" rx="1.5" fill="${c}" opacity="0.58"/>
-      <rect x="48" y="62" width="9" height="5" rx="1.5" fill="${c}" opacity="0.58"/>
-      <rect x="48" y="73" width="9" height="5" rx="1.5" fill="${c}" opacity="0.58"/>
-      <!-- slider body -->
-      <rect x="37" y="38" width="16" height="12" rx="3" fill="url(#zip_pull_${uid})" stroke="#64748b" stroke-width="0.8"/>
-      <rect x="39" y="40" width="8" height="3.5" rx="1" fill="#475569"/>
-      <!-- pull tab -->
-      <path d="M40 50 L50 50 L51 65 C51 67.5 48.5 69 45 69 C41.5 69 39 67.5 39 65 Z" fill="url(#zip_pull_${uid})" stroke="#64748b" stroke-width="0.8"/>
-      <circle cx="45" cy="62" r="2.2" fill="#475569"/>
+      <!-- main folder / binder sleeve body -->
+      <rect x="15" y="32" width="60" height="50" rx="5" fill="url(#zip_body_${uid})" stroke="${c}" stroke-width="1.8" stroke-opacity="0.8"/>
+      <!-- top folder tab peeking behind -->
+      <path d="M19 32 V27 c0-2 1.5-3.5 3.5-3.5 h14 c2 0 3.5 1.5 4.5 3.5 L43 32 Z" fill="${c}" opacity="0.6"/>
+      <!-- horizontal compression seam lines across sleeve -->
+      <line x1="15" y1="44" x2="75" y2="44" stroke="${c}" stroke-width="1" stroke-opacity="0.25" stroke-dasharray="3 2"/>
+      <line x1="15" y1="68" x2="75" y2="68" stroke="${c}" stroke-width="1" stroke-opacity="0.25" stroke-dasharray="3 2"/>
+      <!-- vertical central zipper channel -->
+      <rect x="42" y="32" width="6" height="50" fill="#0d1117" opacity="0.4"/>
+      <!-- precision interlocking zipper teeth -->
+      <rect x="37" y="36" width="6" height="3" rx="1" fill="${c}" opacity="0.9"/>
+      <rect x="47" y="38" width="6" height="3" rx="1" fill="${c}" opacity="0.7"/>
+      <rect x="37" y="42" width="6" height="3" rx="1" fill="${c}" opacity="0.9"/>
+      <rect x="47" y="44" width="6" height="3" rx="1" fill="${c}" opacity="0.7"/>
+      <rect x="37" y="48" width="6" height="3" rx="1" fill="${c}" opacity="0.9"/>
+      <rect x="47" y="50" width="6" height="3" rx="1" fill="${c}" opacity="0.7"/>
+      <rect x="37" y="66" width="6" height="3" rx="1" fill="${c}" opacity="0.9"/>
+      <rect x="47" y="68" width="6" height="3" rx="1" fill="${c}" opacity="0.7"/>
+      <rect x="37" y="72" width="6" height="3" rx="1" fill="${c}" opacity="0.9"/>
+      <rect x="47" y="74" width="6" height="3" rx="1" fill="${c}" opacity="0.7"/>
+      <!-- metallic zipper slider -->
+      <rect x="39" y="53" width="12" height="11" rx="2.5" fill="url(#zip_slider_${uid})" stroke="#334155" stroke-width="0.8"/>
+      <rect x="41.5" y="55" width="7" height="3" rx="1" fill="#1e293b"/>
+      <!-- zipper pull tab charm -->
+      <path d="M42 63 L48 63 L49 76 C49 78 47 79 45 79 C43 79 41 78 41 76 Z" fill="url(#zip_slider_${uid})" stroke="#334155" stroke-width="0.8"/>
+      <circle cx="45" cy="74" r="1.8" fill="#1e293b"/>
     `;
     return _base(uid, c, body, 'ZIP');
   }
@@ -156,306 +159,311 @@ export function getArchiveFileIconSvg(label = 'ZIP', color = '#84CC16') {
   }
 
   /* ───────────────────────────────────────────────────────────────────────────
-   * 7Z — Bold angular "7" inside a hexagonal power shield
+   * 7Z — High-tech precision compression vault with embossed 7Z insignia
    * ─────────────────────────────────────────────────────────────────────────── */
   if (format === '7Z' || format === '7ZIP') {
     const body = `
       <defs>
-        <linearGradient id="sz_shield_${uid}" x1="0.3" y1="0" x2="0.7" y2="1">
-          <stop offset="0%" stop-color="${c}" stop-opacity="0.5"/>
-          <stop offset="100%" stop-color="${c}" stop-opacity="0.22"/>
+        <linearGradient id="sz_vault_${uid}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="${c}" stop-opacity="0.8"/>
+          <stop offset="100%" stop-color="${c}" stop-opacity="0.45"/>
         </linearGradient>
       </defs>
-      <!-- hexagonal shield -->
-      <path d="M45 14 L68 26 L68 62 Q68 80 45 88 Q22 80 22 62 L22 26 Z"
-            fill="url(#sz_shield_${uid})" stroke="${c}" stroke-width="2.2"/>
-      <!-- inner shield ring -->
-      <path d="M45 19 L63 29 L63 61 Q63 76 45 83 Q27 76 27 61 L27 29 Z"
-            fill="none" stroke="${c}" stroke-width="1" stroke-opacity="0.35"/>
-      <!-- speed / slash lines -->
-      <line x1="22" y1="44" x2="31" y2="44" stroke="${c}" stroke-width="1.8" stroke-opacity="0.5" stroke-linecap="round"/>
-      <line x1="22" y1="52" x2="29" y2="52" stroke="${c}" stroke-width="1.4" stroke-opacity="0.3" stroke-linecap="round"/>
-      <line x1="59" y1="44" x2="68" y2="44" stroke="${c}" stroke-width="1.8" stroke-opacity="0.5" stroke-linecap="round"/>
-      <line x1="61" y1="52" x2="68" y2="52" stroke="${c}" stroke-width="1.4" stroke-opacity="0.3" stroke-linecap="round"/>
-      <!-- bold "7" glyph -->
-      <path d="M33 32 L57 32 L41 78" fill="none" stroke="${c}" stroke-width="10"
-            stroke-linecap="round" stroke-linejoin="round"/>
-      <line x1="33" y1="32" x2="57" y2="32" stroke="${c}" stroke-width="10" stroke-linecap="round"/>
+      <!-- vault chassis -->
+      <rect x="15" y="30" width="60" height="52" rx="6" fill="url(#sz_vault_${uid})" stroke="${c}" stroke-width="1.8" stroke-opacity="0.85"/>
+      <!-- inner perimeter bevel -->
+      <rect x="19" y="34" width="52" height="44" rx="4" fill="none" stroke="${c}" stroke-width="1" stroke-opacity="0.3"/>
+      <!-- corner hex bolts -->
+      <circle cx="21" cy="36" r="2" fill="${c}" opacity="0.9"/>
+      <circle cx="69" cy="36" r="2" fill="${c}" opacity="0.9"/>
+      <circle cx="21" cy="76" r="2" fill="${c}" opacity="0.9"/>
+      <circle cx="69" cy="76" r="2" fill="${c}" opacity="0.9"/>
+      <!-- compression grille slots on left & right -->
+      <line x1="22" y1="46" x2="28" y2="46" stroke="#0d1117" stroke-width="2" stroke-linecap="round" opacity="0.4"/>
+      <line x1="22" y1="56" x2="28" y2="56" stroke="#0d1117" stroke-width="2" stroke-linecap="round" opacity="0.4"/>
+      <line x1="22" y1="66" x2="28" y2="66" stroke="#0d1117" stroke-width="2" stroke-linecap="round" opacity="0.4"/>
+      <line x1="62" y1="46" x2="68" y2="46" stroke="#0d1117" stroke-width="2" stroke-linecap="round" opacity="0.4"/>
+      <line x1="62" y1="56" x2="68" y2="56" stroke="#0d1117" stroke-width="2" stroke-linecap="round" opacity="0.4"/>
+      <line x1="62" y1="66" x2="68" y2="66" stroke="#0d1117" stroke-width="2" stroke-linecap="round" opacity="0.4"/>
+      <!-- center vault lock medallion -->
+      <rect x="33" y="42" width="24" height="28" rx="4" fill="#0d1117" stroke="${c}" stroke-width="1.5" stroke-opacity="0.9"/>
+      <!-- stylized bold '7Z' insignia inside lock medallion -->
+      <path d="M37 49 H45 L41 63" fill="none" stroke="${c}" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M46 56 H53 L46 63 H53" fill="none" stroke="${c}" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <!-- top latch grip -->
+      <rect x="38" y="27" width="14" height="4" rx="2" fill="${c}" opacity="0.8"/>
     `;
     return _base(uid, c, body, '7Z');
   }
 
   /* ───────────────────────────────────────────────────────────────────────────
-   * TAR — Magnetic tape reel: two flanged hubs with tape wound between
+   * TAR — Dual-spool Unix magnetic tape cassette with viewing window
    * ─────────────────────────────────────────────────────────────────────────── */
   if (format === 'TAR') {
     const body = `
       <defs>
-        <radialGradient id="tar_reel_${uid}" cx="50%" cy="42%" r="50%">
-          <stop offset="0%" stop-color="${c}" stop-opacity="0.9"/>
-          <stop offset="70%" stop-color="${c}" stop-opacity="0.6"/>
-          <stop offset="100%" stop-color="${c}" stop-opacity="0.28"/>
-        </radialGradient>
+        <linearGradient id="tar_case_${uid}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="${c}" stop-opacity="0.75"/>
+          <stop offset="100%" stop-color="${c}" stop-opacity="0.45"/>
+        </linearGradient>
       </defs>
-      <!-- reel outer ring -->
-      <circle cx="45" cy="50" r="28" fill="url(#tar_reel_${uid})" stroke="${c}" stroke-width="2"/>
-      <!-- reel hub rings -->
-      <circle cx="45" cy="50" r="22" fill="none" stroke="${c}" stroke-width="1.2" stroke-opacity="0.5"/>
-      <circle cx="45" cy="50" r="14" fill="none" stroke="${c}" stroke-width="1.2" stroke-opacity="0.4"/>
-      <!-- spokes x3 -->
-      <line x1="45" y1="50" x2="45" y2="22" stroke="${c}" stroke-width="2.5" stroke-opacity="0.7" stroke-linecap="round"/>
-      <line x1="45" y1="50" x2="69" y2="64" stroke="${c}" stroke-width="2.5" stroke-opacity="0.7" stroke-linecap="round"/>
-      <line x1="45" y1="50" x2="21" y2="64" stroke="${c}" stroke-width="2.5" stroke-opacity="0.7" stroke-linecap="round"/>
-      <!-- centre hub cap -->
-      <circle cx="45" cy="50" r="7" fill="#0d1117" stroke="${c}" stroke-width="1.8"/>
-      <circle cx="45" cy="50" r="3" fill="${c}" opacity="0.8"/>
-      <!-- tape strand exiting reel -->
-      <path d="M73 50 C78 50 82 42 75 38" fill="none" stroke="${c}" stroke-width="2.5"
-            stroke-linecap="round" stroke-opacity="0.65"/>
+      <!-- cartridge body -->
+      <rect x="14" y="32" width="62" height="50" rx="5" fill="url(#tar_case_${uid})" stroke="${c}" stroke-width="1.8" stroke-opacity="0.8"/>
+      <!-- top label / header strip -->
+      <rect x="22" y="34" width="46" height="7" rx="2" fill="#0d1117" opacity="0.3"/>
+      <!-- tape viewing window in center -->
+      <rect x="22" y="45" width="46" height="24" rx="4" fill="#0d1117" stroke="${c}" stroke-width="1.2" stroke-opacity="0.5"/>
+      <!-- left spool -->
+      <circle cx="33" cy="57" r="8" fill="${c}" opacity="0.8"/>
+      <circle cx="33" cy="57" r="4.5" fill="#0d1117"/>
+      <circle cx="33" cy="57" r="1.8" fill="${c}"/>
+      <!-- right spool -->
+      <circle cx="57" cy="57" r="8" fill="${c}" opacity="0.8"/>
+      <circle cx="57" cy="57" r="4.5" fill="#0d1117"/>
+      <circle cx="57" cy="57" r="1.8" fill="${c}"/>
+      <!-- tape ribbon connecting spools -->
+      <line x1="33" y1="52" x2="57" y2="52" stroke="${c}" stroke-width="2.5" stroke-opacity="0.6"/>
+      <!-- bottom guide rollers & screws -->
+      <circle cx="18" cy="74" r="1.8" fill="${c}" opacity="0.8"/>
+      <circle cx="72" cy="74" r="1.8" fill="${c}" opacity="0.8"/>
+      <rect x="41" y="71" width="8" height="6" rx="1.5" fill="#0d1117" opacity="0.4"/>
     `;
     return _base(uid, c, body, 'TAR');
   }
 
   /* ───────────────────────────────────────────────────────────────────────────
-   * TAR.GZ — Reel wrapped in compression coil springs (coil overlay on reel)
+   * TAR.GZ — Tape cartridge secured with dual vertical compression straps
    * ─────────────────────────────────────────────────────────────────────────── */
   if (format === 'TAR.GZ') {
     const body = `
       <defs>
-        <radialGradient id="tgz_reel_${uid}" cx="50%" cy="42%" r="50%">
-          <stop offset="0%" stop-color="${c}" stop-opacity="0.85"/>
-          <stop offset="100%" stop-color="${c}" stop-opacity="0.25"/>
-        </radialGradient>
+        <linearGradient id="tgz_case_${uid}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="${c}" stop-opacity="0.75"/>
+          <stop offset="100%" stop-color="${c}" stop-opacity="0.45"/>
+        </linearGradient>
       </defs>
-      <!-- reel -->
-      <circle cx="45" cy="50" r="24" fill="url(#tgz_reel_${uid})" stroke="${c}" stroke-width="1.8"/>
-      <circle cx="45" cy="50" r="17" fill="none" stroke="${c}" stroke-width="1" stroke-opacity="0.4"/>
-      <!-- spokes -->
-      <line x1="45" y1="50" x2="45" y2="26" stroke="${c}" stroke-width="2.2" stroke-opacity="0.65" stroke-linecap="round"/>
-      <line x1="45" y1="50" x2="66" y2="62" stroke="${c}" stroke-width="2.2" stroke-opacity="0.65" stroke-linecap="round"/>
-      <line x1="45" y1="50" x2="24" y2="62" stroke="${c}" stroke-width="2.2" stroke-opacity="0.65" stroke-linecap="round"/>
-      <!-- centre hub -->
-      <circle cx="45" cy="50" r="6" fill="#0d1117" stroke="${c}" stroke-width="1.5"/>
-      <circle cx="45" cy="50" r="2.5" fill="${c}" opacity="0.8"/>
-      <!-- compression coil wrapping around reel (wave arcs) -->
-      <path d="M21 32 C25 28 29 36 33 32 C37 28 41 36 45 32 C49 28 53 36 57 32 C61 28 65 36 69 32"
-            fill="none" stroke="${c}" stroke-width="2.5" stroke-linecap="round" stroke-opacity="0.7"/>
-      <path d="M21 70 C25 66 29 74 33 70 C37 66 41 74 45 70 C49 66 53 74 57 70 C61 66 65 74 69 70"
-            fill="none" stroke="${c}" stroke-width="2.5" stroke-linecap="round" stroke-opacity="0.55"/>
+      <!-- cartridge body -->
+      <rect x="14" y="32" width="62" height="50" rx="5" fill="url(#tgz_case_${uid})" stroke="${c}" stroke-width="1.8" stroke-opacity="0.8"/>
+      <!-- tape viewing window -->
+      <rect x="22" y="44" width="46" height="24" rx="4" fill="#0d1117" stroke="${c}" stroke-width="1.2" stroke-opacity="0.4"/>
+      <!-- left spool -->
+      <circle cx="33" cy="56" r="7.5" fill="${c}" opacity="0.8"/>
+      <circle cx="33" cy="56" r="4" fill="#0d1117"/>
+      <circle cx="33" cy="56" r="1.5" fill="${c}"/>
+      <!-- right spool -->
+      <circle cx="57" cy="56" r="7.5" fill="${c}" opacity="0.8"/>
+      <circle cx="57" cy="56" r="4" fill="#0d1117"/>
+      <circle cx="57" cy="56" r="1.5" fill="${c}"/>
+      <!-- dual vertical compression straps -->
+      <rect x="20" y="32" width="4" height="50" fill="#0d1117" opacity="0.35"/>
+      <line x1="22" y1="32" x2="22" y2="82" stroke="${c}" stroke-width="1.5" stroke-opacity="0.8"/>
+      <rect x="66" y="32" width="4" height="50" fill="#0d1117" opacity="0.35"/>
+      <line x1="68" y1="32" x2="68" y2="82" stroke="${c}" stroke-width="1.5" stroke-opacity="0.8"/>
+      <!-- center compression seal badge -->
+      <rect x="38" y="50" width="14" height="12" rx="3" fill="#0d1117" stroke="${c}" stroke-width="1.5"/>
+      <!-- dual inward compression arrows -->
+      <path d="M41 56 H49 M43 54 L41 56 L43 58 M47 54 L49 56 L47 58" stroke="${c}" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
     `;
     return _base(uid, c, body, 'TAR.GZ', true);
   }
 
   /* ───────────────────────────────────────────────────────────────────────────
-   * GZ — Single wave bubble / pressure seal (standalone gzip)
+   * GZ — Pneumatic compression capsule with pressure bands & gauge seal
    * ─────────────────────────────────────────────────────────────────────────── */
   if (format === 'GZ') {
     const body = `
       <defs>
-        <radialGradient id="gz_bubble_${uid}" cx="42%" cy="38%" r="55%">
-          <stop offset="0%" stop-color="${c}" stop-opacity="0.9"/>
-          <stop offset="60%" stop-color="${c}" stop-opacity="0.5"/>
-          <stop offset="100%" stop-color="${c}" stop-opacity="0.15"/>
-        </radialGradient>
+        <linearGradient id="gz_capsule_${uid}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="${c}" stop-opacity="0.75"/>
+          <stop offset="100%" stop-color="${c}" stop-opacity="0.45"/>
+        </linearGradient>
       </defs>
-      <!-- main pressure bubble -->
-      <circle cx="45" cy="50" r="27" fill="url(#gz_bubble_${uid})" stroke="${c}" stroke-width="1.8"/>
-      <!-- concentric pressure rings -->
-      <circle cx="45" cy="50" r="20" fill="none" stroke="${c}" stroke-width="1.2" stroke-opacity="0.4" stroke-dasharray="4 3"/>
-      <circle cx="45" cy="50" r="13" fill="none" stroke="${c}" stroke-width="1" stroke-opacity="0.35" stroke-dasharray="3 3"/>
-      <!-- compression waves on surface -->
-      <path d="M27 36 C31 30 39 30 43 36 C47 42 55 42 59 36"
-            fill="none" stroke="white" stroke-width="2" stroke-linecap="round" stroke-opacity="0.38"/>
-      <!-- G initial -->
-      <text x="45" y="54" font-family="Arial,sans-serif" font-size="22" font-weight="900"
-            fill="${c}" text-anchor="middle" dominant-baseline="middle" stroke="#081918" stroke-width="3"
-            paint-order="stroke">G</text>
+      <!-- capsule body -->
+      <rect x="20" y="28" width="50" height="54" rx="14" fill="url(#gz_capsule_${uid})" stroke="${c}" stroke-width="1.8" stroke-opacity="0.85"/>
+      <!-- top pressure valve -->
+      <rect x="39" y="24" width="12" height="5" rx="2" fill="${c}" stroke="${c}" stroke-width="1" opacity="0.9"/>
+      <circle cx="45" cy="24" r="1.8" fill="#0d1117"/>
+      <!-- horizontal pressure reinforcing bands -->
+      <line x1="20" y1="40" x2="70" y2="40" stroke="#0d1117" stroke-width="2" opacity="0.35"/>
+      <line x1="20" y1="70" x2="70" y2="70" stroke="#0d1117" stroke-width="2" opacity="0.35"/>
+      <line x1="21" y1="40" x2="69" y2="40" stroke="${c}" stroke-width="1" stroke-opacity="0.6"/>
+      <line x1="21" y1="70" x2="69" y2="70" stroke="${c}" stroke-width="1" stroke-opacity="0.6"/>
+      <!-- central circular pressure gauge / seal -->
+      <circle cx="45" cy="55" r="12" fill="#0d1117" stroke="${c}" stroke-width="1.8"/>
+      <!-- inward pressure wave symbols -->
+      <path d="M38 55 C38 52 42 52 45 55 C48 58 52 58 52 55" fill="none" stroke="${c}" stroke-width="2" stroke-linecap="round"/>
+      <circle cx="45" cy="50" r="1.6" fill="${c}"/>
+      <circle cx="45" cy="60" r="1.6" fill="${c}"/>
     `;
     return _base(uid, c, body, 'GZ');
   }
 
   /* ───────────────────────────────────────────────────────────────────────────
-   * TAR.BZ2 — Heavy brick / masonry block with cross-compression straps
+   * TAR.BZ2 / BZ2 — Industrial heavy archive with reinforced brackets & matrix
    * ─────────────────────────────────────────────────────────────────────────── */
   if (format === 'TAR.BZ2' || format === 'BZ2') {
     const isTarBz2 = format === 'TAR.BZ2';
     const body = `
       <defs>
-        <linearGradient id="bz2_block_${uid}" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="${c}" stop-opacity="0.82"/>
-          <stop offset="100%" stop-color="${c}" stop-opacity="0.5"/>
+        <linearGradient id="bz2_case_${uid}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="${c}" stop-opacity="0.78"/>
+          <stop offset="100%" stop-color="${c}" stop-opacity="0.45"/>
         </linearGradient>
       </defs>
-      <!-- main compressed block -->
-      <rect x="14" y="22" width="62" height="60" rx="4" fill="url(#bz2_block_${uid})" stroke="${c}" stroke-width="2"/>
-      <!-- brick mortar lines (horizontal) -->
-      <line x1="14" y1="36" x2="76" y2="36" stroke="#081918" stroke-width="2" stroke-opacity="0.35"/>
-      <line x1="14" y1="50" x2="76" y2="50" stroke="#081918" stroke-width="2" stroke-opacity="0.35"/>
-      <line x1="14" y1="64" x2="76" y2="64" stroke="#081918" stroke-width="2" stroke-opacity="0.35"/>
-      <!-- brick mortar lines (vertical — offset per row) -->
-      <line x1="45" y1="22" x2="45" y2="36" stroke="#081918" stroke-width="1.5" stroke-opacity="0.3"/>
-      <line x1="30" y1="36" x2="30" y2="50" stroke="#081918" stroke-width="1.5" stroke-opacity="0.3"/>
-      <line x1="60" y1="36" x2="60" y2="50" stroke="#081918" stroke-width="1.5" stroke-opacity="0.3"/>
-      <line x1="45" y1="50" x2="45" y2="64" stroke="#081918" stroke-width="1.5" stroke-opacity="0.3"/>
-      <line x1="30" y1="64" x2="30" y2="82" stroke="#081918" stroke-width="1.5" stroke-opacity="0.3"/>
-      <line x1="60" y1="64" x2="60" y2="82" stroke="#081918" stroke-width="1.5" stroke-opacity="0.3"/>
-      <!-- compression strap diagonal -->
-      <path d="M14 22 L76 82" stroke="${c}" stroke-width="2.5" stroke-opacity="0.45"/>
-      <path d="M76 22 L14 82" stroke="${c}" stroke-width="2.5" stroke-opacity="0.45"/>
-      <!-- center buckle -->
-      <rect x="40" y="46" width="10" height="8" rx="2" fill="#0d1117" stroke="${c}" stroke-width="1.5"/>
+      <!-- container body -->
+      <rect x="15" y="30" width="60" height="52" rx="5" fill="url(#bz2_case_${uid})" stroke="${c}" stroke-width="1.8" stroke-opacity="0.85"/>
+      <!-- reinforced corner brackets -->
+      <path d="M15 38 V30 H23" fill="none" stroke="#0d1117" stroke-width="2.5" opacity="0.4"/>
+      <path d="M75 38 V30 H67" fill="none" stroke="#0d1117" stroke-width="2.5" opacity="0.4"/>
+      <path d="M15 74 V82 H23" fill="none" stroke="#0d1117" stroke-width="2.5" opacity="0.4"/>
+      <path d="M75 74 V82 H67" fill="none" stroke="#0d1117" stroke-width="2.5" opacity="0.4"/>
+      <!-- block sorting matrix texture -->
+      <rect x="23" y="36" width="9" height="7" rx="1.5" fill="#0d1117" opacity="0.25"/>
+      <rect x="35" y="36" width="9" height="7" rx="1.5" fill="#0d1117" opacity="0.25"/>
+      <rect x="47" y="36" width="9" height="7" rx="1.5" fill="#0d1117" opacity="0.25"/>
+      <rect x="59" y="36" width="9" height="7" rx="1.5" fill="#0d1117" opacity="0.25"/>
+      <rect x="23" y="47" width="9" height="7" rx="1.5" fill="#0d1117" opacity="0.25"/>
+      <rect x="35" y="47" width="9" height="7" rx="1.5" fill="#0d1117" opacity="0.25"/>
+      <rect x="47" y="47" width="9" height="7" rx="1.5" fill="#0d1117" opacity="0.25"/>
+      <rect x="59" y="47" width="9" height="7" rx="1.5" fill="#0d1117" opacity="0.25"/>
+      <!-- heavy compression clamping crossbar -->
+      <line x1="15" y1="60" x2="75" y2="60" stroke="${c}" stroke-width="2.5" stroke-opacity="0.9"/>
+      <line x1="15" y1="60" x2="75" y2="60" stroke="#0d1117" stroke-width="1" stroke-dasharray="4 2" opacity="0.4"/>
+      <!-- center pressure clamp screw -->
+      <rect x="40" y="55" width="10" height="10" rx="2.5" fill="#0d1117" stroke="${c}" stroke-width="1.6"/>
+      <circle cx="45" cy="60" r="2" fill="${c}"/>
+      <!-- bottom ribbing -->
+      <line x1="20" y1="74" x2="70" y2="74" stroke="${c}" stroke-width="1" stroke-opacity="0.35"/>
     `;
     return _base(uid, c, body, isTarBz2 ? 'TAR.BZ2' : 'BZ2', isTarBz2);
   }
 
   /* ───────────────────────────────────────────────────────────────────────────
-   * TAR.XZ — Diamond crystal lattice (extreme compression)
+   * TAR.XZ / XZ — Futuristic high-density crystalline container with LZMA core
    * ─────────────────────────────────────────────────────────────────────────── */
   if (format === 'TAR.XZ' || format === 'XZ') {
     const isTarXz = format === 'TAR.XZ';
     const body = `
       <defs>
-        <linearGradient id="xz_crystal_${uid}" x1="0.2" y1="0" x2="0.8" y2="1">
-          <stop offset="0%" stop-color="${c}" stop-opacity="0.9"/>
-          <stop offset="50%" stop-color="${c}" stop-opacity="0.55"/>
-          <stop offset="100%" stop-color="${c}" stop-opacity="0.22"/>
+        <linearGradient id="xz_case_${uid}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="${c}" stop-opacity="0.8"/>
+          <stop offset="100%" stop-color="${c}" stop-opacity="0.45"/>
         </linearGradient>
       </defs>
-      <!-- outer diamond -->
-      <polygon points="45,14 74,50 45,86 16,50"
-               fill="url(#xz_crystal_${uid})" stroke="${c}" stroke-width="2.2"/>
-      <!-- inner diamond ring -->
-      <polygon points="45,22 66,50 45,78 24,50"
-               fill="none" stroke="${c}" stroke-width="1.2" stroke-opacity="0.4"/>
-      <!-- crystal facet lines -->
-      <line x1="45" y1="14" x2="45" y2="86" stroke="${c}" stroke-width="1.2" stroke-opacity="0.3"/>
-      <line x1="16" y1="50" x2="74" y2="50" stroke="${c}" stroke-width="1.2" stroke-opacity="0.3"/>
-      <!-- cross diagonals inside -->
-      <line x1="45" y1="14" x2="16" y2="50" stroke="${c}" stroke-width="0.8" stroke-opacity="0.25"/>
-      <line x1="45" y1="14" x2="74" y2="50" stroke="${c}" stroke-width="0.8" stroke-opacity="0.25"/>
-      <!-- specular highlight -->
-      <path d="M34 28 Q38 22 52 30" fill="none" stroke="white" stroke-width="2"
-            stroke-linecap="round" stroke-opacity="0.4"/>
-      <!-- centre gem -->
-      <circle cx="45" cy="50" r="5" fill="#0d1117" stroke="${c}" stroke-width="1.5"/>
-      <circle cx="45" cy="50" r="2.5" fill="${c}" opacity="0.9"/>
+      <!-- chassis body -->
+      <rect x="15" y="30" width="60" height="52" rx="6" fill="url(#xz_case_${uid})" stroke="${c}" stroke-width="1.8" stroke-opacity="0.85"/>
+      <!-- top chamfer grip -->
+      <path d="M35 30 L39 25 H51 L55 30 Z" fill="${c}" opacity="0.75"/>
+      <!-- high-density LZMA compression crystal core -->
+      <polygon points="45,36 63,56 45,76 27,56" fill="#0d1117" stroke="${c}" stroke-width="1.6"/>
+      <!-- inner nested diamond -->
+      <polygon points="45,43 55,56 45,69 35,56" fill="${c}" fill-opacity="0.2" stroke="${c}" stroke-width="1.2" stroke-opacity="0.6"/>
+      <!-- center jewel pin -->
+      <circle cx="45" cy="56" r="3" fill="${c}"/>
+      <!-- lateral circuit traces / compression guides -->
+      <line x1="19" y1="46" x2="27" y2="46" stroke="${c}" stroke-width="1.5" stroke-opacity="0.5"/>
+      <line x1="19" y1="66" x2="27" y2="66" stroke="${c}" stroke-width="1.5" stroke-opacity="0.5"/>
+      <line x1="63" y1="46" x2="71" y2="46" stroke="${c}" stroke-width="1.5" stroke-opacity="0.5"/>
+      <line x1="63" y1="66" x2="71" y2="66" stroke="${c}" stroke-width="1.5" stroke-opacity="0.5"/>
     `;
     return _base(uid, c, body, isTarXz ? 'TAR.XZ' : 'XZ', isTarXz);
   }
 
   /* ───────────────────────────────────────────────────────────────────────────
-   * ISO — Optical disc with rainbow spectrum band and hub
+   * ISO — Optical master disc with data tracks & holographic sheen
    * ─────────────────────────────────────────────────────────────────────────── */
   if (format === 'ISO') {
     const body = `
       <defs>
-        <radialGradient id="iso_disc_${uid}" cx="44%" cy="40%" r="54%">
-          <stop offset="0%" stop-color="${c}" stop-opacity="0.9"/>
-          <stop offset="55%" stop-color="${c}" stop-opacity="0.5"/>
-          <stop offset="100%" stop-color="${c}" stop-opacity="0.18"/>
+        <radialGradient id="iso_disc_${uid}" cx="45%" cy="40%" r="55%">
+          <stop offset="0%" stop-color="${c}" stop-opacity="0.85"/>
+          <stop offset="60%" stop-color="${c}" stop-opacity="0.5"/>
+          <stop offset="100%" stop-color="${c}" stop-opacity="0.3"/>
         </radialGradient>
+        <linearGradient id="iso_sheen_${uid}" x1="0" y1="0" x2="1" y2="1">
+          <stop offset="0%" stop-color="#ffffff" stop-opacity="0.45"/>
+          <stop offset="50%" stop-color="#ffffff" stop-opacity="0"/>
+          <stop offset="100%" stop-color="#ffffff" stop-opacity="0.35"/>
+        </linearGradient>
       </defs>
-      <!-- disc body -->
-      <circle cx="45" cy="50" r="28" fill="url(#iso_disc_${uid})" stroke="${c}" stroke-width="1.8"/>
-      <!-- track ring 1 -->
-      <circle cx="45" cy="50" r="23" fill="none" stroke="${c}" stroke-width="0.9" stroke-opacity="0.38"/>
-      <!-- track ring 2 -->
-      <circle cx="45" cy="50" r="17" fill="none" stroke="${c}" stroke-width="0.9" stroke-opacity="0.32"/>
-      <!-- track ring 3 -->
-      <circle cx="45" cy="50" r="11" fill="none" stroke="${c}" stroke-width="0.9" stroke-opacity="0.28"/>
-      <!-- rainbow spectrum arc (iridescent sheen) -->
-      <path d="M22 38 Q28 26 52 30" fill="none" stroke="#ffffff" stroke-width="3"
-            stroke-linecap="round" stroke-opacity="0.32"/>
-      <path d="M25 43 Q30 33 55 36" fill="none" stroke="${c}" stroke-width="2"
-            stroke-linecap="round" stroke-opacity="0.22"/>
-      <!-- centre hub void -->
-      <circle cx="45" cy="50" r="6.5" fill="#0d1117" stroke="${c}" stroke-width="1.8"/>
-      <circle cx="45" cy="50" r="2.5" fill="${c}" opacity="0.7"/>
+      <!-- square protective sleeve backing -->
+      <rect x="16" y="27" width="58" height="58" rx="6" fill="#0d1117" stroke="${c}" stroke-width="1.5" stroke-opacity="0.45" opacity="0.5"/>
+      <!-- circular disc platter -->
+      <circle cx="45" cy="56" r="25" fill="url(#iso_disc_${uid})" stroke="${c}" stroke-width="1.6"/>
+      <!-- iridescent holographic sheen wedge -->
+      <path d="M45 56 L31 35 A25 25 0 0 1 59 35 Z" fill="url(#iso_sheen_${uid})"/>
+      <path d="M45 56 L31 77 A25 25 0 0 0 59 77 Z" fill="url(#iso_sheen_${uid})"/>
+      <!-- concentric laser data tracks -->
+      <circle cx="45" cy="56" r="20" fill="none" stroke="${c}" stroke-width="0.8" stroke-opacity="0.4"/>
+      <circle cx="45" cy="56" r="15" fill="none" stroke="${c}" stroke-width="0.8" stroke-opacity="0.35"/>
+      <!-- transparent hub area -->
+      <circle cx="45" cy="56" r="9" fill="#0d1117" stroke="${c}" stroke-width="1.4"/>
+      <!-- center spindle hole -->
+      <circle cx="45" cy="56" r="4" fill="none" stroke="${c}" stroke-width="1.2" stroke-opacity="0.7"/>
     `;
     return _base(uid, c, body, 'ISO');
   }
 
   /* ───────────────────────────────────────────────────────────────────────────
-   * DMG — Apple-style disk: stacked platters with actuator arm
+   * DMG — Apple-style aluminum disk volume enclosure with virtual mount slot
    * ─────────────────────────────────────────────────────────────────────────── */
   if (format === 'DMG') {
     const body = `
       <defs>
-        <linearGradient id="dmg_side_${uid}" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="${c}" stop-opacity="0.8"/>
+        <linearGradient id="dmg_enclosure_${uid}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="${c}" stop-opacity="0.78"/>
           <stop offset="100%" stop-color="${c}" stop-opacity="0.45"/>
         </linearGradient>
-        <radialGradient id="dmg_top_${uid}" cx="40%" cy="35%" r="60%">
-          <stop offset="0%" stop-color="${c}" stop-opacity="1"/>
-          <stop offset="100%" stop-color="${c}" stop-opacity="0.65"/>
-        </radialGradient>
       </defs>
-      <!-- lower platter side wall -->
-      <rect x="17" y="56" width="52" height="12" rx="4" fill="url(#dmg_side_${uid})"/>
-      <!-- lower platter top -->
-      <ellipse cx="43" cy="56" rx="26" ry="7.5" fill="${c}" opacity="0.6"/>
-      <!-- upper platter side wall -->
-      <rect x="17" y="42" width="52" height="12" rx="4" fill="url(#dmg_side_${uid})"/>
-      <!-- upper platter top surface (shiny) -->
-      <ellipse cx="43" cy="42" rx="26" ry="8" fill="url(#dmg_top_${uid})" stroke="${c}" stroke-width="1"/>
-      <!-- track rings on top platter -->
-      <ellipse cx="43" cy="42" rx="19" ry="5.5" fill="none" stroke="#081918" stroke-width="1.2" stroke-opacity="0.3"/>
-      <ellipse cx="43" cy="42" rx="11" ry="3" fill="none" stroke="#081918" stroke-width="1.2" stroke-opacity="0.3"/>
-      <!-- specular sheen -->
-      <path d="M27 36 Q36 28 56 36" fill="none" stroke="white" stroke-width="2.5"
-            stroke-linecap="round" stroke-opacity="0.4"/>
-      <!-- spindle -->
-      <ellipse cx="43" cy="42" rx="4" ry="1.2" fill="#0d1117" opacity="0.65"/>
-      <!-- actuator arm -->
-      <line x1="62" y1="38" x2="73" y2="28" stroke="${c}" stroke-width="3.5" stroke-linecap="round" opacity="0.8"/>
-      <circle cx="73" cy="28" r="4" fill="${c}" opacity="0.9"/>
-      <line x1="73" y1="28" x2="63" y2="38" stroke="#081918" stroke-width="2" stroke-opacity="0.5" stroke-linecap="round"/>
+      <!-- aluminum drive enclosure -->
+      <rect x="15" y="30" width="60" height="52" rx="7" fill="url(#dmg_enclosure_${uid})" stroke="${c}" stroke-width="1.8" stroke-opacity="0.85"/>
+      <!-- front face plate -->
+      <rect x="19" y="34" width="52" height="44" rx="4" fill="#0d1117" opacity="0.25"/>
+      <!-- virtual disc slot -->
+      <rect x="25" y="42" width="40" height="4" rx="2" fill="#0d1117" stroke="${c}" stroke-width="1" stroke-opacity="0.5"/>
+      <!-- drive activity LED indicator -->
+      <circle cx="28" cy="62" r="2.5" fill="${c}" stroke="#0d1117" stroke-width="0.8"/>
+      <!-- virtual volume mount symbol (stylized disk with downward mount triangle) -->
+      <ellipse cx="49" cy="59" rx="11" ry="3.5" fill="none" stroke="${c}" stroke-width="1.4"/>
+      <path d="M49 53 V61 M46 58 L49 61 L52 58" fill="none" stroke="${c}" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+      <!-- subtle top grip / bevel line -->
+      <line x1="22" y1="34" x2="68" y2="34" stroke="${c}" stroke-width="1" stroke-opacity="0.4"/>
     `;
     return _base(uid, c, body, 'DMG');
   }
 
   /* ───────────────────────────────────────────────────────────────────────────
-   * CAB — Filing cabinet with two drawers, handle and label slots
+   * CAB — Windows Cabinet archive dossier binder with dual compartments
    * ─────────────────────────────────────────────────────────────────────────── */
   if (format === 'CAB') {
     const body = `
       <defs>
-        <linearGradient id="cab_body_${uid}" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="${c}" stop-opacity="0.78"/>
-          <stop offset="100%" stop-color="${c}" stop-opacity="0.48"/>
-        </linearGradient>
-        <linearGradient id="cab_handle_${uid}" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0%" stop-color="#fde68a"/>
-          <stop offset="100%" stop-color="#b45309"/>
+        <linearGradient id="cab_case_${uid}" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0%" stop-color="${c}" stop-opacity="0.75"/>
+          <stop offset="100%" stop-color="${c}" stop-opacity="0.45"/>
         </linearGradient>
       </defs>
-      <!-- cabinet outer body -->
-      <rect x="16" y="18" width="58" height="66" rx="4" fill="url(#cab_body_${uid})" stroke="${c}" stroke-width="1.8" stroke-opacity="0.8"/>
-      <!-- drawer divider -->
-      <line x1="16" y1="51" x2="74" y2="51" stroke="${c}" stroke-width="2" stroke-opacity="0.65"/>
-      <!-- top drawer face recess -->
-      <rect x="20" y="22" width="50" height="25" rx="3" fill="#0d1117" opacity="0.22"/>
-      <!-- bottom drawer face recess -->
-      <rect x="20" y="55" width="50" height="25" rx="3" fill="#0d1117" opacity="0.22"/>
-      <!-- top drawer handle -->
-      <rect x="37" y="32" width="16" height="5" rx="2.5" fill="url(#cab_handle_${uid})"/>
-      <!-- bottom drawer handle -->
-      <rect x="37" y="65" width="16" height="5" rx="2.5" fill="url(#cab_handle_${uid})"/>
-      <!-- top label slot -->
-      <rect x="22" y="24" width="18" height="6" rx="1.5" fill="${c}" opacity="0.5"/>
-      <!-- bottom label slot -->
-      <rect x="22" y="57" width="18" height="6" rx="1.5" fill="${c}" opacity="0.5"/>
-      <!-- corner bolts -->
-      <circle cx="21" cy="22" r="2.2" fill="${c}" opacity="0.85"/>
-      <circle cx="69" cy="22" r="2.2" fill="${c}" opacity="0.85"/>
-      <circle cx="21" cy="80" r="2.2" fill="${c}" opacity="0.85"/>
-      <circle cx="69" cy="80" r="2.2" fill="${c}" opacity="0.85"/>
+      <!-- cabinet dossier / binder body -->
+      <rect x="15" y="29" width="60" height="53" rx="5" fill="url(#cab_case_${uid})" stroke="${c}" stroke-width="1.8" stroke-opacity="0.85"/>
+      <!-- top folder tab -->
+      <path d="M19 29 V24 c0-2 1.5-3 3-3 h15 c2 0 3 1.5 4 3 L43 29 Z" fill="${c}" opacity="0.65"/>
+      <!-- dossier horizontal seam / divider -->
+      <line x1="15" y1="55" x2="75" y2="55" stroke="${c}" stroke-width="1.6" stroke-opacity="0.5"/>
+      <!-- stitching accent lines -->
+      <line x1="19" y1="36" x2="71" y2="36" stroke="${c}" stroke-width="1" stroke-opacity="0.25" stroke-dasharray="3 2"/>
+      <line x1="19" y1="74" x2="71" y2="74" stroke="${c}" stroke-width="1" stroke-opacity="0.25" stroke-dasharray="3 2"/>
+      <!-- twin cabinet drawer compartments -->
+      <rect x="22" y="39" width="46" height="11" rx="2" fill="#0d1117" opacity="0.25"/>
+      <rect x="22" y="59" width="46" height="11" rx="2" fill="#0d1117" opacity="0.25"/>
+      <!-- drawer pull handles -->
+      <rect x="38" y="42" width="14" height="4" rx="2" fill="${c}" opacity="0.9"/>
+      <rect x="38" y="62" width="14" height="4" rx="2" fill="${c}" opacity="0.9"/>
     `;
     return _base(uid, c, body, 'CAB');
   }
 
   /* ───────────────────────────────────────────────────────────────────────────
-   * Fallback — Generic archive box with format label
+   * Fallback — Archive security chest with lid plate & keyhole latch
    * ─────────────────────────────────────────────────────────────────────────── */
   const body = `
     <defs>
@@ -464,16 +472,20 @@ export function getArchiveFileIconSvg(label = 'ZIP', color = '#84CC16') {
         <stop offset="100%" stop-color="${c}" stop-opacity="0.45"/>
       </linearGradient>
     </defs>
-    <!-- box body -->
-    <rect x="14" y="28" width="62" height="54" rx="5" fill="url(#fb_box_${uid})" stroke="${c}" stroke-width="1.8"/>
-    <!-- lid top -->
-    <path d="M14 38 L14 28 Q14 24 18 24 L72 24 Q76 24 76 28 L76 38 Z" fill="${c}" opacity="0.9"/>
-    <!-- lid lines -->
-    <line x1="14" y1="38" x2="76" y2="38" stroke="${c}" stroke-width="1.5" stroke-opacity="0.7"/>
-    <!-- content lines -->
-    <line x1="22" y1="50" x2="68" y2="50" stroke="${c}" stroke-width="1.8" stroke-opacity="0.5" stroke-linecap="round"/>
-    <line x1="22" y1="60" x2="68" y2="60" stroke="${c}" stroke-width="1.8" stroke-opacity="0.5" stroke-linecap="round"/>
-    <line x1="22" y1="70" x2="52" y2="70" stroke="${c}" stroke-width="1.8" stroke-opacity="0.5" stroke-linecap="round"/>
+    <!-- chest body -->
+    <rect x="15" y="34" width="60" height="48" rx="5" fill="url(#fb_box_${uid})" stroke="${c}" stroke-width="1.8" stroke-opacity="0.85"/>
+    <!-- lid plate -->
+    <path d="M15 44 H75 V36 C75 33 72 31 69 31 H21 C18 31 15 33 15 36 Z" fill="${c}" opacity="0.8"/>
+    <line x1="15" y1="44" x2="75" y2="44" stroke="#0d1117" stroke-width="1.5" opacity="0.4"/>
+    <!-- top handle -->
+    <path d="M36 31 C36 26 54 26 54 31" fill="none" stroke="${c}" stroke-width="3.5" stroke-linecap="round"/>
+    <!-- center latch clasp plate -->
+    <rect x="39" y="42" width="12" height="14" rx="2.5" fill="#0d1117" stroke="${c}" stroke-width="1.4"/>
+    <!-- keyhole slot -->
+    <circle cx="45" cy="48" r="1.8" fill="${c}"/>
+    <line x1="45" y1="49" x2="45" y2="52" stroke="${c}" stroke-width="1.5" stroke-linecap="round"/>
+    <!-- reinforcing horizontal rib -->
+    <line x1="15" y1="64" x2="75" y2="64" stroke="${c}" stroke-width="1" stroke-opacity="0.3" stroke-dasharray="3 2"/>
   `;
   return _base(uid, c, body, safeLabel, safeLabel.length > 5);
 }
