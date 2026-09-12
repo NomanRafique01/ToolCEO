@@ -137,7 +137,9 @@ function _calcStrength(pass) {
 
 // ─── SETTINGS PANEL ──────────────────────────────────────────────────────────
 
-function _showSettingsPanel(file, color) {
+// ─── SETTINGS PANEL ──────────────────────────────────────────────────────────
+
+function _showSettingsPanel(file, color, isEncrypted = null) {
   document.getElementById('archive-protect-panel')?.remove();
 
   const heroCard = document.querySelector('.hero-card');
@@ -179,12 +181,12 @@ function _showSettingsPanel(file, color) {
     }
   });
 
-  _renderForm(panel, file, color);
+  _renderForm(panel, file, color, isEncrypted);
 }
 
 // ─── RENDER FORM CONTENT ─────────────────────────────────────────────────────
 
-function _renderForm(panel, file, color) {
+function _renderForm(panel, file, color, isEncrypted = null) {
   const formBody = panel.querySelector('#arc-protect-form-body');
   const actionsRow = panel.querySelector('#arc-protect-actions');
   if (!formBody || !actionsRow) return;
@@ -192,6 +194,34 @@ function _renderForm(panel, file, color) {
   const eyeIcon = `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`;
 
   if (_activeMode === 'protect') {
+    // If the file is already password-protected, inform the user
+    if (isEncrypted === true) {
+      pushNotification({ type: 'warning', message: 'This archive is already password-protected. Unlock it first to change its password.' });
+      formBody.innerHTML = `
+        <div class="arc-protect-unlocked-notice arc-protect-unlocked-notice--warning">
+          <div class="arc-protect-unlocked-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <rect x="3" y="11" width="18" height="11" rx="2" ry="2"/>
+              <path d="M7 11V7a5 5 0 0110 0v4"/>
+            </svg>
+          </div>
+          <div class="arc-protect-unlocked-text">
+            <span class="arc-protect-unlocked-title">Archive is Already Password-Protected</span>
+            <span class="arc-protect-unlocked-desc">This archive is already encrypted with a password. If you wish to set a new password, please unlock it first using Remove Archive Password.</span>
+          </div>
+        </div>
+      `;
+      actionsRow.innerHTML = `
+        <button type="button" class="arc-protect-submit-btn arc-protect-submit-btn--secondary" id="arc-prot-other-file-btn">
+          Choose Another File
+        </button>
+      `;
+      actionsRow.querySelector('#arc-prot-other-file-btn')?.addEventListener('click', () => {
+        panel.querySelector('#arc-prot-change-btn')?.click();
+      });
+      return;
+    }
+
     const headerToggleHtml = _selectedFormat === '7z' ? `
       <!-- Header Encryption Toggle (7Z) -->
       <div class="arc-protect-toggle-card" id="arc-prot-header-card">
@@ -304,6 +334,34 @@ function _renderForm(panel, file, color) {
 
   } else {
     // ── UNLOCK / REMOVE PASSWORD TAB ──────────────────────────────────────────
+    // If the file is already unlocked (no password), inform the user!
+    if (isEncrypted === false) {
+      pushNotification({ type: 'info', message: 'The selected archive is already unlocked (no password set).' });
+      formBody.innerHTML = `
+        <div class="arc-protect-unlocked-notice">
+          <div class="arc-protect-unlocked-icon">
+            <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#10B981" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+              <path d="M9 12l2 2 4-4"/>
+            </svg>
+          </div>
+          <div class="arc-protect-unlocked-text">
+            <span class="arc-protect-unlocked-title">Archive is Already Unlocked</span>
+            <span class="arc-protect-unlocked-desc">Your selected archive file has no password or is already unlocked. No decryption is required.</span>
+          </div>
+        </div>
+      `;
+      actionsRow.innerHTML = `
+        <button type="button" class="arc-protect-submit-btn arc-protect-submit-btn--secondary" id="arc-prot-other-file-btn">
+          Choose Another File
+        </button>
+      `;
+      actionsRow.querySelector('#arc-prot-other-file-btn')?.addEventListener('click', () => {
+        panel.querySelector('#arc-prot-change-btn')?.click();
+      });
+      return;
+    }
+
     formBody.innerHTML = `
       <div class="arc-protect-field-group">
         <label class="arc-protect-label" for="arc-prot-unlock-pass">
@@ -391,11 +449,24 @@ export async function handleArchiveProtectFilePicked(file, initialMode = 'protec
   _selectedFormat  = _detectFormat(file.name);
 
   showScanProgress(zone, color, tool?.id || 'archive-protect');
-  await new Promise((r) => setTimeout(r, 350));
+
+  // Inspect archive metadata to detect whether it is already encrypted or unlocked
+  let isEncrypted = null;
+  try {
+    const fd = new FormData();
+    fd.append('file', file);
+    const res = await fetch(`${BACKEND}/api/archives/extract/info`, { method: 'POST', body: fd });
+    if (res.ok) {
+      const info = await res.json();
+      isEncrypted = typeof info.is_encrypted === 'boolean' ? info.is_encrypted : null;
+    }
+  } catch (_) {}
+
+  await new Promise((r) => setTimeout(r, 250));
 
   resetZoneContent(zone);
   _showThumb(zone, file, color);
-  _showSettingsPanel(file, color);
+  _showSettingsPanel(file, color, isEncrypted);
 }
 
 // ─── SUBMIT PROTECT ──────────────────────────────────────────────────────────

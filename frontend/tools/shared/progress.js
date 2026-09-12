@@ -295,8 +295,11 @@ export function showDownload(zone, filename, jobId, color, onReset, toolId) {
   }
 
   // ── ZIP-only: inject "Extract ZIP" button + hint text ──────────────────────
+  // Exception: 'archive-protect' produces a password-protected ZIP archive which cannot
+  // be unpacked without password. It displays the standard download window instead.
   const isZip = filename.toLowerCase().endsWith('.zip');
-  if (isZip && _zipExtractRouter) {
+  const isArchiveProtect = ownerToolId === 'archive-protect';
+  if (isZip && _zipExtractRouter && !isArchiveProtect) {
     const card = wrap.querySelector('.dz-save-card');
 
     // Extract button — uses the tool's own color (--save-color) via CSS var

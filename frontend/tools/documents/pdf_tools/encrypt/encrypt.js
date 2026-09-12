@@ -1,4 +1,4 @@
-﻿/**
+/**
  * tools/documents/pdf_tools/encrypt/encrypt.js
  *
  * PDF Encrypt / Decrypt & ToolCEO Vault (.tceo) Tool module.
@@ -903,7 +903,128 @@ export async function handleEncryptFilePicked(file) {
   _showSettingsPanel(pageCount, encInfo, color);
 }
 
-// --- SUBMISSION FUNCTIONS -------------------------------------------------------
+// ─── SMOOTH PROGRESS CONTROLLER ────────────────────────────────────────────────
+
+function _makeResetCb(jobKey) {
+  return () => {
+    removeEncryptPanel();
+    clearBgJob(jobKey, true);
+    const t = getActiveTool();
+    if (t) {
+      import('../../../../scripts/dropzone.js').then(({ _updateDropZoneForTool }) => {
+        if (_updateDropZoneForTool) _updateDropZoneForTool(t);
+      }).catch(() => {});
+    }
+  };
+}
+
+/**
+ * Starts a smooth progress session that begins at 0% and steadily proceeds upwards
+ * while the async network operation is in-flight, preventing any freeze or jump to 50%.
+ *
+ * @param {Object} opts
+ * @param {HTMLElement} [opts.zone] - Drop zone to display progress ring (if active)
+ * @param {string} opts.color - Tool accent color
+ * @param {string} opts.label - Label to display under ring (e.g. 'Locking in ToolCEO Vault…')
+ * @param {Object} opts.tool - The active tool object
+ * @param {string} opts.filename - Target output filename
+ * @param {boolean} [opts.renderRing=true] - Whether to show circular progress in the drop zone
+ * @returns {Object} Controller with { jobKey, abortController, finish, cleanup }
+ */
+function _startSmoothProgress({ zone, color, label, tool, filename, renderRing = true }) {
+  const abortController = new AbortController();
+  const toolId = tool ? tool.id : null;
+
+  if (renderRing && zone) {
+    resetZoneContent(zone);
+    showProgress(zone, 0, color, label, toolId);
+  }
+
+  // Register job in toolstate starting at 0%
+  const jobKey = setBgJob({
+    jobId: null,
+    tool,
+    filename,
+    progress: 0,
+    state: 'running',
+    sse: null,
+    abortController,
+  });
+  syncBgJobBar();
+
+  let currentPct = 0;
+  let isDone = false;
+  let intervalId = null;
+
+  const update = (pct) => {
+    currentPct = pct;
+    if (renderRing && zone) {
+      updateProgress(zone, Math.round(pct), color, toolId);
+    }
+    const bg = getBgJob(jobKey);
+    if (bg && bg.state === 'running') {
+      bg.progress = Math.max(bg.progress || 0, Math.round(pct));
+      syncBgJobBar();
+    }
+  };
+
+  // Smooth realistic progression ticker starting from 0%:
+  // - 0% to 25% advances smoothly in ~600ms (fast feedback on click)
+  // - 25% to 65% advances steadily over ~1.2s
+  // - 65% to 85% eases out over ~1.4s
+  // - 85% to 95% advances continuously by gentle increments so it NEVER freezes or sits stuck
+  intervalId = setInterval(() => {
+    if (isDone) return;
+    if (currentPct < 25) {
+      currentPct += 2.2;
+    } else if (currentPct < 65) {
+      currentPct += 1.6;
+    } else if (currentPct < 85) {
+      currentPct += 0.9;
+    } else if (currentPct < 93) {
+      currentPct += 0.35;
+    } else if (currentPct < 96) {
+      currentPct += 0.1;
+    }
+    update(currentPct);
+  }, 60);
+
+  // Auto-timeout safety: abort after 90 seconds so request never hangs indefinitely
+  const timeoutId = setTimeout(() => {
+    if (!isDone) {
+      abortController.abort(new Error('Operation timed out. Please try again.'));
+    }
+  }, 90000);
+
+  const cleanup = () => {
+    isDone = true;
+    if (intervalId) { clearInterval(intervalId); intervalId = null; }
+    if (timeoutId) { clearTimeout(timeoutId); }
+  };
+
+  const finish = (blob) => {
+    cleanup();
+    update(100);
+    const bg = getBgJob(jobKey);
+    if (bg) {
+      bg.progress = 100;
+      bg.state = 'done';
+      bg.filename = filename;
+      bg.blob = blob;
+      setBgJob({ ...bg, blob });
+      syncBgJobBar();
+    }
+  };
+
+  return {
+    jobKey,
+    abortController,
+    cleanup,
+    finish,
+  };
+}
+
+// ─── SUBMISSION FUNCTIONS ───────────────────────────────────────────────────────
 
 async function _submitEncrypt(opts) {
   const {
@@ -926,14 +1047,18 @@ async function _submitEncrypt(opts) {
 
   const panel = document.getElementById('encrypt-settings-panel');
   if (panel) panel.remove();
-  resetZoneContent(zone);
-  showProgress(zone, 15, color, 'Encrypting PDF…');
 
   let outName = (output_filename || 'encrypted').trim();
   if (!outName.toLowerCase().endsWith('.pdf')) outName += '.pdf';
 
-  setBgJob({ jobId: null, tool, filename: outName, progress: 15, state: 'running', sse: null });
-  syncBgJobBar();
+  const progressCtrl = _startSmoothProgress({
+    zone,
+    color,
+    label: 'Encrypting PDF…',
+    tool,
+    filename: outName,
+    renderRing: true,
+  });
 
   const fd = new FormData();
   fd.append('file', file);
@@ -947,13 +1072,10 @@ async function _submitEncrypt(opts) {
   fd.append('allow_forms', allow_forms);
 
   try {
-    updateProgress(zone, 50, color, tool.id);
-    const bgMid = getBgJob();
-    if (bgMid) { bgMid.progress = 50; syncBgJobBar(); }
-
     const res = await fetch(`${BACKEND}/api/pdf/encrypt`, {
       method: 'POST',
       body: fd,
+      signal: progressCtrl.abortController.signal,
     });
 
     if (!res.ok) {
@@ -962,44 +1084,30 @@ async function _submitEncrypt(opts) {
     }
 
     const blob = await res.blob();
+    progressCtrl.finish(blob);
 
-    updateProgress(zone, 100, color, tool.id);
-    const bgDone = getBgJob();
-    if (bgDone) {
-      bgDone.progress = 100;
-      bgDone.state    = 'done';
-      bgDone.filename = outName;
-      bgDone.blob     = blob;
-      setBgJob({ ...bgDone, blob });
-      syncBgJobBar();
-    }
+    const resetCb = _makeResetCb(progressCtrl.jobKey);
 
-    const resetCb = () => {
+    setTimeout(() => {
       removeEncryptPanel();
-      clearBgJob();
+      showDownloadBlobCard(zone, blob, outName, color, resetCb, tool?.id);
+    }, 200);
+
+  } catch (err) {
+    progressCtrl.cleanup();
+    clearBgJob(progressCtrl.jobKey, true);
+    if (err.name === 'AbortError') {
+      removeEncryptPanel();
+      resetZoneContent(zone);
       const t = getActiveTool();
       if (t) {
         import('../../../../scripts/dropzone.js').then(({ _updateDropZoneForTool }) => {
           if (_updateDropZoneForTool) _updateDropZoneForTool(t);
         }).catch(() => {});
       }
-    };
-
-    setTimeout(() => {
-      if (getActiveTool()?.id === tool?.id) {
-        showDownloadBlobCard(zone, blob, outName, color, resetCb);
-      } else {
-        pushNotification({
-          type: 'success',
-          message: 'PDF Encrypted Successfully',
-          detail: outName,
-        });
-      }
-    }, 200);
-
-  } catch (err) {
-    clearBgJob();
-    showError(zone, err.message || 'Encryption failed.');
+      return;
+    }
+    showError(zone, err.message || 'Encryption failed.', tool?.id);
     pushNotification({
       type: 'error',
       message: 'Encryption Failed',
@@ -1031,27 +1139,32 @@ async function _submitDecrypt(opts) {
   let outName = (output_filename || 'unlocked').trim();
   if (!outName.toLowerCase().endsWith('.pdf')) outName += '.pdf';
 
-  setBgJob({ jobId: null, tool, filename: outName, progress: 15, state: 'running', sse: null });
-  syncBgJobBar();
+  const progressCtrl = _startSmoothProgress({
+    zone: null,
+    color,
+    label: 'Unlocking PDF…',
+    tool,
+    filename: outName,
+    renderRing: false,
+  });
 
   const fd = new FormData();
   fd.append('file', file);
   fd.append('password', password);
 
   try {
-    const bgMid = getBgJob();
-    if (bgMid) { bgMid.progress = 50; syncBgJobBar(); }
-
     const res = await fetch(`${BACKEND}/api/pdf/decrypt`, {
       method: 'POST',
       body: fd,
+      signal: progressCtrl.abortController.signal,
     });
 
     if (!res.ok) {
+      progressCtrl.cleanup();
+      clearBgJob(progressCtrl.jobKey, true);
+
       const json = await res.json().catch(() => ({}));
       const errMsg = (json.message || 'Incorrect password.').replace(/\s+or\s+.*$/i, '');
-
-      clearBgJob(true);
 
       if (submitBtn) {
         submitBtn.disabled = false;
@@ -1078,46 +1191,23 @@ async function _submitDecrypt(opts) {
     }
 
     const blob = await res.blob();
+    progressCtrl.finish(blob);
 
-    const bgDone = getBgJob();
-    if (bgDone) {
-      bgDone.progress = 100;
-      bgDone.state    = 'done';
-      bgDone.filename = outName;
-      bgDone.blob     = blob;
-      setBgJob({ ...bgDone, blob });
-      syncBgJobBar();
-    }
+    const resetCb = _makeResetCb(progressCtrl.jobKey);
 
-    const resetCb = () => {
+    setTimeout(() => {
       removeEncryptPanel();
-      clearBgJob();
-      const t = getActiveTool();
-      if (t) {
-        import('../../../../scripts/dropzone.js').then(({ _updateDropZoneForTool }) => {
-          if (_updateDropZoneForTool) _updateDropZoneForTool(t);
-        }).catch(() => {});
-      }
-    };
-
-    removeEncryptPanel();
-    if (getActiveTool()?.id === tool?.id) {
-      resetZoneContent(zone);
-      showDownloadBlobCard(zone, blob, outName, color, resetCb);
-    } else {
-      pushNotification({
-        type: 'success',
-        message: 'PDF Unlocked Successfully',
-        detail: outName,
-      });
-    }
+      showDownloadBlobCard(zone, blob, outName, color, resetCb, tool?.id);
+    }, 200);
 
   } catch (err) {
-    clearBgJob(true);
+    progressCtrl.cleanup();
+    clearBgJob(progressCtrl.jobKey, true);
     if (submitBtn) {
       submitBtn.disabled = false;
       submitBtn.innerHTML = origBtnText;
     }
+    if (err.name === 'AbortError') return;
     if (passInput) {
       passInput.classList.add('enc-input--error');
       passInput.focus();
@@ -1145,14 +1235,18 @@ async function _submitVaultLock(opts) {
 
   const panel = document.getElementById('encrypt-settings-panel');
   if (panel) panel.remove();
-  resetZoneContent(zone);
-  showProgress(zone, 15, color, 'Locking in ToolCEO Vault…');
 
   let outName = (output_filename || 'vault').trim();
   if (!outName.toLowerCase().endsWith('.tceo')) outName += '.tceo';
 
-  setBgJob({ jobId: null, tool, filename: outName, progress: 15, state: 'running', sse: null });
-  syncBgJobBar();
+  const progressCtrl = _startSmoothProgress({
+    zone,
+    color,
+    label: 'Locking in ToolCEO Vault…',
+    tool,
+    filename: outName,
+    renderRing: true,
+  });
 
   const fd = new FormData();
   fd.append('file', file);
@@ -1160,13 +1254,10 @@ async function _submitVaultLock(opts) {
   if (hint) fd.append('hint', hint);
 
   try {
-    updateProgress(zone, 50, color, tool.id);
-    const bgMid = getBgJob();
-    if (bgMid) { bgMid.progress = 50; syncBgJobBar(); }
-
     const res = await fetch(`${BACKEND}/api/pdf/vault-lock`, {
       method: 'POST',
       body: fd,
+      signal: progressCtrl.abortController.signal,
     });
 
     if (!res.ok) {
@@ -1175,44 +1266,30 @@ async function _submitVaultLock(opts) {
     }
 
     const blob = await res.blob();
+    progressCtrl.finish(blob);
 
-    updateProgress(zone, 100, color, tool.id);
-    const bgDone = getBgJob();
-    if (bgDone) {
-      bgDone.progress = 100;
-      bgDone.state    = 'done';
-      bgDone.filename = outName;
-      bgDone.blob     = blob;
-      setBgJob({ ...bgDone, blob });
-      syncBgJobBar();
-    }
+    const resetCb = _makeResetCb(progressCtrl.jobKey);
 
-    const resetCb = () => {
+    setTimeout(() => {
       removeEncryptPanel();
-      clearBgJob();
+      showDownloadBlobCard(zone, blob, outName, color, resetCb, tool?.id);
+    }, 200);
+
+  } catch (err) {
+    progressCtrl.cleanup();
+    clearBgJob(progressCtrl.jobKey, true);
+    if (err.name === 'AbortError') {
+      removeEncryptPanel();
+      resetZoneContent(zone);
       const t = getActiveTool();
       if (t) {
         import('../../../../scripts/dropzone.js').then(({ _updateDropZoneForTool }) => {
           if (_updateDropZoneForTool) _updateDropZoneForTool(t);
         }).catch(() => {});
       }
-    };
-
-    setTimeout(() => {
-      if (getActiveTool()?.id === tool?.id) {
-        showDownloadBlobCard(zone, blob, outName, color, resetCb);
-      } else {
-        pushNotification({
-          type: 'success',
-          message: 'PDF Locked in ToolCEO Vault (.tceo)',
-          detail: outName,
-        });
-      }
-    }, 200);
-
-  } catch (err) {
-    clearBgJob();
-    showError(zone, err.message || 'Vault Lock failed.');
+      return;
+    }
+    showError(zone, err.message || 'Vault Lock failed.', tool?.id);
     pushNotification({
       type: 'error',
       message: 'Vault Lock Failed',
@@ -1251,9 +1328,14 @@ async function _submitVaultUnlock(opts) {
   let outName = (output_filename || 'unlocked').trim();
   if (!outName.toLowerCase().endsWith('.pdf')) outName += '.pdf';
 
-  setBgJob({ jobId: null, tool, filename: outName, progress: 15, state: 'running', sse: null });
-  syncBgJobBar();
-  showProgress(zone, 15, color, 'Unlocking Vault...');
+  const progressCtrl = _startSmoothProgress({
+    zone,
+    color,
+    label: 'Unlocking Vault…',
+    tool,
+    filename: outName,
+    renderRing: true,
+  });
 
   const fd = new FormData();
   fd.append('file', file);
@@ -1263,14 +1345,16 @@ async function _submitVaultUnlock(opts) {
     const res = await fetch(`${BACKEND}/api/pdf/vault-unlock`, {
       method: 'POST',
       body: fd,
+      signal: progressCtrl.abortController.signal,
     });
 
     if (!res.ok) {
+      progressCtrl.cleanup();
+      clearBgJob(progressCtrl.jobKey, true);
+      restoreVaultThumb();
+
       const json = await res.json().catch(() => ({}));
       const errMsg = (json.message || 'Incorrect password.').replace(/\s+or\s+.*$/i, '');
-
-      clearBgJob(true);
-      restoreVaultThumb();
 
       if (submitBtn) {
         submitBtn.disabled = false;
@@ -1296,52 +1380,26 @@ async function _submitVaultUnlock(opts) {
       return;
     }
 
-    updateProgress(zone, 50, color, tool.id);
-    const bgMid = getBgJob();
-    if (bgMid) { bgMid.progress = 50; syncBgJobBar(); }
-
     const blob = await res.blob();
-    updateProgress(zone, 100, color, tool.id);
+    progressCtrl.finish(blob);
 
-    const bgDone = getBgJob();
-    if (bgDone) {
-      bgDone.progress = 100;
-      bgDone.state    = 'done';
-      bgDone.filename = outName;
-      bgDone.blob     = blob;
-      setBgJob({ ...bgDone, blob });
-      syncBgJobBar();
-    }
+    const resetCb = _makeResetCb(progressCtrl.jobKey);
 
-    const resetCb = () => {
+    setTimeout(() => {
       removeEncryptPanel();
-      clearBgJob();
-      const t = getActiveTool();
-      if (t) {
-        import('../../../../scripts/dropzone.js').then(({ _updateDropZoneForTool }) => {
-          if (_updateDropZoneForTool) _updateDropZoneForTool(t);
-        }).catch(() => {});
-      }
-    };
-
-    removeEncryptPanel();
-    if (getActiveTool()?.id === tool?.id) {
-      resetZoneContent(zone);
-      showDownloadBlobCard(zone, blob, outName, color, resetCb);
-    } else {
-      pushNotification({
-        type: 'success',
-        message: 'PDF Recovered & Unlocked Successfully',
-        detail: outName,
-      });
-    }
+      showDownloadBlobCard(zone, blob, outName, color, resetCb, tool?.id);
+    }, 200);
 
   } catch (err) {
-    clearBgJob(true);
+    progressCtrl.cleanup();
+    clearBgJob(progressCtrl.jobKey, true);
     restoreVaultThumb();
     if (submitBtn) {
       submitBtn.disabled = false;
       submitBtn.innerHTML = origBtnText;
+    }
+    if (err.name === 'AbortError') {
+      return;
     }
     if (passInput) {
       passInput.classList.add('enc-input--error');
