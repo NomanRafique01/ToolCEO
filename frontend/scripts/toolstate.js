@@ -37,6 +37,10 @@ function _pickFallbackJob() {
 function _visibleJobs() {
   const activeTool = getActiveTool();
   return [..._bgJobs.values()].filter((job) => {
+    // Extract jobs (noNotify) that are done are always hidden — they are
+    // cleared silently when the user switches away, no card ever shown.
+    if (job.noNotify && job.state === 'done') return false;
+
     // The active tool renders its own progress/result UI, so do not duplicate
     // that job in the sidebar bar once it is running or completed.
     const isActiveToolJob =
@@ -71,12 +75,29 @@ export function setBgJob(job) {
     try { existing.sse.close(); } catch (_) {}
   }
 
+  const prevNotified = existing ? existing.notified : false;
+  const prevPending  = existing ? existing.pendingNotify : false;
+
+  // If this update transitions the job to a terminal state (done/error) and
+  // the user is currently on this tool, mark it as pending so that
+  // onToolChange fires the notification when they navigate away.
+  const terminalState = incoming.state === 'done' || incoming.state === 'error';
+  const wasTerminal   = existing && (existing.state === 'done' || existing.state === 'error');
+  let pendingNotify = prevPending;
+  if (terminalState && !wasTerminal && !prevNotified) {
+    const activeTool = getActiveTool();
+    const onThisTool = activeTool && incoming.tool && activeTool.id === incoming.tool.id;
+    if (onThisTool) {
+      pendingNotify = true;
+    }
+  }
+
   _bgJobs.set(key, {
     ...existing,
     ...incoming,
     clientId: key,
-    notified: existing ? existing.notified : false,
-    pendingNotify: existing ? existing.pendingNotify : false,
+    notified: prevNotified,
+    pendingNotify,
   });
   syncBgJobBar();
   return key;
@@ -400,10 +421,29 @@ async function _downloadJobFile(jobId, filename) {
 }
 
 onToolChange((newTool) => {
-  // Fire deferred "completion" notifications for any job whose tool is no
-  // longer the active tool and hasn't been notified yet.
+  // Jobs marked noNotify (e.g. archive-extract) are silently cleared when the
+  // user navigates away after completion — no banner, no bg-job card.
+  const keysToDelete = [];
+  _bgJobs.forEach((job, key) => {
+    if (!job.noNotify) return;
+    if (job.state !== 'done' && job.state !== 'error') return;
+    const stillOnTool = newTool && job.tool && newTool.id === job.tool.id;
+    if (stillOnTool) return;
+    if (job.sse) { try { job.sse.close(); } catch (_) {} }
+    keysToDelete.push(key);
+  });
+  keysToDelete.forEach((k) => _bgJobs.delete(k));
+
+  // Fire deferred "completion" notifications for any terminal job that:
+  //   a) was explicitly marked pendingNotify (job completed while user was on it
+  //      and setBgJob caught the transition), OR
+  //   b) reached a terminal state via direct mutation (e.g. bg.state = 'done')
+  //      without going through setBgJob — those have notified=false and
+  //      pendingNotify=false but are no longer for the current active tool.
   _bgJobs.forEach((job) => {
-    if (!job.pendingNotify) return;
+    if (job.noNotify) return; // already handled above
+    const isTerminal = job.state === 'done' || job.state === 'error';
+    if (!isTerminal || job.notified) return;
     const stillOnTool = newTool && job.tool && newTool.id === job.tool.id;
     if (stillOnTool) return; // still on same tool — keep deferring
     job.notified = true;

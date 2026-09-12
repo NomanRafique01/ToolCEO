@@ -261,7 +261,7 @@ export async function handleCompressFilePicked(file) {
   }
 
   const tool  = getActiveTool();
-  const color = tool ? (tool.color || '#A855F7') : '#A855F7';
+  const color = tool ? (tool.color || '#A78BFA') : '#A78BFA';
   const zone  = document.getElementById('drop-zone');
 
   removeCompressPanel();
@@ -316,7 +316,7 @@ async function _submitCompress(file, opts, outputFilename) {
   if (!tool) return;
 
   const zone  = document.getElementById('drop-zone');
-  const color = tool.color || '#A855F7';
+  const color = tool.color || '#A78BFA';
 
   // Hide thumbnail + settings immediately; show progress bar only
   const panel = document.getElementById('compress-settings-panel');

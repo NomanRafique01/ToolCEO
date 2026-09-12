@@ -9,7 +9,7 @@
 /* ─── CSS CUSTOM PROPERTY DEFAULTS ────────────────────────────────────────── */
 
 :root {
-  --cmp-color: #A855F7;   /* vibrant purple — matches the tool card */
+  --cmp-color: #A78BFA;   /* consistent purple — matches the tool card */
 }
 
 /* ─── DROP ZONE: HAS-COMPRESS-THUMB STATE ──────────────────────────────────── */
@@ -366,7 +366,7 @@
 }
 
 .cmp-submit-btn {
-  background: var(--cmp-color, #A855F7);
+  background: var(--cmp-color, #A78BFA);
   color: #ffffff;
   border: none;
   border-radius: 8px;

@@ -364,6 +364,12 @@ function _showExtractDone(zone, destDir, color, tool) {
   wrap.style.setProperty('--ext-color', color);
 
   wrap.innerHTML = `
+    <button class="dz-save-close" type="button" title="Close" aria-label="Close" style="--save-color:${color}">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+        <line x1="18" y1="6" x2="6" y2="18"></line>
+        <line x1="6" y1="6" x2="18" y2="18"></line>
+      </svg>
+    </button>
     <div class="archive-extract-done-header">
       <div class="archive-extract-done-icon">
         <svg class="archive-done-check-svg" width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true">
@@ -399,6 +405,19 @@ function _showExtractDone(zone, destDir, color, tool) {
   `;
 
   zone.appendChild(wrap);
+
+  wrap.querySelector('.dz-save-close')?.addEventListener('click', (e) => {
+    e.stopPropagation();
+    clearBgJob();
+    removeArchiveExtractPanel();
+    resetZoneContent(zone);
+    const activeTool = getActiveTool();
+    if (activeTool) {
+      import('../../scripts/dropzone.js').then(({ _updateDropZoneForTool }) => {
+        if (_updateDropZoneForTool) _updateDropZoneForTool(activeTool);
+      }).catch(() => {});
+    }
+  });
 
   wrap.querySelector('#archive-open-dest-btn')?.addEventListener('click', async (e) => {
     e.stopPropagation();
@@ -528,7 +547,7 @@ async function _submitExtract() {
   }
 
   showProgress(zone, 5, color, 'Extracting…', tool.id);
-  setBgJob({ jobId: null, tool, filename: earlyName, progress: 5, state: 'submitting', sse: null, noSave: true });
+  setBgJob({ jobId: null, tool, filename: earlyName, progress: 5, state: 'submitting', sse: null, noSave: true, noNotify: true });
 
   try {
     const res = await fetch(`${BACKEND}/api/archives/extract`, {
@@ -554,7 +573,7 @@ async function _submitExtract() {
   const stream = new EventSource(`${BACKEND}/api/progress/${_jobId}`);
   let streamFinished = false;
   _streamRetryTimer = null;
-  setBgJob({ jobId: _jobId, tool, filename: earlyName, progress: 10, state: 'running', sse: stream, noSave: true });
+  setBgJob({ jobId: _jobId, tool, filename: earlyName, progress: 10, state: 'running', sse: stream, noSave: true, noNotify: true });
 
   stream.onmessage = (event) => {
     if (_cancelRequested) {
@@ -592,10 +611,6 @@ async function _submitExtract() {
       streamFinished = true;
       if (_streamRetryTimer) clearTimeout(_streamRetryTimer);
       updateProgress(zone, 100, color, tool.id);
-      const _activeTool = getActiveTool();
-      if (!_activeTool || _activeTool.id !== tool.id) {
-        pushNotification({ type: 'success', message: 'Archive extracted successfully!' });
-      }
       // destination_dir may come from SSE payload, or fall back to the local
       // destFolder captured in this closure, or to data.filename (the engine
       // returns dest_path as filename when extracting directly to disk).
