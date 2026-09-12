@@ -530,12 +530,20 @@ export async function renderRecent(container, activateNav) {
         (cat === 'archive' && !zipInner && ['ZIP', 'RAR', '7Z', 'TAR', 'GZ'].includes(origExt)) ||
         (cat === 'archive' && ['RAR', '7Z', 'TAR', 'GZ'].includes(origExt)) ||
         (cat === 'archive' && ['TAR', '7Z', 'RAR', 'GZ'].includes(outExt) && origExt === 'ZIP');
+      const archiveLabel = getArchiveFormatLabel(item.output_filename || outExt || outFmt);
+      const isArchiveOutput = ['ZIP', 'RAR', '7Z', 'TAR', 'TAR.GZ', 'TAR.BZ2'].includes(archiveLabel);
+      const isArchiveCreation = cat === 'archive' && isArchiveOutput
+        && (!origExt || ['ARCHIVE', 'FILE'].includes(origExt));
 
       let resolvedInExt = origExt || inFmt || 'FILE';
       let resolvedCat = cat;
 
+      // Archive creation uses the tool action label instead of a generic source category.
+      if (isArchiveCreation) {
+        formatBadge = `FILES TO ${archiveLabel}`;
+      }
       // Case 1: Output is a ZIP holding converted files (Images, Documents, Split PDFs, etc.)
-      if (outExt === 'ZIP' && !isArchiveFamily) {
+      else if (outExt === 'ZIP' && !isArchiveFamily) {
         let displayIn = origExt;
         if (!displayIn || displayIn === 'ZIP') {
           if (zipInner === 'PDF') {
@@ -583,7 +591,9 @@ export async function renderRecent(container, activateNav) {
       }
 
       // ── Badge color & thumbnail from input tool family theme ────────
-      const badgeColor = getToolFamilyColor(resolvedInExt, item.original_filename, outExt || outFmt, resolvedCat);
+      const badgeColor = isArchiveOutput || isArchiveFamily
+        ? '#84CC16'
+        : getToolFamilyColor(resolvedInExt, item.original_filename, outExt || outFmt, resolvedCat);
 
       const tileHtml = renderPreviewTile(
         resolvedCat,

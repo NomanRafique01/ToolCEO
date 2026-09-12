@@ -221,6 +221,12 @@ function toolRecords(category) {
     'archive-files-zip', 'archive-files-tar', 'archive-files-tar-gz', 'archive-files-tar-bz2',
     'archive-files-7z', 'archive-folder-zip', 'archive-folder-7z', 'archive-files-rar',
   ];
+  const archiveExtractIds = [
+    'archive-extract-zip', 'archive-extract-rar', 'archive-extract-7z', 'archive-extract-tar',
+    'archive-extract-tar-gz', 'archive-extract-tar-bz2', 'archive-extract-tar-xz', 'archive-extract-gz',
+    'archive-extract-bz2', 'archive-extract-xz', 'archive-extract-cab', 'archive-extract-iso',
+    'archive-extract-dmg',
+  ];
   const iconOffsets = {
     'compress-create': 0,
     extract: 8,
@@ -234,14 +240,18 @@ function toolRecords(category) {
     utility: [COLORS.archive, COLORS.image, COLORS.audio, COLORS.document, COLORS.data, COLORS.video, COLORS.ebook, COLORS.cyan],
   };
   return category.tools.map(([label, desc], index) => ({
-    id: category.id === 'compress-create' ? archiveCreateIds[index] : `${category.id}-${index + 1}`,
+    id: category.id === 'compress-create'
+      ? archiveCreateIds[index]
+      : (category.id === 'extract' ? archiveExtractIds[index] : `${category.id}-${index + 1}`),
     label,
     desc,
     icon: TOOL_ICONS[iconOffsets[category.id] + index],
     color: toolColors[category.id][index],
     bg: COLOR_BACKGROUNDS[toolColors[category.id][index]],
-    mainText: category.id === 'compress-create' ? 'Drop files to archive' : 'Drop a file to begin',
-    subText: category.id === 'compress-create' ? 'or click to browse' : 'or click to browse',
+    mainText: category.id === 'compress-create'
+      ? 'Drop files to archive'
+      : (category.id === 'extract' ? `Drop ${label.replace(' Extract', '')} archive to extract` : 'Drop a file to begin'),
+    subText: 'or click to browse',
   }));
 }
 
@@ -294,7 +304,7 @@ function renderCategory(container, activateNav, category) {
         _handleLockedClick(card.dataset.lockedModule, card.querySelector('.fmt-label')?.textContent || '');
         return;
       }
-      if (tool && category.id === 'compress-create') {
+      if (tool && (category.id === 'compress-create' || category.id === 'extract')) {
         container.querySelectorAll('.fmt-card').forEach((item) => item.classList.remove('selected'));
         card.classList.add('selected');
         setActiveTool(tool);

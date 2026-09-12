@@ -1,4 +1,5 @@
 import { handleArchiveFilesPicked, removeArchiveCreatePanel, isArchiveCreateTool } from '../tools/archives/archive_create.js';
+import { handleArchiveFilesPicked as handleArchiveExtractFilePicked, removeArchiveExtractPanel, isArchiveExtractTool, restoreArchiveExtractDone } from '../tools/archives/archive_extract.js';
 /**
  * dropzone.js
  * Wires up the file drop zone: click-to-browse, drag-over highlight,
@@ -372,6 +373,7 @@ function _updateDropZone(tool) {
     removePdfImagesPanel();
     removeImagesPdfPanel();
     removeArchiveCreatePanel();
+    removeArchiveExtractPanel();
     // Clean up any active DOCX conversion panel
     removeDocxPdfPanel(); removeDocxHtmlPanel(); removeDocxTxtPanel();
     removeDocxOdtPanel(); removeDocxEpubPanel(); removeDocxMdPanel();
@@ -445,6 +447,7 @@ function _updateDropZone(tool) {
   removePdfImagesPanel();    // hide previous PDF→Images settings panel if tool changed
   removeImagesPdfPanel();    // hide previous Images→PDF queue panel if tool changed
   removeArchiveCreatePanel(); // hide previous archive queue panel if tool changed
+  removeArchiveExtractPanel(); // hide previous archive extract panel if tool changed
   // Clean up any active DOCX conversion panel when switching tools
   removeDocxPdfPanel(); removeDocxHtmlPanel(); removeDocxTxtPanel();
   removeDocxOdtPanel(); removeDocxEpubPanel(); removeDocxMdPanel();
@@ -520,6 +523,11 @@ function _updateDropZone(tool) {
       return;
     }
     if (bgJob.state === 'done') {
+      // Archive extract tool: show the "Extraction Complete" confirmation card.
+      if (isArchiveExtractTool(tool.id) && bgJob.destinationDir) {
+        restoreArchiveExtractDone(zone, bgJob, color, tool);
+        return;
+      }
       if (bgJob.blob) {
         showDownloadBlobCard(zone, bgJob.blob, bgJob.filename, color, () => {
           _resetZoneContent(zone);
@@ -536,6 +544,8 @@ function _updateDropZone(tool) {
           removePdfExcelPanel();
           removePdfHtmlPanel();
           removePdfTxtPanel();
+          removeArchiveCreatePanel();
+          removeArchiveExtractPanel();
           const t = getActiveTool();
           if (t) _updateDropZone(t);
         });
@@ -1291,6 +1301,12 @@ async function _submitFile(files) {
     return;
   }
 
+  // Archive extract tools share the local extraction flow.
+  if (isArchiveExtractTool(tool.id)) {
+    handleArchiveExtractFilePicked(files[0]);
+    return;
+  }
+
   // DOCX conversion tools — dispatch by tool id
   if (tool.id === 'docx-pdf')  { handleDocxPdfFilePicked(files[0]);  return; }
   if (tool.id === 'docx-html') { handleDocxHtmlFilePicked(files[0]); return; }
@@ -1803,6 +1819,24 @@ export function initDropZone() {
       fileInput.multiple = true;
       fileInput.accept = '*/*';
       fileInput.webkitdirectory = tool.id.startsWith('archive-folder-');
+    } else if (tool && isArchiveExtractTool(tool.id)) {
+      fileInput.multiple = false;
+      const _EXTRACT_ACCEPTS = {
+        'archive-extract-zip':     '.zip,application/zip',
+        'archive-extract-rar':     '.rar,application/x-rar-compressed,application/vnd.rar',
+        'archive-extract-7z':      '.7z,application/x-7z-compressed',
+        'archive-extract-tar':     '.tar,application/x-tar',
+        'archive-extract-tar-gz':  '.tar.gz,.tgz,application/gzip',
+        'archive-extract-tar-bz2': '.tar.bz2,.tbz2,application/x-bzip2',
+        'archive-extract-tar-xz':  '.tar.xz,.txz,application/x-xz',
+        'archive-extract-gz':      '.gz,application/gzip',
+        'archive-extract-bz2':     '.bz2,application/x-bzip2',
+        'archive-extract-xz':      '.xz,application/x-xz',
+        'archive-extract-cab':     '.cab,application/vnd.ms-cab-compressed',
+        'archive-extract-iso':     '.iso,application/x-iso9660-image',
+        'archive-extract-dmg':     '.dmg,application/x-apple-diskimage',
+      };
+      fileInput.accept = _EXTRACT_ACCEPTS[tool.id] || '*/*';
     } else if (tool) {
       // ── Per-format image accept filters ──────────────────────────────────────
       const _IMG_ACCEPT = {

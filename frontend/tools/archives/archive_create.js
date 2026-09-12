@@ -2,7 +2,7 @@ import { getActiveTool, setBgJob, getBgJob, syncBgJobBar, clearBgJob } from '../
 import { pushNotification } from '../../scripts/notificationStore.js';
 import { showScanProgress, showProgress, updateProgress, resetZoneContent, showDownload, showError } from '../shared/progress.js';
 import { loadPdfDocument, renderPdfPageToDataUri } from '../shared/pdfRenderer.js';
-import { getArchiveFileIconSvg, getArchiveFormatLabel } from '../shared/archiveIcon.js';
+import { getArchiveFileIconSvg, getArchiveFolderIconSvg, getArchiveFormatLabel } from '../shared/archiveIcon.js';
 
 const BACKEND = 'http://127.0.0.1:8000';
 const ARCHIVE_IDS = new Set([
@@ -35,6 +35,7 @@ const _ARCHIVE_EXTS = new Set(['.zip', '.rar', '.7z', '.tar', '.gz', '.bz2', '.x
  */
 let _queue = [];
 let _jobId = null;
+let _cancelRequested = false;
 
 // ─── UTILITIES ────────────────────────────────────────────────────────────────
 
@@ -121,6 +122,15 @@ function _pageThumbSvg(label, color) {
  */
 function _thumbHTML(item, color) {
   const ext = _ext(item.file.name);
+  const isFolder = item.file.webkitRelativePath && item.file.webkitRelativePath.includes('/');
+
+  // Directory pickers return each file with its relative path; show the folder
+  // family thumbnail instead of a document badge for those entries.
+  if (isFolder) {
+    return `<div class="archive-file-icon archive-file-icon--folder" style="--archive-color:${color}">
+      ${getArchiveFolderIconSvg(color)}
+    </div>`;
+  }
 
   // PDF or image — show rendered thumbnail
   if (item.thumbnail) {
@@ -147,8 +157,7 @@ function _thumbHTML(item, color) {
   }
 
   // Generic formats use the same white folded-page thumbnail as ebooks.
-  const isFolder = item.file.webkitRelativePath && item.file.webkitRelativePath.includes('/');
-  const badgeLabel = isFolder ? 'DIR' : (item.file.name.split('.').pop() || 'FILE').slice(0, 5).toUpperCase();
+  const badgeLabel = (item.file.name.split('.').pop() || 'FILE').slice(0, 5).toUpperCase();
   return `<div class="archive-file-icon archive-file-icon--ebook" style="--archive-color:${color}">
     ${_pageThumbSvg(badgeLabel, color)}
   </div>`;
@@ -385,6 +394,8 @@ async function submit() {
   const zone = document.getElementById('drop-zone');
   if (!tool || !zone || !_queue.length) return;
 
+  _cancelRequested = false;
+
   // Keep conversion progress visible when the create panel is lower on the page.
   document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'smooth' });
 
@@ -410,8 +421,13 @@ async function submit() {
     const response = await fetch(`${BACKEND}/api/archives/create`, { method: 'POST', body: form });
     const body     = await response.json();
     if (!response.ok) throw new Error(body.detail || `Server error ${response.status}`);
+    if (_cancelRequested) {
+      fetch(`${BACKEND}/api/archives/cancel/${body.job_id}`, { method: 'POST' }).catch(() => {});
+      return;
+    }
     _jobId = body.job_id;
   } catch (error) {
+    if (_cancelRequested) return;
     clearBgJob();
     showError(zone, `Upload failed: ${error.message}`, tool.id);
     return;
@@ -421,6 +437,11 @@ async function submit() {
   setBgJob({ jobId: _jobId, tool, filename: earlyName, progress: 10, state: 'running', sse: stream });
 
   stream.onmessage = (event) => {
+    if (_cancelRequested) {
+      stream.close();
+      return;
+    }
+
     let data;
     try { data = JSON.parse(event.data); } catch (_) { return; }
 
@@ -448,6 +469,7 @@ async function submit() {
 
   stream.onerror = () => {
     stream.close();
+    if (_cancelRequested) return;
     showError(zone, 'Lost connection to backend. Is the server running?', tool.id);
   };
 }
@@ -455,8 +477,10 @@ async function submit() {
 // ─── CANCEL LISTENER ──────────────────────────────────────────────────────────
 
 document.addEventListener('progress-cancelled', () => {
-  if (!_jobId) return;
-  fetch(`${BACKEND}/api/archives/cancel/${_jobId}`, { method: 'POST' }).catch(() => {});
+  _cancelRequested = true;
+  if (_jobId) {
+    fetch(`${BACKEND}/api/archives/cancel/${_jobId}`, { method: 'POST' }).catch(() => {});
+  }
   _jobId = null;
   removeArchiveCreatePanel();
   pushNotification({ type: 'info', message: 'Archive creation cancelled.' });

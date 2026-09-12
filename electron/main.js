@@ -628,6 +628,11 @@ function createWindow() {
     backgroundColor: '#0A1F1C',
     frame: false,
     titleBarStyle: 'hidden',
+    titleBarOverlay: {
+      color: '#081918',
+      symbolColor: '#8FAAA6',
+      height: 32,
+    },
     webPreferences: {
       preload: path.join(__dirname, 'preload.js'),
       contextIsolation: true,
@@ -1390,6 +1395,20 @@ app.whenReady().then(async () => {
       }
     }
     return filePath;
+  });
+
+  // ── IPC: Select directory dialog (Windows, macOS, Linux) ─────────────────
+  ipcMain.handle('select-directory-dialog', async (_event, options = {}) => {
+    const downloadsDir = app.getPath('downloads');
+    const defaultPath = options.defaultPath || downloadsDir;
+    const { canceled, filePaths } = await dialog.showOpenDialog({
+      title: options.title || 'Select Folder to Extract Files',
+      defaultPath: defaultPath,
+      buttonLabel: options.buttonLabel || 'Select Folder',
+      properties: ['openDirectory', 'createDirectory'],
+    });
+    if (canceled || !filePaths || filePaths.length === 0) return null;
+    return filePaths[0];
   });
 
   // ── IPC: Save file via system dialog ──────────────────────────────────────

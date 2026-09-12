@@ -631,11 +631,13 @@ async function _submitExtract() {
         }
       };
       setTimeout(() => showDownload(zone, dlName, jobId, color, onReset, tool.id), 200);
-      pushNotification({
-        type: 'success',
-        message: 'Images Extracted',
-        detail: dlName,
-      });
+      if (getActiveTool()?.id !== tool?.id) {
+        pushNotification({
+          type: 'success',
+          message: 'Images Extracted',
+          detail: dlName,
+        });
+      }
       return;
     }
 

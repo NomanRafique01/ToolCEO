@@ -83,6 +83,11 @@ const FORMAT_TO_FAMILY = {
   '7z': 'archive',
   tar:  'archive',
   gz:   'archive',
+  bz2:  'archive',
+  xz:   'archive',
+  lz:   'archive',
+  lzma: 'archive',
+  zst:  'archive',
 
   // Data (Teal #2DD4BF)
   csv:  'data',

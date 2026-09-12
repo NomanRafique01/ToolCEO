@@ -19,6 +19,15 @@ contextBridge.exposeInMainWorld('toolceo', {
   saveFileAs: (filename, base64Data, conversionMeta) =>
     ipcRenderer.invoke('save-file-dialog', filename, base64Data, conversionMeta),
 
+  selectDirectory: (options) =>
+    ipcRenderer.invoke('select-directory-dialog', options),
+
+  openPath: (filePath) =>
+    ipcRenderer.invoke('shell:openPath', filePath),
+
+  showItemInFolder: (filePath) =>
+    ipcRenderer.invoke('shell:showItemInFolder', filePath),
+
   // ── Vault file: read a local .tceo file into a JS File object ────────────────
   // Returns { ok, buffer, name, size } or { ok: false, error }
   readLocalFile: (filePath) =>
@@ -127,4 +136,5 @@ contextBridge.exposeInMainWorld('electronAPI', {
   showItemInFolder:    (filePath) => ipcRenderer.invoke('shell:showItemInFolder', filePath),
   openPath:            (filePath) => ipcRenderer.invoke('shell:openPath', filePath),
   getFileIcon:         (filePath) => ipcRenderer.invoke('shell:getFileIcon', filePath),
+  selectDirectory:     (options) => ipcRenderer.invoke('select-directory-dialog', options),
 });

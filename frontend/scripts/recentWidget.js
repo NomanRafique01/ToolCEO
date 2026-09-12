@@ -51,6 +51,8 @@ const FORMAT_THEMES = {
   '7z': { bg: '#3D351A', color: '#FCD34D' },
   tar:  { bg: '#3D351A', color: '#FCD34D' },
   gz:   { bg: '#3D351A', color: '#FCD34D' },
+  bz2:  { bg: '#3D351A', color: '#FCD34D' },
+  xz:   { bg: '#3D351A', color: '#FCD34D' },
   csv:  { bg: '#1A3D33', color: '#34D399' },
   json: { bg: '#1A3D33', color: '#34D399' },
   xml:  { bg: '#1A3D33', color: '#34D399' },
@@ -186,8 +188,14 @@ export async function renderDashboardRecent() {
       (cat === 'archive' && !zipInner && ['ZIP', 'RAR', '7Z', 'TAR', 'GZ'].includes(origExt)) ||
       (cat === 'archive' && ['RAR', '7Z', 'TAR', 'GZ'].includes(origExt)) ||
       (cat === 'archive' && ['TAR', '7Z', 'RAR', 'GZ'].includes(outExt) && origExt === 'ZIP');
+    const archiveLabel = getArchiveFormatLabel(item.output_filename || outFmt || outExt);
+    const isArchiveOutput = ['ZIP', 'RAR', '7Z', 'TAR', 'TAR.GZ', 'TAR.BZ2'].includes(archiveLabel);
+    const isArchiveCreation = cat === 'archive' && isArchiveOutput
+      && (!origExt || ['ARCHIVE', 'FILE'].includes(origExt));
 
-    if (outExt === 'ZIP' && !isArchiveFamily) {
+    if (isArchiveCreation) {
+      convText = `FILES TO ${archiveLabel}`;
+    } else if (outExt === 'ZIP' && !isArchiveFamily) {
       let displayIn = origExt;
       if (!displayIn || displayIn === 'ZIP') {
         if (zipInner === 'PDF') {
@@ -219,8 +227,6 @@ export async function renderDashboardRecent() {
     }
 
     const badge = getFormatBadge(item.output_format || item.input_format, item.category);
-    const archiveLabel = getArchiveFormatLabel(item.output_filename || item.output_format || outExt);
-    const isArchiveOutput = ['ZIP', 'RAR', '7Z', 'TAR', 'TAR.GZ', 'TAR.BZ2'].includes(archiveLabel);
     const archiveIcon = isArchiveOutput
       ? `<span class="file-type-icon file-type-icon--archive" aria-label="${archiveLabel} archive">${getArchiveFileIconSvg(archiveLabel, '#84CC16')}</span>`
       : `<div class="file-type-icon" style="${badge.style}">${escapeHtml(badge.label)}</div>`;

@@ -31,7 +31,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initVaultFileHandler({ activateNav });
 
   const elapsed = performance.now() - loadingStartedAt;
-  const minimumDisplayTime = Math.max(0, 4000 - elapsed);
+  const minimumDisplayTime = Math.max(0, 2000 - elapsed);
   setTimeout(() => {
     const loadingScreen = document.getElementById('app-loading');
     if (loadingScreen) loadingScreen.classList.add('is-hidden');

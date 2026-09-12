@@ -686,13 +686,15 @@ async function _applyAndSave(viewer) {
       setTimeout(() => showDownloadBlobCard(zone, blob, outName, color, onReset, tool.id), 200);
     }
 
-    pushNotification({
-      type: 'success',
-      message: hasDeleted ? 'PDF Pages Updated' : 'PDF Rotated',
-      detail: hasDeleted
-        ? `${outName} (${deletedList.length} page${deletedList.length === 1 ? '' : 's'} deleted)`
-        : outName,
-    });
+    if (getActiveTool()?.id !== tool?.id) {
+      pushNotification({
+        type: 'success',
+        message: hasDeleted ? 'PDF Pages Updated' : 'PDF Rotated',
+        detail: hasDeleted
+          ? `${outName} (${deletedList.length} page${deletedList.length === 1 ? '' : 's'} deleted)`
+          : outName,
+      });
+    }
   } catch (err) {
     if (zone) showError(zone, err.message || 'Unable to save modified PDF.');
     clearBgJob();

@@ -988,12 +988,13 @@ async function _submitEncrypt(opts) {
     setTimeout(() => {
       if (getActiveTool()?.id === tool?.id) {
         showDownloadBlobCard(zone, blob, outName, color, resetCb);
+      } else {
+        pushNotification({
+          type: 'success',
+          message: 'PDF Encrypted Successfully',
+          detail: outName,
+        });
       }
-      pushNotification({
-        type: 'success',
-        message: 'PDF Encrypted Successfully',
-        detail: outName,
-      });
     }, 200);
 
   } catch (err) {
@@ -1103,12 +1104,13 @@ async function _submitDecrypt(opts) {
     if (getActiveTool()?.id === tool?.id) {
       resetZoneContent(zone);
       showDownloadBlobCard(zone, blob, outName, color, resetCb);
+    } else {
+      pushNotification({
+        type: 'success',
+        message: 'PDF Unlocked Successfully',
+        detail: outName,
+      });
     }
-    pushNotification({
-      type: 'success',
-      message: 'PDF Unlocked Successfully',
-      detail: outName,
-    });
 
   } catch (err) {
     clearBgJob(true);
@@ -1199,12 +1201,13 @@ async function _submitVaultLock(opts) {
     setTimeout(() => {
       if (getActiveTool()?.id === tool?.id) {
         showDownloadBlobCard(zone, blob, outName, color, resetCb);
+      } else {
+        pushNotification({
+          type: 'success',
+          message: 'PDF Locked in ToolCEO Vault (.tceo)',
+          detail: outName,
+        });
       }
-      pushNotification({
-        type: 'success',
-        message: 'PDF Locked in ToolCEO Vault (.tceo)',
-        detail: outName,
-      });
     }, 200);
 
   } catch (err) {
@@ -1325,12 +1328,13 @@ async function _submitVaultUnlock(opts) {
     if (getActiveTool()?.id === tool?.id) {
       resetZoneContent(zone);
       showDownloadBlobCard(zone, blob, outName, color, resetCb);
+    } else {
+      pushNotification({
+        type: 'success',
+        message: 'PDF Recovered & Unlocked Successfully',
+        detail: outName,
+      });
     }
-    pushNotification({
-      type: 'success',
-      message: 'PDF Recovered & Unlocked Successfully',
-      detail: outName,
-    });
 
   } catch (err) {
     clearBgJob(true);

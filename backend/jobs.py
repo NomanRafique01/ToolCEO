@@ -32,6 +32,7 @@ class Job:
     result: Optional[bytes] = None
     filename: Optional[str] = None
     media_type: Optional[str] = None
+    destination_dir: Optional[str] = None
     error: Optional[str] = None
     cancel_event: threading.Event = field(default_factory=threading.Event, repr=False)
     cancelled: bool = False

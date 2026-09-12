@@ -1,0 +1,619 @@
+/**
+ * frontend/tools/archives/archive_extract.css
+ * Styles for Archive Extract tool dropzone preview and configuration panel.
+ */
+
+/* ─── DROP ZONE THUMBNAIL ─────────────────────────────────────────────────── */
+
+.drop-zone.dz-has-extract-thumb {
+  padding: 24px 20px 20px;
+  padding: 16px 20px !important;
+  min-height: 180px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+/* Hide all idle-state elements when an archive thumbnail or done card is displayed */
+.drop-zone.dz-has-extract-thumb > .drop-icon,
+.drop-zone.dz-has-extract-thumb > .drop-main-text,
+.drop-zone.dz-has-extract-thumb > .drop-browse,
+.drop-zone.dz-has-extract-thumb > .drop-private,
+.drop-zone.dz-has-extract-thumb > .dz-paste-btn,
+.drop-zone.dz-has-extract-done > .drop-icon,
+.drop-zone.dz-has-extract-done > .drop-main-text,
+.drop-zone.dz-has-extract-done > .drop-browse,
+.drop-zone.dz-has-extract-done > .drop-private,
+.drop-zone.dz-has-extract-done > .dz-paste-btn {
+  display: none !important;
+}
+
+.dz-extract-thumb-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  pointer-events: auto;
+  animation: extThumbFade 0.2s ease;
+}
+
+@keyframes extThumbFade {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+.dz-extract-thumb-card {
+  position: relative;
+  display: inline-flex;
+  border-radius: 10px;
+  transition: transform 0.2s ease;
+}
+
+.dz-extract-thumb-card:hover {
+  transform: translateY(-2px);
+}
+
+.dz-extract-thumb-frame {
+  width: 80px;
+  height: 104px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--bg-card, #0d1117);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1.5px solid color-mix(in srgb, var(--ext-color, #00E5C0) 40%, var(--border, #21262d));
+}
+
+.dz-extract-thumb-frame svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.dz-extract-thumb-remove {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--bg-surface);
+  border: 1.5px solid color-mix(in srgb, var(--ext-color, #00E5C0) 50%, var(--border));
+  color: var(--ext-color, #00E5C0);
+  font-size: 11px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 130ms ease;
+  z-index: 5;
+}
+
+.dz-extract-thumb-remove:hover {
+  background: color-mix(in srgb, var(--ext-color, #00E5C0) 15%, var(--bg-surface));
+}
+
+.dz-extract-thumb-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text, #f0f6fc);
+  max-width: 320px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+}
+
+.dz-extract-thumb-size {
+  font-size: 11px;
+  color: var(--text-muted, #8b949e);
+  font-weight: 500;
+}
+
+/* ─── SETTINGS PANEL ──────────────────────────────────────────────────────── */
+
+.archive-extract-panel {
+  margin-top: 18px;
+  background: color-mix(in srgb, var(--bg-card, #161b22) 85%, transparent);
+  border: 1px solid color-mix(in srgb, var(--ext-color, #00E5C0) 25%, var(--border, #30363d));
+  border-radius: 12px;
+  padding: 18px 20px;
+  backdrop-filter: blur(12px);
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  animation: extFadeIn 0.22s ease;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+@keyframes extFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.archive-extract-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.archive-extract-stats {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.archive-stat-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  background: color-mix(in srgb, var(--ext-color, #00E5C0) 12%, rgba(255, 255, 255, 0.04));
+  border: 1px solid color-mix(in srgb, var(--ext-color, #00E5C0) 30%, transparent);
+  border-radius: 20px;
+  font-size: 11.5px;
+  color: var(--text, #f0f6fc);
+}
+
+.archive-stat-badge strong {
+  color: var(--ext-color, #00E5C0);
+}
+
+.archive-stat-badge--locked {
+  background: rgba(234, 179, 8, 0.12);
+  border-color: rgba(234, 179, 8, 0.35);
+  color: #facc15;
+}
+
+.archive-change-btn {
+  background: transparent;
+  border: 1px solid var(--border, #30363d);
+  color: var(--text-muted, #8b949e);
+  font-size: 11.5px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.archive-change-btn:hover {
+  color: var(--text, #f0f6fc);
+  border-color: var(--text-muted, #8b949e);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* ─── PREVIEW BOX ─────────────────────────────────────────────────────────── */
+
+.archive-preview-box {
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid var(--border, #21262d);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.archive-preview-title {
+  padding: 8px 12px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-muted, #8b949e);
+  background: rgba(255, 255, 255, 0.02);
+  border-bottom: 1px solid var(--border, #21262d);
+}
+
+.archive-preview-list {
+  max-height: 150px;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+
+.archive-preview-list::-webkit-scrollbar {
+  width: 6px;
+}
+
+.archive-preview-list::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.15);
+  border-radius: 3px;
+}
+
+.archive-preview-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 5px 12px;
+  font-size: 11px;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  color: var(--text, #c9d1d9);
+  transition: background 0.1s ease;
+}
+
+.archive-preview-row:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.archive-preview-path {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-right: 12px;
+}
+
+.archive-preview-size {
+  color: var(--text-muted, #8b949e);
+  white-space: nowrap;
+  font-size: 10.5px;
+}
+
+.archive-preview-more {
+  padding: 6px 12px;
+  font-size: 10.5px;
+  font-style: italic;
+  color: var(--text-muted, #8b949e);
+  text-align: center;
+  border-top: 1px dashed rgba(255, 255, 255, 0.06);
+}
+
+/* ─── INPUT FIELDS ────────────────────────────────────────────────────────── */
+
+.archive-extract-inputs {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.archive-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.archive-field-label {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-muted, #8b949e);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.archive-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.archive-field-input {
+  width: 100%;
+  height: 38px;
+  background: rgba(13, 17, 23, 0.85);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 8px;
+  padding: 0 12px;
+  font-size: 13px;
+  color: var(--text, #f0f6fc);
+  outline: none;
+  transition: border-color 0.18s ease, box-shadow 0.18s ease;
+}
+
+.archive-field-input:focus {
+  border-color: var(--ext-color, #00E5C0);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--ext-color, #00E5C0) 25%, transparent);
+}
+
+/* ─── ACTION BUTTON ───────────────────────────────────────────────────────── */
+
+.archive-extract-actions {
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 4px;
+}
+
+.archive-extract-btn {
+  height: 40px;
+  padding: 0 24px;
+  border-radius: 8px;
+  border: none;
+  background: var(--ext-color, #00E5C0);
+  color: #081918;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--ext-color, #00E5C0) 35%, transparent);
+  transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease;
+}
+
+.archive-extract-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.08);
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--ext-color, #00E5C0) 50%, transparent);
+}
+
+.archive-extract-btn:active {
+  transform: translateY(0);
+}
+
+/* ─── DIRECTORY PICKER ROW ────────────────────────────────────────────────── */
+
+.archive-dir-picker-wrap {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+
+.archive-browse-btn {
+  height: 38px;
+  padding: 0 14px;
+  border-radius: 8px;
+  border: 1px solid var(--border, #30363d);
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--text, #f0f6fc);
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+}
+
+.archive-browse-btn:hover {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: var(--ext-color, #00E5C0);
+  color: var(--ext-color, #00E5C0);
+}
+
+.archive-theme-icon {
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+  color: var(--ext-color, #00E5C0);
+}
+
+.archive-field-input--highlight {
+  border-color: var(--ext-color, #00E5C0) !important;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--ext-color, #00E5C0) 30%, transparent) !important;
+  transition: all 0.2s ease !important;
+}
+
+.archive-destination-error {
+  margin: 2px 0 0;
+  color: var(--ext-color, #00E5C0);
+  font-size: 11.5px;
+  font-weight: 600;
+}
+
+/* ─── EXTRACTION COMPLETE CARD (INSIDE DROP ZONE) ─────────────────────────── */
+
+.drop-zone.dz-has-extract-done {
+  height: auto !important;
+  min-height: 260px !important;
+  padding: 24px 20px !important;
+}
+
+.archive-extract-done-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  max-width: 480px;
+  box-sizing: border-box;
+  padding: 20px 22px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid color-mix(in srgb, var(--ext-color, #00E5C0) 35%, transparent);
+  border-radius: 14px;
+  backdrop-filter: blur(4px);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--ext-color, #00E5C0) 10%, transparent),
+    0 8px 32px rgba(0, 0, 0, 0.3);
+  animation: extDoneEntrance 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: auto;
+}
+
+@keyframes extDoneEntrance {
+  from { opacity: 0; transform: scale(0.94) translateY(10px); }
+  to   { opacity: 1; transform: scale(1)    translateY(0);     }
+}
+
+/* ── header row: icon + title block ── */
+.archive-extract-done-header {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.archive-extract-done-icon {
+  width: 46px;
+  height: 46px;
+  flex: 0 0 46px;
+  border-radius: 50%;
+  background: color-mix(in srgb, #22c55e 14%, rgba(0, 0, 0, 0.3));
+  border: 1.5px solid color-mix(in srgb, #22c55e 55%, transparent);
+  color: #22c55e;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 18px rgba(34, 197, 94, 0.28), inset 0 0 8px rgba(34, 197, 94, 0.08);
+}
+
+/* animated check — circle draws in, then tick appears */
+.archive-done-circle {
+  stroke-dasharray: 63;
+  stroke-dashoffset: 63;
+  animation: archiveDoneCircle 0.4s 0.05s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+}
+
+.archive-done-tick {
+  stroke-dasharray: 20;
+  stroke-dashoffset: 20;
+  animation: archiveDoneTick 0.28s 0.38s ease forwards;
+}
+
+@keyframes archiveDoneCircle {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes archiveDoneTick {
+  to { stroke-dashoffset: 0; }
+}
+
+.archive-extract-done-title-block {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.archive-extract-done-title {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text, #f0f6fc);
+  margin: 0;
+  letter-spacing: -0.01em;
+}
+
+.archive-extract-done-subtitle {
+  font-size: 12px;
+  color: var(--text-muted, #8b949e);
+  margin: 0;
+}
+
+/* ── divider ── */
+.archive-extract-done-divider {
+  height: 1px;
+  background: color-mix(in srgb, var(--ext-color, #00E5C0) 20%, rgba(255, 255, 255, 0.07));
+  margin: 0 -2px;
+}
+
+/* ── destination label ── */
+.archive-extract-done-dest-label {
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.6px;
+  text-transform: uppercase;
+  color: var(--text-muted, #8b949e);
+}
+
+/* ── path box ── */
+.archive-extract-done-path-box {
+  box-sizing: border-box;
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid color-mix(in srgb, var(--ext-color, #00E5C0) 22%, rgba(255, 255, 255, 0.08));
+  border-radius: 8px;
+  padding: 9px 12px;
+  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-size: 11.5px;
+  color: var(--text, #c9d1d9);
+  overflow: hidden;
+}
+
+.archive-extract-done-path-box span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ── action buttons ── */
+.archive-extract-done-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.archive-open-folder-btn {
+  flex: 1 1 auto;
+  height: 38px;
+  padding: 0 18px;
+  border-radius: 9px;
+  border: none;
+  background: var(--ext-color, #00E5C0);
+  color: #081918;
+  font-size: 12.5px;
+  font-weight: 700;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  box-shadow: 0 3px 12px color-mix(in srgb, var(--ext-color, #00E5C0) 40%, transparent);
+  transition: transform 0.15s ease, filter 0.15s ease, box-shadow 0.15s ease;
+}
+
+.archive-open-folder-btn:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.08);
+  box-shadow: 0 5px 18px color-mix(in srgb, var(--ext-color, #00E5C0) 55%, transparent);
+}
+
+.archive-open-folder-btn:active {
+  transform: translateY(0);
+  filter: brightness(0.96);
+}
+
+.archive-extract-again-btn {
+  height: 38px;
+  padding: 0 16px;
+  border-radius: 9px;
+  border: 1px solid color-mix(in srgb, var(--ext-color, #00E5C0) 22%, rgba(48, 54, 61, 0.8));
+  background: transparent;
+  color: var(--text-muted, #8b949e);
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  transition: all 0.15s ease;
+}
+
+.archive-extract-again-btn:hover {
+  color: var(--text, #f0f6fc);
+  border-color: color-mix(in srgb, var(--ext-color, #00E5C0) 45%, transparent);
+  background: color-mix(in srgb, var(--ext-color, #00E5C0) 8%, transparent);
+}
+
+.archive-extract-again-btn:active {
+  background: color-mix(in srgb, var(--ext-color, #00E5C0) 12%, transparent);
+}
+
+@media (max-width: 560px) {
+  .archive-extract-done-wrap {
+    padding: 16px;
+    gap: 12px;
+  }
+
+  .archive-extract-done-actions {
+    flex-direction: column;
+  }
+
+  .archive-open-folder-btn,
+  .archive-extract-again-btn {
+    width: 100%;
+  }
+}
+

@@ -36,8 +36,8 @@ async def stream_progress(job_id: str):
             if job.state == "done":
                 payload["filename"]   = job.filename
                 payload["media_type"] = job.media_type
-                # Optional compression stats (set by image_compressor router)
-                for _stat in ("original_size", "compressed_size", "saved_percent"):
+                # Optional stats (set by image_compressor or archives router)
+                for _stat in ("original_size", "compressed_size", "saved_percent", "destination_dir"):
                     val = getattr(job, _stat, None)
                     if val is not None:
                         payload[_stat] = val

@@ -76,6 +76,7 @@ export function setBgJob(job) {
     ...incoming,
     clientId: key,
     notified: existing ? existing.notified : false,
+    pendingNotify: existing ? existing.pendingNotify : false,
   });
   syncBgJobBar();
   return key;
@@ -127,8 +128,8 @@ function _renderStatusBadge(state, color) {
   return '';
 }
 
-function _renderActionBtn(state, jobId, blob, key) {
-  if (state === 'done' && (jobId || blob)) {
+function _renderActionBtn(state, jobId, blob, key, noSave) {
+  if (state === 'done' && !noSave && (jobId || blob)) {
     return `<button type="button" class="bg-job-btn bg-job-btn--save" data-bg-save="${key}">Save As...</button>`;
   }
   if (state === 'running') {
@@ -168,13 +169,22 @@ function _renderBgJobBar() {
     const { state, filename, jobId } = job;
 
     if ((state === 'done' || state === 'error') && !job.notified) {
-      job.notified = true;
-      pushNotification({
-        type: state === 'done' ? 'success' : 'error',
-        message: `${label} ${state === 'done' ? 'completed' : 'failed'}`,
-        detail: filename || '',
-        autoDismiss: false,
-      });
+      const activeTool = getActiveTool();
+      const onThisTool = activeTool && job.tool && activeTool.id === job.tool.id;
+      if (onThisTool) {
+        // User is currently on this tool — defer notification until they navigate away.
+        job.pendingNotify = true;
+      } else {
+        // User is on a different tool — fire immediately, once.
+        job.notified = true;
+        job.pendingNotify = false;
+        pushNotification({
+          type: state === 'done' ? 'success' : 'error',
+          message: `${label} ${state === 'done' ? 'completed' : 'failed'}`,
+          detail: filename || '',
+          autoDismiss: false,
+        });
+      }
     }
 
     let card = existingCards.get(key);
@@ -212,7 +222,7 @@ function _renderBgJobBar() {
 
       const actionContainer = card.querySelector('.bg-job-action-container');
       if (actionContainer) {
-        const expectedAction = _renderActionBtn(state, jobId, job.blob, key);
+        const expectedAction = _renderActionBtn(state, jobId, job.blob, key, job.noSave);
         if (actionContainer.innerHTML !== expectedAction) {
           actionContainer.innerHTML = expectedAction;
           _bindCardEvents(card);
@@ -290,16 +300,6 @@ function _renderBgJob(job) {
   const pct = Math.max(5, Math.min(100, Math.round(progress || 5)));
   const key = _esc(clientId || jobId || '');
 
-  if ((state === 'done' || state === 'error') && !job.notified) {
-    job.notified = true;
-    pushNotification({
-      type: state === 'done' ? 'success' : 'error',
-      message: `${label} ${state === 'done' ? 'completed' : 'failed'}`,
-      detail: filename || '',
-      autoDismiss: false,
-    });
-  }
-
   const iconHtml = (tool && tool.icon)
     ? tool.icon
         .replace(/width="[0-9]+"/, 'width="18"')
@@ -317,7 +317,7 @@ function _renderBgJob(job) {
       ? '<span class="bg-job-badge bg-job-badge--error">Failed</span>'
       : '';
 
-  const actionBtn = state === 'done' && (jobId || job.blob)
+  const actionBtn = state === 'done' && !job.noSave && (jobId || job.blob)
     ? `<button type="button" class="bg-job-btn bg-job-btn--save" data-bg-save="${key}">Save As...</button>`
     : state === 'running'
       ? `<button type="button" class="bg-job-btn bg-job-btn--view" data-bg-view="${key}">View Tool</button>`
@@ -335,7 +335,7 @@ function _renderBgJob(job) {
         </div>
         <div class="bg-job-right">
           <span class="bg-job-pct">${state === 'error' ? 'Err' : `${pct}%`}</span>
-          <span class="bg-job-action-container">${_renderActionBtn(state, jobId, job.blob, key)}</span>
+          <span class="bg-job-action-container">${_renderActionBtn(state, jobId, job.blob, key, job.noSave)}</span>
           <button type="button" class="bg-job-close-x" data-bg-close="${key}" title="Dismiss" aria-label="Dismiss background job">
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
               <line x1="1" y1="1" x2="11" y2="11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
@@ -399,4 +399,22 @@ async function _downloadJobFile(jobId, filename) {
   await _saveBlobFile(blob, filename);
 }
 
-onToolChange(() => syncBgJobBar());
+onToolChange((newTool) => {
+  // Fire deferred "completion" notifications for any job whose tool is no
+  // longer the active tool and hasn't been notified yet.
+  _bgJobs.forEach((job) => {
+    if (!job.pendingNotify) return;
+    const stillOnTool = newTool && job.tool && newTool.id === job.tool.id;
+    if (stillOnTool) return; // still on same tool — keep deferring
+    job.notified = true;
+    job.pendingNotify = false;
+    const label = (job.tool && job.tool.label) || 'Tool Task';
+    pushNotification({
+      type: job.state === 'done' ? 'success' : 'error',
+      message: `${label} ${job.state === 'done' ? 'completed' : 'failed'}`,
+      detail: job.filename || '',
+      autoDismiss: false,
+    });
+  });
+  syncBgJobBar();
+});
