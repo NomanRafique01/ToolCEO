@@ -1539,6 +1539,7 @@ async function _handlePasteFromClipboard() {
       dropZone.classList.contains('dz-state-processing') ||
       dropZone.classList.contains('dz-state-scanning') ||
       dropZone.classList.contains('dz-state-done') ||
+      dropZone.classList.contains('dz-has-extract-done') ||
       dropZone.classList.contains('dz-has-thumb') ||
       dropZone.classList.contains('dz-has-compress-thumb') ||
       dropZone.classList.contains('dz-has-encrypt-thumb') ||
@@ -1768,6 +1769,7 @@ export function initDropZone() {
     if (dropZone.classList.contains('dz-state-processing')) return;
     if (dropZone.classList.contains('dz-state-scanning'))   return;
     if (dropZone.classList.contains('dz-state-done'))       return;
+    if (dropZone.classList.contains('dz-has-extract-done')) return;
     if (
       dropZone.classList.contains('dz-has-thumb') ||
       dropZone.classList.contains('dz-has-compress-thumb') ||
@@ -1909,6 +1911,8 @@ export function initDropZone() {
     if (!getActiveTool()) { showNoToolWarning(); return; }
     if (dropZone.classList.contains('dz-state-processing')) return;
     if (dropZone.classList.contains('dz-state-scanning'))   return;
+    if (dropZone.classList.contains('dz-state-done'))       return;
+    if (dropZone.classList.contains('dz-has-extract-done')) return;
     // For JPG/PNG/WEBP tools with a queue already shown, let additional drops add to the queue
     if (dropZone.classList.contains('dz-has-jpg-thumbs') ||
         dropZone.classList.contains('dz-has-png-thumbs') ||
