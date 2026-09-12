@@ -38,6 +38,8 @@ export const TOOL_MODULE_MAP = {
     'archive-extract-cab': 'media',
     'archive-extract-iso': 'media',
     'archive-extract-dmg': 'media',
+    'archive-protect': 'media',    // Password Protect Archive (ZIP/7Z/RAR — AES-256)
+    'archive-unlock': 'media',     // Remove Archive Password  (ZIP/7Z/RAR)
   
   // ── Office Module (LibreOffice) ───────────────────────────────────────────
   'docx-pdf'    : 'office',

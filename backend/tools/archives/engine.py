@@ -963,3 +963,306 @@ def convert_archive(
 
         progress(100)
         return out_path.read_bytes(), safe_output, media_type
+
+
+# ── ARCHIVE PASSWORD PROTECTION ───────────────────────────────────────────────
+
+#: Supported output formats for password-protect operation
+_PROTECT_FORMATS: dict[str, dict] = {
+    "zip": {"suffix": ".zip", "media_type": "application/zip"},
+    "7z":  {"suffix": ".7z",  "media_type": "application/x-7z-compressed"},
+    "rar": {"suffix": ".rar", "media_type": "application/vnd.rar"},
+}
+
+
+def protect_archive(
+    archive_bytes: bytes,
+    original_filename: str,
+    password: str,
+    output_format: str,
+    encrypt_header: bool,
+    output_name: str,
+    progress: Callable[[int], None],
+    cancel_event=None,
+) -> tuple[bytes, str, str]:
+    """Encrypt *archive_bytes* with a password using AES-256 and produce a new
+    archive in *output_format* (zip, 7z, or rar).
+
+    Strategy:
+      1. Extract source archive into a temp directory (without any password —
+         the source archive must already be unencrypted, or we re-encrypt).
+      2. Re-pack the extracted files into the target format with AES-256 password.
+
+    Returns (encrypted_bytes, safe_filename, media_type).
+    """
+    if not archive_bytes:
+        raise ValueError("Selected archive file is empty.")
+    if not password:
+        raise ValueError("A password is required to protect an archive.")
+    if output_format not in _PROTECT_FORMATS:
+        raise ValueError(f"Unsupported protection format: {output_format}. Choose zip, 7z, or rar.")
+
+    executable = find_7zip()
+    if not executable:
+        raise RuntimeError("7-Zip is unavailable. Install the Media Module first.")
+
+    spec   = _PROTECT_FORMATS[output_format]
+    suffix = spec["suffix"]
+
+    # Build safe output name
+    safe_stem = Path(original_filename).name
+    for strip_ext in [".tar.gz", ".tar.bz2", ".tar.xz", ".zip", ".rar", ".7z", ".tar", ".gz", ".bz2", ".xz"]:
+        if safe_stem.lower().endswith(strip_ext):
+            safe_stem = safe_stem[: -len(strip_ext)]
+            break
+    else:
+        safe_stem = safe_stem.rsplit(".", 1)[0] if "." in safe_stem else safe_stem
+    safe_stem = safe_stem or "archive"
+
+    safe_output = Path(output_name).name if output_name else (safe_stem + "_protected" + suffix)
+    if not safe_output.lower().endswith(suffix):
+        safe_output += suffix
+
+    with tempfile.TemporaryDirectory(prefix="toolceo-protect-") as tmp_name:
+        tmp = Path(tmp_name)
+        src_path = tmp / Path(original_filename).name
+        src_path.write_bytes(archive_bytes)
+        extract_dir = tmp / "extracted"
+        extract_dir.mkdir()
+
+        progress(5)
+
+        # ── Step 1: extract source (no password — must be unencrypted) ────────
+        cmd_x = [executable, "x", "-y", "-bsp1", f"-o{extract_dir}", "-p-", str(src_path)]
+        try:
+            _run_7zip(cmd_x, lambda pct: progress(5 + int(pct * 0.38)), cancel_event, cwd=str(tmp))
+        except ValueError as exc:
+            raise ValueError(f"Cannot extract source archive: {exc}") from exc
+        except _PartialExtractionWarning:
+            if not extract_dir.exists() or not any(extract_dir.iterdir()):
+                raise RuntimeError(
+                    "Could not extract the source archive for encryption. "
+                    "If the archive is already password-protected, unlock it first."
+                )
+
+        # Unwrap nested .tar (from .tar.gz etc.)
+        items = list(extract_dir.iterdir())
+        if len(items) == 1 and items[0].is_file() and items[0].suffix.lower() == ".tar":
+            nested_tar = items[0]
+            inner_dir = tmp / "inner"
+            inner_dir.mkdir()
+            tar_cmd = [executable, "x", "-y", "-bsp1", f"-o{inner_dir}", str(nested_tar)]
+            _run_7zip(tar_cmd, lambda pct: progress(43 + int(pct * 0.07)), cancel_event, cwd=str(tmp))
+            extract_dir = inner_dir
+
+        progress(50)
+
+        # ── Step 2: re-pack with AES-256 password ────────────────────────────
+        out_path = tmp / safe_output
+
+        if output_format == "7z":
+            header_flag = "-mhe=on" if encrypt_header else "-mhe=off"
+            cmd_a = [
+                executable, "a", "-t7z",
+                header_flag,
+                f"-p{password}",
+                "-mmt=on",        # multi-threading
+                "-bsp1", "-y",
+                str(out_path), ".",
+            ]
+            _run_7zip(cmd_a, lambda pct: progress(50 + int(pct * 0.46)), cancel_event, cwd=str(extract_dir))
+
+        elif output_format == "zip":
+            cmd_a = [
+                executable, "a", "-tzip",
+                "-mem=AES256",
+                f"-p{password}",
+                "-bsp1", "-y",
+                str(out_path), ".",
+            ]
+            _run_7zip(cmd_a, lambda pct: progress(50 + int(pct * 0.46)), cancel_event, cwd=str(extract_dir))
+
+        elif output_format == "rar":
+            rar_exe = find_rar()
+            if not rar_exe:
+                raise RuntimeError("rar.exe is unavailable. The RAR engine could not be found in engines/rar/.")
+
+            # Collect all extracted files
+            input_paths: list[str] = []
+            for root, _dirs, files in os.walk(extract_dir):
+                for fname in files:
+                    input_paths.append(str(Path(root) / fname))
+            if not input_paths:
+                raise RuntimeError("No files found after extracting source archive.")
+
+            # -hp also encrypts file headers (equivalent to 7z -mhe=on)
+            rar_cmd = [
+                rar_exe, "a",
+                "-ep1",          # strip base path, keep relative names
+                "-m5",           # best compression
+                "-y",
+                f"-p{password}",
+                f"-hp{password}",  # always encrypt headers for RAR — security best practice
+                str(out_path),
+                *input_paths,
+            ]
+            process = subprocess.Popen(
+                rar_cmd,
+                stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
+                text=True, encoding="utf-8", errors="replace",
+                shell=False, cwd=str(extract_dir),
+                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+            )
+            assert process.stdout is not None
+            total = len(input_paths)
+            done_count = 0
+            for line in process.stdout:
+                if cancel_event is not None and cancel_event.is_set():
+                    process.terminate()
+                    raise ArchiveCancelled()
+                if line.strip().startswith("Adding") and "OK" in line:
+                    done_count += 1
+                    progress(50 + max(1, min(46, int(done_count / max(total, 1) * 46))))
+                else:
+                    matches = _PROGRESS_RE.findall(line)
+                    if matches:
+                        progress(50 + max(1, min(46, int(int(matches[-1]) * 0.46))))
+            rc = process.wait()
+            if rc not in (0, 1):
+                raise RuntimeError(f"rar.exe exited with code {rc} during encryption.")
+
+        progress(97)
+
+        if not out_path.is_file() or out_path.stat().st_size == 0:
+            raise RuntimeError(f"Encryption produced an empty or missing file: {safe_output}")
+
+        progress(100)
+        return out_path.read_bytes(), safe_output, spec["media_type"]
+
+
+def unlock_archive(
+    archive_bytes: bytes,
+    original_filename: str,
+    password: str,
+    output_name: str,
+    progress: Callable[[int], None],
+    cancel_event=None,
+) -> tuple[bytes, str, str]:
+    """Decrypt and remove the password from *archive_bytes*, producing an
+    unencrypted archive in the same format.
+
+    Strategy:
+      1. Extract with 7-Zip using the supplied password.
+      2. Re-pack into an unencrypted archive of the same format.
+
+    Returns (unencrypted_bytes, safe_filename, media_type).
+    Raises ValueError with a user-friendly message for wrong password.
+    """
+    if not archive_bytes:
+        raise ValueError("Selected archive file is empty.")
+    if not password:
+        raise ValueError("A password is required to unlock an encrypted archive.")
+
+    executable = find_7zip()
+    if not executable:
+        raise RuntimeError("7-Zip is unavailable. Install the Media Module first.")
+
+    # Detect output format from file extension
+    src_lower = Path(original_filename).name.lower()
+    for multi in (".tar.gz", ".tar.bz2", ".tar.xz"):
+        if src_lower.endswith(multi):
+            detected_ext = multi.lstrip(".")
+            break
+    else:
+        detected_ext = src_lower.rsplit(".", 1)[-1] if "." in src_lower else "zip"
+
+    spec = SUPPORTED_FORMATS.get(detected_ext, SUPPORTED_FORMATS["zip"])
+    suffix       = spec["suffix"]
+    media_type   = spec["media_type"]
+    type_switch  = spec.get("type_switch") or "-tzip"
+
+    # Build safe output stem
+    safe_stem = Path(original_filename).name
+    for strip_ext in [".tar.gz", ".tar.bz2", ".tar.xz", ".zip", ".rar", ".7z", ".tar", ".gz", ".bz2", ".xz"]:
+        if safe_stem.lower().endswith(strip_ext):
+            safe_stem = safe_stem[: -len(strip_ext)]
+            break
+    else:
+        safe_stem = safe_stem.rsplit(".", 1)[0] if "." in safe_stem else safe_stem
+    safe_stem = safe_stem or "archive"
+
+    safe_output = Path(output_name).name if output_name else (safe_stem + "_unlocked" + suffix)
+    if not safe_output.lower().endswith(suffix):
+        safe_output += suffix
+
+    with tempfile.TemporaryDirectory(prefix="toolceo-unlock-") as tmp_name:
+        tmp = Path(tmp_name)
+        src_path = tmp / Path(original_filename).name
+        src_path.write_bytes(archive_bytes)
+        extract_dir = tmp / "extracted"
+        extract_dir.mkdir()
+
+        progress(5)
+
+        # ── Step 1: extract with password ────────────────────────────────────
+        cmd_x = [
+            executable, "x", "-y", "-bsp1",
+            f"-p{password}",
+            f"-o{extract_dir}",
+            str(src_path),
+        ]
+        try:
+            _run_7zip(cmd_x, lambda pct: progress(5 + int(pct * 0.45)), cancel_event, cwd=str(tmp))
+        except ValueError as exc:
+            # Wrong password or encryption error — surface as user-friendly error
+            msg = str(exc).lower()
+            if "password" in msg or "wrong" in msg or "incorrect" in msg:
+                raise ValueError("Incorrect password. Please enter the correct password to unlock this archive.")
+            raise
+        except _PartialExtractionWarning:
+            if not extract_dir.exists() or not any(extract_dir.iterdir()):
+                # Total extraction failure — likely wrong password
+                raise ValueError("Incorrect password. Please enter the correct password to unlock this archive.")
+
+        # Check stderr-captured "wrong password" signals from 7-Zip's return code 2
+        # (7-Zip sometimes exits 2 for header decryption failure with no output)
+        extracted_items = list(extract_dir.iterdir())
+        if not extracted_items:
+            raise ValueError("Incorrect password or the archive is empty. No files could be extracted.")
+
+        progress(52)
+
+        # Unwrap nested .tar
+        if len(extracted_items) == 1 and extracted_items[0].is_file() and extracted_items[0].suffix.lower() == ".tar":
+            nested_tar = extracted_items[0]
+            inner_dir = tmp / "inner"
+            inner_dir.mkdir()
+            tar_cmd = [executable, "x", "-y", "-bsp1", f"-o{inner_dir}", str(nested_tar)]
+            _run_7zip(tar_cmd, lambda pct: progress(52 + int(pct * 0.06)), cancel_event, cwd=str(tmp))
+            extract_dir = inner_dir
+
+        progress(60)
+
+        # ── Step 2: re-pack without password ─────────────────────────────────
+        out_path = tmp / safe_output
+
+        if detected_ext in ("tar.gz", "tar.bz2", "tar.xz"):
+            # Two-step: create .tar first, then compress
+            tar_path = tmp / (safe_stem + ".tar")
+            cmd_tar = [executable, "a", "-ttar", "-bsp1", "-y", str(tar_path), "."]
+            _run_7zip(cmd_tar, lambda pct: progress(60 + int(pct * 0.20)), cancel_event, cwd=str(extract_dir))
+            progress(80)
+            compress_sw = {"tar.gz": "-tgzip", "tar.bz2": "-tbzip2", "tar.xz": "-txz"}[detected_ext]
+            cmd_c = [executable, "a", compress_sw, "-bsp1", "-y", str(out_path), str(tar_path)]
+            _run_7zip(cmd_c, lambda pct: progress(80 + int(pct * 0.16)), cancel_event, cwd=str(tmp))
+        else:
+            cmd_a = [executable, "a", type_switch, "-bsp1", "-y", str(out_path), "."]
+            _run_7zip(cmd_a, lambda pct: progress(60 + int(pct * 0.36)), cancel_event, cwd=str(extract_dir))
+
+        progress(97)
+
+        if not out_path.is_file() or out_path.stat().st_size == 0:
+            raise RuntimeError(f"Unlocking produced an empty or missing file: {safe_output}")
+
+        progress(100)
+        return out_path.read_bytes(), safe_output, media_type

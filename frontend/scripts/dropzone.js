@@ -4,6 +4,7 @@ import { handleArchiveConvertFilePicked, removeArchiveConvertPanel, ARCHIVE_CONV
 import { handleArchiveInspectorFilePicked, removeArchiveInspectorPanel } from '../tools/archives/archive_inspector.js';
 import { handleArchiveSplitterFilePicked, removeArchiveSplitterPanel } from '../tools/archives/archive_splitter.js';
 import { handleArchiveMergerFilesPicked, removeArchiveMergerPanel } from '../tools/archives/archive_merger.js';
+import { handleArchiveProtectFilePicked, removeArchiveProtectPanel } from '../tools/archives/archive_protect.js';
 /**
  * dropzone.js
  * Wires up the file drop zone: click-to-browse, drag-over highlight,
@@ -386,6 +387,8 @@ function _updateDropZone(tool) {
     removeArchiveSplitterPanel();
     // Clean up any active Archive Merger panel
     removeArchiveMergerPanel();
+    // Clean up any active Archive Protect panel
+    removeArchiveProtectPanel();
     // Clean up any active DOCX conversion panel
     removeDocxPdfPanel(); removeDocxHtmlPanel(); removeDocxTxtPanel();
     removeDocxOdtPanel(); removeDocxEpubPanel(); removeDocxMdPanel();
@@ -468,6 +471,8 @@ function _updateDropZone(tool) {
   removeArchiveSplitterPanel();
   // Clean up any active Archive Merger panel when switching tools
   removeArchiveMergerPanel();
+  // Clean up any active Archive Protect / Unlock panel when switching tools
+  removeArchiveProtectPanel();
   // Clean up any active DOCX conversion panel when switching tools
   removeDocxPdfPanel(); removeDocxHtmlPanel(); removeDocxTxtPanel();
   removeDocxOdtPanel(); removeDocxEpubPanel(); removeDocxMdPanel();
@@ -1239,6 +1244,18 @@ async function _submitFile(files) {
     return;
   }
 
+  // Archive Protect — password-protect archive with AES-256
+  if (tool.id === 'archive-protect') {
+    handleArchiveProtectFilePicked(files[0], 'protect');
+    return;
+  }
+
+  // Archive Unlock — remove password from encrypted archive
+  if (tool.id === 'archive-unlock') {
+    handleArchiveProtectFilePicked(files[0], 'unlock');
+    return;
+  }
+
   // Archive convert tools — dispatch via ARCHIVE_CONVERT_IDS set
   if (ARCHIVE_CONVERT_IDS.has(tool.id)) {
     handleArchiveConvertFilePicked(files[0], tool.id);
@@ -1604,7 +1621,7 @@ export function initDropZone() {
     const hasLoadedPanel = document.querySelector(
       '#split-panel, #merge-panel, #compress-panel, #encrypt-panel, #rotate-panel, ' +
       '#editor-panel, #watermark-panel, #extractor-panel, ' +
-      '#archive-create-panel, #archive-extract-panel, #archive-convert-panel, #archive-inspector-panel, #archive-splitter-panel, #archive-merger-panel, ' +
+      '#archive-create-panel, #archive-extract-panel, #archive-convert-panel, #archive-inspector-panel, #archive-splitter-panel, #archive-merger-panel, #archive-protect-panel, ' +
       '#image-compressor-panel, .split-info-panel, .merge-queue-panel, .compress-settings-panel, .encrypt-settings-panel, ' +
       '.extractor-info-panel, .imgcmp-panel, .cmp-panel, .enc-panel, .image-preview-container, .ebook-settings-panel, ' +
       '.docx-panel, .xlsx-panel, .pptx-panel, .txt-panel, .odt-panel, .csv-panel'
@@ -1615,7 +1632,7 @@ export function initDropZone() {
       '.dz-ebook-thumb-wrap, .dz-docx-thumb-wrap, .dz-pptx-thumb-wrap, .dz-xlsx-thumb-wrap, .dz-txt-thumb-wrap, ' +
       '.dz-odt-thumb-wrap, .dz-csv-thumb-wrap, .dz-img-preview-wrap, .dz-jpg-thumb-strip, .dz-png-thumb-strip, ' +
       '.dz-webp-thumb-strip, .dz-svg-thumb-strip, .dz-archive-thumb-strip, .dz-extract-thumb-wrap, .dz-arc-conv-thumb-wrap, ' +
-      '.dz-inspect-thumb-wrap, .dz-split-thumb-wrap, .dz-merge-arc-strip'
+      '.dz-inspect-thumb-wrap, .dz-split-thumb-wrap, .dz-merge-arc-strip, .dz-arc-protect-thumb-wrap'
     );
 
     // If the tool has loaded file(s) or panels ready for execution, do not wipe them
@@ -1804,6 +1821,12 @@ export function initDropZone() {
     } else if (tool && tool.id === 'archive-merge') {
       fileInput.multiple = true;
       fileInput.accept   = '*/*';
+    } else if (tool && tool.id === 'archive-protect') {
+      fileInput.multiple = false;
+      fileInput.accept   = '.zip,.7z,.rar,.tar,.tar.gz,.tar.bz2,.tar.xz,.gz,.bz2,.xz,.wim,.iso,.cab';
+    } else if (tool && tool.id === 'archive-unlock') {
+      fileInput.multiple = false;
+      fileInput.accept   = '.zip,.7z,.rar,.tar,.tar.gz,.tar.bz2,.tar.xz,.gz,.bz2,.xz';
     } else if (tool && isArchiveCreateTool(tool.id)) {
       fileInput.multiple = true;
       fileInput.accept = '*/*';

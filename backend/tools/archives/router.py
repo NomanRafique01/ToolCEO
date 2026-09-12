@@ -10,7 +10,8 @@ from fastapi.responses import JSONResponse
 
 import jobs as job_store
 from job_executor import job_executor
-from tools.archives.engine import ArchiveCancelled, create_archive, extract_archive, inspect_archive, convert_archive, split_archive, merge_archive, CONVERT_PAIRS, _CONVERT_SUFFIX, SUPPORTED_FORMATS
+from tools.archives.engine import ArchiveCancelled, create_archive, extract_archive, inspect_archive, convert_archive, split_archive, merge_archive, protect_archive, unlock_archive, CONVERT_PAIRS, _CONVERT_SUFFIX, SUPPORTED_FORMATS
+
 
 router = APIRouter(prefix="/archives", tags=["Archives"])
 
@@ -332,4 +333,113 @@ async def merge(
 
     job = job_store.create_job()
     job_executor.submit(_run_merge_job, job.id, part_items, stem, fmt)
+    return JSONResponse({"job_id": job.id}, status_code=202)
+
+
+# ── ARCHIVE PASSWORD PROTECT ──────────────────────────────────────────────────
+
+def _run_protect_job(
+    job_id: str,
+    archive_bytes: bytes,
+    original_filename: str,
+    password: str,
+    output_format: str,
+    encrypt_header: bool,
+    output_name: str,
+) -> None:
+    try:
+        job_store.set_progress(job_id, 5)
+        result, filename, media_type = protect_archive(
+            archive_bytes,
+            original_filename,
+            password,
+            output_format,
+            encrypt_header,
+            output_name,
+            lambda pct: job_store.set_progress(job_id, pct),
+        )
+        job_store.set_done(job_id, result, filename, media_type)
+    except ArchiveCancelled:
+        job_store.set_cancelled(job_id)
+    except ValueError as exc:
+        job_store.set_error(job_id, str(exc))
+    except Exception as exc:
+        job_store.set_error(job_id, f"Archive protection failed: {exc}")
+
+
+@router.post("/protect", summary="Add AES-256 password protection to an archive")
+async def protect(
+    file: UploadFile = File(...),
+    password: str = Form(...),
+    output_format: Optional[str] = Form("zip"),
+    encrypt_header: Optional[bool] = Form(False),
+    output_filename: Optional[str] = Form(None),
+):
+    """Accept an archive file and re-pack it with AES-256 password encryption.
+    Supports output formats: zip (AES-256 via 7-Zip), 7z (AES-256, optional header encryption),
+    and rar (AES-256 with header encryption via WinRAR CLI).
+    """
+    content = await file.read()
+    out_fmt = (output_format or "zip").lower().strip()
+    job = job_store.create_job()
+    job_executor.submit(
+        _run_protect_job,
+        job.id,
+        content,
+        file.filename or "archive.zip",
+        password,
+        out_fmt,
+        bool(encrypt_header),
+        output_filename or "",
+    )
+    return JSONResponse({"job_id": job.id}, status_code=202)
+
+
+# ── ARCHIVE PASSWORD UNLOCK ────────────────────────────────────────────────────
+
+def _run_unlock_job(
+    job_id: str,
+    archive_bytes: bytes,
+    original_filename: str,
+    password: str,
+    output_name: str,
+) -> None:
+    try:
+        job_store.set_progress(job_id, 5)
+        result, filename, media_type = unlock_archive(
+            archive_bytes,
+            original_filename,
+            password,
+            output_name,
+            lambda pct: job_store.set_progress(job_id, pct),
+        )
+        job_store.set_done(job_id, result, filename, media_type)
+    except ArchiveCancelled:
+        job_store.set_cancelled(job_id)
+    except ValueError as exc:
+        job_store.set_error(job_id, str(exc))
+    except Exception as exc:
+        job_store.set_error(job_id, f"Archive unlock failed: {exc}")
+
+
+@router.post("/unlock", summary="Remove password protection from an encrypted archive")
+async def unlock(
+    file: UploadFile = File(...),
+    password: str = Form(...),
+    output_filename: Optional[str] = Form(None),
+):
+    """Accept an encrypted archive and the password, decrypt and re-pack it
+    without a password (same format as input).
+    Supports ZIP, 7Z, RAR, and any 7-Zip-extractable encrypted archive format.
+    """
+    content = await file.read()
+    job = job_store.create_job()
+    job_executor.submit(
+        _run_unlock_job,
+        job.id,
+        content,
+        file.filename or "archive.zip",
+        password,
+        output_filename or "",
+    )
     return JSONResponse({"job_id": job.id}, status_code=202)

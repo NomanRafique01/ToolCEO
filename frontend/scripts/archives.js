@@ -220,11 +220,11 @@ const TOOL_ICONS = [
   // [30] Archive Merger — two archives joining into one
   `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2" y="4" width="7" height="8" rx="1.5" stroke="currentColor" stroke-width="1.7"/><rect x="15" y="4" width="7" height="8" rx="1.5" stroke="currentColor" stroke-width="1.7"/><path d="M9 8l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 11v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><rect x="8" y="17" width="8" height="5" rx="1.5" stroke="currentColor" stroke-width="1.7"/><path d="M12 13v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
 
-  // [31] Password Protect ZIP — padlock over archive
-  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="12" cy="15.5" r="1.5" fill="currentColor"/><path d="M12 17v2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
+  // [31] Password Protect Archive — shield with lock (AES-256 ZIP/7Z/RAR)
+  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2L4 6v6c0 5.25 3.5 9.8 8 11 4.5-1.2 8-5.75 8-11V6L12 2z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><rect x="9" y="10" width="6" height="5" rx="1" stroke="currentColor" stroke-width="1.4"/><path d="M10 10V8.5a2 2 0 0 1 4 0V10" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="12" cy="12.5" r="0.8" fill="currentColor"/></svg>`,
 
-  // [32] Remove ZIP Password — padlock unlocked with key
-  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M8 11V8a4 4 0 0 1 7.7-1.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><rect x="4" y="11" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M15 6.5h4M17 4.5v4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="11" cy="16" r="1.5" fill="currentColor"/></svg>`,
+  // [32] Remove Archive Password — shield unlocked with key (ZIP/7Z/RAR)
+  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2L4 6v6c0 5.25 3.5 9.8 8 11 4.5-1.2 8-5.75 8-11V6L12 2z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="10" cy="11" r="2" stroke="currentColor" stroke-width="1.3"/><path d="M11.7 11h3.3M14 9.8v2.4M15.5 9.8v2.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M9 14l1-1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`,
 
   // [33] Repair Corrupted ZIP — broken archive being stitched/welded
   `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 8h8M16 8h4M4 8 7 5h5M16 8l-1-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 8v11h16V8" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M11.5 5l1 3.5M13 5l-1 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M7 13h10M7 16h6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M12 8.5l1.5-3.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="1.5 1"/></svg>`,
@@ -310,8 +310,8 @@ const CATEGORIES = [
       ['Archive Inspector', 'Inspect archive contents and metadata.'],
       ['Archive Splitter', 'Split a large archive into smaller parts.'],
       ['Archive Merger', 'Merge archive parts into one archive.'],
-      ['Password Protect ZIP', 'Add password protection to a ZIP archive.'],
-      ['Remove ZIP Password', 'Remove a password from a ZIP archive.'],
+      ['Password Protect Archive', 'Add AES-256 password to archives (ZIP, 7Z, RAR).'],
+      ['Remove Archive Password', 'Remove password & decrypt archives (ZIP, 7Z, RAR).'],
       ['Repair Corrupted ZIP', 'Attempt recovery of a corrupted ZIP archive.'],
       ['Archive Size Estimator', 'Estimate the compressed size of selected files.'],
       ['Duplicate Finder in Archive', 'Find duplicate files inside an archive.'],
@@ -503,10 +503,12 @@ function toolRecords(category) {
   };
   // Stable IDs for utility tools (first three are live tools)
   const utilityIds = [
-    'archive-inspect',  // Archive Inspector
-    'archive-split',    // Archive Splitter
-    'archive-merge',    // Archive Merger
-    'utility-4', 'utility-5', 'utility-6', 'utility-7', 'utility-8',
+    'archive-inspect',   // Archive Inspector
+    'archive-split',     // Archive Splitter
+    'archive-merge',     // Archive Merger
+    'archive-protect',   // Password Protect Archive
+    'archive-unlock',    // Remove Archive Password
+    'utility-6', 'utility-7', 'utility-8',
   ];
 
   return category.tools.map(([label, desc], index) => {
@@ -534,7 +536,11 @@ function toolRecords(category) {
               ? 'Drop archive to split into parts'
               : (id === 'archive-merge'
                 ? 'Drop archive parts to merge'
-                : 'Drop a file to begin')))),
+                : (id === 'archive-protect'
+                  ? 'Drop an archive to protect with a password'
+                  : (id === 'archive-unlock'
+                    ? 'Drop an encrypted archive to unlock'
+                    : 'Drop a file to begin')))))),
       subText: 'or click to browse',
     };
   });
@@ -670,7 +676,13 @@ function renderCategory(container, activateNav, category) {
       const isDropZoneTool = (
         category.id === 'compress-create' ||
         category.id === 'extract' ||
-        (tool && (tool.id === 'archive-inspect' || tool.id === 'archive-split' || tool.id === 'archive-merge'))
+        (tool && (
+          tool.id === 'archive-inspect' ||
+          tool.id === 'archive-split'   ||
+          tool.id === 'archive-merge'   ||
+          tool.id === 'archive-protect' ||
+          tool.id === 'archive-unlock'
+        ))
       );
       if (tool && isDropZoneTool) {
         container.querySelectorAll('.fmt-card').forEach((item) => item.classList.remove('selected'));

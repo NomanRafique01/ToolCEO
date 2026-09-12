@@ -1,0 +1,488 @@
+/**
+ * frontend/tools/archives/archive_protect.css
+ *
+ * Password Protect Archive & Remove Password Panel
+ * Scoped styles following the ToolCEO design system and PDF lock/encrypt panel UX.
+ */
+
+:root {
+  --arc-protect-color: #F59E0B;
+}
+
+/* ─── DROP ZONE: HAS-ARC-PROTECT-THUMB STATE ────────────────────────────── */
+
+.drop-zone.dz-has-arc-protect-thumb {
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+
+.drop-zone.dz-has-arc-protect-thumb .drop-icon,
+.drop-zone.dz-has-arc-protect-thumb .drop-main-text,
+.drop-zone.dz-has-arc-protect-thumb .drop-browse,
+.drop-zone.dz-has-arc-protect-thumb .dz-paste-btn,
+.drop-zone.dz-has-arc-protect-thumb .drop-private {
+  display: none !important;
+}
+
+/* ─── THUMBNAIL (inside drop zone) ───────────────────────────────────────── */
+
+.dz-arc-protect-thumb-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  animation: arcProtectFadeIn 0.25s ease-out;
+}
+
+.dz-arc-protect-thumb-card {
+  position: relative;
+  display: inline-block;
+}
+
+.dz-arc-protect-thumb-frame {
+  width: 86px;
+  height: 106px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--bg-surface, #0d2321);
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.dz-arc-protect-thumb-frame:hover {
+  transform: translateY(-2px);
+}
+
+.dz-arc-protect-thumb-frame svg {
+  width: 54px;
+  height: 54px;
+}
+
+.dz-arc-protect-thumb-remove {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--bg-surface, #0d2321);
+  border: 1.5px solid color-mix(in srgb, var(--arc-protect-color, #F59E0B) 55%, var(--border, rgba(255,255,255,0.12)));
+  color: var(--arc-protect-color, #F59E0B);
+  font-size: 11px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  padding: 0;
+  transition: all 0.15s ease;
+  z-index: 5;
+}
+
+.dz-arc-protect-thumb-remove:hover {
+  background: #ef4444;
+  border-color: #ef4444;
+  color: #fff;
+  transform: scale(1.1);
+}
+
+.dz-arc-protect-thumb-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary, #e2e8f0);
+  max-width: 320px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+}
+
+.dz-arc-protect-thumb-size {
+  font-size: 11.5px;
+  color: var(--text-muted, #8b949e);
+}
+
+/* ─── SETTINGS PANEL ─────────────────────────────────────────────────────── */
+
+#archive-protect-panel {
+  margin: 18px auto 0;
+  width: 100%;
+  max-width: 680px;
+  background: var(--bg-surface, #0d2321);
+  border: 1px solid var(--border, rgba(255,255,255,0.08));
+  border-radius: 12px;
+  padding: 16px 20px 20px;
+  box-sizing: border-box;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.35);
+  opacity: 0;
+  transform: translateY(10px);
+  transition: opacity 0.25s ease, transform 0.25s ease;
+}
+
+#archive-protect-panel.arc-protect--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Panel Header */
+.arc-protect-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border, rgba(255,255,255,0.08));
+  margin-bottom: 14px;
+}
+
+.arc-protect-header-info {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--text-muted, #8b949e);
+}
+
+.arc-protect-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 2.5px 8px;
+  border-radius: 6px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+.arc-protect-badge--aes {
+  background: rgba(245, 158, 11, 0.15);
+  color: #F59E0B;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.arc-protect-badge--unlocked {
+  background: rgba(16, 185, 129, 0.15);
+  color: #10B981;
+  border: 1px solid rgba(16, 185, 129, 0.3);
+}
+
+.arc-protect-change-btn {
+  background: transparent;
+  border: 1px solid var(--border, rgba(255,255,255,0.12));
+  color: var(--text-muted, #8b949e);
+  font-size: 11.5px;
+  padding: 4px 10px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  white-space: nowrap;
+}
+
+.arc-protect-change-btn:hover {
+  border-color: var(--arc-protect-color, #F59E0B);
+  color: var(--arc-protect-color, #F59E0B);
+}
+
+/* ─── MODE TABS ──────────────────────────────────────────────────────────── */
+
+.arc-protect-tabs {
+  display: flex;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--border, rgba(255,255,255,0.08));
+  border-radius: 8px;
+  padding: 3px;
+  gap: 4px;
+  margin-bottom: 18px;
+}
+
+.arc-protect-tab-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  padding: 8px 14px;
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  color: var(--text-muted, #8b949e);
+  font-size: 12.5px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.18s ease;
+}
+
+.arc-protect-tab-btn:hover:not(.arc-protect-tab-btn--active) {
+  color: var(--text-primary, #e2e8f0);
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.arc-protect-tab-btn--active {
+  background: color-mix(in srgb, var(--arc-protect-color, #F59E0B) 18%, transparent);
+  color: var(--arc-protect-color, #F59E0B);
+  font-weight: 600;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+
+/* ─── FORM FIELDS ────────────────────────────────────────────────────────── */
+
+.arc-protect-form-body {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.arc-protect-field-group {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.arc-protect-label {
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text-secondary, #94a3b8);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.arc-protect-input-wrap {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+}
+
+.arc-protect-input {
+  width: 100%;
+  box-sizing: border-box;
+  background: rgba(0, 0, 0, 0.22);
+  border: 1px solid var(--border, rgba(255,255,255,0.1));
+  border-radius: 7px;
+  padding: 9px 38px 9px 12px;
+  color: var(--text-primary, #e2e8f0);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.arc-protect-input:focus {
+  border-color: var(--arc-protect-color, #F59E0B);
+  box-shadow: 0 0 0 2px color-mix(in srgb, var(--arc-protect-color, #F59E0B) 25%, transparent);
+}
+
+.arc-protect-eye-btn {
+  position: absolute;
+  right: 10px;
+  background: transparent;
+  border: none;
+  color: var(--text-muted, #8b949e);
+  cursor: pointer;
+  padding: 4px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: color 0.15s ease;
+}
+
+.arc-protect-eye-btn:hover {
+  color: var(--text-primary, #e2e8f0);
+}
+
+/* Password strength bar */
+.arc-protect-strength-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.arc-protect-strength-bar {
+  flex: 1;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.arc-protect-strength-fill {
+  height: 100%;
+  width: 0%;
+  border-radius: 4px;
+  transition: width 0.2s ease, background-color 0.2s ease;
+}
+
+.arc-protect-strength-label {
+  font-size: 11px;
+  color: var(--text-muted, #8b949e);
+  min-width: 48px;
+  text-align: right;
+}
+
+/* Format selector row */
+.arc-protect-formats-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+}
+
+.arc-protect-format-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 8px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--border, rgba(255,255,255,0.08));
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.arc-protect-format-card:hover {
+  border-color: color-mix(in srgb, var(--arc-protect-color, #F59E0B) 40%, transparent);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.arc-protect-format-card--active {
+  border-color: var(--arc-protect-color, #F59E0B) !important;
+  background: color-mix(in srgb, var(--arc-protect-color, #F59E0B) 14%, transparent) !important;
+}
+
+.arc-protect-format-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary, #e2e8f0);
+}
+
+.arc-protect-format-desc {
+  font-size: 10.5px;
+  color: var(--text-muted, #8b949e);
+  margin-top: 2px;
+}
+
+/* Header Encryption Toggle */
+.arc-protect-toggle-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-radius: 8px;
+  background: rgba(0, 0, 0, 0.16);
+  border: 1px solid var(--border, rgba(255,255,255,0.06));
+}
+
+.arc-protect-toggle-left {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.arc-protect-toggle-title {
+  font-size: 12.5px;
+  font-weight: 600;
+  color: var(--text-primary, #e2e8f0);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.arc-protect-toggle-subtitle {
+  font-size: 11px;
+  color: var(--text-muted, #8b949e);
+}
+
+/* Custom switch */
+.arc-protect-switch {
+  position: relative;
+  display: inline-block;
+  width: 38px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.arc-protect-switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.arc-protect-slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background-color: rgba(255, 255, 255, 0.15);
+  transition: 0.2s;
+  border-radius: 20px;
+}
+
+.arc-protect-slider:before {
+  position: absolute;
+  content: "";
+  height: 14px;
+  width: 14px;
+  left: 3px;
+  bottom: 3px;
+  background-color: white;
+  transition: 0.2s;
+  border-radius: 50%;
+}
+
+.arc-protect-switch input:checked + .arc-protect-slider {
+  background-color: var(--arc-protect-color, #F59E0B);
+}
+
+.arc-protect-switch input:checked + .arc-protect-slider:before {
+  transform: translateX(18px);
+}
+
+/* ─── ACTIONS ROW ────────────────────────────────────────────────────────── */
+
+.arc-protect-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 18px;
+  padding-top: 14px;
+  border-top: 1px solid var(--border, rgba(255,255,255,0.08));
+}
+
+.arc-protect-submit-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  background: var(--arc-protect-color, #F59E0B);
+  color: #0A1F1C;
+  border: none;
+  border-radius: 7px;
+  padding: 10px 22px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.18s ease;
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--arc-protect-color, #F59E0B) 35%, transparent);
+}
+
+.arc-protect-submit-btn:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 16px color-mix(in srgb, var(--arc-protect-color, #F59E0B) 50%, transparent);
+}
+
+.arc-protect-submit-btn:active {
+  transform: translateY(0);
+}
+
+@keyframes arcProtectFadeIn {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
