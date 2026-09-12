@@ -1,6 +1,6 @@
 /**
  * Archives category browser.
- * Archive processing panels are placeholders until the archive engines are wired in.
+ * Convert category now shows 5 format families, each with live conversion sub-tools.
  */
 
 import { setBreadcrumb } from './navigation.js';
@@ -8,6 +8,7 @@ import { isFavourite } from './favourites.js';
 import { FAMILY_COLORS } from './toolFamily.js';
 import { setActiveTool } from './toolstate.js';
 import { getLockedModuleId } from './modulelock.js';
+import { ARCHIVE_CONVERT_IDS } from '../tools/archives/archive_convert.js';
 
 let _navigateToModule = null;
 export function setNavigateToModule(fn) { _navigateToModule = fn; }
@@ -39,6 +40,11 @@ const COLOR_BACKGROUNDS = {
   [COLORS.data]: 'rgba(45,212,191,0.15)',
   [COLORS.pink]: 'rgba(244,114,182,0.15)',
   [COLORS.cyan]: 'rgba(0,229,192,0.15)',
+  '#EF4444': 'rgba(239,68,68,0.15)',
+  '#06B6D4': 'rgba(6,182,212,0.15)',
+  '#22C55E': 'rgba(34,197,94,0.15)',
+  '#8B5CF6': 'rgba(139,92,246,0.15)',
+  '#F59E0B': 'rgba(245,158,11,0.15)',
 };
 
 const ICONS = {
@@ -95,28 +101,33 @@ const TOOL_ICONS = [
 const CATEGORIES = [
   {
     id: 'compress-create',
-    label: 'Compress / Create',
-    desc: 'ZIP, TAR, 7Z, RAR & more',
+    label: 'Create Tools',
+    desc: 'ZIP, TAR, 7Z, RAR, WIM, ISO & more',
     icon: ICONS.archive,
     color: COLORS.ebook,
     bg: COLOR_BACKGROUNDS[COLORS.ebook],
+    tag: 'Create',
     tools: [
-      ['Files to ZIP', 'Create a ZIP archive from selected files.'],
-      ['Files to TAR', 'Bundle selected files into a TAR archive.'],
-      ['Files to TAR.GZ', 'Create a compressed TAR.GZ archive.'],
+      ['Files to ZIP',     'Create a ZIP archive from selected files.'],
+      ['Files to TAR',     'Bundle selected files into a TAR archive.'],
+      ['Files to TAR.GZ',  'Create a compressed TAR.GZ archive.'],
       ['Files to TAR.BZ2', 'Create a BZIP2-compressed TAR archive.'],
-      ['Files to 7Z', 'Create a 7Z archive from selected files.'],
-      ['Folder to ZIP', 'Compress a folder into a ZIP archive.'],
-      ['Folder to 7Z', 'Compress a folder into a 7Z archive.'],
+      ['Files to 7Z',      'Create a 7Z archive from selected files.'],
+      ['Folder to ZIP',    'Compress a folder into a ZIP archive.'],
+      ['Folder to 7Z',     'Compress a folder into a 7Z archive.'],
+      ['Files to RAR',     'Create a RAR archive from selected files.'],
+      ['Files to TAR.XZ',  'Create a high-compression TAR.XZ archive.'],
+      ['Files to WIM',     'Create a Windows Imaging Format (WIM) archive.'],
     ],
   },
   {
     id: 'extract',
-    label: 'Extract',
+    label: 'Extract Tools',
     desc: 'ZIP, RAR, 7Z, TAR & more',
     icon: ICONS.extract,
     color: COLORS.cyan,
     bg: COLOR_BACKGROUNDS[COLORS.cyan],
+    tag: 'Extract',
     tools: [
       ['ZIP Extract', 'Extract files from a ZIP archive.'],
       ['RAR Extract', 'Extract files from a RAR archive.'],
@@ -129,17 +140,17 @@ const CATEGORIES = [
       ['BZ2 Extract', 'Extract files from a BZ2 archive.'],
       ['XZ Extract', 'Extract files from an XZ archive.'],
       ['CAB Extract', 'Extract files from a CAB archive.'],
-      ['ISO Extract', 'Extract files from an ISO image.'],
       ['DMG Extract', 'Extract files from a DMG image.'],
     ],
   },
   {
     id: 'convert',
-    label: 'Convert',
+    label: 'Convert Tools',
     desc: 'ZIP to 7Z, RAR to ZIP & more',
     icon: ICONS.convert,
     color: COLORS.video,
     bg: COLOR_BACKGROUNDS[COLORS.video],
+    tag: 'Convert',
     tools: [
       ['ZIP to 7Z', 'Convert a ZIP archive into 7Z format.'],
       ['ZIP to TAR.GZ', 'Convert a ZIP archive into TAR.GZ format.'],
@@ -151,11 +162,12 @@ const CATEGORIES = [
   },
   {
     id: 'utility',
-    label: 'Utility',
+    label: 'Utility Tools',
     desc: 'Inspect, split, merge, protect & more',
     icon: ICONS.utility,
     color: COLORS.image,
     bg: COLOR_BACKGROUNDS[COLORS.image],
+    tag: 'Utility',
     tools: [
       ['Archive Inspector', 'Inspect archive contents and metadata.'],
       ['Archive Splitter', 'Split a large archive into smaller parts.'],
@@ -169,11 +181,118 @@ const CATEGORIES = [
   },
 ];
 
+// ─── ARCHIVE CONVERT CATEGORY DEFINITIONS ────────────────────────────────────
+
+const CONVERT_CATEGORIES = [
+  {
+    id: 'conv-zip',
+    label: 'ZIP Convert Tools',
+    desc: 'Convert ZIP archives to 7Z, TAR, TAR.GZ, and RAR.',
+    color: COLORS.archive,           // #84CC16 — lime
+    bg: COLOR_BACKGROUNDS[COLORS.archive],
+    icon: ICONS.convert,
+    tag: 'Convert',
+    srcExt: '.zip',
+    tools: [
+      { id: 'arc-zip-to-7z',     label: 'ZIP to 7Z',     desc: 'Convert a ZIP archive into 7Z format.',    dstExt: '.7z',     color: COLORS.archive },
+      { id: 'arc-zip-to-tar',    label: 'ZIP to TAR',    desc: 'Convert a ZIP archive into TAR format.',   dstExt: '.tar',    color: COLORS.data },
+      { id: 'arc-zip-to-tar-gz', label: 'ZIP to TAR.GZ', desc: 'Convert a ZIP archive into TAR.GZ format.',dstExt: '.tar.gz', color: COLORS.audio },
+      { id: 'arc-zip-to-rar',    label: 'ZIP to RAR',    desc: 'Convert a ZIP archive into RAR format.',   dstExt: '.rar',    color: COLORS.document },
+    ],
+  },
+  {
+    id: 'conv-tar',
+    label: 'TAR Convert Tools',
+    desc: 'Convert TAR archives to ZIP, 7Z, GZ, and RAR.',
+    color: COLORS.data,              // #2DD4BF — teal
+    bg: COLOR_BACKGROUNDS[COLORS.data],
+    icon: ICONS.convert,
+    tag: 'Convert',
+    srcExt: '.tar',
+    tools: [
+      { id: 'arc-tar-to-zip', label: 'TAR to ZIP', desc: 'Convert a TAR archive into ZIP format.', dstExt: '.zip', color: COLORS.archive },
+      { id: 'arc-tar-to-7z',  label: 'TAR to 7Z',  desc: 'Convert a TAR archive into 7Z format.',  dstExt: '.7z',  color: COLORS.data },
+      { id: 'arc-tar-to-gz',  label: 'TAR to GZ',  desc: 'Convert a TAR archive into GZ format.',  dstExt: '.gz',  color: COLORS.audio },
+      { id: 'arc-tar-to-rar', label: 'TAR to RAR', desc: 'Convert a TAR archive into RAR format.', dstExt: '.rar', color: COLORS.ebook },
+    ],
+  },
+  {
+    id: 'conv-7z',
+    label: '7Z Convert Tools',
+    desc: 'Convert 7Z archives to ZIP, TAR, TAR.GZ, and RAR.',
+    color: COLORS.image,             // #A78BFA — violet
+    bg: COLOR_BACKGROUNDS[COLORS.image],
+    icon: ICONS.convert,
+    tag: 'Convert',
+    srcExt: '.7z',
+    tools: [
+      { id: 'arc-7z-to-zip',    label: '7Z to ZIP',    desc: 'Convert a 7Z archive into ZIP format.',     dstExt: '.zip',    color: COLORS.image },
+      { id: 'arc-7z-to-tar',    label: '7Z to TAR',    desc: 'Convert a 7Z archive into TAR format.',     dstExt: '.tar',    color: COLORS.data },
+      { id: 'arc-7z-to-tar-gz', label: '7Z to TAR.GZ', desc: 'Convert a 7Z archive into TAR.GZ format.',  dstExt: '.tar.gz', color: COLORS.audio },
+      { id: 'arc-7z-to-rar',    label: '7Z to RAR',    desc: 'Convert a 7Z archive into RAR format.',     dstExt: '.rar',    color: '#EF4444' },
+    ],
+  },
+  {
+    id: 'conv-tar-gz',
+    label: 'TAR.GZ Convert Tools',
+    desc: 'Convert TAR.GZ archives to ZIP, 7Z, TAR, and RAR.',
+    color: COLORS.audio,             // #FB923C — orange
+    bg: COLOR_BACKGROUNDS[COLORS.audio],
+    icon: ICONS.convert,
+    tag: 'Convert',
+    srcExt: '.tar.gz',
+    tools: [
+      { id: 'arc-tar-gz-to-zip', label: 'TAR.GZ to ZIP', desc: 'Convert a TAR.GZ archive into ZIP format.', dstExt: '.zip', color: COLORS.archive },
+      { id: 'arc-tar-gz-to-7z',  label: 'TAR.GZ to 7Z',  desc: 'Convert a TAR.GZ archive into 7Z format.',  dstExt: '.7z',  color: COLORS.image },
+      { id: 'arc-tar-gz-to-tar', label: 'TAR.GZ to TAR', desc: 'Convert a TAR.GZ archive into TAR format.', dstExt: '.tar', color: COLORS.audio },
+      { id: 'arc-tar-gz-to-rar', label: 'TAR.GZ to RAR', desc: 'Convert a TAR.GZ archive into RAR format.', dstExt: '.rar', color: COLORS.data },
+    ],
+  },
+  {
+    id: 'conv-rar',
+    label: 'RAR Convert Tools',
+    desc: 'Convert RAR archives to ZIP, 7Z, TAR, and TAR.GZ.',
+    color: COLORS.document,          // #FF6B6B — red
+    bg: COLOR_BACKGROUNDS[COLORS.document],
+    icon: ICONS.convert,
+    tag: 'Convert',
+    srcExt: '.rar',
+    tools: [
+      { id: 'arc-rar-to-zip',    label: 'RAR to ZIP',    desc: 'Convert a RAR archive into ZIP format.',    dstExt: '.zip',    color: COLORS.archive },
+      { id: 'arc-rar-to-7z',     label: 'RAR to 7Z',     desc: 'Convert a RAR archive into 7Z format.',     dstExt: '.7z',     color: COLORS.image },
+      { id: 'arc-rar-to-tar',    label: 'RAR to TAR',    desc: 'Convert a RAR archive into TAR format.',    dstExt: '.tar',    color: COLORS.data },
+      { id: 'arc-rar-to-tar-gz', label: 'RAR to TAR.GZ', desc: 'Convert a RAR archive into TAR.GZ format.', dstExt: '.tar.gz', color: COLORS.audio },
+    ],
+  },
+];
+
+// Enrich each sub-tool with bg + icon
+CONVERT_CATEGORIES.forEach((cat) => {
+  cat.tools = cat.tools.map((t) => ({
+    ...t,
+    bg: COLOR_BACKGROUNDS[t.color] || `rgba(128,128,128,0.15)`,
+    icon: ICONS.convert,
+    mainText: `Drop ${t.label.split(' to ')[0]} archive to convert`,
+    subText: 'or click to browse',
+    tag: 'Convert',
+  }));
+});
+
 function backIcon() {
   return `<svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true"><path d="M10 3 5 8l5 5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
 }
 
+function _tagClass(tag) {
+  const t = (tag || '').toLowerCase();
+  if (t === 'convert') return 'convert';
+  if (t === 'create')  return 'create';
+  if (t === 'extract') return 'extract';
+  if (t === 'utility') return 'utility';
+  return 'tool';
+}
+
 function cardHTML(item, tag, showFavorite = false) {
+  const resolvedTag = tag || item.tag || '';
   const favorite = showFavorite && isFavourite(item.id);
   const starTitle = favorite ? 'Remove from Favourites' : 'Add to Favourites';
   const lockedModule = getLockedModuleId(item.id);
@@ -189,13 +308,13 @@ function cardHTML(item, tag, showFavorite = false) {
     </div>
     <div class="fmt-label" title="${item.label}">${item.label}</div>
     <div class="fmt-desc" title="${item.desc}">${item.desc}</div>
-    ${tag ? `<div class="fmt-tag fmt-tag--${tag.toLowerCase() === 'convert' ? 'convert' : 'tool'}">${tag}</div>` : ''}
+    ${resolvedTag ? `<div class="fmt-tag fmt-tag--${_tagClass(resolvedTag)}">${resolvedTag}</div>` : ''}
     ${star}
   </div>`;
 }
 
 function categoryCardHTML(category) {
-  return cardHTML({ ...category, icon: category.icon }, '', false);
+  return cardHTML({ ...category, icon: category.icon }, category.tag || '', false);
 }
 
 function scrollToArchiveTools() {
@@ -219,12 +338,14 @@ function scrollToDropZone() {
 function toolRecords(category) {
   const archiveCreateIds = [
     'archive-files-zip', 'archive-files-tar', 'archive-files-tar-gz', 'archive-files-tar-bz2',
-    'archive-files-7z', 'archive-folder-zip', 'archive-folder-7z', 'archive-files-rar',
+    'archive-files-7z', 'archive-folder-zip', 'archive-folder-7z',
+    'archive-files-rar', 'archive-files-tar-xz',
+    'archive-files-wim',
   ];
   const archiveExtractIds = [
     'archive-extract-zip', 'archive-extract-rar', 'archive-extract-7z', 'archive-extract-tar',
     'archive-extract-tar-gz', 'archive-extract-tar-bz2', 'archive-extract-tar-xz', 'archive-extract-gz',
-    'archive-extract-bz2', 'archive-extract-xz', 'archive-extract-cab', 'archive-extract-iso',
+    'archive-extract-bz2', 'archive-extract-xz', 'archive-extract-cab',
     'archive-extract-dmg',
   ];
   const iconOffsets = {
@@ -234,26 +355,99 @@ function toolRecords(category) {
     utility: 27,
   };
   const toolColors = {
-    'compress-create': [COLORS.pink, COLORS.data, COLORS.audio, COLORS.document, COLORS.archive, COLORS.video, COLORS.ebook, COLORS.image],
+    'compress-create': [
+      COLORS.pink, COLORS.data, COLORS.audio, COLORS.document, COLORS.archive, COLORS.video, COLORS.ebook, COLORS.image,
+      '#EF4444', '#06B6D4', '#22C55E', '#8B5CF6', '#F59E0B',
+    ],
     extract: [COLORS.archive, COLORS.document, COLORS.image, COLORS.audio, COLORS.video, COLORS.ebook, COLORS.data, COLORS.archive, COLORS.audio, COLORS.video, COLORS.document, COLORS.image, COLORS.ebook],
     convert: [COLORS.archive, COLORS.document, COLORS.audio, COLORS.image, COLORS.data, COLORS.video],
     utility: [COLORS.archive, COLORS.image, COLORS.audio, COLORS.document, COLORS.data, COLORS.video, COLORS.ebook, COLORS.cyan],
   };
-  return category.tools.map(([label, desc], index) => ({
+  return category.tools.map(([label, desc], index) => {
+    const color = toolColors[category.id][index];
+    const bg = COLOR_BACKGROUNDS[color] || `rgba(128,128,128,0.15)`;
+    return {
     id: category.id === 'compress-create'
       ? archiveCreateIds[index]
       : (category.id === 'extract' ? archiveExtractIds[index] : `${category.id}-${index + 1}`),
     label,
     desc,
     icon: TOOL_ICONS[iconOffsets[category.id] + index],
-    color: toolColors[category.id][index],
-    bg: COLOR_BACKGROUNDS[toolColors[category.id][index]],
+    color,
+    bg,
     mainText: category.id === 'compress-create'
       ? 'Drop files to archive'
       : (category.id === 'extract' ? `Drop ${label.replace(' Extract', '')} archive to extract` : 'Drop a file to begin'),
     subText: 'or click to browse',
-  }));
+    };
+  });
 }
+
+// ─── CONVERT CATEGORY LANDING (5 family cards) ───────────────────────────────
+
+function renderConvertLanding(container, activateNav) {
+  setActiveTool(null);
+  const convertCat = CATEGORIES.find((c) => c.id === 'convert');
+  setBreadcrumb(['Dashboard', 'Archives', 'Convert Tools']);
+  container.innerHTML = `
+    <div class="explore-header">
+      <button class="fmt-back-btn" title="Back to Archives">${backIcon()}</button>
+      <div class="fmt-category-icon" style="background:${convertCat.bg};color:${convertCat.color}">${convertCat.icon}</div>
+      <span class="explore-title">Archives — Convert</span>
+    </div>
+    <div class="fmt-grid archive-tool-grid">
+      ${CONVERT_CATEGORIES.map((c) => cardHTML(c, 'Convert', false)).join('')}
+    </div>
+  `;
+
+  container.querySelector('.fmt-back-btn').addEventListener('click', () => renderLanding(container, activateNav));
+  container.querySelectorAll('.fmt-card').forEach((card) => {
+    card.addEventListener('click', () => {
+      const convCat = CONVERT_CATEGORIES.find((c) => c.id === card.dataset.id);
+      if (convCat) {
+        renderConvertSubTools(container, activateNav, convCat);
+        scrollToArchiveTools();
+      }
+    });
+  });
+}
+
+// ─── CONVERT SUB-TOOLS (4 conversion pair cards per family) ──────────────────
+
+function renderConvertSubTools(container, activateNav, convCat) {
+  setActiveTool(null);
+  setBreadcrumb(['Dashboard', 'Archives', 'Convert', convCat.label]);
+  container.innerHTML = `
+    <div class="explore-header">
+      <button class="fmt-back-btn" title="Back to Convert">${backIcon()}</button>
+      <div class="fmt-category-icon" style="background:${convCat.bg};color:${convCat.color}">${convCat.icon}</div>
+      <span class="explore-title">Archives — ${convCat.label}</span>
+    </div>
+    <div class="fmt-grid archive-tool-grid">
+      ${convCat.tools.map((t) => cardHTML(t, 'Convert', true)).join('')}
+    </div>
+  `;
+
+  container.querySelector('.fmt-back-btn').addEventListener('click', () => renderConvertLanding(container, activateNav));
+
+  container.querySelectorAll('.fmt-card').forEach((card) => {
+    card.addEventListener('click', () => {
+      const tool = convCat.tools.find((t) => t.id === card.dataset.id);
+      if (!tool) return;
+      if (card.classList.contains('fmt-card--locked')) {
+        _handleLockedClick(card.dataset.lockedModule, card.querySelector('.fmt-label')?.textContent || '');
+        return;
+      }
+      // Select card + activate tool → dropzone will be updated
+      container.querySelectorAll('.fmt-card').forEach((c) => c.classList.remove('selected'));
+      card.classList.add('selected');
+      setActiveTool(tool);
+      scrollToDropZone();
+    });
+  });
+}
+
+// ─── STANDARD CATEGORY LANDING ───────────────────────────────────────────────
 
 function renderLanding(container, activateNav) {
   setActiveTool(null);
@@ -274,7 +468,11 @@ function renderLanding(container, activateNav) {
     card.addEventListener('click', () => {
       const category = CATEGORIES.find((item) => item.id === card.dataset.id);
       if (category) {
-        renderCategory(container, activateNav, category);
+        if (category.id === 'convert') {
+          renderConvertLanding(container, activateNav);
+        } else {
+          renderCategory(container, activateNav, category);
+        }
         scrollToArchiveTools();
       }
     });
@@ -289,10 +487,17 @@ function renderCategory(container, activateNav, category) {
     <div class="explore-header">
       <button class="fmt-back-btn" title="Back to Archives">${backIcon()}</button>
       <div class="fmt-category-icon" style="background:${category.bg};color:${category.color}">${category.icon}</div>
-      <span class="explore-title">Archives — ${category.label}</span>
+      <span class="explore-title">Archives — ${category.label.replace(' Tools', '')}</span>
     </div>
     <div class="fmt-grid archive-tool-grid">
-      ${tools.map((tool) => cardHTML(tool, category.id === 'convert' ? 'Convert' : 'Tool', true)).join('')}
+      ${tools.map((tool) => {
+        let toolTag = 'Tool';
+        if (category.id === 'compress-create') toolTag = 'Create';
+        else if (category.id === 'extract') toolTag = 'Extract';
+        else if (category.id === 'convert') toolTag = 'Convert';
+        else if (category.id === 'utility') toolTag = 'Utility';
+        return cardHTML(tool, toolTag, true);
+      }).join('')}
     </div>
   `;
 

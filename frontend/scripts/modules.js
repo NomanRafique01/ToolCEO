@@ -425,7 +425,6 @@ export async function renderModules(container, activateNav) {
           <div class="mod-card-icon">${mod.icon}</div>
         </div>
         <div class="mod-card-name">${mod.name}</div>
-        <div class="mod-card-engine">Engine: ${mod.engine}</div>
         <div class="mod-card-size">${mod.size}</div>
         <ul class="mod-card-unlocks">
           ${mod.unlocks.slice(0, 3).map((u) => `<li>${u}</li>`).join('')}

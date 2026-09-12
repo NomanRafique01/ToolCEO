@@ -241,7 +241,12 @@ def find_calibre() -> str | None:
 
 
 def find_7zip() -> str | None:
-    bundled = get_engine_path("7zip/7z.exe") or get_engine_path("7zip/7z")
+    if IS_WIN:
+        bundled = get_engine_path("7zip/7z.exe")
+    elif IS_MAC:
+        bundled = get_engine_path("7zip/mac/7zz") or get_engine_path("7zip/7zz")
+    else:
+        bundled = get_engine_path("7zip/linux/7zz") or get_engine_path("7zip/7zz")
     if bundled:
         return bundled
     if IS_WIN:
@@ -253,7 +258,26 @@ def find_7zip() -> str | None:
             ]
         )
         return found or shutil.which("7z")
-    return shutil.which("7z")
+    return shutil.which("7z") or shutil.which("7zz")
+
+
+def find_rar() -> str | None:
+    bundled = get_engine_path("rar/rar.exe") or get_engine_path("rar/rar")
+    if bundled:
+        return bundled
+    if IS_WIN:
+        found = _first_existing(
+            [
+                Path(os.environ.get("PROGRAMFILES", r"C:\Program Files"))
+                / "WinRAR"
+                / "rar.exe",
+                Path(os.environ.get("PROGRAMFILES(X86)", r"C:\Program Files (x86)"))
+                / "WinRAR"
+                / "rar.exe",
+            ]
+        )
+        return found or shutil.which("rar")
+    return shutil.which("rar")
 
 
 LIBREOFFICE_PATH = find_libreoffice()
@@ -262,4 +286,5 @@ FFMPEG_PATH = find_ffmpeg()
 TESSERACT_PATH = find_tesseract()
 CALIBRE_PATH = find_calibre()
 SEVENZIP_PATH = find_7zip()
+RAR_PATH = find_rar()
 

@@ -10,10 +10,12 @@ export function getArchiveFormatLabel(value = 'ZIP') {
   if (normalized.endsWith('.tar.xz') || normalized === 'tar.xz') return 'TAR.XZ';
   if (normalized.endsWith('.tar') || normalized === 'tar') return 'TAR';
   if (normalized.endsWith('.7z') || normalized === '7z') return '7Z';
-  if (normalized.endsWith('.rar') || normalized === 'rar') return 'RAR';
+  if (normalized.endsWith('.rar') || normalized === 'rar' || normalized === 'rar5' || normalized === 'rar4') return 'RAR';
   if (normalized.endsWith('.zip') || normalized === 'zip') return 'ZIP';
   if (normalized.endsWith('.iso') || normalized === 'iso') return 'ISO';
   if (normalized.endsWith('.dmg') || normalized === 'dmg') return 'DMG';
+  // 7-Zip reports DMG internal filesystem types as "HFS" or "HFS+" — map back to DMG
+  if (normalized === 'hfs' || normalized === 'hfs+') return 'DMG';
   if (normalized.endsWith('.cab') || normalized === 'cab') return 'CAB';
   if (normalized.endsWith('.xz') || normalized === 'xz') return 'XZ';
   if (normalized.endsWith('.bz2') || normalized === 'bz2') return 'BZ2';

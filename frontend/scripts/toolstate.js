@@ -78,13 +78,17 @@ export function setBgJob(job) {
   const prevNotified = existing ? existing.notified : false;
   const prevPending  = existing ? existing.pendingNotify : false;
 
+  // Once notified=true it must never be cleared by a subsequent setBgJob call
+  // (e.g. when showDownload explicitly marks the job as seen by the user).
+  const resolvedNotified = prevNotified || (incoming.notified === true);
+
   // If this update transitions the job to a terminal state (done/error) and
   // the user is currently on this tool, mark it as pending so that
   // onToolChange fires the notification when they navigate away.
   const terminalState = incoming.state === 'done' || incoming.state === 'error';
   const wasTerminal   = existing && (existing.state === 'done' || existing.state === 'error');
-  let pendingNotify = prevPending;
-  if (terminalState && !wasTerminal && !prevNotified) {
+  let pendingNotify = incoming.pendingNotify === false ? false : prevPending;
+  if (terminalState && !wasTerminal && !resolvedNotified) {
     const activeTool = getActiveTool();
     const onThisTool = activeTool && incoming.tool && activeTool.id === incoming.tool.id;
     if (onThisTool) {
@@ -96,7 +100,7 @@ export function setBgJob(job) {
     ...existing,
     ...incoming,
     clientId: key,
-    notified: prevNotified,
+    notified: resolvedNotified,
     pendingNotify,
   });
   syncBgJobBar();

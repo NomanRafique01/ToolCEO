@@ -8,15 +8,20 @@ const BACKEND = 'http://127.0.0.1:8000';
 const ARCHIVE_IDS = new Set([
   'archive-files-zip', 'archive-files-tar', 'archive-files-tar-gz', 'archive-files-tar-bz2',
   'archive-files-7z', 'archive-folder-zip', 'archive-folder-7z',
+  'archive-files-rar', 'archive-files-tar-xz',
+  'archive-files-wim',
 ]);
 const FORMAT_BY_ID = {
-  'archive-files-zip':    'zip',
-  'archive-files-tar':    'tar',
-  'archive-files-tar-gz': 'tar.gz',
-  'archive-files-tar-bz2':'tar.bz2',
-  'archive-files-7z':     '7z',
-  'archive-folder-zip':   'zip',
-  'archive-folder-7z':    '7z',
+  'archive-files-zip':     'zip',
+  'archive-files-tar':     'tar',
+  'archive-files-tar-gz':  'tar.gz',
+  'archive-files-tar-bz2': 'tar.bz2',
+  'archive-files-7z':      '7z',
+  'archive-folder-zip':    'zip',
+  'archive-folder-7z':     '7z',
+  'archive-files-rar':     'rar',
+  'archive-files-tar-xz':  'tar.xz',
+  'archive-files-wim':     'wim',
 };
 
 // ─── FILE-TYPE SETS FOR THUMBNAIL ROUTING ────────────────────────────────────
@@ -254,14 +259,29 @@ function renderPanel() {
   const tool   = getActiveTool();
   const color  = tool?.color || '#84CC16';
   const format = FORMAT_BY_ID[tool?.id] || 'zip';
-  const suggested = `archive.${format}`;
 
-  if (!panel) {
+  // Derive a suggested stem from the first file's name (strip its extension).
+  const firstFileName = _queue[0]?.file?.name || 'archive';
+  const firstStem = firstFileName.includes('.')
+    ? firstFileName.slice(0, firstFileName.lastIndexOf('.'))
+    : firstFileName;
+  const suggested = `${firstStem}.${format}`;
+
+  // Preserve any value the user has already typed; only inject the suggestion
+  // on the very first render (before the panel element exists).
+  const isNewPanel = !panel;
+
+  if (isNewPanel) {
     panel = document.createElement('section');
     panel.id        = 'archive-create-panel';
     panel.className = 'archive-create-panel';
     zone.parentElement?.appendChild(panel);
   }
+
+  // Snapshot the current input value before innerHTML wipes it.
+  const existingValue = !isNewPanel
+    ? (document.getElementById('archive-output-name')?.value ?? suggested)
+    : suggested;
 
   // Expose tool color so the button picks it up via CSS var
   panel.style.setProperty('--archive-create-color', color);
@@ -276,7 +296,7 @@ function renderPanel() {
     </div>
     <div class="archive-create-actions">
       <input id="archive-output-name" class="archive-output-input"
-             value="${esc(suggested)}" maxlength="180" />
+             value="${esc(existingValue)}" maxlength="180" />
       <button type="button" class="archive-create-button"
               style="--archive-create-color:${color}">
         Create ${format.toUpperCase()} archive
@@ -477,10 +497,9 @@ async function submit() {
 // ─── CANCEL LISTENER ──────────────────────────────────────────────────────────
 
 document.addEventListener('progress-cancelled', () => {
+  if (!_jobId) return;                        // not our job — skip
   _cancelRequested = true;
-  if (_jobId) {
-    fetch(`${BACKEND}/api/archives/cancel/${_jobId}`, { method: 'POST' }).catch(() => {});
-  }
+  fetch(`${BACKEND}/api/archives/cancel/${_jobId}`, { method: 'POST' }).catch(() => {});
   _jobId = null;
   removeArchiveCreatePanel();
   pushNotification({ type: 'info', message: 'Archive creation cancelled.' });

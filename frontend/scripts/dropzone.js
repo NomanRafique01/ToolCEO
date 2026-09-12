@@ -1,5 +1,6 @@
 import { handleArchiveFilesPicked, removeArchiveCreatePanel, isArchiveCreateTool } from '../tools/archives/archive_create.js';
 import { handleArchiveFilesPicked as handleArchiveExtractFilePicked, removeArchiveExtractPanel, isArchiveExtractTool, restoreArchiveExtractDone } from '../tools/archives/archive_extract.js';
+import { handleArchiveConvertFilePicked, removeArchiveConvertPanel, ARCHIVE_CONVERT_IDS } from '../tools/archives/archive_convert.js';
 /**
  * dropzone.js
  * Wires up the file drop zone: click-to-browse, drag-over highlight,
@@ -374,6 +375,8 @@ function _updateDropZone(tool) {
     removeImagesPdfPanel();
     removeArchiveCreatePanel();
     removeArchiveExtractPanel();
+    // Clean up any active archive convert panel
+    removeArchiveConvertPanel();
     // Clean up any active DOCX conversion panel
     removeDocxPdfPanel(); removeDocxHtmlPanel(); removeDocxTxtPanel();
     removeDocxOdtPanel(); removeDocxEpubPanel(); removeDocxMdPanel();
@@ -448,6 +451,8 @@ function _updateDropZone(tool) {
   removeImagesPdfPanel();    // hide previous Images→PDF queue panel if tool changed
   removeArchiveCreatePanel(); // hide previous archive queue panel if tool changed
   removeArchiveExtractPanel(); // hide previous archive extract panel if tool changed
+  // Clean up any active archive convert panel when switching tools
+  removeArchiveConvertPanel();
   // Clean up any active DOCX conversion panel when switching tools
   removeDocxPdfPanel(); removeDocxHtmlPanel(); removeDocxTxtPanel();
   removeDocxOdtPanel(); removeDocxEpubPanel(); removeDocxMdPanel();
@@ -819,7 +824,7 @@ function _resetZoneContent(zone) {
     '.dz-ebook-thumb-wrap, .dz-docx-thumb-wrap, .dz-pptx-thumb-wrap, .dz-xlsx-thumb-wrap, ' +
     '.dz-txt-thumb-wrap, .dz-odt-thumb-wrap, .dz-csv-thumb-wrap, .dz-img-preview-wrap, ' +
     '.dz-jpg-thumb-strip, .dz-png-thumb-strip, .dz-webp-thumb-strip, .dz-svg-thumb-strip, ' +
-    '.dz-archive-thumb-strip'
+    '.dz-archive-thumb-strip, .dz-arc-conv-thumb-wrap'
   ).forEach((el) => el.remove());
   zone.classList.remove(
     'dz-state-processing', 'dz-state-done', 'dz-state-error',
@@ -829,7 +834,7 @@ function _resetZoneContent(zone) {
     'dz-has-ebook-thumb', 'dz-has-docx-thumb', 'dz-has-pptx-thumb', 'dz-has-xlsx-thumb',
     'dz-has-txt-thumb', 'dz-has-odt-thumb', 'dz-has-csv-thumb', 'dz-has-img-preview',
     'dz-has-jpg-thumbs', 'dz-has-png-thumbs', 'dz-has-webp-thumbs', 'dz-has-svg-thumbs',
-    'dz-has-archive-thumbs'
+    'dz-has-archive-thumbs', 'dz-has-arc-conv-thumb'
   );
 }
 
@@ -1304,6 +1309,12 @@ async function _submitFile(files) {
   // Archive extract tools share the local extraction flow.
   if (isArchiveExtractTool(tool.id)) {
     handleArchiveExtractFilePicked(files[0]);
+    return;
+  }
+
+  // Archive convert tools — dispatch via ARCHIVE_CONVERT_IDS set
+  if (ARCHIVE_CONVERT_IDS.has(tool.id)) {
+    handleArchiveConvertFilePicked(files[0], tool.id);
     return;
   }
 

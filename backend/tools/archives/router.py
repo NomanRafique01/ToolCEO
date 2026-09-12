@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse
 
 import jobs as job_store
 from job_executor import job_executor
-from tools.archives.engine import ArchiveCancelled, create_archive, extract_archive, inspect_archive
+from tools.archives.engine import ArchiveCancelled, create_archive, extract_archive, inspect_archive, convert_archive, CONVERT_PAIRS, _CONVERT_SUFFIX
 
 router = APIRouter(prefix="/archives", tags=["Archives"])
 
@@ -142,3 +142,72 @@ def cancel(job_id: str):
     if not job_store.cancel_job(job_id):
         return JSONResponse({"detail": "Job is not running."}, status_code=409)
     return JSONResponse({"ok": True})
+
+
+# ── ARCHIVE CONVERSION ROUTES ─────────────────────────────────────────────────
+
+def _run_convert_job(
+    job_id: str,
+    archive_bytes: bytes,
+    source_filename: str,
+    target_format: str,
+    output_name: str,
+) -> None:
+    try:
+        job_store.set_progress(job_id, 5)
+        job = job_store.get_job(job_id)
+        result, filename, media_type = convert_archive(
+            archive_bytes,
+            source_filename,
+            target_format,
+            output_name,
+            lambda pct: job_store.set_progress(job_id, pct),
+            job.cancel_event if job else None,
+        )
+        if job_store.is_cancelled(job_id):
+            return
+        job_store.set_done(job_id, result, filename, media_type)
+    except ArchiveCancelled:
+        job_store.set_cancelled(job_id)
+    except ValueError as exc:
+        job_store.set_error(job_id, str(exc))
+    except Exception as exc:
+        job_store.set_error(job_id, f"Archive conversion failed: {exc}")
+
+
+def _make_convert_route(source_ext: str, target_fmt: str):
+    """Factory: return an async endpoint for source_ext to target_fmt."""
+    async def _endpoint(
+        file: UploadFile = File(...),
+        output_filename: Optional[str] = Form(None),
+    ):
+        content = await file.read()
+        stem = (file.filename or f"archive.{source_ext}").rsplit(".", 1)[0]
+        suffix = _CONVERT_SUFFIX.get(target_fmt, f".{target_fmt}")
+        out_name = (output_filename or "").strip() or stem
+        if not out_name.lower().endswith(suffix):
+            out_name += suffix
+        job = job_store.create_job()
+        job_executor.submit(
+            _run_convert_job,
+            job.id,
+            content,
+            file.filename or f"archive.{source_ext}",
+            target_fmt,
+            out_name,
+        )
+        return JSONResponse({"job_id": job.id}, status_code=202)
+    return _endpoint
+
+
+# Register all conversion routes programmatically
+for (_src, _tgt), _ in CONVERT_PAIRS.items():
+    _tgt_path = _tgt.replace(".", "-")   # "tar.gz" -> "tar-gz" in URL
+    _endpoint_fn = _make_convert_route(_src, _tgt)
+    _endpoint_fn.__name__ = f"convert_{_src.replace('.','_')}_to_{_tgt_path.replace('-','_')}"
+    router.add_api_route(
+        f"/convert/{_src}-to-{_tgt_path}",
+        _endpoint_fn,
+        methods=["POST"],
+        summary=f"Convert {_src.upper()} to {_tgt.upper()}",
+    )

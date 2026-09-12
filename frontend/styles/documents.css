@@ -97,7 +97,10 @@
 }
 
 .fmt-tag--tool,
-.fmt-tag--convert {
+.fmt-tag--convert,
+.fmt-tag--create,
+.fmt-tag--extract,
+.fmt-tag--utility {
   background: color-mix(in srgb, var(--fmt-color) 12%, transparent);
   color: var(--fmt-color);
   border-color: color-mix(in srgb, var(--fmt-color) 30%, transparent);

@@ -189,7 +189,7 @@ function _showExtractThumb(zone, file, color, info) {
   zone.querySelector('.archive-extract-done-wrap')?.remove();
   zone.classList.remove('dz-has-extract-done');
 
-  const format = (info?.format || getArchiveFormatLabel(file.name)).toUpperCase();
+  const format = getArchiveFormatLabel(info?.format || file.name);
   const thumbSvg = getArchiveFileIconSvg(format, color);
 
   const wrap = document.createElement('div');
@@ -235,7 +235,7 @@ function _showSettingsPanel(file, info, color) {
   panel.className = 'archive-extract-panel';
   panel.style.setProperty('--ext-color', color);
 
-  const format = (info?.format || getArchiveFormatLabel(file.name)).toUpperCase();
+  const format = getArchiveFormatLabel(info?.format || file.name);
   const fileCount = info?.file_count || 0;
   const uncompressedSize = info?.uncompressed_size || 0;
   const isEncrypted = Boolean(info?.is_encrypted || info?.needs_password);
@@ -674,6 +674,7 @@ async function _submitExtract() {
 // ─── CANCEL LISTENER ──────────────────────────────────────────────────────────
 
 document.addEventListener('progress-cancelled', () => {
+  if (!_jobId && !_cancelRequested) return;   // not our job — skip
   _cancelRequested = true;
   if (_streamRetryTimer) {
     clearTimeout(_streamRetryTimer);
@@ -681,9 +682,9 @@ document.addEventListener('progress-cancelled', () => {
   }
   if (_jobId) {
     fetch(`${BACKEND}/api/archives/cancel/${_jobId}`, { method: 'POST' }).catch(() => {});
+    _jobId = null;
+    clearBgJob();
+    removeArchiveExtractPanel();
+    pushNotification({ type: 'info', message: 'Archive extraction cancelled.' });
   }
-  _jobId = null;
-  clearBgJob();
-  removeArchiveExtractPanel();
-  pushNotification({ type: 'info', message: 'Archive extraction cancelled.' });
 });

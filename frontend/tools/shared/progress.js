@@ -20,7 +20,7 @@
  *   escHtml(str)
  */
 
-import { clearBgJob, getActiveTool, getBgJob } from '../../scripts/toolstate.js';
+import { clearBgJob, getActiveTool, getBgJob, getBgJobForTool, setBgJob } from '../../scripts/toolstate.js';
 import { buildConversionMeta } from '../../scripts/historyTracker.js';
 
 const BACKEND = 'http://127.0.0.1:8000';
@@ -44,7 +44,7 @@ export function escHtml(str) {
 export function resetZoneContent(zone) {
   if (!zone) return;
   zone.querySelectorAll(
-    '.dz-progress-wrap, .dz-download-wrap, .dz-error-wrap, .dz-pdf-thumb-wrap, .dz-compress-thumb-wrap, .dz-encrypt-thumb-wrap, .dz-merge-thumb-strip, .dz-queue-toolbar, .dz-pdf-word-thumb-wrap, .dz-pdf-excel-thumb-wrap, .dz-pdf-html-thumb-wrap, .dz-pdf-txt-thumb-wrap, .dz-ebook-thumb-wrap, .dz-docx-thumb-wrap, .dz-pptx-thumb-wrap, .dz-xlsx-thumb-wrap, .dz-txt-thumb-wrap, .dz-odt-thumb-wrap, .dz-csv-thumb-wrap, .dz-img-preview-wrap, .dz-jpg-thumb-strip, .dz-png-thumb-strip, .dz-webp-thumb-strip, .dz-svg-thumb-strip, .dz-archive-thumb-strip, .dz-extract-thumb-wrap, .archive-extract-done-wrap'
+    '.dz-progress-wrap, .dz-download-wrap, .dz-error-wrap, .dz-pdf-thumb-wrap, .dz-compress-thumb-wrap, .dz-encrypt-thumb-wrap, .dz-merge-thumb-strip, .dz-queue-toolbar, .dz-pdf-word-thumb-wrap, .dz-pdf-excel-thumb-wrap, .dz-pdf-html-thumb-wrap, .dz-pdf-txt-thumb-wrap, .dz-ebook-thumb-wrap, .dz-docx-thumb-wrap, .dz-pptx-thumb-wrap, .dz-xlsx-thumb-wrap, .dz-txt-thumb-wrap, .dz-odt-thumb-wrap, .dz-csv-thumb-wrap, .dz-img-preview-wrap, .dz-jpg-thumb-strip, .dz-png-thumb-strip, .dz-webp-thumb-strip, .dz-svg-thumb-strip, .dz-archive-thumb-strip, .dz-extract-thumb-wrap, .archive-extract-done-wrap, .dz-arc-conv-thumb-wrap'
   ).forEach((el) => el.remove());
   zone.classList.remove(
     'dz-state-processing', 'dz-state-done', 'dz-state-error',
@@ -54,7 +54,7 @@ export function resetZoneContent(zone) {
     'dz-has-ebook-thumb', 'dz-has-docx-thumb', 'dz-has-pptx-thumb', 'dz-has-xlsx-thumb',
     'dz-has-txt-thumb', 'dz-has-odt-thumb', 'dz-has-csv-thumb', 'dz-has-img-preview',
     'dz-has-jpg-thumbs', 'dz-has-png-thumbs', 'dz-has-webp-thumbs', 'dz-has-svg-thumbs',
-    'dz-has-archive-thumbs', 'dz-has-extract-thumb', 'dz-has-extract-done'
+    'dz-has-archive-thumbs', 'dz-has-extract-thumb', 'dz-has-extract-done', 'dz-has-arc-conv-thumb'
   );
 }
 
@@ -102,6 +102,11 @@ export function buildRingWrap(color, pct, label, indeterminate, toolId) {
 
 /** Show the circular ring progress — centred inside the drop zone. */
 export function showProgress(zone, pct, color, label, toolId) {
+  // Suppress progress ring when user is not on the owning tool's page.
+  if (toolId) {
+    const activeTool = getActiveTool();
+    if (!activeTool || activeTool.id !== toolId) return;
+  }
   resetZoneContent(zone);
   zone.classList.add('dz-state-processing');
   const owner = toolId || getActiveTool()?.id;
@@ -147,9 +152,9 @@ export function updateProgress(zone, pct, color, toolId) {
   if (!zone) return;
   const activeTool = getActiveTool();
 
-  // If the caller tells us which tool owns this update, bail out when the user
-  // has switched to a different tool.
-  if (toolId && activeTool && activeTool.id !== toolId) return;
+  // Bail out when the user has navigated away from the owning tool — including
+  // when activeTool is null (Dashboard or any non-tool page).
+  if (toolId && (!activeTool || activeTool.id !== toolId)) return;
 
   const wrap = zone.querySelector('.dz-progress-wrap');
   if (!wrap) return;
@@ -209,8 +214,18 @@ export function showDownload(zone, filename, jobId, color, onReset, toolId) {
   const ownerToolId = toolId || getBgJob(jobId)?.tool?.id;
   if (ownerToolId) {
     const activeTool = getActiveTool();
-    // Only suppress when activeTool is set and points to a different tool.
-    if (activeTool && activeTool.id !== ownerToolId) return;
+    // Suppress when user is on a different tool OR on no tool (e.g. Dashboard).
+    if (!activeTool || activeTool.id !== ownerToolId) return;
+  }
+
+  // The download card is being rendered directly to the user — they can see the
+  // result right now. Mark the bg job as already-notified so that navigating away
+  // later does NOT fire a second "completed" notification.
+  if (jobId) {
+    const job = getBgJob(jobId);
+    if (job && !job.notified) {
+      setBgJob({ ...job, notified: true, pendingNotify: false });
+    }
   }
 
   resetZoneContent(zone);
@@ -351,7 +366,8 @@ export function showDownload(zone, filename, jobId, color, onReset, toolId) {
 export function showError(zone, message, toolId) {
   if (!zone) return;
   const activeTool = getActiveTool();
-  if (toolId && activeTool && activeTool.id !== toolId) return;
+  // Suppress when user is on a different tool OR on no tool (e.g. Dashboard).
+  if (toolId && (!activeTool || activeTool.id !== toolId)) return;
 
   const currentWrap = zone.querySelector('.dz-progress-wrap');
   if (currentWrap && currentWrap.dataset.toolId) {
@@ -389,10 +405,20 @@ export function showError(zone, message, toolId) {
  *                                 navigated to a different tool.
  */
 export function showDownloadBlobCard(zone, blob, filename, color, onReset, toolId) {
-  // Suppress the download card when the user is on a different tool's page.
+  // Suppress the download card when the user is on a different tool's page
+  // or on no tool at all (e.g. Dashboard).
   if (toolId) {
     const activeTool = getActiveTool();
-    if (activeTool && activeTool.id !== toolId) return;
+    if (!activeTool || activeTool.id !== toolId) return;
+  }
+
+  // Download card is visible to the user right now — suppress any future
+  // navigation-triggered "completed" notification for this tool's bg job.
+  if (toolId) {
+    const job = getBgJobForTool(toolId);
+    if (job && !job.notified) {
+      setBgJob({ ...job, notified: true, pendingNotify: false });
+    }
   }
 
   resetZoneContent(zone);

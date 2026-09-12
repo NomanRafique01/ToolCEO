@@ -40,7 +40,8 @@
         "from": "engines/",
         "to": "engines/",
         "filter": [
-          "python/**"
+          "python/**",
+          "rar/**"
         ]
       },
       {
