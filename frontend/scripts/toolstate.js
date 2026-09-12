@@ -261,6 +261,11 @@ function _renderBgJobBar() {
       card.style.setProperty('--bg-job-color', color);
       card.style.setProperty('--bg-job-bg', bg);
 
+      const iconEl = card.querySelector('.bg-job-icon');
+      if (iconEl) {
+        iconEl.innerHTML = _formatBgIcon(job.tool);
+      }
+
       const nameEl = card.querySelector('.bg-job-name');
       if (nameEl) nameEl.textContent = label;
 
@@ -353,6 +358,55 @@ function _bindCardEvents(card) {
   });
 }
 
+function _formatBgIcon(tool) {
+  if (!tool || !tool.icon) {
+    return `<svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+         <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/>
+         <path d="M12 7v5l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+       </svg>`;
+  }
+
+  const raw = String(tool.icon).trim();
+  const svgMatch = raw.match(/^<svg\b([^>]*)>([\s\S]*)$/i);
+  if (!svgMatch) {
+    return raw;
+  }
+
+  let svgAttrs = svgMatch[1];
+  const innerContent = svgMatch[2]; // inner child elements (<rect>, <path>, etc.) remain 100% untouched
+
+  // Set width="18" on root <svg> only
+  if (/\bwidth="[^"]*"/.test(svgAttrs)) {
+    svgAttrs = svgAttrs.replace(/\bwidth="[^"]*"/, 'width="18"');
+  } else {
+    svgAttrs += ' width="18"';
+  }
+
+  // Set height="18" on root <svg> only
+  if (/\bheight="[^"]*"/.test(svgAttrs)) {
+    svgAttrs = svgAttrs.replace(/\bheight="[^"]*"/, 'height="18"');
+  } else {
+    svgAttrs += ' height="18"';
+  }
+
+  // Ensure viewBox is preserved
+  if (!/\bviewBox="[^"]*"/.test(svgAttrs)) {
+    svgAttrs += ' viewBox="0 0 24 24"';
+  }
+
+  // Remove any conflicting class attribute from root <svg>
+  svgAttrs = svgAttrs.replace(/\bclass="[^"]*"/, '');
+
+  // Add style on root <svg> to enforce exact 18x18 dimensions and currentColor
+  if (/\bstyle="[^"]*"/.test(svgAttrs)) {
+    svgAttrs = svgAttrs.replace(/\bstyle="([^"]*)"/, 'style="$1;color:currentColor;display:block;width:18px;height:18px"');
+  } else {
+    svgAttrs += ' style="color:currentColor;display:block;width:18px;height:18px"';
+  }
+
+  return `<svg${svgAttrs}>${innerContent}`;
+}
+
 function _renderBgJob(job) {
   const { tool, progress, state, filename, jobId, clientId } = job;
   const color = (tool && tool.color) || '#00E5C0';
@@ -361,16 +415,7 @@ function _renderBgJob(job) {
   const pct = Math.max(5, Math.min(100, Math.round(progress || 5)));
   const key = _esc(clientId || jobId || '');
 
-  const iconHtml = (tool && tool.icon)
-    ? tool.icon
-        .replace(/width="[0-9]+"/, 'width="18"')
-        .replace(/height="[0-9]+"/, 'height="18"')
-        .replace(/class="[^"]*"/, '')
-        .replace('<svg', '<svg style="color:currentColor"')
-    : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-         <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/>
-         <path d="M12 7v5l3 3" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
-       </svg>`;
+  const iconHtml = _formatBgIcon(tool);
 
   const statusBadge = state === 'done'
     ? '<span class="bg-job-badge bg-job-badge--done">&#10003; Completed</span>'
