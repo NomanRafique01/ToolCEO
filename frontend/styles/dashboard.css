@@ -462,11 +462,14 @@
   position: absolute;
   inset: 0;
   display: flex;
-  align-items: center;
+  /* safe center: if the card is taller than the zone it aligns to top,
+     never lets content bleed below the drop-zone boundary */
+  align-items: safe center;
   justify-content: center;
-  padding: 16px 24px;
+  padding: 10px 20px;
   pointer-events: auto;
   animation: dropIconFadeIn 260ms ease forwards;
+  overflow: hidden;
 }
 
 /* ── In-zone save card ── */
@@ -475,14 +478,22 @@
   position: relative;
   width: 100%;
   max-width: 340px;
+  /* Hard cap: drop zone is 200px, wrapper padding 10px top+bottom = 180px max */
+  max-height: 180px;
+  overflow-y: auto;
+  scrollbar-width: none;        /* Firefox: hide scrollbar, content still scrollable */
   background: rgba(255, 255, 255, 0.04);
   border: 1px solid color-mix(in srgb, var(--save-color) 35%, transparent);
   border-radius: 10px;
-  padding: 14px 16px 12px;
+  padding: 10px 14px;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 7px;
   backdrop-filter: blur(4px);
+}
+
+.dz-save-card::-webkit-scrollbar {
+  display: none;                /* Chrome/Edge: hide scrollbar */
 }
 
 .dz-save-close {
@@ -548,7 +559,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-bottom: 2px;
+  margin-bottom: 0;
 }
 
 .dz-save-info {
@@ -576,7 +587,7 @@
 
 .dz-save-btn {
   width: 100%;
-  padding: 8px 0;
+  padding: 7px 0;
   background: var(--save-color);
   color: #0A1F1C;
   border: none;

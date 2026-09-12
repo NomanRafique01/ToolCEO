@@ -253,7 +253,7 @@ export function showDownload(zone, filename, jobId, color, onReset, toolId) {
         </svg>
       </button>
       <div class="dz-save-icon" aria-hidden="true">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
           <path d="M12 3v13M7 11l5 5 5-5" stroke="currentColor" stroke-width="1.8"
                 stroke-linecap="round" stroke-linejoin="round"/>
           <path d="M5 20h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
