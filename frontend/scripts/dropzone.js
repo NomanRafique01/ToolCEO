@@ -1,6 +1,9 @@
 import { handleArchiveFilesPicked, removeArchiveCreatePanel, isArchiveCreateTool } from '../tools/archives/archive_create.js';
 import { handleArchiveFilesPicked as handleArchiveExtractFilePicked, removeArchiveExtractPanel, isArchiveExtractTool, restoreArchiveExtractDone } from '../tools/archives/archive_extract.js';
 import { handleArchiveConvertFilePicked, removeArchiveConvertPanel, ARCHIVE_CONVERT_IDS } from '../tools/archives/archive_convert.js';
+import { handleArchiveInspectorFilePicked, removeArchiveInspectorPanel } from '../tools/archives/archive_inspector.js';
+import { handleArchiveSplitterFilePicked, removeArchiveSplitterPanel } from '../tools/archives/archive_splitter.js';
+import { handleArchiveMergerFilesPicked, removeArchiveMergerPanel } from '../tools/archives/archive_merger.js';
 /**
  * dropzone.js
  * Wires up the file drop zone: click-to-browse, drag-over highlight,
@@ -377,6 +380,12 @@ function _updateDropZone(tool) {
     removeArchiveExtractPanel();
     // Clean up any active archive convert panel
     removeArchiveConvertPanel();
+    // Clean up any active Archive Inspector panel
+    removeArchiveInspectorPanel();
+    // Clean up any active Archive Splitter panel
+    removeArchiveSplitterPanel();
+    // Clean up any active Archive Merger panel
+    removeArchiveMergerPanel();
     // Clean up any active DOCX conversion panel
     removeDocxPdfPanel(); removeDocxHtmlPanel(); removeDocxTxtPanel();
     removeDocxOdtPanel(); removeDocxEpubPanel(); removeDocxMdPanel();
@@ -453,6 +462,12 @@ function _updateDropZone(tool) {
   removeArchiveExtractPanel(); // hide previous archive extract panel if tool changed
   // Clean up any active archive convert panel when switching tools
   removeArchiveConvertPanel();
+  // Clean up any active Archive Inspector panel when switching tools
+  removeArchiveInspectorPanel();
+  // Clean up any active Archive Splitter panel when switching tools
+  removeArchiveSplitterPanel();
+  // Clean up any active Archive Merger panel when switching tools
+  removeArchiveMergerPanel();
   // Clean up any active DOCX conversion panel when switching tools
   removeDocxPdfPanel(); removeDocxHtmlPanel(); removeDocxTxtPanel();
   removeDocxOdtPanel(); removeDocxEpubPanel(); removeDocxMdPanel();
@@ -824,7 +839,9 @@ function _resetZoneContent(zone) {
     '.dz-ebook-thumb-wrap, .dz-docx-thumb-wrap, .dz-pptx-thumb-wrap, .dz-xlsx-thumb-wrap, ' +
     '.dz-txt-thumb-wrap, .dz-odt-thumb-wrap, .dz-csv-thumb-wrap, .dz-img-preview-wrap, ' +
     '.dz-jpg-thumb-strip, .dz-png-thumb-strip, .dz-webp-thumb-strip, .dz-svg-thumb-strip, ' +
-    '.dz-archive-thumb-strip, .dz-arc-conv-thumb-wrap'
+    '.dz-archive-thumb-strip, .dz-arc-conv-thumb-wrap, ' +
+    '.dz-extract-thumb-wrap, .archive-extract-done-wrap, ' +
+    '.dz-inspect-thumb-wrap, .dz-split-thumb-wrap, .dz-merge-arc-strip'
   ).forEach((el) => el.remove());
   zone.classList.remove(
     'dz-state-processing', 'dz-state-done', 'dz-state-error',
@@ -834,7 +851,9 @@ function _resetZoneContent(zone) {
     'dz-has-ebook-thumb', 'dz-has-docx-thumb', 'dz-has-pptx-thumb', 'dz-has-xlsx-thumb',
     'dz-has-txt-thumb', 'dz-has-odt-thumb', 'dz-has-csv-thumb', 'dz-has-img-preview',
     'dz-has-jpg-thumbs', 'dz-has-png-thumbs', 'dz-has-webp-thumbs', 'dz-has-svg-thumbs',
-    'dz-has-archive-thumbs', 'dz-has-arc-conv-thumb'
+    'dz-has-archive-thumbs', 'dz-has-arc-conv-thumb',
+    'dz-has-extract-thumb', 'dz-has-extract-done',
+    'dz-has-inspect-thumb', 'dz-has-split-thumb', 'dz-has-merge-arc-thumbs'
   );
 }
 
@@ -1312,6 +1331,24 @@ async function _submitFile(files) {
     return;
   }
 
+  // Archive Inspector — read-only inspection tool
+  if (tool.id === 'archive-inspect') {
+    handleArchiveInspectorFilePicked(files[0]);
+    return;
+  }
+
+  // Archive Splitter — single-file split to volume parts
+  if (tool.id === 'archive-split') {
+    handleArchiveSplitterFilePicked(files[0]);
+    return;
+  }
+
+  // Archive Merger — multi-part merge queue
+  if (tool.id === 'archive-merge') {
+    handleArchiveMergerFilesPicked(files);
+    return;
+  }
+
   // Archive convert tools — dispatch via ARCHIVE_CONVERT_IDS set
   if (ARCHIVE_CONVERT_IDS.has(tool.id)) {
     handleArchiveConvertFilePicked(files[0], tool.id);
@@ -1783,6 +1820,7 @@ export function initDropZone() {
       dropZone.classList.contains('dz-has-arc-conv-thumb') ||
       dropZone.classList.contains('dz-has-extract-thumb') ||
       dropZone.classList.contains('dz-has-archive-thumbs') ||
+      dropZone.classList.contains('dz-has-arc-merge-thumbs') ||
       dropZone.querySelector('.dz-pdf-thumb-wrap, .dz-compress-thumb-wrap, .dz-encrypt-thumb-wrap, .dz-merge-thumb-strip')
     ) {
       return;
@@ -1832,6 +1870,9 @@ export function initDropZone() {
     } else if (tool && tool.id === 'image_compressor') {
       fileInput.multiple = true;
       fileInput.accept   = 'image/*,.jpg,.jpeg,.png,.webp,.avif,.gif,.bmp,.dib,.tiff,.tif,.ico,.heic,.heif,.svg';
+    } else if (tool && tool.id === 'archive-merge') {
+      fileInput.multiple = true;
+      fileInput.accept   = '*/*';
     } else if (tool && isArchiveCreateTool(tool.id)) {
       fileInput.multiple = true;
       fileInput.accept = '*/*';

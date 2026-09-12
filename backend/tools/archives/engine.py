@@ -161,7 +161,9 @@ def inspect_archive(archive_bytes: bytes, filename: str, password: str | None = 
         file_count = 0
         folder_count = 0
         uncompressed_size = 0
+        compressed_size_total = 0
         archive_format = ""
+        compression_method = ""
         entries: list[dict] = []
 
         blocks = stdout.split("\n\n")
@@ -176,31 +178,52 @@ def inspect_archive(archive_bytes: bytes, filename: str, password: str | None = 
             if "Type" in props and not archive_format:
                 archive_format = props["Type"]
 
+            # Pick up the archive-level Method field (first occurrence)
+            if "Method" in props and not compression_method and "Path" not in props:
+                compression_method = props["Method"]
+
             if "Path" in props and props.get("Path") != str(archive_path):
                 is_folder = props.get("Folder") == "+"
                 size = int(props.get("Size", 0)) if props.get("Size", "").isdigit() else 0
+                packed = int(props.get("Packed Size", 0)) if props.get("Packed Size", "").isdigit() else 0
+                method = props.get("Method", "")
                 item_encrypted = props.get("Encrypted") == "+"
                 if item_encrypted:
                     is_encrypted = True
+                # Capture compression method from entries if not already found
+                if method and not compression_method:
+                    compression_method = method
 
                 if is_folder:
                     folder_count += 1
                 else:
                     file_count += 1
                     uncompressed_size += size
+                    compressed_size_total += packed
 
-                if len(entries) < 60:
+                if len(entries) < 200:
                     entries.append({
                         "path": props["Path"],
                         "size": size,
+                        "packed": packed,
+                        "method": method,
                         "is_folder": is_folder,
                         "encrypted": item_encrypted,
                     })
+
+        # Compute overall compression ratio (0–100 %)
+        if uncompressed_size > 0 and compressed_size_total > 0:
+            ratio = round(100.0 * (1.0 - compressed_size_total / uncompressed_size), 1)
+        else:
+            ratio = 0.0
 
         return {
             "file_count": file_count,
             "folder_count": folder_count,
             "uncompressed_size": uncompressed_size,
+            "compressed_size": compressed_size_total,
+            "compression_ratio": ratio,
+            "compression_method": compression_method,
             "format": archive_format or Path(filename).suffix.lstrip(".").lower() or "archive",
             "is_encrypted": is_encrypted,
             "needs_password": False,
@@ -364,6 +387,173 @@ def extract_archive(
         progress(99)
         progress(100)
         return payload, final_zip_name, "application/zip"
+
+
+def split_archive(
+    archive_bytes: bytes,
+    original_filename: str,
+    part_size_mb: int,
+    output_stem: str,
+    progress: Callable[[int], None],
+    cancel_event=None,
+) -> tuple[bytes, str, str]:
+    """Split *archive_bytes* into equal-sized volume parts using 7-Zip's -v flag.
+
+    Returns a ZIP file containing all split parts, its safe filename, and
+    'application/zip' as the media type so the frontend can handle it the
+    normal download way.
+    """
+    if not archive_bytes:
+        raise ValueError("Selected archive file is empty.")
+
+    executable = find_7zip()
+    if not executable:
+        raise RuntimeError("7-Zip is unavailable. Install the Media Module first.")
+
+    part_size_bytes = max(1, part_size_mb) * 1024 * 1024
+
+    safe_src = Path(original_filename).name or "archive.zip"
+    safe_stem = output_stem or Path(safe_src).stem or "archive"
+    # Ensure the stem has no archive extension
+    for ext in (".tar.gz", ".tar.bz2", ".tar.xz", ".zip", ".rar", ".7z", ".tar", ".gz", ".bz2", ".xz"):
+        if safe_stem.lower().endswith(ext):
+            safe_stem = safe_stem[: -len(ext)]
+            break
+    safe_stem = safe_stem or "archive"
+
+    with tempfile.TemporaryDirectory(prefix="toolceo-split-") as tmp_name:
+        tmp = Path(tmp_name)
+        src_path = tmp / safe_src
+        src_path.write_bytes(archive_bytes)
+        progress(10)
+
+        # Output pattern: 7-Zip appends .001, .002, … to the given output path
+        out_base = tmp / "parts" / safe_stem
+        out_base.parent.mkdir(parents=True, exist_ok=True)
+
+        # Copy the archive to the parts directory using 7-Zip "a" with -v
+        # We pass the archive directly (already compressed) and use "-v" to split it.
+        # 7z a -v<size> output.zip input_archive  → produces output.zip.001 …
+        cmd = [
+            executable, "a",
+            "-tzip",
+            f"-v{part_size_bytes}b",
+            "-bsp1", "-y",
+            str(out_base) + ".zip",
+            str(src_path),
+        ]
+        _run_7zip(cmd, lambda pct: progress(10 + int(pct * 0.7)), cancel_event, cwd=str(tmp))
+        progress(82)
+
+        # Gather all produced part files (*.001, *.002, …)
+        parts_dir = out_base.parent
+        part_files = sorted(parts_dir.glob("*.zip.*"))
+        # Also handle case where 7-Zip produced exactly one file without suffix
+        if not part_files:
+            single = parts_dir / (safe_stem + ".zip")
+            if single.is_file():
+                part_files = [single]
+        if not part_files:
+            raise RuntimeError("7-Zip did not produce any split parts.")
+
+        # Package all parts into a delivery ZIP so the user gets one download
+        progress(85)
+        delivery_name = f"{safe_stem}_parts.zip"
+        delivery_path = tmp / delivery_name
+        delivery_cmd = [
+            executable, "a", "-tzip", "-bsp1", "-y",
+            str(delivery_path),
+            *[str(f) for f in part_files],
+        ]
+        _run_7zip(delivery_cmd, lambda pct: progress(85 + int(pct * 0.13)), cancel_event, cwd=str(parts_dir))
+        progress(99)
+
+        if not delivery_path.is_file() or delivery_path.stat().st_size == 0:
+            raise RuntimeError("Failed to package split parts.")
+
+        payload = delivery_path.read_bytes()
+        progress(100)
+        return payload, delivery_name, "application/zip"
+
+
+def merge_archive(
+    part_items: list[tuple[bytes, str]],
+    output_stem: str,
+    output_format: str,
+    progress: Callable[[int], None],
+    cancel_event=None,
+) -> tuple[bytes, str, str]:
+    """Merge multi-part archive files (.001/.002/… or .z01/.z02/… etc.) into one archive.
+
+    *part_items* is a list of (bytes, filename) tuples — one per part file.
+    The parts are sorted by filename before merging so they are joined in order.
+
+    Returns merged archive bytes, safe filename, and media type.
+    """
+    if not part_items:
+        raise ValueError("No archive parts provided.")
+
+    executable = find_7zip()
+    if not executable:
+        raise RuntimeError("7-Zip is unavailable. Install the Media Module first.")
+
+    safe_stem = output_stem or "merged_archive"
+    spec = SUPPORTED_FORMATS.get(output_format, SUPPORTED_FORMATS["zip"])
+    suffix = spec["suffix"]
+    media_type = spec["media_type"]
+    out_filename = f"{safe_stem}{suffix}"
+
+    # Sort parts by filename so .001 < .002 < .003 …
+    sorted_parts = sorted(part_items, key=lambda x: x[1].lower())
+
+    with tempfile.TemporaryDirectory(prefix="toolceo-merge-") as tmp_name:
+        tmp = Path(tmp_name)
+        parts_dir = tmp / "parts"
+        parts_dir.mkdir()
+
+        # Write all parts to disk
+        for idx, (raw, name) in enumerate(sorted_parts):
+            safe_name = Path(name).name or f"part_{idx:03d}"
+            (parts_dir / safe_name).write_bytes(raw)
+            progress(5 + int(idx / len(sorted_parts) * 30))
+
+        progress(36)
+
+        # Locate the first part — the one 7-Zip should be pointed at
+        part_names = sorted(parts_dir.iterdir(), key=lambda p: p.name.lower())
+        first_part = part_names[0]
+        progress(40)
+
+        # Extract into a temp dir then re-pack into the requested format
+        extract_dir = tmp / "extracted"
+        extract_dir.mkdir()
+
+        ext_cmd = [executable, "x", "-y", "-bsp1", f"-o{extract_dir}", str(first_part)]
+        _run_7zip(ext_cmd, lambda pct: progress(40 + int(pct * 0.35)), cancel_event, cwd=str(parts_dir))
+        progress(76)
+
+        extracted_items = list(extract_dir.iterdir())
+        if not extracted_items:
+            raise RuntimeError("No files found after merging parts. Parts may be corrupted or incomplete.")
+
+        # Re-pack into the requested output format
+        output_path = tmp / out_filename
+        pack_cmd = [
+            executable, "a",
+            spec["type_switch"] or "-tzip",
+            "-bsp1", "-y",
+            str(output_path),
+            "*",
+        ]
+        _run_7zip(pack_cmd, lambda pct: progress(76 + int(pct * 0.22)), cancel_event, cwd=str(extract_dir))
+        progress(99)
+
+        if not output_path.is_file() or output_path.stat().st_size == 0:
+            raise RuntimeError("Failed to create merged archive.")
+
+        payload = output_path.read_bytes()
+        progress(100)
+        return payload, out_filename, media_type
 
 
 def _create_iso_archive(

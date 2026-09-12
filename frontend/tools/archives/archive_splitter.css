@@ -1,0 +1,194 @@
+/**
+ * frontend/tools/archives/archive_splitter.css
+ * Styles for the Archive Splitter tool — thumb + pw-panel settings.
+ * Mirror of archive_extract.css patterns.
+ */
+
+:root {
+  --split-color: #A78BFA;
+}
+
+/* ─── DROP ZONE THUMB ─────────────────────────────────────────────────────── */
+
+.drop-zone.dz-has-split-thumb {
+  padding: 16px 20px !important;
+  min-height: 180px !important;
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: center !important;
+  justify-content: center !important;
+}
+
+.drop-zone.dz-has-split-thumb > .drop-icon,
+.drop-zone.dz-has-split-thumb > .drop-main-text,
+.drop-zone.dz-has-split-thumb > .drop-browse,
+.drop-zone.dz-has-split-thumb > .drop-private,
+.drop-zone.dz-has-split-thumb > .dz-paste-btn {
+  display: none !important;
+}
+
+.dz-split-thumb-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  pointer-events: auto;
+  animation: splitThumbFade 0.2s ease;
+}
+
+@keyframes splitThumbFade {
+  from { opacity: 0; transform: scale(0.96); }
+  to   { opacity: 1; transform: scale(1); }
+}
+
+.dz-split-thumb-card {
+  position: relative;
+  display: inline-flex;
+  border-radius: 10px;
+  transition: transform 0.2s ease;
+}
+
+.dz-split-thumb-card:hover {
+  transform: translateY(-2px);
+}
+
+.dz-split-thumb-frame {
+  width: 80px;
+  height: 104px;
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--bg-card, #0d1117);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.dz-split-thumb-frame svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.dz-split-thumb-remove {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--bg-surface);
+  border: 1.5px solid color-mix(in srgb, var(--split-color, #A78BFA) 50%, var(--border));
+  color: var(--split-color, #A78BFA);
+  font-size: 11px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 130ms ease;
+  z-index: 5;
+}
+
+.dz-split-thumb-remove:hover {
+  background: color-mix(in srgb, var(--split-color, #A78BFA) 15%, var(--bg-surface));
+}
+
+.dz-split-thumb-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text, #f0f6fc);
+  max-width: 320px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
+}
+
+.dz-split-thumb-size {
+  font-size: 11px;
+  color: var(--text-muted, #8b949e);
+  font-weight: 500;
+}
+
+/* ─── SETTINGS PANEL EXTENSION — part-size row ────────────────────────────── */
+
+/* pw-panel, pw-header, pw-actions, pw-submit-btn, pw-filename-input already
+   exist globally; we only add the extra split-specific layout here. */
+
+.pw-actions--split {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.pw-split-group {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-shrink: 0;
+}
+
+.pw-split-label {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted, #8b949e);
+  white-space: nowrap;
+  user-select: none;
+  flex-shrink: 0;
+}
+
+.pw-split-select-wrap {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  flex-shrink: 0;
+}
+
+.pw-split-select {
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+  height: 36px;
+  padding: 0 28px 0 11px;
+  border-radius: 8px;
+  border: 1px solid var(--border, #30363d);
+  background: var(--bg-card, #0d1117);
+  color: var(--text, #f0f6fc);
+  font-family: inherit;
+  font-size: 12.5px;
+  font-weight: 600;
+  cursor: pointer;
+  outline: none;
+  flex-shrink: 0;
+  transition: border-color 140ms ease, box-shadow 140ms ease, background-color 140ms ease;
+  white-space: nowrap;
+}
+
+.pw-split-select:hover {
+  border-color: var(--pw-color, #A78BFA);
+  background-color: color-mix(in srgb, var(--pw-color, #A78BFA) 6%, var(--bg-card, #0d1117));
+}
+
+.pw-split-select:focus {
+  border-color: var(--pw-color, #A78BFA);
+  box-shadow: 0 0 0 2.5px color-mix(in srgb, var(--pw-color, #A78BFA) 20%, transparent);
+}
+
+.pw-split-select option {
+  background-color: #12171e;
+  color: #f0f6fc;
+  font-size: 13px;
+  padding: 6px 10px;
+}
+
+.pw-select-arrow {
+  position: absolute;
+  right: 10px;
+  pointer-events: none;
+  color: var(--pw-color, #A78BFA);
+  flex-shrink: 0;
+}

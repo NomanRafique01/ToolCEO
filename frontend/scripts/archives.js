@@ -501,22 +501,41 @@ function toolRecords(category) {
     convert: [COLORS.archive, COLORS.document, COLORS.audio, COLORS.image, COLORS.data, COLORS.video],
     utility: [COLORS.archive, COLORS.image, COLORS.audio, COLORS.document, COLORS.data, COLORS.video, COLORS.ebook, COLORS.cyan],
   };
+  // Stable IDs for utility tools (first three are live tools)
+  const utilityIds = [
+    'archive-inspect',  // Archive Inspector
+    'archive-split',    // Archive Splitter
+    'archive-merge',    // Archive Merger
+    'utility-4', 'utility-5', 'utility-6', 'utility-7', 'utility-8',
+  ];
+
   return category.tools.map(([label, desc], index) => {
     const color = toolColors[category.id][index];
     const bg = COLOR_BACKGROUNDS[color] || `rgba(128,128,128,0.15)`;
+    let id;
+    if (category.id === 'compress-create')  id = archiveCreateIds[index];
+    else if (category.id === 'extract')     id = archiveExtractIds[index];
+    else if (category.id === 'utility')     id = utilityIds[index] || `utility-${index + 1}`;
+    else                                    id = `${category.id}-${index + 1}`;
     return {
-    id: category.id === 'compress-create'
-      ? archiveCreateIds[index]
-      : (category.id === 'extract' ? archiveExtractIds[index] : `${category.id}-${index + 1}`),
-    label,
-    desc,
-    icon: TOOL_ICONS[iconOffsets[category.id] + index],
-    color,
-    bg,
-    mainText: category.id === 'compress-create'
-      ? 'Drop files to archive'
-      : (category.id === 'extract' ? `Drop ${label.replace(' Extract', '')} archive to extract` : 'Drop a file to begin'),
-    subText: 'or click to browse',
+      id,
+      label,
+      desc,
+      icon: TOOL_ICONS[iconOffsets[category.id] + index],
+      color,
+      bg,
+      mainText: category.id === 'compress-create'
+        ? 'Drop files to archive'
+        : (category.id === 'extract'
+          ? `Drop ${label.replace(' Extract', '')} archive to extract`
+          : (id === 'archive-inspect'
+            ? 'Drop any archive to inspect'
+            : (id === 'archive-split'
+              ? 'Drop archive to split into parts'
+              : (id === 'archive-merge'
+                ? 'Drop archive parts to merge'
+                : 'Drop a file to begin')))),
+      subText: 'or click to browse',
     };
   });
 }
@@ -647,7 +666,13 @@ function renderCategory(container, activateNav, category) {
         _handleLockedClick(card.dataset.lockedModule, card.querySelector('.fmt-label')?.textContent || '');
         return;
       }
-      if (tool && (category.id === 'compress-create' || category.id === 'extract')) {
+      // Live tools: create, extract, inspector, splitter, merger — all use the drop zone
+      const isDropZoneTool = (
+        category.id === 'compress-create' ||
+        category.id === 'extract' ||
+        (tool && (tool.id === 'archive-inspect' || tool.id === 'archive-split' || tool.id === 'archive-merge'))
+      );
+      if (tool && isDropZoneTool) {
         container.querySelectorAll('.fmt-card').forEach((item) => item.classList.remove('selected'));
         card.classList.add('selected');
         setActiveTool(tool);
