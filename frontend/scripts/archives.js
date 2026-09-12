@@ -491,7 +491,7 @@ function toolRecords(category) {
     ],
     extract: [COLORS.archive, COLORS.document, COLORS.image, COLORS.audio, COLORS.video, COLORS.ebook, COLORS.data, COLORS.archive, COLORS.audio, COLORS.video, COLORS.document, COLORS.image, COLORS.ebook],
     convert: [COLORS.archive, COLORS.document, COLORS.audio, COLORS.image, COLORS.data, COLORS.video],
-    utility: [COLORS.archive, COLORS.image, COLORS.audio, COLORS.document, COLORS.data, COLORS.cyan],
+    utility: [COLORS.archive, COLORS.image, COLORS.audio, COLORS.document, COLORS.ebook, COLORS.cyan],
   };
   // Stable IDs for utility tools
   const utilityIds = [

@@ -438,7 +438,7 @@ export async function handleArchiveProtectFilePicked(file, initialMode = 'protec
   }
 
   const tool  = getActiveTool();
-  const color = tool ? (tool.color || '#F59E0B') : '#F59E0B';
+  const color = tool ? (tool.color || '#FBBF24') : '#FBBF24';
   const zone  = document.getElementById('drop-zone');
 
   removeArchiveProtectPanel();
@@ -478,7 +478,7 @@ async function _submitProtect(file, password, outputFormat, encryptHeader, outpu
   _scrollToTop();
 
   const zone  = document.getElementById('drop-zone');
-  const color = tool.color || '#F59E0B';
+  const color = tool.color || '#FBBF24';
   const earlyName = `${outputName || _protectBaseName}_protected.${outputFormat}`;
 
   // Teardown settings panel & thumb before starting progress ring
@@ -581,7 +581,7 @@ async function _submitUnlock(file, password, outputName) {
   _scrollToTop();
 
   const zone  = document.getElementById('drop-zone');
-  const color = tool.color || '#F59E0B';
+  const color = tool.color || '#FBBF24';
   const earlyName = `${outputName || _protectBaseName}_unlocked.${_detectFormat(file.name)}`;
 
   // Teardown settings panel & thumb before starting progress ring
