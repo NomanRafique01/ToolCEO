@@ -318,12 +318,29 @@ export function syncBgJobBar() {
 }
 
 function _bindCardEvents(card) {
+  // Clicking anywhere on the background job card (e.g. progress bar, header, filename)
+  // switches back to the tool and auto-scrolls to the top for the drop zone view
+  card.onclick = (e) => {
+    if (e.target.closest('[data-bg-save]') || e.target.closest('[data-bg-close]')) {
+      return;
+    }
+    const key = card.dataset.jobKey;
+    const job = _bgJobs.get(key);
+    if (job && job.tool) {
+      document.dispatchEvent(new CustomEvent('bg-job-switch', { detail: { tool: job.tool } }));
+      const mc = document.getElementById('main-content');
+      if (mc) mc.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
   card.querySelectorAll('[data-bg-view]').forEach((btn) => {
     btn.onclick = (e) => {
       e.stopPropagation();
       const job = _bgJobs.get(btn.dataset.bgView);
       if (job && job.tool) {
         document.dispatchEvent(new CustomEvent('bg-job-switch', { detail: { tool: job.tool } }));
+        const mc = document.getElementById('main-content');
+        if (mc) mc.scrollTo({ top: 0, behavior: 'smooth' });
       }
     };
   });
@@ -432,7 +449,7 @@ function _renderBgJob(job) {
   const clickableLeft = (job.tool) ? `data-bg-view="${key}" style="cursor:pointer" title="Switch to ${_esc(label)}"` : '';
 
   return `
-    <div class="bg-job-card" data-job-key="${key}" style="--bg-job-color:${color};--bg-job-bg:${bg}">
+    <div class="bg-job-card" data-job-key="${key}" title="${job.tool ? `Switch to ${_esc(label)}` : ''}" style="--bg-job-color:${color};--bg-job-bg:${bg}">
       <div class="bg-job-header">
         <div class="bg-job-left" ${clickableLeft}>
           <div class="bg-job-icon">${iconHtml}</div>

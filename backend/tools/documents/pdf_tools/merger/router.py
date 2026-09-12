@@ -43,6 +43,7 @@ import asyncio
 from typing import List, Optional
 
 from fastapi import APIRouter, File, Form, HTTPException, UploadFile
+from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import JSONResponse
 
 import jobs as job_store
@@ -113,7 +114,7 @@ async def pdf_merger_info(
     """
     raw = await _read(file)
     try:
-        info = get_pdf_info(raw, password or None)
+        info = await run_in_threadpool(get_pdf_info, raw, password or None)
     except ValueError as exc:
         raise HTTPException(status_code=422, detail=str(exc))
     except Exception as exc:

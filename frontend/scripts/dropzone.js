@@ -534,14 +534,14 @@ function _updateDropZone(tool) {
   if (subEl)  subEl.textContent  = subText;
   if (privEl) privEl.textContent = 'Your files never leave your device.';
 
-  // Image Compressor — show panel with support text + level toggles
-  if (tool.id === 'image_compressor') {
-    initImageCompressorUI();
-  }
-
   // Check if there is an active background job for this tool.
   // If so, restore the normal progress ring (or download card) inside the drop zone!
   const bgJob = getBgJobForTool(tool.id);
+
+  // Image Compressor — show panel with support text + level toggles if no active job
+  if (tool.id === 'image_compressor' && !bgJob) {
+    initImageCompressorUI();
+  }
   if (bgJob) {
     if (bgJob.state === 'running' || bgJob.state === 'pending' || bgJob.state === 'submitting') {
       _showProgress(zone, bgJob.progress || 10, color, 'Processing…', tool.id);
@@ -1590,11 +1590,28 @@ export function initDropZone() {
 
   onToolChange(_updateDropZone);
 
-  // Handle "View Tool" button in the bg-job-bar — switch back to the tool that
-  // was executing in the background without causing a syncBgJobBar re-render loop.
+  // Handle clicking the background progress bar / card or "View Tool" button:
+  // switch back to the tool that was executing in the background and auto-scroll
+  // up to the top so the drop zone view is immediately visible.
   document.addEventListener('bg-job-switch', (e) => {
     const tool = e.detail && e.detail.tool;
     if (tool) setActiveTool(tool);
+
+    const dashPanel = document.getElementById('dashboard-panel');
+    if (dashPanel) {
+      dashPanel.classList.remove('modules-active', 'recent-active');
+    }
+
+    const mainContent = document.getElementById('main-content');
+    if (mainContent) {
+      mainContent.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+    const dropZone = document.getElementById('drop-zone');
+    if (dropZone && typeof dropZone.scrollIntoView === 'function') {
+      try {
+        dropZone.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      } catch (_) {}
+    }
   });
 
   // When a background job is cleared or dismissed:
@@ -1632,7 +1649,7 @@ export function initDropZone() {
       '.dz-ebook-thumb-wrap, .dz-docx-thumb-wrap, .dz-pptx-thumb-wrap, .dz-xlsx-thumb-wrap, .dz-txt-thumb-wrap, ' +
       '.dz-odt-thumb-wrap, .dz-csv-thumb-wrap, .dz-img-preview-wrap, .dz-jpg-thumb-strip, .dz-png-thumb-strip, ' +
       '.dz-webp-thumb-strip, .dz-svg-thumb-strip, .dz-archive-thumb-strip, .dz-extract-thumb-wrap, .dz-arc-conv-thumb-wrap, ' +
-      '.dz-inspect-thumb-wrap, .dz-split-thumb-wrap, .dz-merge-arc-strip, .dz-arc-protect-thumb-wrap'
+      '.dz-inspect-thumb-wrap, .dz-split-thumb-wrap, .dz-merge-arc-strip, .dz-arc-protect-thumb-wrap, .dz-imgcmp-thumb-strip'
     );
 
     // If the tool has loaded file(s) or panels ready for execution, do not wipe them

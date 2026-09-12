@@ -564,72 +564,87 @@ export async function handleMergeFilesPicked(files) {
   // so the existing thumbnail strip stays visible while new files are scanned.
   const isFirstBatch = _queue.length === 0;
   if (isFirstBatch) {
-    showScanProgress(zone, color, `Scanning ${newPdfs.length} PDFs…`);
+    showScanProgress(zone, color, `Scanning ${newPdfs.length} PDFs…`, tool?.id);
   }
 
-  // Process files in concurrent batches of 4 with live progress label.
-  // Do NOT call updateProgress() — it mutates stroke-dashoffset which fights the
-  // CSS @keyframes spin animation and causes it to stutter/freeze.
-  const BATCH_SIZE = 4;
+  // Process files in batches with live progress and timeouts so it never gets stuck
+  const BATCH_SIZE = 3;
   let processed = 0;
-  for (let i = 0; i < newPdfs.length; i += BATCH_SIZE) {
-    const chunk = newPdfs.slice(i, i + BATCH_SIZE);
+
+  try {
+    for (let i = 0; i < newPdfs.length; i += BATCH_SIZE) {
+      const chunk = newPdfs.slice(i, i + BATCH_SIZE);
+      if (isFirstBatch) {
+        const label = zone ? zone.querySelector('.dz-progress-label') : null;
+        if (label) label.textContent = `Scanning ${processed + 1} of ${newPdfs.length}…`;
+      }
+
+      await Promise.all(chunk.map(async (file) => {
+        let pageCount = null;
+        let thumbnail = null;
+
+        // 1. Try single backend /api/pdf/merger/info endpoint with 3s timeout
+        try {
+          const controller = new AbortController();
+          const timer = setTimeout(() => controller.abort(), 3000);
+          const fd = new FormData();
+          fd.append('file', file);
+          const res = await fetch(`${BACKEND}/api/pdf/merger/info`, {
+            method: 'POST',
+            body: fd,
+            signal: controller.signal,
+          }).catch(() => null);
+          clearTimeout(timer);
+
+          if (res && res.ok) {
+            const data = await res.json().catch(() => null);
+            if (data) {
+              pageCount = data.page_count || null;
+              thumbnail = data.thumbnail || null;
+            }
+          }
+        } catch (_) {}
+
+        // 2. If pageCount or thumbnail missing, fallback to offline PDF.js with 3s timeout
+        if (!pageCount || !thumbnail) {
+          try {
+            const offlinePromise = getOfflinePdfInfo(file, 0.5);
+            const timeoutPromise = new Promise((_, reject) =>
+              setTimeout(() => reject(new Error('timeout')), 3000)
+            );
+            const offlineInfo = await Promise.race([offlinePromise, timeoutPromise]);
+            if (!pageCount) pageCount = offlineInfo.pageCount || 1;
+            if (!thumbnail) thumbnail = offlineInfo.thumbnail || null;
+          } catch (_) {}
+        }
+
+        // 3. Fallback defaults if all else failed
+        if (!pageCount) pageCount = 1;
+
+        _queue.push({ file, pageCount, thumbnail });
+      }));
+
+      processed += chunk.length;
+      if (isFirstBatch) {
+        const label = zone ? zone.querySelector('.dz-progress-label') : null;
+        if (label) label.textContent = `Scanning ${Math.min(processed, newPdfs.length)} of ${newPdfs.length}…`;
+      }
+
+      // Yield frame so animations and DOM updates remain silky smooth
+      await new Promise((r) => setTimeout(r, 16));
+    }
+  } catch (err) {
+    console.error('PDF scanning encountered an issue:', err);
+  } finally {
+    // Only remove the scan-ring overlay if we actually showed one (first batch).
     if (isFirstBatch) {
-      const label = zone ? zone.querySelector('.dz-progress-label') : null;
-      if (label) label.textContent = `Scanning ${processed} of ${newPdfs.length}…`;
+      resetZoneContent(zone);
     }
 
-    await Promise.all(chunk.map(async (file) => {
-      const fd1 = new FormData(); fd1.append('file', file);
-      const fd2 = new FormData(); fd2.append('file', file);
-
-      let pageCount = null;
-      let thumbnail = null;
-
-      try {
-        const [countRes, thumbRes] = await Promise.all([
-          fetch(`${BACKEND}/api/pdf/page-count`, { method: 'POST', body: fd1 }).catch(() => null),
-          fetch(`${BACKEND}/api/pdf/thumbnail`,  { method: 'POST', body: fd2 }).catch(() => null),
-        ]);
-        if (countRes && countRes.ok) {
-          const cj = await countRes.json();
-          pageCount = cj.page_count || 1;
-        }
-        if (thumbRes && thumbRes.ok) {
-          const tj = await thumbRes.json();
-          thumbnail = tj.thumbnail || null;
-        }
-      } catch (_) {
-        pageCount = null;
-      }
-
-      if (!pageCount) {
-        try {
-          const offlineInfo = await getOfflinePdfInfo(file, 0.5);
-          pageCount = offlineInfo.pageCount || 1;
-          thumbnail = offlineInfo.thumbnail || null;
-        } catch (_) {
-          pageCount = 1;
-        }
-      }
-
-      _queue.push({ file, pageCount, thumbnail });
-    }));
-
-    processed += chunk.length;
-
-    // Yield a paint frame so the browser can keep the spin animation smooth.
-    await new Promise((r) => setTimeout(r, 0));
+    // Rebuild UI
+    _renderThumbStrip();
+    _renderMergePanel();
   }
-
-  // Only remove the scan-ring overlay if we actually showed one (first batch).
-  if (isFirstBatch) {
-    resetZoneContent(zone);
-  }
-
-  // Rebuild UI
-  _renderThumbStrip();
-  _renderMergePanel();
 }
 
 // ─── SUBMIT ───────────────────────────────────────────────────────────────────

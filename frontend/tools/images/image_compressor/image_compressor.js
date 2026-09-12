@@ -1,4 +1,4 @@
-﻿/**
+/**
  * tools/images/image_compressor/image_compressor.js
  *
  * Multi-image compressor with thumbnail strip (like JPG tools).
@@ -435,8 +435,21 @@ export async function handleImageCompressorFilesPicked(files) {
 // ─── SUBMIT ──────────────────────────────────────────────────────────────────
 
 async function _submitCompress() {
-  const tool = getActiveTool();
-  if (!tool || _queue.length === 0) return;
+  const activeTool = getActiveTool();
+  if (_queue.length === 0) return;
+
+  const tool = {
+    id: activeTool?.id || 'image_compressor',
+    label: activeTool?.label || 'Image Compressor',
+    color: activeTool?.color || _COLOR,
+    bg: activeTool?.bg || _BG,
+    icon: activeTool?.icon || `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
+      <rect x="1" y="2" width="14" height="12" rx="2" stroke="currentColor" stroke-width="1.3"/>
+      <circle cx="5.5" cy="6" r="1.3" stroke="currentColor" stroke-width="1.1"/>
+      <path d="M1 12l4-4 3 3 2-2 5 4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M11 4 v4 M9 6 h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+    </svg>`,
+  };
 
   const queueSnapshot = _queue.slice();
   const levelCopy     = _level;
@@ -459,7 +472,7 @@ async function _submitCompress() {
   queueSnapshot.forEach((item) => fd.append('files', item.file));
   fd.append('compression_level', levelCopy);
 
-  showProgress(zone, 10, color, 'Compressing…');
+  showProgress(zone, 10, color, 'Compressing…', tool.id);
   setBgJob({ jobId: null, tool, filename: earlyName, progress: 5, state: 'submitting', sse: null });
 
   let jobId;
@@ -475,7 +488,9 @@ async function _submitCompress() {
     }
     jobId = json.job_id;
   } catch (err) {
-    showError(zone, `Upload failed: ${err.message}`);
+    if (getActiveTool()?.id === tool.id) {
+      showError(zone, `Upload failed: ${err.message}`);
+    }
     clearBgJob();
     _queue = queueSnapshot;
     _level = levelCopy;
@@ -506,43 +521,60 @@ async function _submitCompress() {
     }
 
     if (state === 'running' || state === 'pending') {
-      updateProgress(zone, Math.max(10, Math.min(90, pct)), color, tool.id);
+      if (getActiveTool()?.id === tool.id) {
+        updateProgress(zone, Math.max(10, Math.min(90, pct)), color, tool.id);
+      }
       return;
     }
 
     sse.close();
 
     if (state === 'done') {
-      updateProgress(zone, 100, color, tool.id);
       const dlName = data.filename || earlyName;
 
-      const onReset = () => {
-        removeImageCompressorPanel();
-        const activeTool = getActiveTool();
-        if (activeTool) {
-          import('../../../scripts/dropzone.js').then(({ _updateDropZoneForTool }) => {
-            if (_updateDropZoneForTool) _updateDropZoneForTool(activeTool);
-          }).catch(() => {});
-        }
-      };
+      // Update background job store
+      const bgJob = getBgJob(jobId);
+      if (bgJob && bgJob.jobId === jobId) {
+        bgJob.progress = 100;
+        bgJob.state = 'done';
+        bgJob.filename = dlName;
+        syncBgJobBar();
+      }
 
-      showDownload(zone, dlName, jobId, color, onReset, tool.id);
-      clearBgJob(true);
+      // If user is currently on Image Compressor tool, show download card in drop zone
       if (getActiveTool()?.id === tool.id) {
+        updateProgress(zone, 100, color, tool.id);
+
+        const onReset = () => {
+          removeImageCompressorPanel();
+          clearBgJob(jobId, true);
+          const currentTool = getActiveTool();
+          if (currentTool) {
+            import('../../../scripts/dropzone.js').then(({ _updateDropZoneForTool }) => {
+              if (_updateDropZoneForTool) _updateDropZoneForTool(currentTool);
+            }).catch(() => {});
+          }
+        };
+
+        setTimeout(() => showDownload(zone, dlName, jobId, color, onReset, tool.id), 200);
         document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'smooth' });
       }
       return;
     }
 
     if (state === 'error') {
-      showError(zone, error || 'Compression failed. Please try again.');
-      clearBgJob();
+      if (getActiveTool()?.id === tool.id) {
+        showError(zone, error || 'Compression failed. Please try again.');
+      }
+      clearBgJob(jobId);
     }
   };
 
   sse.onerror = () => {
     sse.close();
-    showError(zone, 'Lost connection to backend. Is the server running?');
-    clearBgJob();
+    if (getActiveTool()?.id === tool.id) {
+      showError(zone, 'Lost connection to backend. Is the server running?');
+    }
+    clearBgJob(jobId);
   };
 }
