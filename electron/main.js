@@ -296,6 +296,22 @@ async function registerWindowsFileAssociation() {
   const appArg  = app.isPackaged ? '' : `"${path.join(__dirname, '..')}" `;
   const openCmd = `"${exePath}" ${appArg}"%1"`;
 
+  // ── Check whether association is already up-to-date ──────────────────────
+  // Read the existing open command from the registry. If it matches what we
+  // would write, skip all reg writes AND the shell-notify broadcast.
+  // This prevents SHCNE_ASSOCCHANGED from firing on every startup, which
+  // would disrupt Windows Shell operations (e.g. native "Compressed folder"
+  // zip) by forcing Explorer to reload its shell namespace.
+  const existingCmd = regQuery(
+    `HKCU\\Software\\Classes\\${TCEO_PROG_ID}\\shell\\open\\command`,
+    '(Default)'
+  );
+  if (existingCmd === openCmd) {
+    // Association is already correct — no writes, no shell broadcast.
+    console.log('[tceo-assoc] Windows file association already up-to-date. openCmd:', openCmd);
+    return;
+  }
+
   const hkcu     = 'HKCU\\Software\\Classes';
 
   await Promise.all([
@@ -312,6 +328,9 @@ async function registerWindowsFileAssociation() {
     regSet(`${hkcu}\\${TCEO_PROG_ID}\\shell\\open\\command`,    '(Default)',    'REG_SZ', openCmd),
   ]);
 
+  // Only notify the shell when the association actually changed (new install
+  // or exe path changed). This avoids disrupting Windows Shell operations
+  // (e.g. native compressed folder zip) on every subsequent startup.
   try {
     const iconPath = getTceoFileIconPath();
     execFileSync(
@@ -331,20 +350,54 @@ function psSingleQuote(value) {
   return String(value).replace(/'/g, "''");
 }
 
+/**
+ * Read a single Windows registry value using `reg query`.
+ * Returns the value string if found, or null if the key/value doesn't exist.
+ * Only reads from HKCU — no elevation required.
+ * @param {string} keyPath   e.g. 'HKCU\\Software\\Classes\\ToolCEO.VaultFile\\shell\\open\\command'
+ * @param {string} valueName '(Default)' or a named value
+ * @returns {string | null}
+ */
+function regQuery(keyPath, valueName) {
+  if (!IS_WIN) return null;
+  try {
+    const isDefault = valueName === '(Default)';
+    const args = isDefault
+      ? ['query', keyPath, '/ve']
+      : ['query', keyPath, '/v', valueName];
+    const out = execFileSync('reg', args, { windowsHide: true, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] });
+    // reg query output: "    (Default)    REG_SZ    <value>" or "    <name>    REG_SZ    <value>"
+    const match = out.match(/REG_(?:SZ|EXPAND_SZ|NONE)\s+(.+)/);
+    return match ? match[1].trimEnd() : null;
+  } catch (_) {
+    return null;   // key or value does not exist
+  }
+}
+
+/**
+ * Broadcast SHCNE_ASSOCCHANGED so Windows Shell updates its icon/handler cache
+ * for the .tceo association.  Also notifies for a specific saved file path when
+ * provided (SHCNE_UPDATEITEM).
+ *
+ * IMPORTANT: Only call this when the association has actually changed (first
+ * install or exe path changed).  Calling it on every startup fires
+ * SHCNE_ASSOCCHANGED which forces Explorer to reload all shell extensions and
+ * can cause "Access denied" errors in concurrently running Shell operations
+ * (e.g. Windows' native "Compressed folder" zip feature).
+ * The desktop SHCNE_UPDATEDIR broadcast is intentionally omitted here for the
+ * same reason — it is not needed for a file-type association change.
+ */
 function refreshWindowsShellIcons(filePath) {
   if (!IS_WIN) return;
 
-  try {
-    execFileSync('ie4uinit.exe', ['-show'], { stdio: 'ignore', windowsHide: true });
-  } catch (_) {}
-
-  const desktopPath = app.isReady() ? app.getPath('desktop') : '';
   const fileCall = filePath
     ? `[ShellNotify]::Path(0x00002000, 0x0005, '${psSingleQuote(filePath)}', $null);`
     : '';
-  const desktopCall = desktopPath
-    ? `[ShellNotify]::Path(0x00001000, 0x0005, '${psSingleQuote(desktopPath)}', $null);`
-    : '';
+
+  // 0x08000000 = SHCNE_ASSOCCHANGED — tells Explorer that file associations
+  // have changed so it refreshes icon/handler caches for .tceo files.
+  // We deliberately do NOT broadcast SHCNE_UPDATEDIR on the Desktop here;
+  // that would interrupt Shell operations (zipping, renaming, etc.) in progress.
   const script = `
 Add-Type @"
 using System;
@@ -358,7 +411,6 @@ public static class ShellNotify {
 "@
 [ShellNotify]::IdList(0x08000000, 0, [IntPtr]::Zero, [IntPtr]::Zero);
 ${fileCall}
-${desktopCall}
 `;
 
   execFile(

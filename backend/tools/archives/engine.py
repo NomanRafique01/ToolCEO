@@ -1266,3 +1266,281 @@ def unlock_archive(
 
         progress(100)
         return out_path.read_bytes(), safe_output, media_type
+
+
+# ── ARCHIVE DUPLICATE FINDER & REBIND ────────────────────────────────────────
+
+def scan_archive_duplicates(archive_bytes: bytes, filename: str) -> dict:
+    """Inspect archive contents and detect duplicate files based on SHA-256 hash.
+    Returns summary statistics and duplicate groups with per-file information.
+    """
+    if not archive_bytes:
+        raise ValueError("Selected archive file is empty.")
+
+    executable = find_7zip()
+    if not executable:
+        raise RuntimeError("7-Zip is unavailable. Install the Media Module first.")
+
+    safe_name = Path(filename).name or "archive.zip"
+    with tempfile.TemporaryDirectory(prefix="toolceo-dup-scan-") as tmp_name:
+        tmp = Path(tmp_name)
+        archive_path = tmp / safe_name
+        archive_path.write_bytes(archive_bytes)
+        extract_dir = tmp / "extracted"
+        extract_dir.mkdir()
+
+        # Extract archive
+        cmd_x = [executable, "x", "-y", "-bsp1", f"-o{extract_dir}", "-p-", str(archive_path)]
+        try:
+            _run_7zip(cmd_x, lambda _pct: None, None, cwd=str(tmp))
+        except ValueError as exc:
+            raise ValueError(f"Cannot extract archive for duplicate scanning: {exc}") from exc
+        except _PartialExtractionWarning:
+            if not extract_dir.exists() or not any(extract_dir.iterdir()):
+                raise RuntimeError("Could not extract archive contents to scan for duplicates.")
+
+        # Unwrap nested .tar if present (tar.gz, tar.bz2, etc.)
+        items = list(extract_dir.iterdir())
+        if len(items) == 1 and items[0].is_file() and items[0].suffix.lower() == ".tar":
+            nested_tar = items[0]
+            inner_dir = tmp / "inner"
+            inner_dir.mkdir()
+            tar_cmd = [executable, "x", "-y", "-bsp1", f"-o{inner_dir}", str(nested_tar)]
+            _run_7zip(tar_cmd, lambda _pct: None, None, cwd=str(tmp))
+            extract_dir = inner_dir
+
+        # Walk through all extracted files
+        import hashlib
+        from datetime import datetime
+
+        files_by_hash: dict[str, list[dict]] = {}
+        total_files = 0
+        total_uncompressed_bytes = 0
+
+        for root, _dirs, files in os.walk(extract_dir):
+            for fname in files:
+                file_path = Path(root) / fname
+                try:
+                    st = file_path.stat()
+                    file_size = st.st_size
+                    rel_path = str(file_path.relative_to(extract_dir)).replace("\\", "/")
+                except Exception:
+                    continue
+
+                total_files += 1
+                total_uncompressed_bytes += file_size
+
+                # Compute SHA-256
+                h = hashlib.sha256()
+                with file_path.open("rb") as f:
+                    while chunk := f.read(65536):
+                        h.update(chunk)
+                file_hash = h.hexdigest()
+
+                mtime_str = datetime.fromtimestamp(st.st_mtime).strftime("%Y-%m-%d %H:%M")
+
+                entry = {
+                    "path": rel_path,
+                    "name": fname,
+                    "size": file_size,
+                    "ext": file_path.suffix.lstrip(".").lower() or "file",
+                    "modified": mtime_str,
+                }
+                files_by_hash.setdefault(file_hash, []).append(entry)
+
+        # Build duplicate groups (only where count >= 2 and size > 0)
+        duplicate_groups = []
+        group_idx = 1
+        total_redundant_bytes = 0
+        total_redundant_files = 0
+
+        for file_hash, group_files in files_by_hash.items():
+            if len(group_files) >= 2 and group_files[0]["size"] > 0:
+                file_size = group_files[0]["size"]
+                redundant_count = len(group_files) - 1
+                group_wasted = redundant_count * file_size
+                total_redundant_bytes += group_wasted
+                total_redundant_files += redundant_count
+
+                # Sort files by path depth/name so primary copy is logically top-level
+                group_files.sort(key=lambda x: (x["path"].count("/"), len(x["path"]), x["path"]))
+
+                duplicate_groups.append({
+                    "id": f"dup-group-{group_idx}",
+                    "hash": file_hash[:12],
+                    "file_size": file_size,
+                    "files_count": len(group_files),
+                    "wasted_bytes": group_wasted,
+                    "files": group_files,
+                })
+                group_idx += 1
+
+        # Sort groups by wasted_bytes descending
+        duplicate_groups.sort(key=lambda g: g["wasted_bytes"], reverse=True)
+
+        fmt = "zip"
+        lower_name = filename.lower()
+        for ext in (".tar.gz", ".tar.bz2", ".tar.xz", ".zip", ".7z", ".rar", ".tar", ".wim"):
+            if lower_name.endswith(ext):
+                fmt = ext.lstrip(".")
+                break
+
+        return {
+            "filename": filename,
+            "archive_format": fmt,
+            "total_files": total_files,
+            "total_uncompressed_bytes": total_uncompressed_bytes,
+            "duplicate_groups_count": len(duplicate_groups),
+            "duplicate_files_count": total_redundant_files,
+            "wasted_bytes": total_redundant_bytes,
+            "groups": duplicate_groups,
+        }
+
+
+def rebind_archive_deduped(
+    archive_bytes: bytes,
+    original_filename: str,
+    delete_paths: list[str],
+    output_filename: str | None,
+    output_format: str | None,
+    progress: Callable[[int], None],
+    cancel_event=None,
+) -> tuple[bytes, str, str]:
+    """Extract archive, remove specified duplicate relative paths, and re-pack
+    into a clean archive.
+    Returns (cleaned_archive_bytes, safe_output_name, media_type).
+    """
+    if not archive_bytes:
+        raise ValueError("Selected archive file is empty.")
+
+    executable = find_7zip()
+    if not executable:
+        raise RuntimeError("7-Zip is unavailable. Install the Media Module first.")
+
+    # Determine archive format
+    detected_ext = "zip"
+    lower_orig = original_filename.lower()
+    for ext in (".tar.gz", ".tar.bz2", ".tar.xz", ".zip", ".7z", ".rar", ".tar", ".wim"):
+        if lower_orig.endswith(ext):
+            detected_ext = ext.lstrip(".")
+            break
+
+    target_fmt = (output_format or detected_ext).lower().strip()
+    if target_fmt == "rar":
+        rar_exe = find_rar()
+        if not rar_exe:
+            target_fmt = "zip"
+
+    spec = SUPPORTED_FORMATS.get(target_fmt, SUPPORTED_FORMATS.get("zip", {}))
+    suffix = spec.get("suffix", f".{target_fmt}")
+    media_type = spec.get("media_type", "application/octet-stream")
+    type_switch = spec.get("type_switch", "-tzip")
+
+    safe_stem = Path(original_filename).name
+    for strip_ext in (".tar.gz", ".tar.bz2", ".tar.xz", ".zip", ".rar", ".7z", ".tar", ".gz", ".bz2", ".xz", ".wim"):
+        if safe_stem.lower().endswith(strip_ext):
+            safe_stem = safe_stem[:-len(strip_ext)]
+            break
+    else:
+        safe_stem = safe_stem.rsplit(".", 1)[0] if "." in safe_stem else safe_stem
+    safe_stem = safe_stem or "archive"
+
+    safe_output = Path(output_filename).name if output_filename else (safe_stem + "_no_duplicates" + suffix)
+    if not safe_output.lower().endswith(suffix):
+        safe_output += suffix
+
+    progress(5)
+
+    with tempfile.TemporaryDirectory(prefix="toolceo-rebind-") as tmp_name:
+        tmp = Path(tmp_name)
+        src_path = tmp / Path(original_filename).name
+        src_path.write_bytes(archive_bytes)
+        extract_dir = tmp / "extracted"
+        extract_dir.mkdir()
+
+        # ── Step 1: Extract ──────────────────────────────────────────────────
+        cmd_x = [executable, "x", "-y", "-bsp1", f"-o{extract_dir}", "-p-", str(src_path)]
+        try:
+            _run_7zip(cmd_x, lambda pct: progress(5 + int(pct * 0.40)), cancel_event, cwd=str(tmp))
+        except ValueError as exc:
+            raise ValueError(f"Cannot extract archive: {exc}") from exc
+        except _PartialExtractionWarning:
+            if not extract_dir.exists() or not any(extract_dir.iterdir()):
+                raise RuntimeError("Could not extract archive contents for rebinding.")
+
+        # Unwrap nested .tar if present
+        items = list(extract_dir.iterdir())
+        if len(items) == 1 and items[0].is_file() and items[0].suffix.lower() == ".tar":
+            nested_tar = items[0]
+            inner_dir = tmp / "inner"
+            inner_dir.mkdir()
+            tar_cmd = [executable, "x", "-y", "-bsp1", f"-o{inner_dir}", str(nested_tar)]
+            _run_7zip(tar_cmd, lambda pct: progress(45 + int(pct * 0.08)), cancel_event, cwd=str(tmp))
+            extract_dir = inner_dir
+
+        progress(55)
+
+        # ── Step 2: Delete designated duplicate files ────────────────────────
+        normalized_deletes = {p.replace("\\", "/").strip("/") for p in delete_paths if p and p.strip()}
+        real_extract_dir = extract_dir.resolve()
+
+        deleted_count = 0
+        for rel in normalized_deletes:
+            target_file = (extract_dir / rel).resolve()
+            # Security: ensure target_file is strictly within real_extract_dir
+            try:
+                target_file.relative_to(real_extract_dir)
+            except ValueError:
+                continue
+            if target_file.is_file():
+                try:
+                    target_file.unlink()
+                    deleted_count += 1
+                except Exception:
+                    pass
+
+        # Clean up any directories that became completely empty
+        for root, dirs, _files in os.walk(extract_dir, topdown=False):
+            for d in dirs:
+                dir_path = Path(root) / d
+                try:
+                    if not any(dir_path.iterdir()):
+                        dir_path.rmdir()
+                except Exception:
+                    pass
+
+        progress(60)
+
+        # ── Step 3: Re-pack into clean archive ───────────────────────────────
+        out_path = tmp / safe_output
+
+        if target_fmt in ("tar.gz", "tar.bz2", "tar.xz"):
+            tar_path = tmp / (safe_stem + ".tar")
+            cmd_tar = [executable, "a", "-ttar", "-bsp1", "-y", str(tar_path), "."]
+            _run_7zip(cmd_tar, lambda pct: progress(60 + int(pct * 0.18)), cancel_event, cwd=str(extract_dir))
+            progress(78)
+            compress_sw = {"tar.gz": "-tgzip", "tar.bz2": "-tbzip2", "tar.xz": "-txz"}[target_fmt]
+            cmd_c = [executable, "a", compress_sw, "-bsp1", "-y", str(out_path), str(tar_path)]
+            _run_7zip(cmd_c, lambda pct: progress(78 + int(pct * 0.18)), cancel_event, cwd=str(tmp))
+        elif target_fmt == "rar":
+            rar_exe = find_rar()
+            if not rar_exe:
+                raise RuntimeError("rar.exe is unavailable to produce a RAR archive.")
+            cmd_rar = [rar_exe, "a", "-r", "-y", str(out_path), "*"]
+            subprocess.run(
+                cmd_rar,
+                cwd=str(extract_dir),
+                check=True,
+                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+            )
+        else:
+            cmd_a = [executable, "a", type_switch, "-bsp1", "-y", str(out_path), "."]
+            _run_7zip(cmd_a, lambda pct: progress(60 + int(pct * 0.36)), cancel_event, cwd=str(extract_dir))
+
+        progress(98)
+
+        if not out_path.is_file() or out_path.stat().st_size == 0:
+            raise RuntimeError(f"Rebinding produced an empty or missing archive: {safe_output}")
+
+        progress(100)
+        return out_path.read_bytes(), safe_output, media_type

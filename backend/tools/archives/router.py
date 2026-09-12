@@ -10,7 +10,7 @@ from fastapi.responses import JSONResponse
 
 import jobs as job_store
 from job_executor import job_executor
-from tools.archives.engine import ArchiveCancelled, create_archive, extract_archive, inspect_archive, convert_archive, split_archive, merge_archive, protect_archive, unlock_archive, CONVERT_PAIRS, _CONVERT_SUFFIX, SUPPORTED_FORMATS
+from tools.archives.engine import ArchiveCancelled, create_archive, extract_archive, inspect_archive, convert_archive, split_archive, merge_archive, protect_archive, unlock_archive, scan_archive_duplicates, rebind_archive_deduped, CONVERT_PAIRS, _CONVERT_SUFFIX, SUPPORTED_FORMATS
 
 
 router = APIRouter(prefix="/archives", tags=["Archives"])
@@ -441,5 +441,80 @@ async def unlock(
         file.filename or "archive.zip",
         password,
         output_filename or "",
+    )
+    return JSONResponse({"job_id": job.id}, status_code=202)
+
+
+# ── ARCHIVE DUPLICATE FINDER & REBIND ────────────────────────────────────────
+
+@router.post("/duplicates/scan", summary="Scan an archive for duplicate files")
+async def duplicates_scan(file: UploadFile = File(...)):
+    """Scan archive and detect identical files grouped by content SHA-256 hash."""
+    try:
+        content = await file.read()
+        res = scan_archive_duplicates(content, file.filename or "archive.zip")
+        return JSONResponse(res)
+    except ValueError as exc:
+        return JSONResponse({"error": str(exc)}, status_code=400)
+    except Exception as exc:
+        return JSONResponse({"error": f"Failed to scan archive for duplicates: {exc}"}, status_code=500)
+
+
+def _run_rebind_job(
+    job_id: str,
+    archive_bytes: bytes,
+    original_filename: str,
+    delete_paths: list[str],
+    output_filename: str,
+    output_format: str | None,
+) -> None:
+    try:
+        job_store.set_progress(job_id, 5)
+        job = job_store.get_job(job_id)
+        result, filename, media_type = rebind_archive_deduped(
+            archive_bytes,
+            original_filename,
+            delete_paths,
+            output_filename,
+            output_format,
+            lambda pct: job_store.set_progress(job_id, pct),
+            job.cancel_event if job else None,
+        )
+        if job_store.is_cancelled(job_id):
+            return
+        job_store.set_done(job_id, result, filename, media_type)
+    except ArchiveCancelled:
+        job_store.set_cancelled(job_id)
+    except ValueError as exc:
+        job_store.set_error(job_id, str(exc))
+    except Exception as exc:
+        job_store.set_error(job_id, f"Archive rebinding failed: {exc}")
+
+
+@router.post("/duplicates/rebind", summary="Rebind archive removing selected duplicate files")
+async def duplicates_rebind(
+    file: UploadFile = File(...),
+    delete_paths: str = Form("[]"),
+    output_filename: Optional[str] = Form(None),
+    output_format: Optional[str] = Form(None),
+):
+    """Extract archive, remove selected duplicate paths, and re-pack into a clean archive."""
+    try:
+        parsed_paths = json.loads(delete_paths) if delete_paths else []
+        if not isinstance(parsed_paths, list):
+            parsed_paths = []
+    except (TypeError, json.JSONDecodeError):
+        parsed_paths = []
+
+    content = await file.read()
+    job = job_store.create_job()
+    job_executor.submit(
+        _run_rebind_job,
+        job.id,
+        content,
+        file.filename or "archive.zip",
+        parsed_paths,
+        output_filename or "",
+        output_format or None,
     )
     return JSONResponse({"job_id": job.id}, status_code=202)

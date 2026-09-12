@@ -226,13 +226,7 @@ const TOOL_ICONS = [
   // [32] Remove Archive Password — shield unlocked with key (ZIP/7Z/RAR)
   `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2L4 6v6c0 5.25 3.5 9.8 8 11 4.5-1.2 8-5.75 8-11V6L12 2z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="10" cy="11" r="2" stroke="currentColor" stroke-width="1.3"/><path d="M11.7 11h3.3M14 9.8v2.4M15.5 9.8v2.4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M9 14l1-1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`,
 
-  // [33] Repair Corrupted ZIP — broken archive being stitched/welded
-  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 8h8M16 8h4M4 8 7 5h5M16 8l-1-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 8v11h16V8" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M11.5 5l1 3.5M13 5l-1 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M7 13h10M7 16h6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M12 8.5l1.5-3.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="1.5 1"/></svg>`,
-
-  // [34] Archive Size Estimator — scale/balance with archive weight
-  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 4v15M5 19h14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M4 8h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M4 8c0 2 2 3 4 3s4-1 4-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M12 6h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M12 6c0 2.5 2 3.5 4 3.5s4-1 4-3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
-
-  // [35] Duplicate Finder — two identical docs with equality sign
+  // [33] Duplicate Finder — two identical docs with equality sign
   `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="5" width="7.5" height="10" rx="1.5" stroke="currentColor" stroke-width="1.7"/><path d="M5 9h3.5M5 11.5h2.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><rect x="13.5" y="5" width="7.5" height="10" rx="1.5" stroke="currentColor" stroke-width="1.7"/><path d="M15.5 9H19M15.5 11.5H18" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M10.5 10.5h3M10.5 13h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
 ];
 
@@ -312,8 +306,6 @@ const CATEGORIES = [
       ['Archive Merger', 'Merge archive parts into one archive.'],
       ['Password Protect Archive', 'Add AES-256 password to archives (ZIP, 7Z, RAR).'],
       ['Remove Archive Password', 'Remove password & decrypt archives (ZIP, 7Z, RAR).'],
-      ['Repair Corrupted ZIP', 'Attempt recovery of a corrupted ZIP archive.'],
-      ['Archive Size Estimator', 'Estimate the compressed size of selected files.'],
       ['Duplicate Finder in Archive', 'Find duplicate files inside an archive.'],
     ],
   },
@@ -499,16 +491,16 @@ function toolRecords(category) {
     ],
     extract: [COLORS.archive, COLORS.document, COLORS.image, COLORS.audio, COLORS.video, COLORS.ebook, COLORS.data, COLORS.archive, COLORS.audio, COLORS.video, COLORS.document, COLORS.image, COLORS.ebook],
     convert: [COLORS.archive, COLORS.document, COLORS.audio, COLORS.image, COLORS.data, COLORS.video],
-    utility: [COLORS.archive, COLORS.image, COLORS.audio, COLORS.document, COLORS.data, COLORS.video, COLORS.ebook, COLORS.cyan],
+    utility: [COLORS.archive, COLORS.image, COLORS.audio, COLORS.document, COLORS.data, COLORS.cyan],
   };
-  // Stable IDs for utility tools (first three are live tools)
+  // Stable IDs for utility tools
   const utilityIds = [
     'archive-inspect',   // Archive Inspector
     'archive-split',     // Archive Splitter
     'archive-merge',     // Archive Merger
     'archive-protect',   // Password Protect Archive
     'archive-unlock',    // Remove Archive Password
-    'utility-6', 'utility-7', 'utility-8',
+    'archive-duplicate', // Duplicate Finder in Archive
   ];
 
   return category.tools.map(([label, desc], index) => {
@@ -540,7 +532,9 @@ function toolRecords(category) {
                   ? 'Drop an archive to protect with a password'
                   : (id === 'archive-unlock'
                     ? 'Drop an encrypted archive to unlock'
-                    : 'Drop a file to begin')))))),
+                    : (id === 'archive-duplicate'
+                      ? 'Drop an archive to find duplicate files'
+                      : 'Drop a file to begin'))))))),
       subText: 'or click to browse',
     };
   });
@@ -681,7 +675,8 @@ function renderCategory(container, activateNav, category) {
           tool.id === 'archive-split'   ||
           tool.id === 'archive-merge'   ||
           tool.id === 'archive-protect' ||
-          tool.id === 'archive-unlock'
+          tool.id === 'archive-unlock'  ||
+          tool.id === 'archive-duplicate'
         ))
       );
       if (tool && isDropZoneTool) {

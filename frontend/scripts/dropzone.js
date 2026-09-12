@@ -5,6 +5,7 @@ import { handleArchiveInspectorFilePicked, removeArchiveInspectorPanel } from '.
 import { handleArchiveSplitterFilePicked, removeArchiveSplitterPanel } from '../tools/archives/archive_splitter.js';
 import { handleArchiveMergerFilesPicked, removeArchiveMergerPanel } from '../tools/archives/archive_merger.js';
 import { handleArchiveProtectFilePicked, removeArchiveProtectPanel } from '../tools/archives/archive_protect.js';
+import { handleArchiveDuplicateFilePicked, removeArchiveDuplicatePanel } from '../tools/archives/archive_duplicate.js';
 /**
  * dropzone.js
  * Wires up the file drop zone: click-to-browse, drag-over highlight,
@@ -389,6 +390,8 @@ function _updateDropZone(tool) {
     removeArchiveMergerPanel();
     // Clean up any active Archive Protect panel
     removeArchiveProtectPanel();
+    // Clean up any active Archive Duplicate panel
+    removeArchiveDuplicatePanel();
     // Clean up any active DOCX conversion panel
     removeDocxPdfPanel(); removeDocxHtmlPanel(); removeDocxTxtPanel();
     removeDocxOdtPanel(); removeDocxEpubPanel(); removeDocxMdPanel();
@@ -473,6 +476,8 @@ function _updateDropZone(tool) {
   removeArchiveMergerPanel();
   // Clean up any active Archive Protect / Unlock panel when switching tools
   removeArchiveProtectPanel();
+  // Clean up any active Archive Duplicate panel when switching tools
+  removeArchiveDuplicatePanel();
   // Clean up any active DOCX conversion panel when switching tools
   removeDocxPdfPanel(); removeDocxHtmlPanel(); removeDocxTxtPanel();
   removeDocxOdtPanel(); removeDocxEpubPanel(); removeDocxMdPanel();
@@ -985,6 +990,7 @@ function _removeAllPanels() {
   if (typeof removeArchiveSplitterPanel === 'function') removeArchiveSplitterPanel();
   if (typeof removeArchiveMergerPanel === 'function') removeArchiveMergerPanel();
   if (typeof removeArchiveConvertPanel === 'function') removeArchiveConvertPanel();
+  if (typeof removeArchiveDuplicatePanel === 'function') removeArchiveDuplicatePanel();
   if (typeof removeImagePreview === 'function') removeImagePreview();
   if (typeof removeImageCompressorPanel === 'function') removeImageCompressorPanel();
 }
@@ -1253,6 +1259,12 @@ async function _submitFile(files) {
   // Archive Unlock — remove password from encrypted archive
   if (tool.id === 'archive-unlock') {
     handleArchiveProtectFilePicked(files[0], 'unlock');
+    return;
+  }
+
+  // Archive Duplicate Finder — detect duplicates and rebind
+  if (tool.id === 'archive-duplicate') {
+    handleArchiveDuplicateFilePicked(files[0]);
     return;
   }
 
@@ -1638,7 +1650,7 @@ export function initDropZone() {
     const hasLoadedPanel = document.querySelector(
       '#split-panel, #merge-panel, #compress-panel, #encrypt-panel, #rotate-panel, ' +
       '#editor-panel, #watermark-panel, #extractor-panel, ' +
-      '#archive-create-panel, #archive-extract-panel, #archive-convert-panel, #archive-inspector-panel, #archive-splitter-panel, #archive-merger-panel, #archive-protect-panel, ' +
+      '#archive-create-panel, #archive-extract-panel, #archive-convert-panel, #archive-inspector-panel, #archive-splitter-panel, #archive-merger-panel, #archive-protect-panel, #archive-duplicate-panel, ' +
       '#image-compressor-panel, .split-info-panel, .merge-queue-panel, .compress-settings-panel, .encrypt-settings-panel, ' +
       '.extractor-info-panel, .imgcmp-panel, .cmp-panel, .enc-panel, .image-preview-container, .ebook-settings-panel, ' +
       '.docx-panel, .xlsx-panel, .pptx-panel, .txt-panel, .odt-panel, .csv-panel'
@@ -1649,7 +1661,7 @@ export function initDropZone() {
       '.dz-ebook-thumb-wrap, .dz-docx-thumb-wrap, .dz-pptx-thumb-wrap, .dz-xlsx-thumb-wrap, .dz-txt-thumb-wrap, ' +
       '.dz-odt-thumb-wrap, .dz-csv-thumb-wrap, .dz-img-preview-wrap, .dz-jpg-thumb-strip, .dz-png-thumb-strip, ' +
       '.dz-webp-thumb-strip, .dz-svg-thumb-strip, .dz-archive-thumb-strip, .dz-extract-thumb-wrap, .dz-arc-conv-thumb-wrap, ' +
-      '.dz-inspect-thumb-wrap, .dz-split-thumb-wrap, .dz-merge-arc-strip, .dz-arc-protect-thumb-wrap, .dz-imgcmp-thumb-strip'
+      '.dz-inspect-thumb-wrap, .dz-split-thumb-wrap, .dz-merge-arc-strip, .dz-arc-protect-thumb-wrap, .dz-arc-duplicate-thumb-wrap, .dz-imgcmp-thumb-strip'
     );
 
     // If the tool has loaded file(s) or panels ready for execution, do not wipe them
@@ -1844,6 +1856,9 @@ export function initDropZone() {
     } else if (tool && tool.id === 'archive-unlock') {
       fileInput.multiple = false;
       fileInput.accept   = '.zip,.7z,.rar,.tar,.tar.gz,.tar.bz2,.tar.xz,.gz,.bz2,.xz';
+    } else if (tool && tool.id === 'archive-duplicate') {
+      fileInput.multiple = false;
+      fileInput.accept   = '.zip,.7z,.rar,.tar,.tar.gz,.tar.bz2,.tar.xz,.gz,.bz2,.xz,.wim';
     } else if (tool && isArchiveCreateTool(tool.id)) {
       fileInput.multiple = true;
       fileInput.accept = '*/*';

@@ -40,6 +40,7 @@ export const TOOL_MODULE_MAP = {
     'archive-extract-dmg': 'media',
     'archive-protect': 'media',    // Password Protect Archive (ZIP/7Z/RAR — AES-256)
     'archive-unlock': 'media',     // Remove Archive Password  (ZIP/7Z/RAR)
+    'archive-duplicate': 'media',  // Duplicate Finder in Archive
   
   // ── Office Module (LibreOffice) ───────────────────────────────────────────
   'docx-pdf'    : 'office',
