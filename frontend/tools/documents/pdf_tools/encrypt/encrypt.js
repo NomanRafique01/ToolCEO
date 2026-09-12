@@ -921,15 +921,6 @@ function _makeResetCb(jobKey) {
 /**
  * Starts a smooth progress session that begins at 0% and steadily proceeds upwards
  * while the async network operation is in-flight, preventing any freeze or jump to 50%.
- *
- * @param {Object} opts
- * @param {HTMLElement} [opts.zone] - Drop zone to display progress ring (if active)
- * @param {string} opts.color - Tool accent color
- * @param {string} opts.label - Label to display under ring (e.g. 'Locking in ToolCEO Vault…')
- * @param {Object} opts.tool - The active tool object
- * @param {string} opts.filename - Target output filename
- * @param {boolean} [opts.renderRing=true] - Whether to show circular progress in the drop zone
- * @returns {Object} Controller with { jobKey, abortController, finish, cleanup }
  */
 function _startSmoothProgress({ zone, color, label, tool, filename, renderRing = true }) {
   const abortController = new AbortController();
@@ -940,7 +931,6 @@ function _startSmoothProgress({ zone, color, label, tool, filename, renderRing =
     showProgress(zone, 0, color, label, toolId);
   }
 
-  // Register job in toolstate starting at 0%
   const jobKey = setBgJob({
     jobId: null,
     tool,
@@ -958,9 +948,7 @@ function _startSmoothProgress({ zone, color, label, tool, filename, renderRing =
 
   const update = (pct) => {
     currentPct = pct;
-    if (renderRing && zone) {
-      updateProgress(zone, Math.round(pct), color, toolId);
-    }
+    if (renderRing && zone) updateProgress(zone, Math.round(pct), color, toolId);
     const bg = getBgJob(jobKey);
     if (bg && bg.state === 'running') {
       bg.progress = Math.max(bg.progress || 0, Math.round(pct));
@@ -968,38 +956,24 @@ function _startSmoothProgress({ zone, color, label, tool, filename, renderRing =
     }
   };
 
-  // Smooth realistic progression ticker starting from 0%:
-  // - 0% to 25% advances smoothly in ~600ms (fast feedback on click)
-  // - 25% to 65% advances steadily over ~1.2s
-  // - 65% to 85% eases out over ~1.4s
-  // - 85% to 95% advances continuously by gentle increments so it NEVER freezes or sits stuck
   intervalId = setInterval(() => {
     if (isDone) return;
-    if (currentPct < 25) {
-      currentPct += 2.2;
-    } else if (currentPct < 65) {
-      currentPct += 1.6;
-    } else if (currentPct < 85) {
-      currentPct += 0.9;
-    } else if (currentPct < 93) {
-      currentPct += 0.35;
-    } else if (currentPct < 96) {
-      currentPct += 0.1;
-    }
+    if (currentPct < 25)      currentPct += 2.2;
+    else if (currentPct < 65) currentPct += 1.6;
+    else if (currentPct < 85) currentPct += 0.9;
+    else if (currentPct < 93) currentPct += 0.35;
+    else if (currentPct < 96) currentPct += 0.1;
     update(currentPct);
   }, 60);
 
-  // Auto-timeout safety: abort after 90 seconds so request never hangs indefinitely
   const timeoutId = setTimeout(() => {
-    if (!isDone) {
-      abortController.abort(new Error('Operation timed out. Please try again.'));
-    }
+    if (!isDone) abortController.abort(new Error('Operation timed out. Please try again.'));
   }, 90000);
 
   const cleanup = () => {
     isDone = true;
     if (intervalId) { clearInterval(intervalId); intervalId = null; }
-    if (timeoutId) { clearTimeout(timeoutId); }
+    clearTimeout(timeoutId);
   };
 
   const finish = (blob) => {
@@ -1016,12 +990,7 @@ function _startSmoothProgress({ zone, color, label, tool, filename, renderRing =
     }
   };
 
-  return {
-    jobKey,
-    abortController,
-    cleanup,
-    finish,
-  };
+  return { jobKey, abortController, cleanup, finish };
 }
 
 // ─── SUBMISSION FUNCTIONS ───────────────────────────────────────────────────────
