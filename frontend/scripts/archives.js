@@ -9,9 +9,65 @@ import { FAMILY_COLORS } from './toolFamily.js';
 import { setActiveTool } from './toolstate.js';
 import { getLockedModuleId } from './modulelock.js';
 import { ARCHIVE_CONVERT_IDS } from '../tools/archives/archive_convert.js';
+import { handleArchiveFilesPicked } from '../tools/archives/archive_extract.js';
 
 let _navigateToModule = null;
 export function setNavigateToModule(fn) { _navigateToModule = fn; }
+
+// ─── ZIP EXTRACT ROUTER ───────────────────────────────────────────────────────
+
+let _activateNav = null;
+/** Called by navigation.js after activateNav is defined. */
+export function setActivateNavForArchives(fn) { _activateNav = fn; }
+
+/**
+ * Programmatically route a ZIP File object to the Archive Extract tool.
+ * Navigates to Archives → Extract category, selects "ZIP Extract", then
+ * hands the file to the extract handler — exactly as if the user dropped it.
+ *
+ * @param {File}     file        The ZIP file to extract.
+ * @param {Function} [activateNav]  Optional override; falls back to stored ref.
+ */
+export function routeZipToExtractor(file, activateNav) {
+  const nav = activateNav || _activateNav;
+  if (!nav) return;
+
+  // 1. Navigate sidebar to Archives
+  nav('Archives');
+
+  // 2. After Archives landing renders, drill into Extract category and pick ZIP tool
+  setTimeout(() => {
+    const container = document.getElementById('explore-section');
+    if (!container) return;
+
+    const extractCat = CATEGORIES.find((c) => c.id === 'extract');
+    if (!extractCat) return;
+
+    const tools = toolRecords(extractCat);
+    const zipTool = tools.find((t) => t.id === 'archive-extract-zip');
+    if (!zipTool) return;
+
+    // Render the Extract category panel
+    renderCategory(container, nav, extractCat);
+
+    // Select the ZIP Extract card visually
+    setTimeout(() => {
+      const card = container.querySelector(`.fmt-card[data-id="archive-extract-zip"]`);
+      if (card) {
+        container.querySelectorAll('.fmt-card').forEach((c) => c.classList.remove('selected'));
+        card.classList.add('selected');
+      }
+
+      // Activate tool then hand file to handler
+      setActiveTool(zipTool);
+      scrollToDropZone();
+
+      setTimeout(() => {
+        handleArchiveFilesPicked(file);
+      }, 80);
+    }, 80);
+  }, 150);
+}
 
 function _handleLockedClick(moduleId, toolLabel) {
   if (_navigateToModule) _navigateToModule(moduleId, toolLabel);
@@ -48,54 +104,136 @@ const COLOR_BACKGROUNDS = {
 };
 
 const ICONS = {
-  archive: `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7.5h16v11H4zM4 7.5 6 4h12l2 3.5M9 11h6M10 15h4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-  extract: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 8h16v10.5H4zM4 8l2-3h12l2 3M12 10v6m0 0-2.5-2.5M12 16l2.5-2.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-  convert: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 7h11l-3-3M17 17H6l3 3M18 7a6 6 0 0 1 1 6M6 17a6 6 0 0 1-1-6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-  utility: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="m14.5 6.5 3-3 3 3-3 3M5 19l8.5-8.5M13.5 5.5a5 5 0 0 0 5 5M7 4.5l1.5 1.5-2 2L5 6.5zM17.5 15l2 2-3 3-2-2z" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-  file: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 3.5h8l4 4v13H6zM14 3.5v4h4M9 12h6M9 16h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-  folder: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3.5 6.5h6l2 2h9v10h-17zM3.5 6.5v-1h6l2 2" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>`,
+  // Archive box with compression bands — "Create"
+  archive: `<svg width="26" height="26" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="8" width="18" height="13" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M3 8 6 4h12l3 4" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9.5 11.5h5M9.5 14.5h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><rect x="10" y="5" width="4" height="3" rx="0.5" stroke="currentColor" stroke-width="1.3"/></svg>`,
+  // Bursting open box with upward arrow — "Extract"
+  extract: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 10h16v10H4z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M4 10 7 6h10l3 4" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 3v9M9.5 5.5 12 3l2.5 2.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 14h8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
+  // Two files with bidirectional arrows — "Convert"
+  convert: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2" y="5" width="8" height="10" rx="1.5" stroke="currentColor" stroke-width="1.7"/><rect x="14" y="9" width="8" height="10" rx="1.5" stroke="currentColor" stroke-width="1.7"/><path d="M10 9h4M10 9l-1.5 1.5M14 9l1.5-1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 15h4M10 15l-1.5-1.5M14 15l1.5 1.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  // Wrench over a gear — "Utility"
+  utility: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="14" cy="14" r="5" stroke="currentColor" stroke-width="1.7"/><circle cx="14" cy="14" r="2" stroke="currentColor" stroke-width="1.4"/><path d="M5 4.5A2.5 2.5 0 0 1 9.5 7l-1.8 1.8A2.5 2.5 0 0 1 5 4.5zM7.7 8.8l1.5 1.5" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+  // Clean document with corner fold
+  file: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 3.5h8l4 4v13H6z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M14 3.5v4h4" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 12h6M9 16h5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`,
+  // Folder with tab and contents line
+  folder: `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3.5 8.5h17v11h-17z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M3.5 8.5v-2h5.5l2 2h9" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M7 13h10M7 16.5h6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
 };
 
 const TOOL_ICONS = [
-  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 7h14v12H5zM5 7l2-3h10l2 3M9 11h6M10 15h4" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>`,
-  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6h16v13H4zM4 6h6l2 3h8M8 13h8M8 16h5" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>`,
-  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 8h16v11H4zM4 8l2-3h12l2 3M7 12h10M7 15h7" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 11v5m0 0-2-2m2 2 2-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
-  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 8h16v11H4zM4 8l2-3h12l2 3M8 12h8M8 15h5" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="17" cy="15" r="1" fill="currentColor"/></svg>`,
-  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16v12H4zM4 7l2-3h12l2 3M8 11h8M12 11v5m0 0-2-2m2 2 2-2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 8h18v11H3zM3 8l3-3h6l2 3M8 12h8M8 15h6" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>`,
-  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 8h18v11H3zM3 8l3-3h6l2 3M8 12h8M12 12v4m0 0-2-2m2 2 2-2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 7h16v12H4zM4 7l2-3h12l2 3M8 11h8M8 15h8" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="m9 13 3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 8h16v10H4zM4 8l2-3h12l2 3M12 11v5m0 0-2.5-2.5M12 16l2.5-2.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 8h16v10H4zM4 8l2-3h12l2 3M12 11v5m0 0-2-2m2 2 2-2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><circle cx="8" cy="12" r="1" fill="currentColor"/></svg>`,
-  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 8h16v10H4zM4 8l2-3h12l2 3M12 11v5m0 0-2-2m2 2 2-2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><circle cx="16" cy="12" r="1" fill="currentColor"/></svg>`,
-  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 8h16v10H4zM4 8l2-3h12l2 3M12 11v5m0 0-2-2m2 2 2-2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 12h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
-  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 8h16v10H4zM4 8l2-3h12l2 3M12 11v5m0 0-2-2m2 2 2-2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M7 12h3m4 0h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
-  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 8h16v10H4zM4 8l2-3h12l2 3M12 11v5m0 0-2-2m2 2 2-2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 12h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="2 2"/></svg>`,
-  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 8h16v10H4zM4 8l2-3h12l2 3M12 11v5m0 0-2-2m2 2 2-2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 12h2m4 0h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
-  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 8h16v10H4zM4 8l2-3h12l2 3M12 11v5m0 0-2-2m2 2 2-2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="m8 13 2 2m4-2 2 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
-  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 8h16v10H4zM4 8l2-3h12l2 3M12 11v5m0 0-2-2m2 2 2-2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="m8 15 2-2m4 2 2-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
-  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 8h16v10H4zM4 8l2-3h12l2 3M12 11v5m0 0-2-2m2 2 2-2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><circle cx="12" cy="12" r="2" stroke="currentColor" stroke-width="1.4"/></svg>`,
-  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 8h16v10H4zM4 8l2-3h12l2 3M12 11v5m0 0-2-2m2 2 2-2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 12h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
-  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 8h16v10H4zM4 8l2-3h12l2 3M12 11v5m0 0-2-2m2 2 2-2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 12h6m-4 3h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
-  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 8h16v10H4zM4 8l2-3h12l2 3M12 11v5m0 0-2-2m2 2 2-2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 12h8m-5 3h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="1 2"/></svg>`,
-  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 7h10v12H7zM7 7l2-3h6l2 3M12 10v6m0 0-2-2m2 2 2-2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 13h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
-  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 7h10v12H7zM7 7l2-3h6l2 3M12 10v6m0 0-2-2m2 2 2-2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="m9 14 3-3 3 3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 7h10v12H7zM7 7l2-3h6l2 3M12 10v6m0 0-2-2m2 2 2-2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="m9 12 3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 7h10v12H7zM7 7l2-3h6l2 3M12 10v6m0 0-2-2m2 2 2-2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 13h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-dasharray="2 2"/></svg>`,
-  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M7 7h10v12H7zM7 7l2-3h6l2 3M12 10v6m0 0-2-2m2 2 2-2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 12h2m2 0h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
-  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 5h14v14H5zM9 5v14M5 10h14" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="m12 13 2 2 3-4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 5h14v14H5zM9 5v14M5 10h14" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 12h5m-5 3h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
-  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6h16v13H4zM8 6V4h8v2M8 10h8M8 14h5" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>`,
-  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6h16v13H4zM8 6V4h8v2M8 10h8M8 14h5" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M16 13v4m0 0-2-2m2 2 2-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
-  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 6h16v13H4zM8 6V4h8v2M8 10h8M8 14h5" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="m15 13 2 2 2-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10" cy="10" r="5" stroke="currentColor" stroke-width="1.7"/><path d="m14 14 5 5M8 10h4M10 8v4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>`,
-  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 5h14v14H5zM9 9h6v6H9z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 9v6M9 12h6" stroke="currentColor" stroke-width="1.4"/></svg>`,
-  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 5h14v14H5zM9 9h6v6H9z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="m8 8 8 8m0-8-8 8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
-  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 11V7a6 6 0 0 1 12 0v4M4 11h16v8H4z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><circle cx="12" cy="15" r="1" fill="currentColor"/></svg>`,
-  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M6 11V7a6 6 0 0 1 12 0v4M4 11h16v8H4z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M10 15h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
-  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 5h12v14H4zM16 9l4-2v10l-4-2" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="m8 9 2 2 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
-  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.7"/><path d="M12 7v5l3 2M9 4l-2-2M15 4l2-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
-  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 5h14v14H5z" stroke="currentColor" stroke-width="1.7"/><circle cx="9" cy="10" r="1.5" stroke="currentColor" stroke-width="1.4"/><circle cx="15" cy="14" r="1.5" stroke="currentColor" stroke-width="1.4"/><path d="m10.5 10 3 4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
+  // ── CREATE TOOLS (offset 0) ──────────────────────────────────────────────────
+
+  // [0] Files to ZIP — zipper pull over stacked files
+  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="9" width="18" height="11" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M3 9 6.5 5h11L21 9" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><rect x="10" y="5.5" width="4" height="3.5" rx="0.8" stroke="currentColor" stroke-width="1.3"/><path d="M11 7h2M11 5.5v-1h2v1" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M8 14h8M8 17h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+
+  // [1] Files to TAR — tape reel wrapping files
+  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4" y="7" width="16" height="12" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M4 7 7 4h10l3 3" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M4 11h16" stroke="currentColor" stroke-width="1.4" stroke-dasharray="3 2"/><path d="M9 14.5h6M9 17h4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M4 7h16" stroke="currentColor" stroke-width="1.4"/></svg>`,
+
+  // [2] Files to TAR.GZ — compressed spring/coil wrapping box
+  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="8" width="18" height="12" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M3 8 6 5h12l3 3" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M6.5 5c0-1 1-1 1-2s-1-1-1-2M9.5 5c0-1 1-1 1-2s-1-1-1-2M12.5 5c0-1 1-1 1-2s-1-1-1-2M15.5 5c0-1 1-1 1-2s-1-1-1-2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M8 13h8M8 16h5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+
+  // [3] Files to TAR.BZ2 — box with brick/block compression pattern
+  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="8" width="18" height="12" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M3 8 6 5h12l3 3" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M3 12h18M3 16h18" stroke="currentColor" stroke-width="1.2" stroke-dasharray="0"/><path d="M9 12v4M15 12v4" stroke="currentColor" stroke-width="1.2"/><path d="M6 16v4M12 16v4M18 16v4" stroke="currentColor" stroke-width="1.2"/></svg>`,
+
+  // [4] Files to 7Z — bold "7" badge over archive
+  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="8.5" width="18" height="12" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M3 8.5 6 5h12l3 3.5" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8.5 11.5h5l-3.5 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M8.5 13.5h3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
+
+  // [5] Folder to ZIP — open folder zipped shut
+  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 8h18v12H3z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M3 8V6h5l2 2h11" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 10v8M10 12l2-2 2 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 17h6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
+
+  // [6] Folder to 7Z — folder with 7 emblem
+  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M3 8h18v12H3z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M3 8V6h5l2 2h11" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8 11.5h6l-4 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 13.5h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`,
+
+  // [7] Files to RAR — business briefcase with files
+  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2" y="9" width="20" height="13" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M8 9V7a4 4 0 0 1 8 0v2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M2 15h20" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><rect x="10" y="13.5" width="4" height="3" rx="0.8" stroke="currentColor" stroke-width="1.4"/><path d="M7 13v4M17 13v4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="1.5 1.5"/></svg>`,
+
+  // [8] Files to TAR.XZ — diamond-compression pattern over box
+  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="8" width="18" height="12" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M3 8 6 5h12l3 3" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8 11 12 19l4-8M8 11h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+
+  // [9] Files to WIM — Windows disc/image icon
+  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="13" r="7" stroke="currentColor" stroke-width="1.7"/><circle cx="12" cy="13" r="2.5" stroke="currentColor" stroke-width="1.4"/><path d="M9 4l-1-2M12 4V2M15 4l1-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M5.5 9.5 4 8M18.5 9.5 20 8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
+
+  // ── EXTRACT TOOLS (offset 8) ─────────────────────────────────────────────────
+
+  // [10] ZIP Extract — box with arrow popping upward and unzipping
+  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 11h16v9H4z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M4 11 7 8h10l3 3" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M12 5v7M9.5 7.5 12 5l2.5 2.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><rect x="10" y="8.5" width="4" height="2.5" rx="0.5" stroke="currentColor" stroke-width="1.2"/></svg>`,
+
+  // [11] RAR Extract — ribbon unrolling with arrow
+  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4" y="10" width="16" height="10" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M4 10 7 7h10l3 3" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8 7.5c0-2 3-2 4-2s4 0 4 2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M12 5V3M12 3l-2 2M12 3l2 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 15h8M8 18h5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
+
+  // [12] 7Z Extract — bold "7" splitting open
+  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 10h16v10H4z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M4 10 7 7h10l3 3" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8 4h6l-3.5 7" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 5.5h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M12 13v5M10 15.5l2-2.5 2 2.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+
+  // [13] TAR Extract — tape unwinding arrow
+  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4" y="10" width="16" height="10" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M4 10 7 7h10l3 3" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M4 13h16" stroke="currentColor" stroke-width="1.3" stroke-dasharray="3 2"/><path d="M10 4c-1 0-2 1-2 2s1 2 2 2h4c1 0 2-1 2-2s-1-2-2-2h-4z" stroke="currentColor" stroke-width="1.4"/><path d="M12 6V3M12 3l-2 2M12 3l2 2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+
+  // [14] TAR.GZ Extract — coil unwinding upward
+  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4" y="11" width="16" height="9" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M4 11 7 8h10l3 3" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M7 8c0-1 1-1 1-2s-1-1-1-2M10 8c0-1 1-1 1-2s-1-1-1-2M13 8c0-1 1-1 1-2s-1-1-1-2M16 8c0-1 1-1 1-2s-1-1-1-2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M8 15.5h8M8 18h5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
+
+  // [15] TAR.BZ2 Extract — brick block disassembling
+  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4" y="11" width="16" height="9" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M4 11 7 8h10l3 3" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M4 15h16M9 11v4M15 11v4" stroke="currentColor" stroke-width="1.2"/><path d="M12 4l-3 4h6z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/><path d="M12 4V2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+
+  // [16] TAR.XZ Extract — diamond pattern with exit arrow
+  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4" y="11" width="16" height="9" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M4 11 7 8h10l3 3" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 15 12 11l3 4M9 15h6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 5V3M10 5l2-2 2 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+
+  // [17] GZ Extract — single wave decompressing
+  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4" y="11" width="16" height="9" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M4 11 7 8h10l3 3" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M6 4c1.5 1.5 3 1.5 4 0s2.5-1.5 4 0 2.5 1.5 4 0" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M12 6v5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M8 16h8M8 18.5h5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
+
+  // [18] BZ2 Extract — block letter B breaking open
+  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4" y="10" width="16" height="10" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M4 10 7 7h10l3 3" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M9 3.5h3a2 2 0 0 1 0 4H9M9 3.5v7M9 7.5h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M9 14.5h6M9 17h4" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
+
+  // [19] XZ Extract — X-mark with upward arrow (cross-compress release)
+  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4" y="11" width="16" height="9" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M4 11 7 8h10l3 3" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M8 3.5 12 7.5l4-4M8 7.5l4-4 4 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 15h8M8 17.5h5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
+
+  // [20] CAB Extract — cabinet drawer sliding open
+  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="5" width="18" height="16" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M3 12h18" stroke="currentColor" stroke-width="1.7"/><path d="M8 9h8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M8 16h8" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><circle cx="12" cy="9" r="0.8" fill="currentColor"/><circle cx="12" cy="16" r="0.8" fill="currentColor"/></svg>`,
+
+  // [21] DMG Extract — Apple disc image shape
+  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><ellipse cx="12" cy="14" rx="8" ry="5" stroke="currentColor" stroke-width="1.7"/><ellipse cx="12" cy="13" rx="8" ry="5" stroke="currentColor" stroke-width="1.7"/><path d="M4 11c0-3 3.6-5 8-5s8 2 8 5" stroke="currentColor" stroke-width="1.7"/><path d="M12 3v4M10 5l2-2 2 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>`,
+
+  // ── CONVERT TOOLS (offset 21 in original, now correct offset) ──────────────
+
+  // [22] ZIP to 7Z — two format badges with arrow between
+  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2" y="7" width="8" height="10" rx="1.5" stroke="currentColor" stroke-width="1.7"/><path d="M4 10h4l-2 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 11.5h2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M10 12h4M12 10l2 2-2 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="14" y="7" width="8" height="10" rx="1.5" stroke="currentColor" stroke-width="1.7"/><path d="M16 10h4l-2.5 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M16 12h2.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>`,
+
+  // [23] ZIP to TAR.GZ — zip badge to coil/wave badge
+  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2" y="7" width="8" height="10" rx="1.5" stroke="currentColor" stroke-width="1.7"/><path d="M4 10h4l-2 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 12h4M12 10l2 2-2 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="14" y="7" width="8" height="10" rx="1.5" stroke="currentColor" stroke-width="1.7"/><path d="M15 10c.8.8 1.5.8 2 0s1.3-.8 2 0 1.3.8 2 0" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M15 13c.8.8 1.5.8 2 0s1.3-.8 2 0 1.3.8 2 0" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`,
+
+  // [24] RAR to ZIP — ribbon badge to zip badge
+  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2" y="7" width="8" height="10" rx="1.5" stroke="currentColor" stroke-width="1.7"/><path d="M4 10h3a1 1 0 0 1 0 2H4M4 10v4M4 12h2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 12h4M12 10l2 2-2 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="14" y="7" width="8" height="10" rx="1.5" stroke="currentColor" stroke-width="1.7"/><rect x="16.5" y="9.5" width="3" height="2" rx="0.4" stroke="currentColor" stroke-width="1.2"/><path d="M17 11.5v2.5M19 11.5v2.5M17 14h2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>`,
+
+  // [25] 7Z to ZIP — 7 badge to zip badge
+  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2" y="7" width="8" height="10" rx="1.5" stroke="currentColor" stroke-width="1.7"/><path d="M4 10h4l-2 4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 12h4M12 14l2-2-2-2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="14" y="7" width="8" height="10" rx="1.5" stroke="currentColor" stroke-width="1.7"/><rect x="16.5" y="9.5" width="3" height="2" rx="0.4" stroke="currentColor" stroke-width="1.2"/><path d="M17 11.5v2.5M19 11.5v2.5M17 14h2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>`,
+
+  // [26] TAR to ZIP — tape reel to zip badge
+  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2" y="7" width="8" height="10" rx="1.5" stroke="currentColor" stroke-width="1.7"/><path d="M4 10h6M4 12.5h6M4 15h5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M10 12h4M12 10l2 2-2 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="14" y="7" width="8" height="10" rx="1.5" stroke="currentColor" stroke-width="1.7"/><rect x="16.5" y="9.5" width="3" height="2" rx="0.4" stroke="currentColor" stroke-width="1.2"/><path d="M17 11.5v2.5M19 11.5v2.5M17 14h2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>`,
+
+  // [27] TAR.GZ to ZIP — coil/wave to zip badge
+  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2" y="7" width="8" height="10" rx="1.5" stroke="currentColor" stroke-width="1.7"/><path d="M3 10c.8.8 1.5.8 2 0s1.3-.8 2 0 1.3.8 2 0" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M3 13c.8.8 1.5.8 2 0s1.3-.8 2 0 1.3.8 2 0" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M10 12h4M12 10l2 2-2 2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><rect x="14" y="7" width="8" height="10" rx="1.5" stroke="currentColor" stroke-width="1.7"/><rect x="16.5" y="9.5" width="3" height="2" rx="0.4" stroke="currentColor" stroke-width="1.2"/><path d="M17 11.5v2.5M19 11.5v2.5M17 14h2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>`,
+
+  // ── UTILITY TOOLS (offset 27 in original, now correct) ─────────────────────
+
+  // [28] Archive Inspector — magnifying glass over document list
+  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="10.5" cy="10.5" r="5.5" stroke="currentColor" stroke-width="1.7"/><path d="m14.5 14.5 5 5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M8 9h5M8 11.5h3.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
+
+  // [29] Archive Splitter — single archive splitting into two
+  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="8" y="4" width="8" height="9" rx="1.5" stroke="currentColor" stroke-width="1.7"/><path d="M12 13v3M12 16l-5 3h-2M12 16l5 3h2" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><rect x="2" y="19" width="6" height="4" rx="1" stroke="currentColor" stroke-width="1.4"/><rect x="16" y="19" width="6" height="4" rx="1" stroke="currentColor" stroke-width="1.4"/><path d="M9 7h6M9 9.5h4" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/></svg>`,
+
+  // [30] Archive Merger — two archives joining into one
+  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="2" y="4" width="7" height="8" rx="1.5" stroke="currentColor" stroke-width="1.7"/><rect x="15" y="4" width="7" height="8" rx="1.5" stroke="currentColor" stroke-width="1.7"/><path d="M9 8l3 3 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/><path d="M12 11v2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><rect x="8" y="17" width="8" height="5" rx="1.5" stroke="currentColor" stroke-width="1.7"/><path d="M12 13v4" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+
+  // [31] Password Protect ZIP — padlock over archive
+  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="4" y="11" width="16" height="10" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M8 11V8a4 4 0 0 1 8 0v3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="12" cy="15.5" r="1.5" fill="currentColor"/><path d="M12 17v2" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/></svg>`,
+
+  // [32] Remove ZIP Password — padlock unlocked with key
+  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M8 11V8a4 4 0 0 1 7.7-1.5" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><rect x="4" y="11" width="14" height="10" rx="2" stroke="currentColor" stroke-width="1.7"/><path d="M15 6.5h4M17 4.5v4" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><circle cx="11" cy="16" r="1.5" fill="currentColor"/></svg>`,
+
+  // [33] Repair Corrupted ZIP — broken archive being stitched/welded
+  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M4 8h8M16 8h4M4 8 7 5h5M16 8l-1-3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"/><path d="M4 8v11h16V8" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/><path d="M11.5 5l1 3.5M13 5l-1 3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M7 13h10M7 16h6" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/><path d="M12 8.5l1.5-3.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-dasharray="1.5 1"/></svg>`,
+
+  // [34] Archive Size Estimator — scale/balance with archive weight
+  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 4v15M5 19h14" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/><path d="M4 8h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M4 8c0 2 2 3 4 3s4-1 4-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M12 6h8" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/><path d="M12 6c0 2.5 2 3.5 4 3.5s4-1 4-3.5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+
+  // [35] Duplicate Finder — two identical docs with equality sign
+  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="5" width="7.5" height="10" rx="1.5" stroke="currentColor" stroke-width="1.7"/><path d="M5 9h3.5M5 11.5h2.5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><rect x="13.5" y="5" width="7.5" height="10" rx="1.5" stroke="currentColor" stroke-width="1.7"/><path d="M15.5 9H19M15.5 11.5H18" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/><path d="M10.5 10.5h3M10.5 13h3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>`,
 ];
 
 const CATEGORIES = [
@@ -350,9 +488,9 @@ function toolRecords(category) {
   ];
   const iconOffsets = {
     'compress-create': 0,
-    extract: 8,
-    convert: 21,
-    utility: 27,
+    extract: 10,
+    convert: 22,
+    utility: 28,
   };
   const toolColors = {
     'compress-create': [

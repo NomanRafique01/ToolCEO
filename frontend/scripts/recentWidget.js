@@ -13,6 +13,7 @@
 
 import { showToast } from './recent.js';
 import { getArchiveFileIconSvg, getArchiveFormatLabel } from '../tools/shared/archiveIcon.js';
+import { getToolFamilyColor } from './toolFamily.js';
 
 // Format -> category / color mapping for badges
 const FORMAT_THEMES = {
@@ -126,6 +127,124 @@ export function getFormatBadge(format, category) {
   return { label, style };
 }
 
+/* ─────────────────────────────────────────────────────────────────────────
+ * getSidebarDocThumbSvg — dark-themed 90×116 thumbnail for the sidebar
+ * widget. Same card base as getArchiveFileIconSvg (dark tinted bg + dog-ear
+ * corner + solid badge bar) with category-specific interior graphics.
+ * ───────────────────────────────────────────────────────────────────────── */
+let _docThumbSeq = 0;
+function getSidebarDocThumbSvg(format, color) {
+  const fmt = (format || 'FILE').toUpperCase().slice(0, 6);
+  const c = color || '#00E5C0';
+  const uid = ++_docThumbSeq;
+  const labelFs = fmt.length >= 5 ? 8 : (fmt.length === 4 ? 9 : 10);
+
+  // ── interior graphic per category ────────────────────────────────────────
+  let body = '';
+
+  if (fmt === 'PDF') {
+    // Bold red "PDF" band + document lines
+    body = `
+      <rect x="8" y="28" width="74" height="28" rx="3" fill="${c}" opacity="0.9"/>
+      <text x="45" y="47" font-family="Arial,sans-serif" font-size="16" font-weight="900"
+            fill="#081918" text-anchor="middle" dominant-baseline="middle">PDF</text>
+      <line x1="12" y1="66" x2="78" y2="66" stroke="${c}" stroke-width="2" stroke-linecap="round" opacity="0.55"/>
+      <line x1="12" y1="74" x2="78" y2="74" stroke="${c}" stroke-width="2" stroke-linecap="round" opacity="0.4"/>
+      <line x1="12" y1="82" x2="55" y2="82" stroke="${c}" stroke-width="2" stroke-linecap="round" opacity="0.28"/>`;
+
+  } else if (['PNG', 'JPG', 'JPEG', 'WEBP', 'GIF', 'BMP', 'TIFF', 'TIF', 'ICO', 'SVG', 'AVIF'].includes(fmt)) {
+    // Photo frame with landscape scene
+    body = `
+      <rect x="10" y="20" width="70" height="56" rx="4" fill="${c}" fill-opacity="0.14" stroke="${c}" stroke-width="1.5" stroke-opacity="0.6"/>
+      <circle cx="26" cy="34" r="7" fill="${c}" opacity="0.7"/>
+      <path d="M10 56 L28 36 L44 52 L56 42 L80 76 L10 76 Z" fill="${c}" fill-opacity="0.45"/>
+      <line x1="10" y1="56" x2="80" y2="56" stroke="${c}" stroke-width="0.8" stroke-opacity="0.3"/>`;
+
+  } else if (['EPUB', 'MOBI', 'AZW3', 'FB2', 'RTF'].includes(fmt)) {
+    // Book with spine and pages
+    body = `
+      <rect x="20" y="18" width="50" height="62" rx="3" fill="${c}" fill-opacity="0.18" stroke="${c}" stroke-width="1.8"/>
+      <rect x="20" y="18" width="8" height="62" rx="2" fill="${c}" opacity="0.55"/>
+      <line x1="34" y1="30" x2="64" y2="30" stroke="${c}" stroke-width="1.5" stroke-linecap="round" opacity="0.65"/>
+      <line x1="34" y1="39" x2="64" y2="39" stroke="${c}" stroke-width="1.5" stroke-linecap="round" opacity="0.5"/>
+      <line x1="34" y1="48" x2="60" y2="48" stroke="${c}" stroke-width="1.5" stroke-linecap="round" opacity="0.38"/>
+      <line x1="34" y1="57" x2="56" y2="57" stroke="${c}" stroke-width="1.5" stroke-linecap="round" opacity="0.28"/>`;
+
+  } else if (['MP3', 'WAV', 'FLAC', 'AAC', 'OGG', 'WMA', 'M4A'].includes(fmt)) {
+    // Waveform equalizer bars
+    body = `
+      <line x1="14" y1="64" x2="14" y2="72" stroke="${c}" stroke-width="5" stroke-linecap="round" opacity="0.7"/>
+      <line x1="24" y1="52" x2="24" y2="84" stroke="${c}" stroke-width="5" stroke-linecap="round" opacity="0.8"/>
+      <line x1="34" y1="44" x2="34" y2="88" stroke="${c}" stroke-width="5" stroke-linecap="round"/>
+      <line x1="44" y1="56" x2="44" y2="80" stroke="${c}" stroke-width="5" stroke-linecap="round" opacity="0.7"/>
+      <line x1="54" y1="42" x2="54" y2="90" stroke="${c}" stroke-width="5" stroke-linecap="round"/>
+      <line x1="64" y1="54" x2="64" y2="82" stroke="${c}" stroke-width="5" stroke-linecap="round" opacity="0.75"/>
+      <line x1="74" y1="62" x2="74" y2="74" stroke="${c}" stroke-width="5" stroke-linecap="round" opacity="0.6"/>`;
+
+  } else if (['MP4', 'WEBM', 'MKV', 'AVI', 'MOV', 'FLV'].includes(fmt)) {
+    // Film strip + play button
+    body = `
+      <rect x="8" y="26" width="74" height="48" rx="4" fill="${c}" fill-opacity="0.16" stroke="${c}" stroke-width="1.5" stroke-opacity="0.6"/>
+      <rect x="8" y="26" width="10" height="48" fill="${c}" opacity="0.35"/>
+      <rect x="72" y="26" width="10" height="48" fill="${c}" opacity="0.35"/>
+      <line x1="8" y1="37" x2="82" y2="37" stroke="${c}" stroke-width="1" stroke-opacity="0.3"/>
+      <line x1="8" y1="63" x2="82" y2="63" stroke="${c}" stroke-width="1" stroke-opacity="0.3"/>
+      <polygon points="36,38 36,62 62,50" fill="${c}" opacity="0.9"/>`;
+
+  } else if (['XLSX', 'XLS', 'CSV', 'ODS', 'JSON', 'XML', 'SQL', 'YAML', 'YML'].includes(fmt)) {
+    // Spreadsheet grid
+    body = `
+      <rect x="8" y="22" width="74" height="58" rx="3" fill="${c}" fill-opacity="0.12" stroke="${c}" stroke-width="1.2" stroke-opacity="0.5"/>
+      <line x1="8" y1="36" x2="82" y2="36" stroke="${c}" stroke-width="1.5" stroke-opacity="0.6"/>
+      <line x1="8" y1="50" x2="82" y2="50" stroke="${c}" stroke-width="1.5" stroke-opacity="0.45"/>
+      <line x1="8" y1="64" x2="82" y2="64" stroke="${c}" stroke-width="1.5" stroke-opacity="0.35"/>
+      <line x1="35" y1="22" x2="35" y2="80" stroke="${c}" stroke-width="1.2" stroke-opacity="0.4"/>
+      <line x1="60" y1="22" x2="60" y2="80" stroke="${c}" stroke-width="1.2" stroke-opacity="0.4"/>
+      <rect x="8" y="22" width="27" height="14" rx="0" fill="${c}" opacity="0.3"/>`;
+
+  } else if (['PPTX', 'PPT', 'ODP'].includes(fmt)) {
+    // Slide with title bar
+    body = `
+      <rect x="8" y="24" width="74" height="52" rx="4" fill="${c}" fill-opacity="0.14" stroke="${c}" stroke-width="1.5" stroke-opacity="0.6"/>
+      <rect x="8" y="24" width="74" height="16" rx="4" fill="${c}" opacity="0.45"/>
+      <line x1="16" y1="52" x2="50" y2="52" stroke="${c}" stroke-width="2" stroke-linecap="round" opacity="0.6"/>
+      <line x1="16" y1="62" x2="42" y2="62" stroke="${c}" stroke-width="2" stroke-linecap="round" opacity="0.4"/>
+      <circle cx="62" cy="57" r="10" fill="${c}" fill-opacity="0.22" stroke="${c}" stroke-width="1.2"/>`;
+
+  } else {
+    // Generic document (DOCX, TXT, ODT, HTML, MD, etc.)
+    body = `
+      <polygon points="58,18 80,40 58,40" fill="${c}" opacity="0.35"/>
+      <polyline points="58,18 58,40 80,40" fill="none" stroke="${c}" stroke-width="1.4" opacity="0.55"/>
+      <line x1="12" y1="52" x2="74" y2="52" stroke="${c}" stroke-width="2.5" stroke-linecap="round" opacity="0.65"/>
+      <line x1="12" y1="62" x2="74" y2="62" stroke="${c}" stroke-width="2.5" stroke-linecap="round" opacity="0.5"/>
+      <line x1="12" y1="72" x2="52" y2="72" stroke="${c}" stroke-width="2.5" stroke-linecap="round" opacity="0.35"/>`;
+  }
+
+  return `<svg class="sidebar-doc-thumb-svg" viewBox="0 0 90 116" width="90" height="116"
+      preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+    <defs>
+      <linearGradient id="sdt_bg_${uid}" x1="0" y1="0" x2="0" y2="1">
+        <stop offset="0%" stop-color="${c}" stop-opacity="0.16"/>
+        <stop offset="100%" stop-color="${c}" stop-opacity="0.05"/>
+      </linearGradient>
+    </defs>
+    <!-- card background -->
+    <rect x="3" y="3" width="84" height="110" rx="8"
+          fill="url(#sdt_bg_${uid})" stroke="${c}" stroke-width="1.5" stroke-opacity="0.38"/>
+    <!-- dog-ear corner fold -->
+    <polygon points="62,3 87,28 62,28" fill="${c}" opacity="0.32"/>
+    <polyline points="62,3 62,28 87,28" fill="none" stroke="${c}" stroke-width="1.4" opacity="0.55"/>
+    <!-- interior -->
+    ${body}
+    <!-- bottom badge bar -->
+    <rect x="3" y="91" width="84" height="22" rx="0" fill="${c}" opacity="0.92"/>
+    <text x="45" y="102" font-family="Arial,sans-serif" font-size="${labelFs}" font-weight="800"
+          fill="#081918" text-anchor="middle" dominant-baseline="middle" letter-spacing="0.5">${fmt}</text>
+  </svg>`;
+}
+
+
 /**
  * Renders up to 5 conversions in the Dashboard Recent Conversions widget.
  */
@@ -227,9 +346,21 @@ export async function renderDashboardRecent() {
     }
 
     const badge = getFormatBadge(item.output_format || item.input_format, item.category);
+    // Resolve the best format + color for non-archive thumbnail
+    const outFmtLower = (outExt || outFmt || '').toLowerCase().replace(/^\./, '');
+    const thumbColor = FORMAT_THEMES[outFmtLower]?.color
+      || getToolFamilyColor(
+          (item.input_format || '').toLowerCase(),
+          item.original_filename,
+          outFmtLower,
+          item.category
+        )
+      || badge.style.match(/--icon-color:([^;]+)/)?.[1]
+      || '#00E5C0';
+
     const archiveIcon = isArchiveOutput
       ? `<span class="file-type-icon file-type-icon--archive" aria-label="${archiveLabel} archive">${getArchiveFileIconSvg(archiveLabel, '#84CC16')}</span>`
-      : `<div class="file-type-icon" style="${badge.style}">${escapeHtml(badge.label)}</div>`;
+      : `<span class="file-type-icon file-type-icon--doc" aria-label="${escapeAttr(outExt || outFmt || 'file')}">${getSidebarDocThumbSvg(outExt || outFmt || item.output_format || 'FILE', thumbColor)}</span>`;
     const timeAgo = formatTimeAgo(item.converted_at);
 
     return `

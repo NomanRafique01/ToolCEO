@@ -605,6 +605,48 @@
   transform: none;
 }
 
+/* ── ZIP Extract shortcut button — inherits the executed tool's save-color ── */
+.dz-extract-zip-btn {
+  width: 100%;
+  padding: 7px 0;
+  background: transparent;
+  color: var(--save-color);
+  border: 1.5px solid var(--save-color);
+  border-radius: 7px;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  letter-spacing: 0.02em;
+  cursor: pointer;
+  transition: background 150ms ease, opacity 150ms ease, transform 120ms ease;
+}
+
+.dz-extract-zip-btn:hover {
+  background: color-mix(in srgb, var(--save-color) 12%, transparent);
+  transform: translateY(-1px);
+}
+
+.dz-extract-zip-btn:active {
+  background: color-mix(in srgb, var(--save-color) 20%, transparent);
+  transform: translateY(0);
+}
+
+.dz-extract-zip-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+  transform: none;
+}
+
+/* ── Hint text below Extract ZIP button ─────────────────────────────────── */
+.dz-extract-hint {
+  margin: 0;
+  font-size: 10.5px;
+  line-height: 1.4;
+  text-align: center;
+  color: color-mix(in srgb, var(--save-color) 70%, transparent);
+  padding: 0 4px;
+}
+
 .dz-save-done {
   display: none;
   align-items: center;
@@ -1298,14 +1340,28 @@
   letter-spacing: 0.03em;
 }
 
-.file-type-icon--archive {
+.file-type-icon--archive,
+.file-type-icon--doc {
   padding: 0;
   overflow: hidden;
+  width: 32px !important;
+  height: 40px !important;
+  border-radius: 4px !important;
 }
 
 .file-type-icon--archive .archive-family-file-svg {
   width: 32px;
   height: 40px;
+  flex: 0 0 auto;
+  display: block;
+}
+
+/* Scale the 90×116 sidebar doc thumb down to fit the 32×40 slot.
+   viewBox present → overriding width/height scales it correctly. */
+.file-type-icon--doc .sidebar-doc-thumb-svg {
+  width: 32px !important;
+  height: 40px !important;
+  display: block;
   flex: 0 0 auto;
 }
 

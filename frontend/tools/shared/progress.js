@@ -25,6 +25,14 @@ import { buildConversionMeta } from '../../scripts/historyTracker.js';
 
 const BACKEND = 'http://127.0.0.1:8000';
 
+// ── ZIP Extract Router (injected by navigation.js to avoid circular import) ───
+let _zipExtractRouter = null;
+/**
+ * Injected by navigation.js on app init.
+ * @param {function(File): void} fn
+ */
+export function setZipExtractRouter(fn) { _zipExtractRouter = fn; }
+
 // ── Ring geometry constants ──────────────────────────────────────────────────
 
 const _RING_R    = 40;
@@ -285,6 +293,78 @@ export function showDownload(zone, filename, jobId, color, onReset, toolId) {
     });
   }
 
+  // ── ZIP-only: inject "Extract ZIP" button + hint text ──────────────────────
+  const isZip = filename.toLowerCase().endsWith('.zip');
+  if (isZip && _zipExtractRouter) {
+    const card = wrap.querySelector('.dz-save-card');
+
+    // Extract button — uses the tool's own color (--save-color) via CSS var
+    const extractBtn = document.createElement('button');
+    extractBtn.className = 'dz-extract-zip-btn';
+    extractBtn.type = 'button';
+    extractBtn.innerHTML = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none"
+         style="display:inline;vertical-align:middle;margin-right:6px" aria-hidden="true">
+      <rect x="3" y="13" width="18" height="8" rx="2" stroke="currentColor" stroke-width="1.8" fill="none"/>
+      <path d="M12 3v10M8 9l4 4 4-4" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      <path d="M7 17h2M11 17h2M15 17h2" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" opacity="0.55"/>
+    </svg>Extract ZIP`;
+
+    // Hint text — small, muted, matches tool color
+    const hintEl = document.createElement('p');
+    hintEl.className = 'dz-extract-hint';
+    hintEl.textContent = 'Click Extract ZIP to unpack your file using the ZIP Extractor';
+
+    // Insert before the dz-save-done div
+    const doneDiv = card.querySelector('.dz-save-done');
+    card.insertBefore(extractBtn, doneDiv);
+    card.insertBefore(hintEl, doneDiv);
+
+    const _EXTRACT_BTN_INNER = extractBtn.innerHTML;
+
+    extractBtn.addEventListener('click', async (e) => {
+      e.stopPropagation();
+      const saveBtn = wrap.querySelector('.dz-save-btn');
+      extractBtn.disabled = true;
+      if (saveBtn) saveBtn.disabled = true;
+      extractBtn.textContent = 'Loading…';
+
+      // Remove any previous inline error
+      wrap.querySelector('.dz-save-inline-err')?.remove();
+
+      try {
+        const res = await fetch(`${BACKEND}/api/download/${jobId}`);
+        if (!res.ok) {
+          let detail = `HTTP ${res.status}`;
+          try {
+            const body = await res.json();
+            detail = body.detail || body.error || detail;
+          } catch (_) { /* not JSON */ }
+          throw new Error(detail);
+        }
+
+        const blob = await res.blob();
+        const file = new File([blob], filename, { type: 'application/zip' });
+
+        // Clean up job and zone before routing
+        clearBgJob(jobId, true);
+        resetZoneContent(zone);
+        if (typeof onReset === 'function') onReset();
+
+        // Route to the ZIP extractor tool
+        _zipExtractRouter(file);
+      } catch (err) {
+        extractBtn.disabled = false;
+        if (saveBtn) saveBtn.disabled = false;
+        extractBtn.innerHTML = _EXTRACT_BTN_INNER;
+
+        const errEl = document.createElement('div');
+        errEl.className = 'dz-save-inline-err';
+        errEl.textContent = `Failed to load ZIP: ${err.message}`;
+        card.appendChild(errEl);
+      }
+    });
+  }
+
   const _SAVE_BTN_INNER = `<svg width="13" height="13" viewBox="0 0 24 24" fill="none"
        style="display:inline;vertical-align:middle;margin-right:5px" aria-hidden="true">
     <path d="M12 3v13M7 11l5 5 5-5" stroke="currentColor" stroke-width="2.2"
@@ -324,11 +404,18 @@ export function showDownload(zone, filename, jobId, color, onReset, toolId) {
       }
       const base64 = btoa(binary);
 
+      // Helper: hide ZIP-only elements on successful save
+      const _hideZipExtras = () => {
+        wrap.querySelector('.dz-extract-zip-btn')?.remove();
+        wrap.querySelector('.dz-extract-hint')?.remove();
+      };
+
       if (window.toolceo && window.toolceo.saveFileAs) {
         const meta = buildConversionMeta({ outputFilename: filename });
         const savedPath = await window.toolceo.saveFileAs(filename, base64, meta);
         if (savedPath) {
           btn.style.display = 'none';
+          _hideZipExtras();
           wrap.querySelector('.dz-save-done').classList.add('dz-save-done--visible');
           clearBgJob(jobId, true);
           resetAfterSave(zone, onReset);
@@ -342,6 +429,7 @@ export function showDownload(zone, filename, jobId, color, onReset, toolId) {
         a.href = url; a.download = filename; a.click();
         URL.revokeObjectURL(url);
         btn.style.display = 'none';
+        _hideZipExtras();
         wrap.querySelector('.dz-save-done').classList.add('dz-save-done--visible');
         clearBgJob(jobId, true);
         resetAfterSave(zone, onReset);

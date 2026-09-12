@@ -19,9 +19,10 @@ import { renderImageFormats,    setNavigateToModule as setImgNav } from './image
 import { renderModules, setPendingLockContext } from './modules.js';
 import { renderFavourites, setNavigateToModule as setFavNav } from './favourites.js';
 import { renderRecent } from './recent.js';
-import { renderArchives, setNavigateToModule as setArchiveNav } from './archives.js';
+import { renderArchives, setNavigateToModule as setArchiveNav, setActivateNavForArchives, routeZipToExtractor } from './archives.js';
 import { setActiveTool }         from './toolstate.js';
 import { loadModuleStatuses }    from './modulelock.js';
+import { setZipExtractRouter }   from '../tools/shared/progress.js';
 
 // ── Category → renderer map ──────────────────────────────────────────────────
 // Add future categories here.  Value is a function(container) that fills it.
@@ -157,6 +158,10 @@ export function initNavigation() {
       }
     }, 60);
   }
+
+  // ── Wire activateNav into archives and progress for ZIP extract shortcut ────
+  setActivateNavForArchives(activateNav);
+  setZipExtractRouter((file) => routeZipToExtractor(file, activateNav));
 
   navItems.forEach((item) => {
     item.addEventListener('click', () => activateNav(item.dataset.label));

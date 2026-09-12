@@ -249,12 +249,18 @@ function _showSettingsPanel(fileSize, color) {
     }
   });
 
+  // Capture file + baseName at panel-creation time so they survive any
+  // intermediate removeArchiveConvertPanel() call (e.g. tool reselect).
+  const _capturedFile     = _arcFile;
+  const _capturedBaseName = _arcBaseName;
+
   panel.querySelector('#ac-submit-btn').addEventListener('click', () => {
-    if (!_arcFile) return;
+    const fileToConvert = _arcFile || _capturedFile;
+    if (!fileToConvert) return;
     const nameEl  = panel.querySelector('#ac-filename-input');
-    const outName = (nameEl ? nameEl.value.trim() : '') || _arcBaseName;
+    const outName = (nameEl ? nameEl.value.trim() : '') || _arcBaseName || _capturedBaseName;
     document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'smooth' });
-    _submitConvert(_arcFile, outName);
+    _submitConvert(fileToConvert, outName);
   });
 }
 
@@ -308,19 +314,27 @@ async function _submitConvert(file, outputFilename) {
 
   const zone   = document.getElementById('drop-zone');
   const color  = tool.color || '#00E5C0';
-  const dstExt = _DST_EXT[_arcToolId] || '.zip';
-  const route  = _ROUTE[_arcToolId];
+
+  // Capture before removeArchiveConvertPanel() clears module vars
+  const dstExt   = _DST_EXT[_arcToolId] || '.zip';
+  const route    = _ROUTE[_arcToolId];
+  const baseName = _arcBaseName || outputFilename;
 
   // Remove thumbnail + panel; show progress ring
-  removeArchiveConvertPanel();
+  const panel = document.getElementById('arc-convert-settings-panel');
+  if (panel) panel.remove();
+  const thumb = zone ? zone.querySelector('.dz-arc-conv-thumb-wrap') : null;
+  if (thumb) thumb.remove();
+  if (zone)  zone.classList.remove('dz-has-arc-conv-thumb');
+  _arcFile = null; _arcBaseName = ''; _arcToolId = '';
 
-  const earlyName = `${_arcBaseName || outputFilename}${dstExt}`;
+  const earlyName = `${baseName}${dstExt}`;
 
   const fd = new FormData();
   fd.append('file', file);
   fd.append('output_filename', outputFilename + dstExt);
 
-  showProgress(zone, 10, color, 'Converting…');
+  showProgress(zone, 10, color, 'Converting…', tool.id);
   setBgJob({ jobId: null, tool, filename: earlyName, progress: 5, state: 'submitting', sse: null });
 
   let jobId;
@@ -336,7 +350,7 @@ async function _submitConvert(file, outputFilename) {
     }
     jobId = json.job_id;
   } catch (err) {
-    showError(zone, `Upload failed: ${err.message}`);
+    showError(zone, `Upload failed: ${err.message}`, tool.id);
     clearBgJob();
     return;
   }
@@ -392,12 +406,12 @@ async function _submitConvert(file, outputFilename) {
     }
 
     if (state === 'error') {
-      showError(zone, error || 'Conversion failed. Please try again.');
+      showError(zone, error || 'Conversion failed. Please try again.', tool.id);
     }
   };
 
   sse.onerror = () => {
     sse.close();
-    showError(zone, 'Lost connection to backend. Is the server running?');
+    showError(zone, 'Lost connection to backend. Is the server running?', tool.id);
   };
 }

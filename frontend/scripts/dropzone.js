@@ -1760,7 +1760,8 @@ export function initDropZone() {
       '.compress-settings-panel, .dz-compress-thumb-remove, .cmp-panel, ' +
       '.encrypt-settings-panel, .dz-encrypt-thumb-remove, .enc-panel, .extractor-info-panel, .dz-editor-thumb-remove, .dz-paste-btn, ' +
       '.dz-pdf-word-thumb-wrap, .dz-pdf-excel-thumb-wrap, .dz-pdf-html-thumb-wrap, .dz-pdf-txt-thumb-wrap, ' +
-      '.imgcmp-panel, .dz-imgcmp-add-btn, .dz-imgcmp-card-remove'
+      '.imgcmp-panel, .dz-imgcmp-add-btn, .dz-imgcmp-card-remove, ' +
+      '.dz-arc-conv-thumb-wrap, .dz-extract-thumb-wrap'
     )) return;
     if (!getActiveTool()) { showNoToolWarning(); return; }
     // If already processing, scanning, done, or a file thumbnail is currently loaded, do not open file window
@@ -1777,6 +1778,9 @@ export function initDropZone() {
       dropZone.classList.contains('dz-has-pdf-html-thumb') ||
       dropZone.classList.contains('dz-has-pdf-txt-thumb') ||
       dropZone.classList.contains('dz-has-imgpdf-thumbs') ||
+      dropZone.classList.contains('dz-has-arc-conv-thumb') ||
+      dropZone.classList.contains('dz-has-extract-thumb') ||
+      dropZone.classList.contains('dz-has-archive-thumbs') ||
       dropZone.querySelector('.dz-pdf-thumb-wrap, .dz-compress-thumb-wrap, .dz-encrypt-thumb-wrap, .dz-merge-thumb-strip')
     ) {
       return;
@@ -1919,6 +1923,9 @@ export function initDropZone() {
       dropZone.classList.contains('dz-has-encrypt-thumb') ||
       dropZone.classList.contains('dz-has-merge-thumbs') ||
       dropZone.classList.contains('dz-has-imgpdf-thumbs') ||
+      dropZone.classList.contains('dz-has-arc-conv-thumb') ||
+      dropZone.classList.contains('dz-has-extract-thumb') ||
+      dropZone.classList.contains('dz-has-archive-thumbs') ||
       dropZone.querySelector('.dz-pdf-thumb-wrap, .dz-compress-thumb-wrap, .dz-encrypt-thumb-wrap, .dz-merge-thumb-strip')
     ) {
       return;
