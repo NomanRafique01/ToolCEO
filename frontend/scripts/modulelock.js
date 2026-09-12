@@ -18,14 +18,16 @@
 
 export const TOOL_MODULE_MAP = {
     // ── Media Module (7-Zip archive tools) ───────────────────────────────────
-    'archive-files-zip': 'media',
+    // Note: ZIP tools (archive-files-zip, archive-folder-zip, archive-extract-zip)
+    // are built-in and never locked.
     'archive-files-tar': 'media',
     'archive-files-tar-gz': 'media',
     'archive-files-tar-bz2': 'media',
     'archive-files-7z': 'media',
-    'archive-folder-zip': 'media',
     'archive-folder-7z': 'media',
-    'archive-extract-zip': 'media',
+    'archive-files-rar': 'media',
+    'archive-files-tar-xz': 'media',
+    'archive-files-wim': 'media',
     'archive-extract-rar': 'media',
     'archive-extract-7z': 'media',
     'archive-extract-tar': 'media',
@@ -38,9 +40,18 @@ export const TOOL_MODULE_MAP = {
     'archive-extract-cab': 'media',
     'archive-extract-iso': 'media',
     'archive-extract-dmg': 'media',
+    'archive-inspect': 'media',    // Archive Inspector
+    'archive-split': 'media',      // Archive Splitter
+    'archive-merge': 'media',      // Archive Merger
     'archive-protect': 'media',    // Password Protect Archive (ZIP/7Z/RAR — AES-256)
     'archive-unlock': 'media',     // Remove Archive Password  (ZIP/7Z/RAR)
     'archive-duplicate': 'media',  // Duplicate Finder in Archive
+    // Convert format family cards & tools
+    'conv-zip': 'media',
+    'conv-tar': 'media',
+    'conv-7z': 'media',
+    'conv-tar-gz': 'media',
+    'conv-rar': 'media',
   
   // ── Office Module (LibreOffice) ───────────────────────────────────────────
   'docx-pdf'    : 'office',
@@ -110,7 +121,7 @@ export const MODULE_INFO = {
   ocr      : { name: 'OCR Module',      toolCount:  5 },
   document : { name: 'Document Module', toolCount: 13 },
   ebook    : { name: 'eBook Module',    toolCount: 37 },
-  media    : { name: 'Media Module',    toolCount: 8  },
+  media    : { name: 'Media Module',    toolCount: 53 },
 };
 
 // ─── CACHED STATE ─────────────────────────────────────────────────────────────
@@ -188,6 +199,11 @@ export function getLockedModuleId(toolId) {
   // eBook tools — checked dynamically
   if (isEbookTool(toolId)) {
     return statuses['ebook'] === 'installed' ? null : 'ebook';
+  }
+
+  // Archive tools — all 20 convert tools (arc-*-to-*) require Media Module (7-Zip)
+  if (toolId && (toolId.startsWith('arc-') || toolId.startsWith('conv-'))) {
+    return statuses['media'] === 'installed' ? null : 'media';
   }
 
   const moduleId = TOOL_MODULE_MAP[toolId];

@@ -152,9 +152,10 @@ const MODULES = [
     unlocks: [
       'MP4 → MKV, AVI, MOV, WEBM',
       'MP3 → WAV, FLAC, AAC, OGG',
-      'Archive tools — ZIP, 7Z, RAR (coming soon)',
+      '7Z, RAR, TAR, GZ, BZ2, XZ, CAB, DMG & WIM',
+      'Archive Protect, Unlock, Split, Merge & Convert',
     ],
-    desc: 'Unlocks Audio/Video conversions and Archive tools (coming soon).',
+    desc: 'Unlocks Audio/Video transcoding and 7-Zip archive tools.',
   },
 ];
 

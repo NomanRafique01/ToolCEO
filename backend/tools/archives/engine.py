@@ -246,10 +246,51 @@ def extract_archive(
     if len(archive_bytes) > _MAX_TOTAL_BYTES:
         raise ValueError("The selected archive exceeds the 2 GB limit.")
 
+    safe_name = Path(original_filename).name or "archive.bin"
     executable = find_7zip()
     if not executable:
+        if safe_name.lower().endswith(".zip"):
+            import zipfile
+            buf = io.BytesIO(archive_bytes)
+            try:
+                with zipfile.ZipFile(buf, "r") as zf:
+                    if password:
+                        zf.setpassword(password.encode("utf-8"))
+                    infolist = zf.infolist()
+                    if not infolist:
+                        raise RuntimeError("The archive is empty.")
+                    total = len(infolist)
+                    if destination_dir:
+                        dest_path = Path(destination_dir).resolve()
+                        dest_path.mkdir(parents=True, exist_ok=True)
+                        for idx, info in enumerate(infolist):
+                            if cancel_event is not None and cancel_event.is_set():
+                                raise ArchiveCancelled()
+                            zf.extract(info, dest_path)
+                            progress(int((idx + 1) / total * 95))
+                        progress(100)
+                        return b"", str(dest_path), "application/zip"
+                    else:
+                        with tempfile.TemporaryDirectory(prefix="toolceo-extract-zip-") as temp_name:
+                            temp_dir = Path(temp_name)
+                            for idx, info in enumerate(infolist):
+                                if cancel_event is not None and cancel_event.is_set():
+                                    raise ArchiveCancelled()
+                                zf.extract(info, temp_dir)
+                                progress(int((idx + 1) / total * 90))
+                            extracted_items = list(temp_dir.iterdir())
+                            if len(extracted_items) == 1 and extracted_items[0].is_file():
+                                payload = extracted_items[0].read_bytes()
+                                out_fn = Path(output_name).name if output_name else extracted_items[0].name
+                                progress(100)
+                                return payload, out_fn, "application/octet-stream", None
+                            progress(100)
+                            return archive_bytes, safe_name, "application/zip", None
+            except Exception as e:
+                if isinstance(e, (RuntimeError, ValueError, ArchiveCancelled)):
+                    raise
+                raise RuntimeError(f"Extraction failed: {e}")
         raise RuntimeError("7-Zip is unavailable. Install the Media Module first.")
-    safe_name = Path(original_filename).name or "archive.bin"
 
     # If destination_dir is provided, extract directly into the chosen folder on disk
     if destination_dir:
@@ -725,6 +766,22 @@ def create_archive(
 
     executable = find_7zip()
     if not executable:
+        if archive_format == "zip":
+            import zipfile
+            progress(10)
+            buf = io.BytesIO()
+            compression = zipfile.ZIP_STORED if compression_level == 0 else zipfile.ZIP_DEFLATED
+            compresslevel = 9 if compression_level >= 7 else (6 if compression_level >= 3 else 1)
+            with zipfile.ZipFile(buf, mode="w", compression=compression, compresslevel=compresslevel) as zf:
+                total_files = len(materialized)
+                for index, (raw, original_name) in enumerate(materialized):
+                    if cancel_event is not None and cancel_event.is_set():
+                        raise ArchiveCancelled()
+                    member = _safe_member_name(original_name)
+                    zf.writestr(member, raw)
+                    progress(10 + int((index + 1) / total_files * 88))
+            progress(100)
+            return buf.getvalue(), safe_output, spec["media_type"]
         raise RuntimeError("7-Zip is unavailable. Install the Media Module first.")
     with tempfile.TemporaryDirectory(prefix="toolceo-archive-") as temp_name:
         temp_dir = Path(temp_name)

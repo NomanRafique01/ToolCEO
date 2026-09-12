@@ -560,6 +560,10 @@ function renderConvertLanding(container, activateNav) {
   container.querySelector('.fmt-back-btn').addEventListener('click', () => renderLanding(container, activateNav));
   container.querySelectorAll('.fmt-card').forEach((card) => {
     card.addEventListener('click', () => {
+      if (card.classList.contains('fmt-card--locked')) {
+        _handleLockedClick(card.dataset.lockedModule, card.querySelector('.fmt-label')?.textContent || '');
+        return;
+      }
       const convCat = CONVERT_CATEGORIES.find((c) => c.id === card.dataset.id);
       if (convCat) {
         renderConvertSubTools(container, activateNav, convCat);
