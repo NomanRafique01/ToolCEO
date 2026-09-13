@@ -12,7 +12,7 @@
 
 import {
   subscribe, getAll, getUnreadCount,
-  dismissAll, dismissOne, markAllRead,
+  dismissAll, dismissOne, removeHistoryItem, markAllRead,
 } from './notificationStore.js';
 
 // ─── RELATIVE TIME ─────────────────────────────────────────────────────────────
@@ -124,7 +124,7 @@ function _buildModal() {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const id = btn.dataset.dismiss;
-      dismissOne(id);
+      removeHistoryItem(id);
       const row = overlay.querySelector(`[data-id="${id}"]`);
       if (row) row.remove();
       const body = overlay.querySelector('.notif-modal-body');
@@ -248,16 +248,16 @@ function _showNextInQueue() {
   }
 
   if (_displayQueue.length > 0) {
-    // If multiple notifications are queued, display current for exactly 2 seconds
+    // If multiple notifications are queued, display current for 2 seconds
     _activeTimer = setTimeout(() => {
       _transitionToNext();
     }, 2000);
   } else {
-    // No queued notifications waiting: keep standard appearance duration (6s)
-    if (_activeItem.type !== 'progress' && _activeItem.autoDismiss !== false) {
+    // All notifications disappear smoothly after 3 seconds (active progress pills are exempt)
+    if (_activeItem.type !== 'progress') {
       _activeTimer = setTimeout(() => {
         _transitionToNext();
-      }, 6000);
+      }, 3000);
     }
   }
 }
@@ -283,7 +283,7 @@ function _transitionToNext(isDismissAll = false) {
   setTimeout(() => {
     if (isDismissAll) {
       dismissAll();
-    } else if (_activeItem && _activeItem.autoDismiss !== false) {
+    } else if (_activeItem) {
       dismissOne(_activeItem.id);
     }
 
@@ -295,7 +295,7 @@ function _transitionToNext(isDismissAll = false) {
     } else {
       _showNextInQueue();
     }
-  }, 200);
+  }, 220);
 }
 
 function _hideBanner() {
