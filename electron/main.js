@@ -605,6 +605,35 @@ async function registerFileAssociation() {
 // ─── BACKEND ──────────────────────────────────────────────────────────────────
 
 function startBackend() {
+  // ── Manual backend override ───────────────────────────────────────────────
+  // Set TOOLCEO_MANUAL_BACKEND=1 to skip auto-spawn (e.g. you started uvicorn manually).
+  if (process.env.TOOLCEO_MANUAL_BACKEND === '1') {
+    console.log('[backend] TOOLCEO_MANUAL_BACKEND=1 set — skipping auto-spawn, assuming backend on 127.0.0.1:8000');
+    return;
+  }
+
+  // ── Check if backend already running on port 8000 ────────────────────────
+  // Avoids spawning a duplicate process if the user started backend manually.
+  const http = require('http');
+  const checkAlreadyRunning = () => new Promise((resolve) => {
+    const req = http.get('http://127.0.0.1:8000/health', (res) => {
+      res.resume();
+      resolve(true);
+    });
+    req.on('error', () => resolve(false));
+    req.setTimeout(800, () => { req.destroy(); resolve(false); });
+  });
+
+  checkAlreadyRunning().then((alreadyUp) => {
+    if (alreadyUp) {
+      console.log('[backend] Backend already running on port 8000 — skipping spawn.');
+      return;
+    }
+    _spawnBackend();
+  });
+}
+
+function _spawnBackend() {
   const backendExePath = path.join(
     process.resourcesPath,
     'engines', 'python', 'main_backend.exe'
@@ -809,9 +838,14 @@ const MODULE_ENGINE_EXES = {
     path.join('ebook', 'calibre', IS_WIN ? 'ebook-convert.exe' : 'ebook-convert'),
   ],
   media: [
+    // Dev direct paths (engines/7zip/7z.exe, engines/ffmpeg/...)
+    path.join('7zip', IS_WIN ? '7z.exe' : '7z'),
     path.join('ffmpeg', IS_WIN ? 'ffmpeg.exe' : 'ffmpeg'),
     path.join('ffmpeg', 'bin', IS_WIN ? 'ffmpeg.exe' : 'ffmpeg'),
+    // Module-prefixed paths (engines/media/7zip/7z.exe) — installed via module download
+    path.join('media', '7zip', IS_WIN ? '7z.exe' : '7z'),
     path.join('media', 'ffmpeg', IS_WIN ? 'ffmpeg.exe' : 'ffmpeg'),
+    path.join('media', 'ffmpeg', 'bin', IS_WIN ? 'ffmpeg.exe' : 'ffmpeg'),
   ],
 };
 

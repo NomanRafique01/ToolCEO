@@ -41,7 +41,8 @@
         "to": "engines/",
         "filter": [
           "python/**",
-          "rar/**"
+          "rar/**",
+          "7zip/**"
         ]
       },
       {

@@ -6,10 +6,23 @@
 import { setBreadcrumb } from './navigation.js';
 import { isFavourite } from './favourites.js';
 import { FAMILY_COLORS } from './toolFamily.js';
-import { setActiveTool } from './toolstate.js';
+import { setActiveTool, getActiveTool, onToolChange } from './toolstate.js';
 import { getLockedModuleId } from './modulelock.js';
 import { ARCHIVE_CONVERT_IDS } from '../tools/archives/archive_convert.js';
 import { handleArchiveFilesPicked } from '../tools/archives/archive_extract.js';
+
+// Sync card selection highlight in the explore-section grid whenever active tool changes
+onToolChange((tool) => {
+  const container = document.getElementById('explore-section');
+  if (!container) return;
+  container.querySelectorAll('.fmt-card').forEach((card) => {
+    if (tool && card.dataset.id === tool.id) {
+      card.classList.add('selected');
+    } else {
+      card.classList.remove('selected');
+    }
+  });
+});
 
 let _navigateToModule = null;
 export function setNavigateToModule(fn) { _navigateToModule = fn; }
@@ -540,72 +553,125 @@ function toolRecords(category) {
   });
 }
 
-// ─── CONVERT CATEGORY LANDING (5 family cards) ───────────────────────────────
+// ─── CONVERT CATEGORY ACCORDION (Locked to parent format families) ───────────
 
 function renderConvertLanding(container, activateNav) {
-  setActiveTool(null);
   const convertCat = CATEGORIES.find((c) => c.id === 'convert');
   setBreadcrumb(['Dashboard', 'Archives', 'Convert Tools']);
+
+  const currentTool = getActiveTool();
+
   container.innerHTML = `
     <div class="explore-header">
       <button class="fmt-back-btn" title="Back to Archives">${backIcon()}</button>
       <div class="fmt-category-icon" style="background:${convertCat.bg};color:${convertCat.color}">${convertCat.icon}</div>
-      <span class="explore-title">Archives — Convert</span>
+      <span class="explore-title">Archives — Convert Tools</span>
+      <span class="arc-convert-count-badge">${CONVERT_CATEGORIES.length} Format Families</span>
     </div>
-    <div class="fmt-grid archive-tool-grid">
-      ${CONVERT_CATEGORIES.map((c) => cardHTML(c, 'Convert', false)).join('')}
+    <div class="arc-accordion-list">
+      ${CONVERT_CATEGORIES.map((cat, index) => {
+        const containsActive = currentTool && cat.tools.some((t) => t.id === currentTool.id);
+        const isExpanded = containsActive || (!currentTool && index === 0);
+        return `
+          <div class="arc-accordion-group${isExpanded ? ' is-expanded' : ''}" data-family-id="${cat.id}" style="--family-color:${cat.color};--family-bg:${cat.bg}">
+            <div class="arc-accordion-header" role="button" tabindex="0" aria-expanded="${isExpanded ? 'true' : 'false'}">
+              <div class="arc-accordion-header-left">
+                <div class="arc-accordion-icon-box" style="background:${cat.bg};color:${cat.color}">
+                  ${cat.icon}
+                </div>
+                <div class="arc-accordion-titles">
+                  <div class="arc-accordion-title-row">
+                    <span class="arc-accordion-title">${cat.label}</span>
+                    <span class="arc-accordion-pill">${cat.srcExt}</span>
+                  </div>
+                  <span class="arc-accordion-desc">${cat.desc}</span>
+                </div>
+              </div>
+              <div class="arc-accordion-header-right">
+                <span class="arc-accordion-count">${cat.tools.length} Tools</span>
+                <span class="arc-accordion-chevron" aria-hidden="true">
+                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="m6 9 6 6 6-6"/>
+                  </svg>
+                </span>
+              </div>
+            </div>
+            <div class="arc-accordion-body">
+              <div class="fmt-grid archive-tool-grid arc-accordion-subgrid">
+                ${cat.tools.map((t) => {
+                  const card = cardHTML(t, 'Convert', true);
+                  if (currentTool && currentTool.id === t.id) {
+                    return card.replace('class="fmt-card', 'class="fmt-card selected');
+                  }
+                  return card;
+                }).join('')}
+              </div>
+            </div>
+          </div>
+        `;
+      }).join('')}
     </div>
   `;
 
+  // Back button returns to Archives landing
   container.querySelector('.fmt-back-btn').addEventListener('click', () => renderLanding(container, activateNav));
-  container.querySelectorAll('.fmt-card').forEach((card) => {
-    card.addEventListener('click', () => {
-      if (card.classList.contains('fmt-card--locked')) {
-        _handleLockedClick(card.dataset.lockedModule, card.querySelector('.fmt-label')?.textContent || '');
-        return;
+
+  // Wire up accordion header toggling
+  container.querySelectorAll('.arc-accordion-header').forEach((header) => {
+    const group = header.closest('.arc-accordion-group');
+    const toggle = () => {
+      const willExpand = !group.classList.contains('is-expanded');
+      group.classList.toggle('is-expanded', willExpand);
+      header.setAttribute('aria-expanded', willExpand ? 'true' : 'false');
+    };
+
+    header.addEventListener('click', toggle);
+    header.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        toggle();
       }
-      const convCat = CONVERT_CATEGORIES.find((c) => c.id === card.dataset.id);
-      if (convCat) {
-        renderConvertSubTools(container, activateNav, convCat);
-        scrollToArchiveTools();
-      }
+    });
+  });
+
+  // Wire up sub-tool cards inside accordion groups
+  container.querySelectorAll('.arc-accordion-group').forEach((group) => {
+    const familyId = group.dataset.familyId;
+    const cat = CONVERT_CATEGORIES.find((c) => c.id === familyId);
+    if (!cat) return;
+
+    group.querySelectorAll('.fmt-card').forEach((card) => {
+      card.addEventListener('click', (e) => {
+        // Ignore clicks on favourite button
+        if (e.target.closest('.card-fav-btn')) return;
+
+        if (card.classList.contains('fmt-card--locked')) {
+          _handleLockedClick(card.dataset.lockedModule, card.querySelector('.fmt-label')?.textContent || '');
+          return;
+        }
+
+        const tool = cat.tools.find((t) => t.id === card.dataset.id);
+        if (!tool) return;
+
+        // Visual selection
+        container.querySelectorAll('.fmt-card').forEach((c) => c.classList.remove('selected'));
+        card.classList.add('selected');
+
+        // Ensure parent accordion stays open
+        group.classList.add('is-expanded');
+        group.querySelector('.arc-accordion-header')?.setAttribute('aria-expanded', 'true');
+
+        // Activate tool and scroll to dropzone
+        setActiveTool(tool);
+        scrollToDropZone();
+      });
     });
   });
 }
 
-// ─── CONVERT SUB-TOOLS (4 conversion pair cards per family) ──────────────────
-
 function renderConvertSubTools(container, activateNav, convCat) {
-  setActiveTool(null);
-  setBreadcrumb(['Dashboard', 'Archives', 'Convert', convCat.label]);
-  container.innerHTML = `
-    <div class="explore-header">
-      <button class="fmt-back-btn" title="Back to Convert">${backIcon()}</button>
-      <div class="fmt-category-icon" style="background:${convCat.bg};color:${convCat.color}">${convCat.icon}</div>
-      <span class="explore-title">Archives — ${convCat.label}</span>
-    </div>
-    <div class="fmt-grid archive-tool-grid">
-      ${convCat.tools.map((t) => cardHTML(t, 'Convert', true)).join('')}
-    </div>
-  `;
-
-  container.querySelector('.fmt-back-btn').addEventListener('click', () => renderConvertLanding(container, activateNav));
-
-  container.querySelectorAll('.fmt-card').forEach((card) => {
-    card.addEventListener('click', () => {
-      const tool = convCat.tools.find((t) => t.id === card.dataset.id);
-      if (!tool) return;
-      if (card.classList.contains('fmt-card--locked')) {
-        _handleLockedClick(card.dataset.lockedModule, card.querySelector('.fmt-label')?.textContent || '');
-        return;
-      }
-      // Select card + activate tool → dropzone will be updated
-      container.querySelectorAll('.fmt-card').forEach((c) => c.classList.remove('selected'));
-      card.classList.add('selected');
-      setActiveTool(tool);
-      scrollToDropZone();
-    });
-  });
+  // Kept for backward compatibility; renders the accordion view
+  renderConvertLanding(container, activateNav);
 }
 
 // ─── STANDARD CATEGORY LANDING ───────────────────────────────────────────────

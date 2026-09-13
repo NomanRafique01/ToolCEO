@@ -193,7 +193,14 @@ def find_pandoc() -> str | None:
 
 
 def find_ffmpeg() -> str | None:
-    bundled = get_engine_path("ffmpeg/ffmpeg.exe") or get_engine_path("ffmpeg/bin/ffmpeg.exe") or get_engine_path("ffmpeg/ffmpeg")
+    bundled = (
+        get_engine_path("ffmpeg/ffmpeg.exe")
+        or get_engine_path("ffmpeg/bin/ffmpeg.exe")
+        or get_engine_path("media/ffmpeg/ffmpeg.exe")
+        or get_engine_path("media/ffmpeg/bin/ffmpeg.exe")
+        or get_engine_path("ffmpeg/ffmpeg")
+        or get_engine_path("media/ffmpeg/ffmpeg")
+    )
     if bundled:
         return bundled
     return shutil.which("ffmpeg")
@@ -242,11 +249,21 @@ def find_calibre() -> str | None:
 
 def find_7zip() -> str | None:
     if IS_WIN:
-        bundled = get_engine_path("7zip/7z.exe")
+        bundled = get_engine_path("7zip/7z.exe") or get_engine_path("media/7zip/7z.exe")
     elif IS_MAC:
-        bundled = get_engine_path("7zip/mac/7zz") or get_engine_path("7zip/7zz")
+        bundled = (
+            get_engine_path("7zip/mac/7zz")
+            or get_engine_path("7zip/7zz")
+            or get_engine_path("media/7zip/mac/7zz")
+            or get_engine_path("media/7zip/7zz")
+        )
     else:
-        bundled = get_engine_path("7zip/linux/7zz") or get_engine_path("7zip/7zz")
+        bundled = (
+            get_engine_path("7zip/linux/7zz")
+            or get_engine_path("7zip/7zz")
+            or get_engine_path("media/7zip/linux/7zz")
+            or get_engine_path("media/7zip/7zz")
+        )
     if bundled:
         return bundled
     if IS_WIN:
