@@ -127,4 +127,42 @@ try {
   console.error('[prebuild] ⚠ Error clearing history databases:', err.message);
 }
 
+// 4. Uninstall/clean downloaded modules and persistent module archives for a clean build
+try {
+  console.log('[prebuild] Cleaning all installed and downloaded modules for clean build...');
+  const moduleDirs = [];
+  if (process.env.APPDATA) {
+    moduleDirs.push(path.join(process.env.APPDATA, 'toolceo', 'modules'));
+    moduleDirs.push(path.join(process.env.APPDATA, 'ToolCEO', 'modules'));
+  }
+  if (process.env.LOCALAPPDATA) {
+    moduleDirs.push(path.join(process.env.LOCALAPPDATA, 'toolceo', 'modules'));
+    moduleDirs.push(path.join(process.env.LOCALAPPDATA, 'ToolCEO', 'modules'));
+  }
+
+  for (const mDir of moduleDirs) {
+    if (fs.existsSync(mDir)) {
+      try {
+        fs.rmSync(mDir, { recursive: true, force: true });
+        console.log(`[prebuild] ✓ Removed downloaded module cache: ${mDir}`);
+      } catch (e) {
+        console.warn(`[prebuild] ⚠ Could not remove ${mDir}:`, e.message);
+      }
+    }
+  }
+
+  // Also sync clean reset modules.json to dist/ if previous unpacked build exists
+  const distModulesPath = path.join(rootDir, 'dist', 'win-unpacked', 'modules.json');
+  if (fs.existsSync(distModulesPath)) {
+    try {
+      const raw = fs.readFileSync(modulesJsonPath, 'utf8');
+      fs.writeFileSync(distModulesPath, raw, 'utf8');
+      console.log('[prebuild] ✓ Synced reset modules.json to dist/win-unpacked/modules.json');
+    } catch (_) {}
+  }
+} catch (modErr) {
+  console.error('[prebuild] ⚠ Error cleaning modules:', modErr.message);
+}
+
 console.log('[prebuild] Ready for packaging.');
+

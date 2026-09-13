@@ -8,6 +8,7 @@ import re
 import subprocess
 import sys
 import tempfile
+import threading
 from pathlib import Path
 from typing import Callable, Iterable
 
@@ -74,18 +75,41 @@ def _run_7zip(command: list[str], progress: Callable[[int], None], cancel_event,
         creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
     )
     captured_lines: list[str] = []
+
+    # ── Background reader thread ───────────────────────────────────────────
+    # In a console=False PyInstaller frozen EXE the main thread MUST NOT
+    # iterate `process.stdout` directly — the pipe read can block forever
+    # because the windowless process has no console to flush into.
+    # Instead we drain stdout in a daemon thread and join it from the main
+    # thread in small time-slices so cancellation remains responsive.
+    def _reader() -> None:
+        try:
+            assert process.stdout is not None
+            for line in process.stdout:
+                captured_lines.append(line)
+                matches = _PROGRESS_RE.findall(line)
+                if matches:
+                    progress(max(1, min(99, int(matches[-1]))))
+        except Exception:
+            pass
+
+    reader_thread = threading.Thread(target=_reader, daemon=True)
+    reader_thread.start()
+
     try:
-        assert process.stdout is not None
-        for line in process.stdout:
-            captured_lines.append(line)
+        # Poll every 100 ms so cancellation is checked promptly without
+        # burning CPU, while the reader thread drains 7-Zip's stdout.
+        while reader_thread.is_alive():
             if cancel_event is not None and cancel_event.is_set():
                 process.terminate()
+                reader_thread.join(timeout=2)
                 raise ArchiveCancelled()
-            matches = _PROGRESS_RE.findall(line)
-            if matches:
-                progress(max(1, min(99, int(matches[-1]))))
+            reader_thread.join(timeout=0.1)
+
+        # Reader is done; wait for the process to fully exit
         return_code = process.wait()
         full_output = "".join(captured_lines)
+
         # 7-Zip exit codes: 0 = OK, 1 = warning (partial), 2 = fatal error.
         # DMG/ISO/WIM files often cause exit code 1 or 2 because 7-Zip cannot parse
         # every internal sub-structure (e.g. HFS+ partitions), but it still extracts
@@ -102,6 +126,69 @@ def _run_7zip(command: list[str], progress: Callable[[int], None], cancel_event,
             # For exit code 2+, raise only if nothing was extracted — checked by caller
             if return_code >= 2:
                 raise _PartialExtractionWarning(full_output, return_code)
+        return full_output
+    finally:
+        if process.poll() is None:
+            process.kill()
+            process.wait()
+
+
+def _run_rar(
+    command: list[str],
+    progress: Callable[[int], None],
+    cancel_event,
+    cwd: str | None = None,
+    total_items: int = 1,
+    base_progress: int = 0,
+    progress_span: int = 99,
+) -> str:
+    process = subprocess.Popen(
+        command,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.STDOUT,
+        text=True,
+        encoding="utf-8",
+        errors="replace",
+        shell=False,
+        cwd=cwd,
+        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+    )
+    captured_lines: list[str] = []
+
+    def _reader() -> None:
+        try:
+            assert process.stdout is not None
+            done_count = 0
+            for line in process.stdout:
+                captured_lines.append(line)
+                if line.strip().startswith("Adding") and "OK" in line:
+                    done_count += 1
+                    pct = max(1, min(progress_span, int(done_count / max(total_items, 1) * progress_span)))
+                    progress(base_progress + pct)
+                else:
+                    matches = _PROGRESS_RE.findall(line)
+                    if matches:
+                        pct = max(1, min(progress_span, int(int(matches[-1]) * (progress_span / 100.0))))
+                        progress(base_progress + pct)
+        except Exception:
+            pass
+
+    reader_thread = threading.Thread(target=_reader, daemon=True)
+    reader_thread.start()
+
+    try:
+        while reader_thread.is_alive():
+            if cancel_event is not None and cancel_event.is_set():
+                process.terminate()
+                reader_thread.join(timeout=2)
+                raise ArchiveCancelled()
+            reader_thread.join(timeout=0.1)
+
+        return_code = process.wait()
+        full_output = "".join(captured_lines)
+        if return_code not in (0, 1):
+            summary = "".join(captured_lines[-6:]).strip() or "Unknown RAR error"
+            raise RuntimeError(f"rar.exe process error: {summary}")
         return full_output
     finally:
         if process.poll() is None:
@@ -690,41 +777,7 @@ def _create_rar_archive(
             str(output_path),
             *input_paths,
         ]
-        process = subprocess.Popen(
-            command,
-            stdout=subprocess.PIPE,
-            stderr=subprocess.STDOUT,
-            text=True,
-            encoding="utf-8",
-            errors="replace",
-            shell=False,
-            cwd=str(input_dir),
-            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
-        )
-        captured: list[str] = []
-        assert process.stdout is not None
-        total = len(input_paths)
-        done_count = 0
-        for line in process.stdout:
-            captured.append(line)
-            if cancel_event is not None and cancel_event.is_set():
-                process.terminate()
-                raise ArchiveCancelled()
-            # rar.exe progress: "Adding    filename   20%  OK"  or "Done"
-            if line.strip().startswith("Adding") and "OK" in line:
-                done_count += 1
-                pct = max(1, min(99, int(done_count / max(total, 1) * 99)))
-                progress(pct)
-            else:
-                # Fallback: parse any raw percentage on the line
-                matches = _PROGRESS_RE.findall(line)
-                if matches:
-                    progress(max(1, min(99, int(matches[-1]))))
-        return_code = process.wait()
-        # rar.exe exits 0 on full success, 1 for warnings (e.g. trial notice) — both OK
-        if return_code not in (0, 1):
-            summary = "".join(captured[-6:]).strip() or "Unknown RAR error"
-            raise RuntimeError(f"rar.exe process error: {summary}")
+        _run_rar(command, progress, cancel_event, cwd=str(input_dir), total_items=len(input_paths))
 
         if not output_path.is_file() or output_path.stat().st_size == 0:
             raise RuntimeError("rar.exe completed without producing an archive.")
@@ -738,6 +791,7 @@ def create_archive(
     output_name: str,
     progress: Callable[[int], None],
     cancel_event=None,
+    compression_level: int = 6,
 ) -> tuple[bytes, str, str]:
     """Create one archive and return bytes, safe filename, and media type."""
     spec = SUPPORTED_FORMATS.get(archive_format)
@@ -980,31 +1034,15 @@ def convert_archive(
             if not input_paths:
                 raise RuntimeError("No files found after extracting source archive.")
             command = [rar_exe, "a", "-ep1", "-m5", "-y", str(out_path), *input_paths]
-            process = __import__("subprocess").Popen(
+            _run_rar(
                 command,
-                stdout=__import__("subprocess").PIPE,
-                stderr=__import__("subprocess").STDOUT,
-                text=True, encoding="utf-8", errors="replace",
-                shell=False, cwd=str(extract_dir),
-                creationflags=getattr(__import__("subprocess"), "CREATE_NO_WINDOW", 0),
+                progress,
+                cancel_event,
+                cwd=str(extract_dir),
+                total_items=len(input_paths),
+                base_progress=50,
+                progress_span=45,
             )
-            total = len(input_paths)
-            done_count = 0
-            assert process.stdout is not None
-            for line in process.stdout:
-                if cancel_event is not None and cancel_event.is_set():
-                    process.terminate()
-                    raise ArchiveCancelled()
-                if line.strip().startswith("Adding") and "OK" in line:
-                    done_count += 1
-                    progress(50 + max(1, min(45, int(done_count / max(total, 1) * 45))))
-                else:
-                    matches = _PROGRESS_RE.findall(line)
-                    if matches:
-                        progress(50 + max(1, min(45, int(int(matches[-1]) * 0.45))))
-            rc = process.wait()
-            if rc not in (0, 1):
-                raise RuntimeError(f"rar.exe exited with code {rc} during conversion.")
 
         else:
             type_sw = _CONVERT_TYPE_SWITCH.get(target_format, f"-t{target_format}")
@@ -1163,30 +1201,15 @@ def protect_archive(
                 str(out_path),
                 *input_paths,
             ]
-            process = subprocess.Popen(
+            _run_rar(
                 rar_cmd,
-                stdout=subprocess.PIPE, stderr=subprocess.STDOUT,
-                text=True, encoding="utf-8", errors="replace",
-                shell=False, cwd=str(extract_dir),
-                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+                progress,
+                cancel_event,
+                cwd=str(extract_dir),
+                total_items=len(input_paths),
+                base_progress=50,
+                progress_span=46,
             )
-            assert process.stdout is not None
-            total = len(input_paths)
-            done_count = 0
-            for line in process.stdout:
-                if cancel_event is not None and cancel_event.is_set():
-                    process.terminate()
-                    raise ArchiveCancelled()
-                if line.strip().startswith("Adding") and "OK" in line:
-                    done_count += 1
-                    progress(50 + max(1, min(46, int(done_count / max(total, 1) * 46))))
-                else:
-                    matches = _PROGRESS_RE.findall(line)
-                    if matches:
-                        progress(50 + max(1, min(46, int(int(matches[-1]) * 0.46))))
-            rc = process.wait()
-            if rc not in (0, 1):
-                raise RuntimeError(f"rar.exe exited with code {rc} during encryption.")
 
         progress(97)
 

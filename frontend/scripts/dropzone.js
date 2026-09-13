@@ -1881,6 +1881,35 @@ export function initDropZone() {
         'archive-extract-dmg':     '.dmg,application/x-apple-diskimage',
       };
       fileInput.accept = _EXTRACT_ACCEPTS[tool.id] || '*/*';
+    } else if (tool && ARCHIVE_CONVERT_IDS.has(tool.id)) {
+      const _CONVERT_ACCEPTS = {
+        'arc-zip-to-7z':     '.zip,application/zip',
+        'arc-zip-to-tar':    '.zip,application/zip',
+        'arc-zip-to-tar-gz': '.zip,application/zip',
+        'arc-zip-to-rar':    '.zip,application/zip',
+
+        'arc-tar-to-zip':    '.tar,application/x-tar',
+        'arc-tar-to-7z':     '.tar,application/x-tar',
+        'arc-tar-to-gz':     '.tar,application/x-tar',
+        'arc-tar-to-rar':    '.tar,application/x-tar',
+
+        'arc-7z-to-zip':     '.7z,application/x-7z-compressed',
+        'arc-7z-to-tar':     '.7z,application/x-7z-compressed',
+        'arc-7z-to-tar-gz':  '.7z,application/x-7z-compressed',
+        'arc-7z-to-rar':     '.7z,application/x-7z-compressed',
+
+        'arc-tar-gz-to-zip': '.tar.gz,.tgz,application/gzip',
+        'arc-tar-gz-to-7z':  '.tar.gz,.tgz,application/gzip',
+        'arc-tar-gz-to-tar': '.tar.gz,.tgz,application/gzip',
+        'arc-tar-gz-to-rar': '.tar.gz,.tgz,application/gzip',
+
+        'arc-rar-to-zip':    '.rar,application/x-rar-compressed,application/vnd.rar',
+        'arc-rar-to-7z':     '.rar,application/x-rar-compressed,application/vnd.rar',
+        'arc-rar-to-tar':    '.rar,application/x-rar-compressed,application/vnd.rar',
+        'arc-rar-to-tar-gz': '.rar,application/x-rar-compressed,application/vnd.rar',
+      };
+      fileInput.multiple = false;
+      fileInput.accept   = _CONVERT_ACCEPTS[tool.id] || '*/*';
     } else if (tool) {
       // ── Per-format image accept filters ──────────────────────────────────────
       const _IMG_ACCEPT = {

@@ -135,64 +135,58 @@ function _buildModal() {
   });
 }
 
-// ─── BANNER RENDER ─────────────────────────────────────────────────────────────
+// ─── BANNER STATE & QUEUE ───────────────────────────────────────────────────
 
-let _prevNotifCount = 0;
+let _bannerEl = null;
+let _activeItem = null;
+let _activeStartTime = 0;
+let _displayQueue = [];
+let _activeTimer = null;
 let _closeTimer = null;
+let _isDismissing = false;
+let _shownIds = new Set();
+let _isBannerVisible = false;
 
-function _render(banner, notifications) {
+function _updateActivePillDOM(item) {
+  if (!_bannerEl || !_activeItem || _activeItem.id !== item.id) return;
+  _activeItem = item;
+  const msgEl = _bannerEl.querySelector('.nb-pill-msg');
+  if (msgEl) msgEl.textContent = item.message || '';
+  const timeEl = _bannerEl.querySelector('.nb-pill-time');
+  if (timeEl && item.type !== 'progress') timeEl.textContent = relTime(item.timestamp);
+}
+
+function _renderBannerWithActiveItem() {
+  if (!_bannerEl || !_activeItem) return;
+
   const unread = getUnreadCount();
-  const currentCount = notifications.length;
+  const n = _activeItem;
+  const m = TYPE_META[n.type] || TYPE_META.info;
+  const isProgress = n.type === 'progress';
+  const isAutoDismiss = n.autoDismiss === true;
 
   if (_closeTimer) {
     clearTimeout(_closeTimer);
     _closeTimer = null;
   }
 
-  if (currentCount > 0) {
-    document.body.classList.add('has-active-banner');
-    banner.classList.remove('nb-hidden', 'nb-slide-up');
-    if (_prevNotifCount === 0) {
-      banner.classList.add('nb-slide-down');
-    }
-    _prevNotifCount = currentCount;
-  } else {
-    if (_prevNotifCount > 0) {
-      banner.classList.remove('nb-slide-down');
-      banner.classList.add('nb-slide-up');
-      document.body.classList.remove('has-active-banner');
-      _closeTimer = setTimeout(() => {
-        if (getAll().length === 0) {
-          banner.classList.add('nb-hidden');
-          banner.classList.remove('nb-slide-up');
-          banner.innerHTML = '';
-        }
-      }, 250);
-    } else {
-      banner.classList.add('nb-hidden');
-      banner.classList.remove('nb-slide-down', 'nb-slide-up');
-      document.body.classList.remove('has-active-banner');
-      banner.innerHTML = '';
-    }
-    _prevNotifCount = 0;
-    return;
+  document.body.classList.add('has-active-banner');
+  _bannerEl.classList.remove('nb-hidden', 'nb-slide-up');
+  if (!_isBannerVisible) {
+    _bannerEl.classList.add('nb-slide-down');
+    _isBannerVisible = true;
   }
 
-  const pillsHtml = notifications.map((n) => {
-    const m = TYPE_META[n.type] || TYPE_META.info;
-    const isProgress = n.type === 'progress';
-    const isAutoDismiss = n.autoDismiss === true;
+  // Strictly ONE pill rendered in the banner track (two or three never appear together)
+  const pillHtml = `
+    <span class="nb-pill ${isProgress ? 'nb-pill--progress' : ''}" style="--pill-color:${m.color}" data-id="${_escHtml(n.id)}" data-auto-dismiss="${isAutoDismiss ? 'true' : 'false'}" title="${_escHtml(n.message)}">
+      <span class="nb-pill-icon" style="color:${m.color}">${m.icon}</span>
+      <span class="nb-pill-msg">${_escHtml(n.message)}</span>
+      ${!isProgress ? `<span class="nb-pill-time">${relTime(n.timestamp)}</span>` : ''}
+      <button class="nb-pill-x" data-pill-x="${_escHtml(n.id)}" title="Dismiss">&times;</button>
+    </span>`;
 
-    return `
-      <span class="nb-pill ${isProgress ? 'nb-pill--progress' : ''}" style="--pill-color:${m.color}" data-id="${_escHtml(n.id)}" data-auto-dismiss="${isAutoDismiss ? 'true' : 'false'}" title="${_escHtml(n.message)}">
-        <span class="nb-pill-icon" style="color:${m.color}">${m.icon}</span>
-        <span class="nb-pill-msg">${_escHtml(n.message)}</span>
-        ${!isProgress ? `<span class="nb-pill-time">${relTime(n.timestamp)}</span>` : ''}
-        <button class="nb-pill-x" data-pill-x="${_escHtml(n.id)}" title="Dismiss">&times;</button>
-      </span>`;
-  }).join('');
-
-  banner.innerHTML = `
+  _bannerEl.innerHTML = `
     <div class="nb-left">
       <svg class="nb-bell" width="16" height="16" viewBox="0 0 16 16" fill="none">
         <path d="M8 1.5C5.5 1.5 3.5 3.5 3.5 6v3L2 11.5h12L12.5 9V6c0-2.5-2-4.5-4.5-4.5Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
@@ -204,7 +198,7 @@ function _render(banner, notifications) {
     <div class="nb-divider"></div>
     <div class="nb-middle">
       <div class="nb-pills-track">
-        ${pillsHtml}
+        ${pillHtml}
       </div>
     </div>
     <div class="nb-right">
@@ -213,74 +207,189 @@ function _render(banner, notifications) {
       <button class="nb-dismiss">Dismiss</button>
     </div>`;
 
-  banner.querySelector('.nb-viewall').addEventListener('click', _buildModal);
+  _bannerEl.querySelector('.nb-viewall').addEventListener('click', _buildModal);
 
-  const dismissAllBtn = banner.querySelector('.nb-dismiss');
+  const dismissAllBtn = _bannerEl.querySelector('.nb-dismiss');
   if (dismissAllBtn) {
     dismissAllBtn.addEventListener('click', () => {
-      const pills = banner.querySelectorAll('.nb-pill');
-      if (pills.length === 0) {
-        dismissAll();
-        return;
-      }
-      pills.forEach((p) => p.classList.add('nb-pill--dismissing'));
-      setTimeout(() => {
-        dismissAll();
-      }, 200);
+      _displayQueue = [];
+      _transitionToNext(true);
     });
   }
 
-  // Attach inline dismiss handlers for individual pills with slide-out animation
-  banner.querySelectorAll('[data-pill-x]').forEach((btn) => {
-    btn.addEventListener('click', (e) => {
+  const dismissBtn = _bannerEl.querySelector('[data-pill-x]');
+  if (dismissBtn) {
+    dismissBtn.addEventListener('click', (e) => {
       e.stopPropagation();
-      const id = btn.dataset.pillX;
-      const pill = btn.closest('.nb-pill');
-      if (pill) {
-        pill.classList.add('nb-pill--dismissing');
-        pill.addEventListener('animationend', () => {
-          dismissOne(id);
-        }, { once: true });
-      } else {
-        dismissOne(id);
-      }
+      _transitionToNext(false);
     });
-  });
+  }
+}
 
-  // Auto-dismiss all non-progress pills after 6s with slide-out animation.
-  banner.querySelectorAll('.nb-pill:not(.nb-pill--progress)').forEach((pill) => {
-    const id = pill.dataset.id;
-    setTimeout(() => {
-      // Confirm pill still exists in DOM before animating out
-      if (banner.querySelector(`.nb-pill[data-id="${id}"]`)) {
-        pill.classList.add('nb-pill--dismissing');
-        pill.addEventListener('animationend', () => {
-          dismissOne(id);
-        }, { once: true });
+function _showNextInQueue() {
+  if (_isDismissing) return;
+  if (!_bannerEl) return;
+
+  if (_displayQueue.length === 0) {
+    _activeItem = null;
+    _hideBanner();
+    return;
+  }
+
+  _activeItem = _displayQueue.shift();
+  _shownIds.add(_activeItem.id);
+  _activeStartTime = Date.now();
+
+  _renderBannerWithActiveItem();
+
+  if (_activeTimer) {
+    clearTimeout(_activeTimer);
+    _activeTimer = null;
+  }
+
+  if (_displayQueue.length > 0) {
+    // If multiple notifications are queued, display current for exactly 2 seconds
+    _activeTimer = setTimeout(() => {
+      _transitionToNext();
+    }, 2000);
+  } else {
+    // No queued notifications waiting: keep standard appearance duration (6s)
+    if (_activeItem.type !== 'progress' && _activeItem.autoDismiss !== false) {
+      _activeTimer = setTimeout(() => {
+        _transitionToNext();
+      }, 6000);
+    }
+  }
+}
+
+function _transitionToNext(isDismissAll = false) {
+  if (_isDismissing) return;
+  _isDismissing = true;
+
+  if (_activeTimer) {
+    clearTimeout(_activeTimer);
+    _activeTimer = null;
+  }
+
+  if (isDismissAll) {
+    _displayQueue = [];
+  }
+
+  const pill = _bannerEl ? _bannerEl.querySelector('.nb-pill') : null;
+  if (pill) {
+    pill.classList.add('nb-pill--dismissing');
+  }
+
+  setTimeout(() => {
+    if (isDismissAll) {
+      dismissAll();
+    } else if (_activeItem && _activeItem.autoDismiss !== false) {
+      dismissOne(_activeItem.id);
+    }
+
+    _activeItem = null;
+    _isDismissing = false;
+
+    if (isDismissAll || _displayQueue.length === 0) {
+      _hideBanner();
+    } else {
+      _showNextInQueue();
+    }
+  }, 200);
+}
+
+function _hideBanner() {
+  if (!_bannerEl) return;
+  if (_closeTimer) clearTimeout(_closeTimer);
+
+  if (_isBannerVisible) {
+    _bannerEl.classList.remove('nb-slide-down');
+    _bannerEl.classList.add('nb-slide-up');
+    document.body.classList.remove('has-active-banner');
+    _isBannerVisible = false;
+
+    _closeTimer = setTimeout(() => {
+      if (!_activeItem && _displayQueue.length === 0) {
+        _bannerEl.classList.add('nb-hidden');
+        _bannerEl.classList.remove('nb-slide-up');
+        _bannerEl.innerHTML = '';
       }
-    }, 6000);
-  });
+    }, 250);
+  } else {
+    _bannerEl.classList.add('nb-hidden');
+    _bannerEl.classList.remove('nb-slide-down', 'nb-slide-up');
+    document.body.classList.remove('has-active-banner');
+    _bannerEl.innerHTML = '';
+  }
+}
+
+function _handleNotificationUpdates(allNotifications) {
+  if (!_bannerEl) return;
+
+  if (!allNotifications || allNotifications.length === 0) {
+    _displayQueue = [];
+    if (_activeItem) {
+      _transitionToNext(true);
+    } else {
+      _hideBanner();
+    }
+    return;
+  }
+
+  // Sync incoming notifications
+  let hasNew = false;
+  for (const n of allNotifications) {
+    if (_activeItem && _activeItem.id === n.id) {
+      _updateActivePillDOM(n);
+      continue;
+    }
+    if (_shownIds.has(n.id)) {
+      continue;
+    }
+    const queuedIdx = _displayQueue.findIndex((item) => item.id === n.id);
+    if (queuedIdx !== -1) {
+      _displayQueue[queuedIdx] = n;
+      continue;
+    }
+    _displayQueue.push(n);
+    hasNew = true;
+  }
+
+  if (!_activeItem && !_isDismissing) {
+    _showNextInQueue();
+  } else if (_activeItem && !_isDismissing && hasNew && _displayQueue.length > 0) {
+    // Another notification was fired! Check if active notification has shown for 2s:
+    const elapsed = Date.now() - _activeStartTime;
+    if (elapsed >= 2000) {
+      _transitionToNext();
+    } else {
+      const remaining = 2000 - elapsed;
+      if (_activeTimer) clearTimeout(_activeTimer);
+      _activeTimer = setTimeout(() => {
+        _transitionToNext();
+      }, Math.max(50, remaining));
+    }
+  }
 }
 
 // ─── INIT ──────────────────────────────────────────────────────────────────────
 
 export function initNotificationBanner() {
-  let banner = document.getElementById('notification-banner');
-  if (!banner) {
-    banner = document.createElement('div');
-    banner.id = 'notification-banner';
-    banner.className = 'notification-banner nb-hidden';
-    document.body.appendChild(banner);
+  _bannerEl = document.getElementById('notification-banner');
+  if (!_bannerEl) {
+    _bannerEl = document.createElement('div');
+    _bannerEl.id = 'notification-banner';
+    _bannerEl.className = 'notification-banner nb-hidden';
+    document.body.appendChild(_bannerEl);
   }
 
-  _render(banner, getAll());
+  _handleNotificationUpdates(getAll());
 
   subscribe((notifications) => {
-    _render(banner, notifications);
+    _handleNotificationUpdates(notifications);
   });
 
   setInterval(() => {
-    const current = getAll();
-    if (current.length > 0) _render(banner, current);
-  }, 30_000);
+    if (_activeItem) _updateActivePillDOM(_activeItem);
+  }, 15000);
 }

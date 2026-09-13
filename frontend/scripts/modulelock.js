@@ -46,12 +46,33 @@ export const TOOL_MODULE_MAP = {
     'archive-protect': 'media',    // Password Protect Archive (ZIP/7Z/RAR — AES-256)
     'archive-unlock': 'media',     // Remove Archive Password  (ZIP/7Z/RAR)
     'archive-duplicate': 'media',  // Duplicate Finder in Archive
-    // Convert format family cards & tools
-    'conv-zip': 'media',
-    'conv-tar': 'media',
-    'conv-7z': 'media',
-    'conv-tar-gz': 'media',
-    'conv-rar': 'media',
+
+    // ── Archive Convert Sub-Tools (require Media Module: 7-Zip) ─────────────
+    // Format family containers (conv-*) are never locked so users can view tools.
+    'arc-zip-to-7z': 'media',
+    'arc-zip-to-tar': 'media',
+    'arc-zip-to-tar-gz': 'media',
+    'arc-zip-to-rar': 'media',
+
+    'arc-tar-to-zip': 'media',
+    'arc-tar-to-7z': 'media',
+    'arc-tar-to-gz': 'media',
+    'arc-tar-to-rar': 'media',
+
+    'arc-7z-to-zip': 'media',
+    'arc-7z-to-tar': 'media',
+    'arc-7z-to-tar-gz': 'media',
+    'arc-7z-to-rar': 'media',
+
+    'arc-tar-gz-to-zip': 'media',
+    'arc-tar-gz-to-7z': 'media',
+    'arc-tar-gz-to-tar': 'media',
+    'arc-tar-gz-to-rar': 'media',
+
+    'arc-rar-to-zip': 'media',
+    'arc-rar-to-7z': 'media',
+    'arc-rar-to-tar': 'media',
+    'arc-rar-to-tar-gz': 'media',
   
   // ── Office Module (LibreOffice) ───────────────────────────────────────────
   'docx-pdf'    : 'office',
@@ -121,7 +142,7 @@ export const MODULE_INFO = {
   ocr      : { name: 'OCR Module',      toolCount:  5 },
   document : { name: 'Document Module', toolCount: 13 },
   ebook    : { name: 'eBook Module',    toolCount: 37 },
-  media    : { name: 'Media Module',    toolCount: 53 },
+  media    : { name: 'Media Module',    toolCount: 54 },
 };
 
 // ─── CACHED STATE ─────────────────────────────────────────────────────────────
@@ -202,7 +223,8 @@ export function getLockedModuleId(toolId) {
   }
 
   // Archive tools — all 20 convert tools (arc-*-to-*) require Media Module (7-Zip)
-  if (toolId && (toolId.startsWith('arc-') || toolId.startsWith('conv-'))) {
+  // Format family cards (conv-*) are category containers and never lock.
+  if (toolId && toolId.startsWith('arc-')) {
     return statuses['media'] === 'installed' ? null : 'media';
   }
 

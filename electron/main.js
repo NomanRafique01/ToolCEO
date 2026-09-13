@@ -640,11 +640,14 @@ function _spawnBackend() {
   );
 
   if (app.isPackaged && fs.existsSync(backendExePath)) {
+    const enginesDir = path.join(process.resourcesPath, 'engines');
     console.log('[backend] Launching packaged backend from:', backendExePath);
+    console.log('[backend] Engines dir:', enginesDir);
     backendProcess = spawn(backendExePath, [], {
       detached: false,
       stdio: 'ignore',
       windowsHide: true,
+      env: { ...process.env, TOOLCEO_ENGINES_PATH: enginesDir },
     });
   } else {
     // Development mode
@@ -821,31 +824,35 @@ async function _safeUnlink(filePath, retries = 5, delayMs = 300) {
  */
 const MODULE_ENGINE_EXES = {
   office: [
-    path.join('libreoffice', 'program', IS_WIN ? 'soffice.exe' : 'soffice'),
     path.join('office', 'libreoffice', 'program', IS_WIN ? 'soffice.exe' : 'soffice'),
+    ...(!app.isPackaged ? [path.join('libreoffice', 'program', IS_WIN ? 'soffice.exe' : 'soffice')] : []),
   ],
   ocr: [
-    path.join('tesseract', IS_WIN ? 'tesseract.exe' : 'tesseract'),
     path.join('ocr', 'tesseract', IS_WIN ? 'tesseract.exe' : 'tesseract'),
+    ...(!app.isPackaged ? [path.join('tesseract', IS_WIN ? 'tesseract.exe' : 'tesseract')] : []),
   ],
   document: [
-    path.join('pandoc', IS_WIN ? 'pandoc.exe' : 'pandoc'),
     path.join('document', 'pandoc', IS_WIN ? 'pandoc.exe' : 'pandoc'),
+    ...(!app.isPackaged ? [path.join('pandoc', IS_WIN ? 'pandoc.exe' : 'pandoc')] : []),
   ],
   ebook: [
-    path.join('calibre', IS_WIN ? 'ebook-convert.exe' : 'ebook-convert'),
-    path.join('calibre', 'app', 'bin', IS_WIN ? 'ebook-convert.exe' : 'ebook-convert'),
     path.join('ebook', 'calibre', IS_WIN ? 'ebook-convert.exe' : 'ebook-convert'),
+    ...(!app.isPackaged ? [
+      path.join('calibre', IS_WIN ? 'ebook-convert.exe' : 'ebook-convert'),
+      path.join('calibre', 'app', 'bin', IS_WIN ? 'ebook-convert.exe' : 'ebook-convert'),
+    ] : []),
   ],
   media: [
-    // Dev direct paths (engines/7zip/7z.exe, engines/ffmpeg/...)
-    path.join('7zip', IS_WIN ? '7z.exe' : '7z'),
-    path.join('ffmpeg', IS_WIN ? 'ffmpeg.exe' : 'ffmpeg'),
-    path.join('ffmpeg', 'bin', IS_WIN ? 'ffmpeg.exe' : 'ffmpeg'),
     // Module-prefixed paths (engines/media/7zip/7z.exe) — installed via module download
     path.join('media', '7zip', IS_WIN ? '7z.exe' : '7z'),
     path.join('media', 'ffmpeg', IS_WIN ? 'ffmpeg.exe' : 'ffmpeg'),
     path.join('media', 'ffmpeg', 'bin', IS_WIN ? 'ffmpeg.exe' : 'ffmpeg'),
+    // Dev direct paths (engines/7zip/7z.exe, engines/ffmpeg/...) only in dev mode
+    ...(!app.isPackaged ? [
+      path.join('7zip', IS_WIN ? '7z.exe' : '7z'),
+      path.join('ffmpeg', IS_WIN ? 'ffmpeg.exe' : 'ffmpeg'),
+      path.join('ffmpeg', 'bin', IS_WIN ? 'ffmpeg.exe' : 'ffmpeg'),
+    ] : []),
   ],
 };
 
@@ -1000,8 +1007,10 @@ function _ensureCleanInstallState() {
  * module download/install states can be tested from a clean slate.
  */
 function _resetDevelopmentModules() {
-  if (app.isPackaged || process.env.TOOLCEO_RESET_MODULES_ON_START !== '1') return;
+  if (app.isPackaged) return;
+  if (process.env.TOOLCEO_CLEAN_ON_START !== '1' && process.env.TOOLCEO_RESET_MODULES_ON_START !== '1') return;
 
+  console.log('[ToolCEO] Cleaning installed modules and cache on start...');
   const moduleDirs = ['libreoffice', 'ocr', 'pandoc', 'calibre', 'ffmpeg', '7zip', 'tesseract'];
   const enginesDir = _getEnginesDir();
   const paths = [
@@ -1012,8 +1021,30 @@ function _resetDevelopmentModules() {
   ];
 
   for (const target of paths) {
-    try { fs.rmSync(target, { recursive: true, force: true }); } catch (err) {
+    try {
+      if (fs.existsSync(target)) {
+        fs.rmSync(target, { recursive: true, force: true });
+      }
+    } catch (err) {
       console.warn(`[ToolCEO] Could not reset module path ${target}:`, err.message);
+    }
+  }
+
+  // Reset module status in modules.json to 'not_downloaded'
+  const modulesPath = _getModulesJsonPath();
+  if (fs.existsSync(modulesPath)) {
+    try {
+      const raw = fs.readFileSync(modulesPath, 'utf8');
+      const data = JSON.parse(raw);
+      if (data && data.modules) {
+        for (const key of Object.keys(data.modules)) {
+          data.modules[key].status = 'not_downloaded';
+        }
+        fs.writeFileSync(modulesPath, JSON.stringify(data, null, 2), 'utf8');
+        console.log('[ToolCEO] ✓ Modules status reset to not_downloaded in modules.json');
+      }
+    } catch (err) {
+      console.warn('[ToolCEO] Could not reset modules.json status:', err.message);
     }
   }
 }
@@ -1314,6 +1345,14 @@ app.whenReady().then(async () => {
   // ── Initialize SQLite History Database ─────────────────────────────────────
   try {
     historyDb.initDatabase(app);
+    if (!app.isPackaged && (process.env.TOOLCEO_CLEAN_ON_START === '1' || process.env.TOOLCEO_RESET_MODULES_ON_START === '1')) {
+      try {
+        historyDb.clearAllConversions();
+        console.log('[ToolCEO] ✓ Conversion history cleared on start.');
+      } catch (err) {
+        console.warn('[ToolCEO] Could not clear history on start:', err.message);
+      }
+    }
   } catch (err) {
     console.error('[database] Failed to initialize history DB:', err);
   }

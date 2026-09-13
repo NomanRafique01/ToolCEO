@@ -1,8 +1,9 @@
-﻿const { spawn } = require('child_process');
+const { spawn } = require('child_process');
 const electron = require('electron');
 
 const env = { ...process.env };
 delete env.ELECTRON_RUN_AS_NODE;
+env.TOOLCEO_CLEAN_ON_START = '1';
 
 const args = process.argv.slice(2);
 if (args.length === 0) {

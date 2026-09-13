@@ -104,6 +104,24 @@ def get_engine_path(engine_name: str) -> str | None:
     """
     engine_norm = engine_name.replace("/", os.sep).replace("\\", os.sep)
 
+    # ── Environment-variable override (set by Electron at backend spawn time) ──
+    # When running as a packaged Electron app, the main process sets
+    # TOOLCEO_ENGINES_PATH to the absolute path of the engines/ directory so
+    # we can skip all guesswork and return the exact path immediately.
+    env_engines = os.environ.get("TOOLCEO_ENGINES_PATH", "").strip()
+    if env_engines:
+        candidate = os.path.abspath(os.path.join(env_engines, engine_norm))
+        if os.path.exists(candidate):
+            return candidate
+        # Also try stripping any module-prefix subfolder from the variant
+        # e.g. "media/7zip/7z.exe" → try env_engines/7zip/7z.exe
+        parts = engine_norm.split(os.sep)
+        if len(parts) >= 2:
+            short_variant = os.path.join(*parts[-2:])  # last two components
+            candidate2 = os.path.abspath(os.path.join(env_engines, short_variant))
+            if os.path.exists(candidate2):
+                return candidate2
+
     MODULE_PREFIX_MAP = {
         "tesseract": "ocr",
         "libreoffice": "office",
@@ -121,12 +139,17 @@ def get_engine_path(engine_name: str) -> str | None:
 
     for variant in variants:
         if getattr(sys, "frozen", False):
-            # Running as PyInstaller bundle (e.g. inside resources/engines/python/main_backend.exe)
+            # Running as PyInstaller bundle.
+            # Layout: resources/engines/python/main_backend.exe
+            #         resources/engines/7zip/7z.exe
+            #         resources/engines/rar/rar.exe
+            # exe_dir = resources/engines/python/
             exe_dir = os.path.dirname(sys.executable)
             candidates = [
-                os.path.join(exe_dir, "..", variant),
-                os.path.join(exe_dir, variant),
-                os.path.join(exe_dir, "..", "engines", variant),
+                os.path.join(exe_dir, "..", variant),            # resources/engines/7zip/7z.exe ✓
+                os.path.join(exe_dir, variant),                  # resources/engines/python/7zip/7z.exe (fallback)
+                # Note: the old candidate os.path.join(exe_dir, "..", "engines", variant)
+                # resolved to resources/engines/engines/... (double-engines) and is REMOVED.
             ]
             if hasattr(sys, "_MEIPASS"):
                 candidates.append(os.path.join(sys._MEIPASS, "engines", variant))
@@ -279,7 +302,11 @@ def find_7zip() -> str | None:
 
 
 def find_rar() -> str | None:
-    bundled = get_engine_path("rar/rar.exe") or get_engine_path("rar/rar")
+    bundled = (
+        get_engine_path("rar/rar.exe")
+        or get_engine_path("rar/Rar.exe")   # handle capitalised filename on Windows
+        or get_engine_path("rar/rar")
+    )
     if bundled:
         return bundled
     if IS_WIN:

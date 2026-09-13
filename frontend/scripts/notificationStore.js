@@ -68,13 +68,13 @@ export function pushNotification({ type = 'success', message = '', detail = '', 
     removed.forEach((r) => _clearTimer(r.id));
   }
 
-  // ── Auto-dismiss scheduling ────────────────────────────────────────────────
-  // Keep notifications visible for 6s, then allow the banner exit animation.
-  // Progress pills are exempt — they are managed by the bg-job lifecycle.
+  // ── Long-term cleanup fallback ──────────────────────────────────────────
+  // The active display and dismissal lifecycle is managed by notificationBanner.js.
+  // We keep a safety cleanup timer (5 mins) to prevent unbounded memory growth.
   if (type !== 'progress') {
     const tid = setTimeout(() => {
       dismissOne(item.id);
-    }, 6300);
+    }, 300000);
     _timers.set(item.id, tid);
   }
 
