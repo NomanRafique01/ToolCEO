@@ -438,23 +438,21 @@ const IMG_FORMATS = [
     id: 'gif',
     label: 'GIF Tools',
     desc: 'Tools & conversions for GIF',
-    ext: '.gif',
+    ext: 'Coming Soon',
     color: '#FB923C',
     bg: 'rgba(251,146,60,0.15)',
     isGifEntry: true,
     icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
       <rect x="1" y="2" width="14" height="12" rx="2" stroke="currentColor" stroke-width="1.3"/>
-      <path d="M9.5 6.5 A3.5 3.5 0 1 0 9.5 9.5" stroke="currentColor" stroke-width="1.2"
-        stroke-linecap="round" fill="none"/>
-      <line x1="9.5" y1="7.5" x2="11.5" y2="7.5" stroke="currentColor" stroke-width="1.1"
-        stroke-linecap="round"/>
+      <path d="M9.5 6.5 A3.5 3.5 0 1 0 9.5 9.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" fill="none"/>
+      <line x1="9.5" y1="7.5" x2="11.5" y2="7.5" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
     </svg>`,
   },
   {
     id: 'bmp',
     label: 'BMP Tools',
     desc: 'Tools & conversions for BMP',
-    ext: '.bmp',
+    ext: 'Coming Soon',
     color: '#A78BFA',
     bg: 'rgba(167,139,250,0.15)',
     isBmpEntry: true,
@@ -470,7 +468,7 @@ const IMG_FORMATS = [
     id: 'tiff',
     label: 'TIFF Tools',
     desc: 'Tools & conversions for TIFF',
-    ext: '.tiff',
+    ext: 'Coming Soon',
     color: '#2DD4BF',
     bg: 'rgba(45,212,191,0.15)',
     isTiffEntry: true,

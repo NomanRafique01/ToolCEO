@@ -15,6 +15,8 @@
 import { renderDocumentFormats, setNavigateToModule as setDocNav } from './documents.js';
 import { renderEbookFormats,    setNavigateToModule as setEbookNav } from './ebooks.js';
 import { renderAudioFormats,    setNavigateToModule as setAudioNav } from './audio.js';
+import { renderVideoFormats,    setNavigateToModule as setVideoNav } from './video.js';
+import { renderDataFormats,     setNavigateToModule as setDataNav } from './data.js';
 import { renderImageFormats,    setNavigateToModule as setImgNav } from './images.js';
 import { renderModules, setPendingLockContext } from './modules.js';
 import { renderFavourites, setNavigateToModule as setFavNav } from './favourites.js';
@@ -29,6 +31,8 @@ import { setZipExtractRouter }   from '../tools/shared/progress.js';
 const CATEGORY_RENDERERS = {
   Documents  : renderDocumentFormats,
   Audio      : renderAudioFormats,
+  Video      : renderVideoFormats,
+  Data       : renderDataFormats,
   Ebooks     : renderEbookFormats,
   Images     : renderImageFormats,
   Modules    : renderModules,
@@ -91,6 +95,8 @@ export function initNavigation() {
   setDocNav(navigateToModule);
   setEbookNav(navigateToModule);
   setAudioNav(navigateToModule);
+  setVideoNav(navigateToModule);
+  setDataNav(navigateToModule);
   setImgNav(navigateToModule);
   setArchiveNav(navigateToModule);
   setFavNav(navigateToModule);

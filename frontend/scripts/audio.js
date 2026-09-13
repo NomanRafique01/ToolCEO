@@ -175,64 +175,25 @@ export function renderAudioFormats(container, activateNav) {
             stroke-linecap="round"/>
         </svg>
       </div>
-      <span class="explore-title">Audio — Choose Output Format</span>
+      <span class="explore-title">Audio — Tools &amp; Conversions</span>
     </div>
 
     <div class="fmt-grid">
-      ${AUDIO_FORMATS.map((f) => {
-        const locked     = getLockedModuleId(f.id) !== null;
-        const lockClass  = locked ? ' fmt-card--locked' : '';
-        const lockedAttr = locked ? ` data-locked-module="${getLockedModuleId(f.id)}"` : '';
-        const fav        = _isFavourite(f.id);
-        const starCls    = fav ? ' is-favourite' : '';
-        const starCh     = fav ? '\u2605' : '\u2606';
-        const starTitle  = fav ? 'Remove from Favourites' : 'Add to Favourites';
-        return `
-        <div class="fmt-card${lockClass}" data-format="${f.id}"${lockedAttr}
-             style="--fmt-color:${f.color};--fmt-bg:${f.bg}">
-          <div class="fmt-card-top">
-            <div class="fmt-icon-box">${f.icon}</div>
-            <span class="fmt-arrow">›</span>
-          </div>
-          <div class="fmt-label">${f.label}</div>
-          <div class="fmt-desc">${f.desc}</div>
-          <div class="fmt-ext">${f.ext}</div>
-          <button class="card-fav-btn${starCls}" type="button" title="${starTitle}" aria-label="${starTitle}" data-fav-id="${f.id}">${starCh}</button>
-        </div>`;
-      }).join('')}
+      <div class="img-coming-soon">
+        <svg width="36" height="36" viewBox="0 0 24 24" fill="none" class="img-coming-soon-icon">
+          <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M12 7v5l3 3" stroke="currentColor" stroke-width="1.5"
+            stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <p class="img-coming-soon-title">Coming Soon</p>
+        <p class="img-coming-soon-sub">Audio tools and conversions are being added. Check back soon.</p>
+      </div>
     </div>
   `;
 
   // Back button → restore the Explore Tools grid
   container.querySelector('.fmt-back-btn').addEventListener('click', () => {
     activateNav('Dashboard');
-  });
-
-  // Format card selection highlight + tool-state update
-  container.querySelectorAll('.fmt-card').forEach((card) => {
-    card.addEventListener('click', () => {
-      if (card.classList.contains('fmt-card--locked')) {
-        _handleLockedClick(card.dataset.lockedModule, card.querySelector('.fmt-label')?.textContent || '');
-        return;
-      }
-      container.querySelectorAll('.fmt-card').forEach((c) => c.classList.remove('selected'));
-      card.classList.add('selected');
-
-      const fmt = AUDIO_FORMATS.find((f) => f.id === card.dataset.format);
-      if (fmt) {
-        setActiveTool({
-          id      : fmt.id,
-          label   : fmt.label,
-          mainText: `Drop file to Convert to ${fmt.label}`,
-          subText : `or click to select a file for ${fmt.label} conversion`,
-          icon    : fmt.icon,
-          color   : fmt.color,
-          bg      : fmt.bg,
-          tag     : null,
-        });
-        _scrollToDropZone();
-      }
-    });
   });
 }
 
