@@ -270,8 +270,8 @@ const PDF_CONVERSIONS = [
     label: 'PDF → Images',
     desc: 'Export each page as PNG/JPG',
     tag: 'Convert',
-    color: '#EAB308',
-    bg: 'rgba(234,179,8,0.15)',
+    color: '#FBBF24',
+    bg: 'rgba(251,191,36,0.15)',
     icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
       <rect x="1" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
       <path d="M4 2l3 3H4V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>
@@ -286,8 +286,8 @@ const PDF_CONVERSIONS = [
     label: 'PDF → PPT',
     desc: 'Convert PDF to PowerPoint slides',
     tag: 'Convert',
-    color: '#F97316',
-    bg: 'rgba(249,115,22,0.15)',
+    color: '#FB923C',
+    bg: 'rgba(251,146,60,0.15)',
     icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
       <rect x="1" y="2" width="6" height="8" rx="1" stroke="currentColor" stroke-width="1.3"/>
       <path d="M4 2l3 3H4V2Z" stroke="currentColor" stroke-width="1.1" stroke-linejoin="round"/>

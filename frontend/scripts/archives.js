@@ -109,11 +109,6 @@ const COLOR_BACKGROUNDS = {
   [COLORS.data]: 'rgba(45,212,191,0.15)',
   [COLORS.pink]: 'rgba(244,114,182,0.15)',
   [COLORS.cyan]: 'rgba(0,229,192,0.15)',
-  '#EF4444': 'rgba(239,68,68,0.15)',
-  '#06B6D4': 'rgba(6,182,212,0.15)',
-  '#22C55E': 'rgba(34,197,94,0.15)',
-  '#8B5CF6': 'rgba(139,92,246,0.15)',
-  '#F59E0B': 'rgba(245,158,11,0.15)',
 };
 
 const ICONS = {
@@ -372,7 +367,7 @@ const CONVERT_CATEGORIES = [
       { id: 'arc-7z-to-zip',    label: '7Z to ZIP',    desc: 'Convert a 7Z archive into ZIP format.',     dstExt: '.zip',    color: COLORS.image },
       { id: 'arc-7z-to-tar',    label: '7Z to TAR',    desc: 'Convert a 7Z archive into TAR format.',     dstExt: '.tar',    color: COLORS.data },
       { id: 'arc-7z-to-tar-gz', label: '7Z to TAR.GZ', desc: 'Convert a 7Z archive into TAR.GZ format.',  dstExt: '.tar.gz', color: COLORS.audio },
-      { id: 'arc-7z-to-rar',    label: '7Z to RAR',    desc: 'Convert a 7Z archive into RAR format.',     dstExt: '.rar',    color: '#EF4444' },
+      { id: 'arc-7z-to-rar',    label: '7Z to RAR',    desc: 'Convert a 7Z archive into RAR format.',     dstExt: '.rar',    color: COLORS.document },
     ],
   },
   {
@@ -500,7 +495,7 @@ function toolRecords(category) {
   const toolColors = {
     'compress-create': [
       COLORS.pink, COLORS.data, COLORS.audio, COLORS.document, COLORS.archive, COLORS.video, COLORS.ebook, COLORS.image,
-      '#EF4444', '#06B6D4', '#22C55E', '#8B5CF6', '#F59E0B',
+      COLORS.document, COLORS.video, COLORS.data, COLORS.image, COLORS.ebook,
     ],
     extract: [COLORS.archive, COLORS.document, COLORS.image, COLORS.audio, COLORS.video, COLORS.ebook, COLORS.data, COLORS.archive, COLORS.audio, COLORS.video, COLORS.document, COLORS.image, COLORS.ebook],
     convert: [COLORS.archive, COLORS.document, COLORS.audio, COLORS.image, COLORS.data, COLORS.video],

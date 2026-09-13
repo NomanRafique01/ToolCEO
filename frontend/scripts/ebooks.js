@@ -28,9 +28,9 @@ function _handleLockedClick(moduleId, toolLabel) {
 
 const FORMAT_THEME = {
   pdf:  { color: '#FF6B6B', bg: 'rgba(255,107,107,0.15)' },
-  epub: { color: '#8B5CF6', bg: 'rgba(139,92,246,0.15)'  },
-  mobi: { color: '#F59E0B', bg: 'rgba(245,158,11,0.15)'  },
-  fb2:  { color: '#10B981', bg: 'rgba(16,185,129,0.15)'  },
+  epub: { color: '#A78BFA', bg: 'rgba(167,139,250,0.15)'  },
+  mobi: { color: '#FBBF24', bg: 'rgba(251,191,36,0.15)'  },
+  fb2:  { color: '#34D399', bg: 'rgba(52,211,153,0.15)'  },
   txt:  { color: '#A78BFA', bg: 'rgba(167,139,250,0.15)' },
   rtf:  { color: '#FBBF24', bg: 'rgba(251,191,36,0.15)'  },
   azw3: { color: '#38BDF8', bg: 'rgba(56,189,248,0.15)'  },

@@ -80,8 +80,8 @@ const PNG_CONVERSIONS = [
     desc: 'Convert PNG to multi-size ICO icon',
     ext: '.ico',
     tag: 'Convert',
-    color: '#F59E0B',
-    bg: 'rgba(245,158,11,0.15)',
+    color: '#FBBF24',
+    bg: 'rgba(251,191,36,0.15)',
     icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="9" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="1" y="9" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="9" y="9" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.2"/></svg>`,
   },
   {
@@ -155,8 +155,8 @@ const WEBP_CONVERSIONS = [
     desc: 'Convert WEBP to multi-size ICO icon',
     ext: '.ico',
     tag: 'Convert',
-    color: '#F59E0B',
-    bg: 'rgba(245,158,11,0.15)',
+    color: '#FBBF24',
+    bg: 'rgba(251,191,36,0.15)',
     icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none"><rect x="1" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="9" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="1" y="9" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="9" y="9" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.2"/></svg>`,
   },
   {
@@ -255,8 +255,8 @@ const JPG_CONVERSIONS = [
     desc: 'Convert JPG to multi-size ICO icon',
     ext: '.ico',
     tag: 'Convert',
-    color: '#F59E0B',
-    bg: 'rgba(245,158,11,0.15)',
+    color: '#FBBF24',
+    bg: 'rgba(251,191,36,0.15)',
     icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
       <rect x="1" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.2"/>
       <rect x="9" y="1" width="6" height="6" rx="1" stroke="currentColor" stroke-width="1.2"/>
