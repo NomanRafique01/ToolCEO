@@ -736,3 +736,40 @@ function renderPlaceholder(container, activateNav, category, tool) {
 export function renderArchives(container, activateNav) {
   renderLanding(container, activateNav);
 }
+
+/**
+ * Returns all archive tools (Create, Extract, Utility, Convert) with formatted drop text and category metadata.
+ * Used by the All Tools master directory.
+ */
+export function getAllArchiveTools() {
+  const result = [];
+  for (const cat of CATEGORIES) {
+    if (cat.id === 'convert') {
+      for (const convCat of CONVERT_CATEGORIES) {
+        for (const t of convCat.tools) {
+          result.push({
+            ...t,
+            family: 'archive',
+            subCategory: convCat.label,
+          });
+        }
+      }
+    } else {
+      const catTools = toolRecords(cat);
+      for (const t of catTools) {
+        let tag = 'Tool';
+        if (cat.id === 'compress-create') tag = 'Create';
+        else if (cat.id === 'extract') tag = 'Extract';
+        else if (cat.id === 'utility') tag = 'Utility';
+        result.push({
+          ...t,
+          tag,
+          family: 'archive',
+          subCategory: cat.label,
+        });
+      }
+    }
+  }
+  return result;
+}
+

@@ -1788,3 +1788,35 @@ export function renderDocumentFormats(container, activateNav) {
 
 // Legacy export kept so old callers don't break
 export function initDocuments() {}
+
+/**
+ * Returns all document tools and conversions with formatted drop text and category metadata.
+ * Used by the All Tools master directory.
+ */
+export function getAllDocumentTools() {
+  const result = [];
+  const groups = [
+    { label: 'PDF Tools', items: PDF_TOOLS },
+    { label: 'PDF Conversions', items: PDF_CONVERSIONS },
+    { label: 'Word (DOCX)', items: DOCX_CONVERSIONS },
+    { label: 'Excel (XLSX)', items: XLSX_CONVERSIONS },
+    { label: 'PowerPoint (PPTX)', items: PPTX_CONVERSIONS },
+    { label: 'Text (TXT)', items: TXT_CONVERSIONS },
+    { label: 'OpenDocument (ODT)', items: ODT_CONVERSIONS },
+    { label: 'CSV Spreadsheet', items: CSV_CONVERSIONS },
+  ];
+  for (const g of groups) {
+    for (const item of g.items) {
+      const { mainText, subText } = _dropTextFor(item);
+      result.push({
+        ...item,
+        mainText,
+        subText,
+        family: 'document',
+        subCategory: g.label,
+      });
+    }
+  }
+  return result;
+}
+

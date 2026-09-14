@@ -199,3 +199,4 @@ export function renderAudioFormats(container, activateNav) {
 
 // Legacy export kept so old callers don't break
 export function initAudio() {}
+

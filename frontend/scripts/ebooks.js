@@ -982,3 +982,32 @@ export function renderEbookFormats(container, activateNav, backTo = 'Dashboard')
     });
   });
 }
+
+/**
+ * Returns all eBook conversion tools with formatted drop text and category metadata.
+ * Used by the All Tools master directory.
+ */
+export function getAllEbookTools() {
+  const result = [];
+  for (const fmtKey of Object.keys(CONVERSIONS)) {
+    const fmt = EBOOK_FORMATS.find((f) => f.fmt === fmtKey);
+    const cards = CONVERSIONS[fmtKey] || [];
+    const theme = FORMAT_THEME[fmtKey];
+    for (const c of cards) {
+      const targetFmt = c.id.split('-').slice(1).join('-');
+      const targetTheme = FORMAT_THEME[targetFmt] || theme;
+      result.push({
+        ...c,
+        color: targetTheme.color,
+        bg: targetTheme.bg,
+        tag: 'Convert',
+        mainText: `Drop file to Convert ${c.label}`,
+        subText: `or click to select a file for ${c.label}`,
+        family: 'ebook',
+        subCategory: fmt ? fmt.label : fmtKey.toUpperCase(),
+      });
+    }
+  }
+  return result;
+}
+

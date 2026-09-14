@@ -22,6 +22,7 @@ import { renderModules, setPendingLockContext } from './modules.js';
 import { renderFavourites, setNavigateToModule as setFavNav } from './favourites.js';
 import { renderRecent } from './recent.js';
 import { renderArchives, setNavigateToModule as setArchiveNav, setActivateNavForArchives, routeZipToExtractor } from './archives.js';
+import { renderAllTools, setNavigateToModule as setAllToolsNav } from './allTools.js';
 import { setActiveTool }         from './toolstate.js';
 import { loadModuleStatuses }    from './modulelock.js';
 import { setZipExtractRouter }   from '../tools/shared/progress.js';
@@ -40,6 +41,8 @@ const CATEGORY_RENDERERS = {
   Favourites : renderFavourites,
   Recent     : renderRecent,
   Archives   : renderArchives,
+  'All Tools': renderAllTools,
+  AllTools   : renderAllTools,
 };
 
 // The original "Explore Tools" grid HTML is captured once on first load so we
@@ -100,6 +103,7 @@ export function initNavigation() {
   setImgNav(navigateToModule);
   setArchiveNav(navigateToModule);
   setFavNav(navigateToModule);
+  setAllToolsNav(navigateToModule);
 
   function activateNav(label) {
     // ── Sidebar highlight ────────────────────────────────────────────────

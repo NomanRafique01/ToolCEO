@@ -1,0 +1,285 @@
+/* ─────────────────────────────────────────────────────────────
+   all-tools.css — All Tools Master Directory Styles
+   Matches ToolCEO dark glassmorphism design system.
+   ───────────────────────────────────────────────────────────── */
+
+.all-tools-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 18px;
+  flex-wrap: wrap;
+}
+
+.all-tools-header-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.all-tools-title-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.all-tools-count-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  background: rgba(0, 229, 192, 0.12);
+  color: #00E5C0;
+  border: 1px solid rgba(0, 229, 192, 0.28);
+}
+
+.all-tools-subtitle {
+  margin: 4px 0 0 0;
+  font-size: 12px;
+  color: var(--text-muted, #8FAAA6);
+  letter-spacing: 0.02em;
+}
+
+/* ─── SEARCH INPUT ─────────────────────────────────────────── */
+
+.all-tools-search-wrap {
+  position: relative;
+  width: 320px;
+  max-width: 100%;
+}
+
+.all-tools-search-icon {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--text-muted, #8FAAA6);
+  pointer-events: none;
+}
+
+.all-tools-search-input {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 9px 34px 9px 36px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.09));
+  border-radius: 10px;
+  color: var(--text-primary, #F0EDE4);
+  font-size: 13px;
+  outline: none;
+  transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+}
+
+.all-tools-search-input:focus {
+  border-color: #00E5C0;
+  background: rgba(0, 229, 192, 0.04);
+  box-shadow: 0 0 0 3px rgba(0, 229, 192, 0.14);
+}
+
+.all-tools-search-input::placeholder {
+  color: rgba(143, 170, 166, 0.6);
+  font-size: 12px;
+}
+
+.all-tools-search-clear {
+  position: absolute;
+  right: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: transparent;
+  border: none;
+  color: var(--text-muted, #8FAAA6);
+  cursor: pointer;
+  font-size: 13px;
+  padding: 4px;
+  line-height: 1;
+  border-radius: 4px;
+  transition: color 140ms ease;
+}
+
+.all-tools-search-clear:hover {
+  color: #F0EDE4;
+}
+
+/* ─── FILTER PILLS ──────────────────────────────────────────── */
+
+.all-tools-pills-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  overflow-x: auto;
+  padding-bottom: 6px;
+  margin-bottom: 22px;
+  scrollbar-width: none;
+}
+
+.all-tools-pills-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.all-tools-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 14px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border, rgba(255, 255, 255, 0.09));
+  color: var(--text-muted, #8FAAA6);
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 150ms ease;
+  white-space: nowrap;
+}
+
+.all-tools-pill:hover {
+  border-color: var(--pill-color, #00E5C0);
+  color: var(--text-primary, #F0EDE4);
+  background: rgba(255, 255, 255, 0.07);
+}
+
+.all-tools-pill.active {
+  background: color-mix(in srgb, var(--pill-color, #00E5C0) 14%, transparent);
+  border-color: var(--pill-color, #00E5C0);
+  color: var(--pill-color, #00E5C0);
+  font-weight: 600;
+  box-shadow: 0 0 12px color-mix(in srgb, var(--pill-color, #00E5C0) 22%, transparent);
+}
+
+.all-tools-pill-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.all-tools-pill-badge {
+  font-size: 10px;
+  padding: 1px 6px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+  color: inherit;
+}
+
+/* ─── FAMILY SECTION & BANNERS ──────────────────────────────── */
+
+.all-tools-family-section {
+  margin-bottom: 32px;
+}
+
+.all-tools-family-banner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-radius: 10px;
+  background: var(--fam-bg, rgba(255, 255, 255, 0.03));
+  border: 1px solid color-mix(in srgb, var(--fam-color, #00E5C0) 25%, transparent);
+  border-left: 4px solid var(--fam-color, #00E5C0);
+  margin-bottom: 14px;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.all-tools-family-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.all-tools-family-icon {
+  color: var(--fam-color, #00E5C0);
+  display: flex;
+  align-items: center;
+  line-height: 0;
+}
+
+.all-tools-family-title {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-primary, #F0EDE4);
+  letter-spacing: 0.02em;
+}
+
+.all-tools-family-count {
+  font-size: 11px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--fam-color, #00E5C0) 18%, transparent);
+  color: var(--fam-color, #00E5C0);
+}
+
+.all-tools-family-desc {
+  margin: 0;
+  font-size: 12px;
+  color: var(--text-muted, #8FAAA6);
+}
+
+/* ─── DIRECTORY CONTAINER & GRID ───────────────────────────── */
+
+.all-tools-directory {
+  display: block;
+}
+
+.all-tools-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(168px, 1fr));
+  gap: 12px;
+  padding: 4px 0 8px;
+}
+
+/* Back button (reuses .fmt-back-btn but scoped here too) */
+.all-tools-back-btn {
+  flex-shrink: 0;
+}
+
+/* ─── EMPTY STATE ───────────────────────────────────────────── */
+
+.all-tools-empty {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 60px 20px;
+  text-align: center;
+  color: var(--text-muted, #8FAAA6);
+}
+
+.all-tools-empty-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary, #F0EDE4);
+  margin-top: 14px;
+}
+
+.all-tools-empty-sub {
+  font-size: 13px;
+  color: var(--text-muted, #8FAAA6);
+  margin-top: 6px;
+  max-width: 380px;
+}
+
+.all-tools-empty-reset {
+  margin-top: 18px;
+  padding: 7px 18px;
+  border-radius: 8px;
+  background: #00E5C0;
+  color: #081918;
+  font-weight: 600;
+  font-size: 12px;
+  border: none;
+  cursor: pointer;
+  transition: opacity 140ms ease, transform 120ms ease;
+}
+
+.all-tools-empty-reset:hover {
+  opacity: 0.9;
+  transform: translateY(-1px);
+}

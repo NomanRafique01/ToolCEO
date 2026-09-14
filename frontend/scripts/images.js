@@ -911,3 +911,43 @@ export function renderImageFormats(container, activateNav) {
 
 // Legacy export kept so old callers don't break
 export function initImages() {}
+
+/**
+ * Returns all image tools and conversions with formatted drop text and category metadata.
+ * Used by the All Tools master directory.
+ */
+export function getAllImageTools() {
+  const result = [];
+  // Image Compressor
+  const cmp = IMG_FORMATS.find((f) => f.id === 'image_compressor');
+  if (cmp) {
+    result.push({
+      ...cmp,
+      mainText: 'Drop one or more images to compress',
+      subText: 'or click to browse — mixed formats supported',
+      family: 'image',
+      subCategory: 'Optimizer',
+    });
+  }
+  // Conversions
+  const groups = [
+    { label: 'JPG Conversions', items: JPG_CONVERSIONS },
+    { label: 'PNG Conversions', items: PNG_CONVERSIONS },
+    { label: 'WEBP Conversions', items: WEBP_CONVERSIONS },
+    { label: 'SVG Conversions', items: SVG_CONVERSIONS },
+  ];
+  for (const g of groups) {
+    for (const item of g.items) {
+      const { mainText, subText } = _dropTextForJpg(item);
+      result.push({
+        ...item,
+        mainText,
+        subText,
+        family: 'image',
+        subCategory: g.label,
+      });
+    }
+  }
+  return result;
+}
+
