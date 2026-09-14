@@ -19,7 +19,7 @@ export function renderDataFormats(container, activateNav) {
             stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
       </button>
-      <div class="fmt-category-icon" style="background:rgba(45,212,191,0.15);color:#2DD4BF">
+      <div class="fmt-category-icon" style="background:rgba(244,114,182,0.15);color:#F472B6">
         <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
           <ellipse cx="8" cy="4" rx="5" ry="2" stroke="currentColor" stroke-width="1.3"/>
           <path d="M3 4v4c0 1.1 2.24 2 5 2s5-.9 5-2V4" stroke="currentColor" stroke-width="1.3"/>

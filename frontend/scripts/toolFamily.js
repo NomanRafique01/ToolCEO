@@ -19,7 +19,7 @@ export const FAMILY_COLORS = {
   video:    '#38BDF8',
   ebook:    '#FBBF24',
   archive:  '#84CC16',
-  data:     '#2DD4BF',
+  data:     '#F472B6',
 };
 
 const FORMAT_TO_FAMILY = {
