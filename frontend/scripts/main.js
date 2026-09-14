@@ -13,11 +13,13 @@ import { initModuleDownloadPanel }  from './moduleDownload.js';
 import { initFavourites }           from './favourites.js';
 import { initHistoryTracker }       from './historyTracker.js';
 import { initRecentWidget }         from './recentWidget.js';
+import { initHeaderSearch }         from './headerSearch.js';
 
 const loadingStartedAt = performance.now();
 
 document.addEventListener('DOMContentLoaded', () => {
   const { activateNav } = initNavigation();
+  initHeaderSearch({ activateNav });
   initDropZone();
   initQuickConvert();
   initNotificationBanner();

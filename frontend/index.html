@@ -84,6 +84,8 @@
   <link rel="stylesheet" href="styles/recent.css" />
   <!-- All Tools master directory -->
   <link rel="stylesheet" href="styles/all-tools.css" />
+  <!-- Header search bar & command launcher -->
+  <link rel="stylesheet" href="styles/header-search.css" />
   <style>
     #app-loading {
       position: fixed;
@@ -203,16 +205,6 @@
               <circle cx="12" cy="12" r="0.7" fill="#00E5C0"/>
             </svg>
             <span>Dashboard</span>
-          </li>
-
-          <li class="nav-item" data-label="All Tools">
-            <svg class="nav-icon" viewBox="0 0 16 16" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <rect x="1" y="1" width="6" height="6" rx="1.5" stroke="#00E5C0" stroke-width="1.3"/>
-              <rect x="9" y="1" width="6" height="6" rx="1.5" stroke="#00E5C0" stroke-width="1.3"/>
-              <rect x="1" y="9" width="6" height="6" rx="1.5" stroke="#00E5C0" stroke-width="1.3"/>
-              <rect x="9" y="9" width="6" height="6" rx="1.5" stroke="#00E5C0" stroke-width="1.3"/>
-            </svg>
-            <span>All Tools</span>
           </li>
 
           <li class="nav-item" data-label="Documents">
@@ -359,9 +351,63 @@
     <!-- Logo — left portion aligned with sidebar width -->
     <div class="topbar-logo">
       <div class="logo-icon-wrap">
-        <img src="../assets/icon.png" class="logo-icon" alt="ToolCEO" />
+        <img src="assets/icon.png" class="logo-icon" alt="ToolCEO" />
       </div>
       <span class="logo-name">ToolCEO</span>
+    </div>
+
+    <!-- Header Draggable Spacer -->
+    <div class="topbar-spacer"></div>
+
+    <!-- Header Search Bar Area (aligned above Recent Conversions panel) -->
+    <div class="topbar-search-area">
+      <div class="header-search-wrap" id="header-search-wrap">
+        <div class="header-search-box">
+          <svg class="header-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="11" cy="11" r="8"/>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"/>
+          </svg>
+          <input
+            type="text"
+            id="header-search-input"
+            class="header-search-input"
+            placeholder="Search tools, conversions, formats..."
+            autocomplete="off"
+            spellcheck="false"
+          />
+          <button type="button" id="header-search-clear" class="header-search-clear" title="Clear search" aria-label="Clear search" style="display: none;">
+            <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+
+        <!-- Search Dropdown Results / Quick Suggestions Panel -->
+        <div class="header-search-dropdown" id="header-search-dropdown" style="display: none;">
+          <!-- Dropdown Header: Quick Filter Chips -->
+          <div class="header-search-filters">
+            <span class="header-search-filters-label">Filter:</span>
+            <button type="button" class="header-search-chip active" data-filter="all">All</button>
+            <button type="button" class="header-search-chip" data-filter="document">Documents</button>
+            <button type="button" class="header-search-chip" data-filter="image">Images</button>
+            <button type="button" class="header-search-chip" data-filter="ebook">eBooks</button>
+            <button type="button" class="header-search-chip" data-filter="archive">Archives</button>
+          </div>
+
+          <!-- Dropdown Results / Suggestions List -->
+          <div class="header-search-results" id="header-search-results">
+            <!-- Results rendered dynamically via JS -->
+          </div>
+
+          <!-- Dropdown Footer Hints -->
+          <div class="header-search-footer">
+            <span class="header-search-hint"><span>↵</span> Select</span>
+            <span class="header-search-hint"><span>↑↓</span> Navigate</span>
+            <span class="header-search-hint"><span>ESC</span> Dismiss</span>
+          </div>
+        </div>
+      </div>
     </div>
   </header>
 

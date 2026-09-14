@@ -1,0 +1,371 @@
+/* ─────────────────────────────────────────────────────────────
+   header-search.css — Header Search Bar & Dropdown Results
+   Matches ToolCEO dark glassmorphism design system perfectly.
+   Positioned above the Recent Conversions widget panel.
+   ───────────────────────────────────────────────────────────── */
+
+/* ─── TOPBAR LAYOUT EXTENSIONS ─────────────────────────────── */
+
+.topbar-spacer {
+  flex: 1;
+  height: 100%;
+  -webkit-app-region: drag;
+}
+
+.topbar-search-area {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  margin-right: 30px; /* Pushed 6px left (was 24px) */
+  flex-shrink: 0;
+  -webkit-app-region: no-drag;
+}
+
+/* ─── HEADER SEARCH WRAPPER ─────────────────────────────────── */
+
+.header-search-wrap {
+  position: relative;
+  width: 320px;
+  /* Perfectly matches Recent Conversions width (320px) */
+  transform: translateY(15px);
+  -webkit-app-region: no-drag;
+}
+
+.header-search-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  width: 100%;
+  height: 40px;
+  background: rgba(15, 45, 41, 0.65);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
+  border: 1px solid rgba(0, 229, 192, 0.2);
+  border-radius: 10px;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.05), 0 2px 8px rgba(0, 0, 0, 0.28);
+  transition: border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+  overflow: hidden;
+}
+
+.header-search-wrap:hover .header-search-box {
+  background: rgba(17, 52, 47, 0.85);
+  border-color: rgba(0, 229, 192, 0.4);
+  box-shadow: 0 0 14px rgba(0, 229, 192, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+}
+
+.header-search-wrap.is-focused .header-search-box {
+  background: rgba(15, 45, 41, 0.96);
+  border-color: var(--accent, #00E5C0);
+  box-shadow: 0 0 0 3px rgba(0, 229, 192, 0.18), 0 4px 20px rgba(0, 229, 192, 0.2);
+}
+
+.header-search-icon {
+  position: absolute;
+  left: 13px;
+  color: var(--text-muted, #8FAAA6);
+  pointer-events: none;
+  transition: color 150ms ease, filter 150ms ease;
+  flex-shrink: 0;
+}
+
+.header-search-wrap:hover .header-search-icon,
+.header-search-wrap.is-focused .header-search-icon {
+  color: var(--accent, #00E5C0);
+  filter: drop-shadow(0 0 4px rgba(0, 229, 192, 0.45));
+}
+
+.header-search-input {
+  width: 100%;
+  height: 100%;
+  padding: 0 34px 0 38px;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-primary, #F0EDE4);
+  font-family: inherit;
+  font-size: 13px;
+  font-weight: 400;
+  letter-spacing: 0.01em;
+  -webkit-app-region: no-drag;
+}
+
+.header-search-input::placeholder {
+  color: rgba(143, 170, 166, 0.65);
+  font-size: 12.5px;
+  transition: opacity 150ms ease;
+}
+
+.header-search-input:focus::placeholder {
+  opacity: 0.4;
+}
+
+/* Clear button */
+.header-search-clear {
+  position: absolute;
+  right: 10px;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 50%;
+  color: var(--text-muted, #8FAAA6);
+  cursor: pointer;
+  padding: 0;
+  outline: none;
+  transition: all 140ms ease;
+  -webkit-app-region: no-drag;
+}
+
+.header-search-clear:hover {
+  background: rgba(255, 107, 107, 0.2);
+  border-color: rgba(255, 107, 107, 0.4);
+  color: #FF6B6B;
+  transform: scale(1.08);
+}
+
+/* ─── DROPDOWN RESULTS PANEL ────────────────────────────────── */
+
+.header-search-dropdown {
+  position: absolute;
+  top: calc(100% + 8px);
+  right: 0;
+  width: 100%;
+  background: rgba(13, 39, 35, 0.97);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(0, 229, 192, 0.28);
+  border-radius: 12px;
+  box-shadow: 0 16px 42px rgba(0, 0, 0, 0.55), 0 0 24px rgba(0, 229, 192, 0.08);
+  z-index: 1000;
+  overflow: hidden;
+  animation: headerDropdownSlide 160ms cubic-bezier(0.16, 1, 0.3, 1);
+  -webkit-app-region: no-drag;
+}
+
+@keyframes headerDropdownSlide {
+  from {
+    opacity: 0;
+    transform: translateY(-6px) scale(0.98);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
+/* Category Filter Chips */
+.header-search-filters {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 9px 12px;
+  border-bottom: 1px solid rgba(0, 229, 192, 0.12);
+  background: rgba(8, 25, 24, 0.5);
+  overflow-x: auto;
+}
+
+.header-search-filters-label {
+  font-size: 10.5px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--text-muted);
+  margin-right: 4px;
+  flex-shrink: 0;
+}
+
+.header-search-chip {
+  padding: 3px 9px;
+  border-radius: 999px;
+  border: 1px solid rgba(0, 229, 192, 0.16);
+  background: rgba(255, 255, 255, 0.04);
+  color: var(--text-muted);
+  font-size: 11px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 130ms ease;
+  font-family: inherit;
+}
+
+.header-search-chip:hover {
+  background: rgba(0, 229, 192, 0.1);
+  color: var(--text-primary);
+  border-color: rgba(0, 229, 192, 0.3);
+}
+
+.header-search-chip.active {
+  background: rgba(0, 229, 192, 0.18);
+  color: var(--accent);
+  border-color: var(--accent);
+  box-shadow: 0 0 8px rgba(0, 229, 192, 0.2);
+}
+
+/* Results container */
+.header-search-results {
+  max-height: 310px;
+  overflow-y: auto;
+  padding: 6px;
+}
+
+.header-search-results::-webkit-scrollbar {
+  width: 5px;
+}
+
+.header-search-results::-webkit-scrollbar-thumb {
+  background: var(--border);
+  border-radius: 4px;
+}
+
+.header-search-section-title {
+  padding: 6px 10px 4px;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+  color: var(--text-muted);
+}
+
+/* Result item */
+.header-search-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+  border: 1px solid transparent;
+  user-select: none;
+}
+
+.header-search-item:hover,
+.header-search-item.is-selected {
+  background: rgba(0, 229, 192, 0.09);
+  border-color: rgba(0, 229, 192, 0.22);
+}
+
+.header-search-item-icon {
+  width: 28px;
+  height: 28px;
+  border-radius: 7px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  background: var(--item-bg, rgba(0, 229, 192, 0.12));
+  color: var(--item-color, var(--accent));
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.header-search-item-icon svg {
+  width: 15px;
+  height: 15px;
+}
+
+.header-search-item-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.header-search-item-title {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-primary);
+  line-height: 1.25;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.header-search-item-desc {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.3;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-top: 1px;
+}
+
+.header-search-item-badge {
+  flex-shrink: 0;
+  padding: 2px 7px;
+  border-radius: 5px;
+  font-size: 10px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  background: rgba(255, 255, 255, 0.05);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: var(--text-muted);
+}
+
+.header-search-item-arrow {
+  color: var(--text-muted);
+  font-size: 13px;
+  opacity: 0.5;
+  transition: opacity 120ms ease, transform 120ms ease;
+}
+
+.header-search-item:hover .header-search-item-arrow,
+.header-search-item.is-selected .header-search-item-arrow {
+  opacity: 1;
+  color: var(--accent);
+  transform: translateX(2px);
+}
+
+/* Empty state */
+.header-search-empty {
+  padding: 22px 14px;
+  text-align: center;
+  color: var(--text-muted);
+}
+
+.header-search-empty-icon {
+  margin-bottom: 6px;
+  opacity: 0.6;
+}
+
+.header-search-empty-title {
+  font-size: 12.5px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+.header-search-empty-sub {
+  font-size: 11px;
+  margin-top: 3px;
+  color: var(--text-muted);
+}
+
+/* Dropdown Footer */
+.header-search-footer {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 12px;
+  padding: 7px 12px;
+  border-top: 1px solid rgba(0, 229, 192, 0.1);
+  background: rgba(8, 25, 24, 0.65);
+  font-size: 10.5px;
+  color: var(--text-muted);
+}
+
+.header-search-hint {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.header-search-hint span {
+  font-size: 9.5px;
+  padding: 1px 4px;
+  border-radius: 3px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-primary);
+  font-weight: 500;
+}

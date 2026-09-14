@@ -29,15 +29,22 @@ function _scrollToDropZone() {
   if (mainContent) mainContent.scrollTo({ top: 0, behavior: 'smooth' });
 }
 
-// ─── FAMILY DEFINITIONS ───────────────────────────────────────────────────────
+// ─── FAMILY / CATEGORY DEFINITIONS ───────────────────────────────────────────
 
 const FAMILIES = [
   {
     id: 'document',
     name: 'Documents',
     color: '#FF6B6B',
-    bg: 'rgba(255, 107, 107, 0.15)',
-    desc: 'PDF Tools, PDF Conversions, Word, Excel, PowerPoint, Text & OpenDocument',
+    bg: 'rgba(255, 107, 107, 0.12)',
+    desc: 'PDF Suite, Word, Excel, PowerPoint & OpenDocument utilities',
+    highlights: [
+      'PDF Tools & Utilities',
+      'PDF Conversions',
+      'Word & Excel Tools',
+      'PowerPoint Presentations',
+      'Text & OpenDocument',
+    ],
     icon: `<svg width="20" height="20" viewBox="0 0 16 16" fill="none">
       <path d="M3 4h8a1 1 0 0 1 1 1v8a1 1 0 0 1-1 1H3a1 1 0 0 1-1-1V5a1 1 0 0 1 1-1Z" stroke="currentColor" stroke-width="1.3"/>
       <path d="M5 2h6a1 1 0 0 1 1 1v1" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
@@ -50,8 +57,15 @@ const FAMILIES = [
     id: 'image',
     name: 'Images',
     color: '#A78BFA',
-    bg: 'rgba(167, 139, 250, 0.15)',
-    desc: 'Image Compressor, JPG, PNG, WEBP, and SVG format conversions',
+    bg: 'rgba(167, 139, 250, 0.12)',
+    desc: 'Lossless compression, raster & vector graphics conversions',
+    highlights: [
+      'Smart Image Compressor',
+      'JPG & PNG Suite',
+      'WebP Modern Formats',
+      'SVG Vector Graphics',
+      'Multi-Format Converter',
+    ],
     icon: `<svg width="20" height="20" viewBox="0 0 16 16" fill="none">
       <rect x="1" y="2" width="14" height="12" rx="2" stroke="currentColor" stroke-width="1.3"/>
       <circle cx="5.5" cy="6" r="1.5" stroke="currentColor" stroke-width="1.1"/>
@@ -63,8 +77,15 @@ const FAMILIES = [
     id: 'ebook',
     name: 'eBooks',
     color: '#FBBF24',
-    bg: 'rgba(251, 191, 36, 0.15)',
-    desc: 'PDF, EPUB, MOBI, FB2, TXT, RTF, and AZW3 eBook conversions',
+    bg: 'rgba(251, 191, 36, 0.12)',
+    desc: 'Digital reading formats, e-reader conversions & cross-publishing',
+    highlights: [
+      'EPUB & MOBI Reader',
+      'Kindle AZW3 Suite',
+      'PDF to eBook Converter',
+      'FB2, TXT & RTF Formats',
+      'Cross-Format Publishing',
+    ],
     icon: `<svg width="20" height="20" viewBox="0 0 16 16" fill="none">
       <path d="M8 13s-4-2-7-2V3c3 0 7 2 7 2s4-2 7-2v8c-3 0-7 2-7 2Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
       <line x1="8" y1="5" x2="8" y2="13" stroke="currentColor" stroke-width="1.1" stroke-linecap="round"/>
@@ -75,8 +96,15 @@ const FAMILIES = [
     id: 'archive',
     name: 'Archives',
     color: '#84CC16',
-    bg: 'rgba(132, 204, 22, 0.15)',
-    desc: 'Create, Extract, Utilities (Inspect, Split, Merge, Protect, Duplicates) & Conversions',
+    bg: 'rgba(132, 204, 22, 0.12)',
+    desc: 'High-ratio compression, multi-volume archives & extraction',
+    highlights: [
+      'ZIP & 7-Zip Archiver',
+      'Multi-Format Extraction',
+      'Split & Merge Utilities',
+      'Password Encryption',
+      'TAR & Compression Engines',
+    ],
     icon: `<svg width="20" height="20" viewBox="0 0 16 16" fill="none">
       <rect x="2" y="5" width="12" height="9" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
       <path d="M1 5h14v2H1V5Z" stroke="currentColor" stroke-width="1.1"/>
@@ -126,7 +154,7 @@ function buildCardHTML(item) {
 export function renderAllTools(container, activateNav) {
   setBreadcrumb(['Dashboard', 'All Tools']);
 
-  // Gather all tools grouped by family
+  // Gather all tools grouped by category/family
   const familyData = FAMILIES.map((f) => ({
     ...f,
     tools: f.getTools(),
@@ -157,22 +185,12 @@ export function renderAllTools(container, activateNav) {
             <span class="explore-title">All Tools</span>
             <span class="all-tools-count-badge">${totalCount} tools</span>
           </div>
-          <p class="all-tools-subtitle">Browse all offline tools and conversions, organized by family.</p>
+          <p class="all-tools-subtitle">Browse all offline tools and conversions, organized by category.</p>
         </div>
-      </div>
-
-      <!-- Live Search Box -->
-      <div class="all-tools-search-wrap">
-        <svg class="all-tools-search-icon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="11" cy="11" r="8"/>
-          <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-        </svg>
-        <input type="text" id="all-tools-search" class="all-tools-search-input" placeholder="Search ${totalCount} tools (e.g. merge, epub, rar, compress)..." autocomplete="off" />
-        <button type="button" id="all-tools-search-clear" class="all-tools-search-clear" title="Clear search" style="display:none;">✕</button>
       </div>
     </div>
 
-    <!-- Family Filter Pills Bar -->
+    <!-- Category Filter Pills Bar -->
     <div class="all-tools-pills-bar">
       <button type="button" class="all-tools-pill active" data-family="all">
         All <span class="all-tools-pill-badge">${totalCount}</span>
@@ -190,30 +208,27 @@ export function renderAllTools(container, activateNav) {
       ${familyData.map((f) => `
         <section class="all-tools-family-section" data-family="${f.id}">
           <div class="all-tools-family-banner" style="--fam-color:${f.color};--fam-bg:${f.bg}">
-            <div class="all-tools-family-title-wrap">
+            <div class="all-tools-family-header-left">
               <div class="all-tools-family-icon">${f.icon}</div>
-              <h2 class="all-tools-family-title">${f.name}</h2>
-              <span class="all-tools-family-count">${f.tools.length} tools</span>
+              <div class="all-tools-family-title-wrap">
+                <h2 class="all-tools-family-title">${f.name}</h2>
+                <span class="all-tools-family-count">${f.tools.length} tools</span>
+              </div>
             </div>
-            <p class="all-tools-family-desc">${f.desc}</p>
+            <div class="all-tools-family-tags" aria-label="${f.name} tool categories">
+              ${f.highlights.map((h) => `
+                <span class="all-tools-family-chip">
+                  <span class="all-tools-chip-dot"></span>
+                  ${h}
+                </span>
+              `).join('')}
+            </div>
           </div>
           <div class="fmt-grid all-tools-grid">
             ${f.tools.map(buildCardHTML).join('')}
           </div>
         </section>
       `).join('')}
-    </div>
-
-    <!-- Empty Search State -->
-    <div id="all-tools-empty" class="all-tools-empty" style="display:none;">
-      <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
-        <circle cx="11" cy="11" r="8"/>
-        <line x1="21" y1="21" x2="16.65" y2="16.65"/>
-        <line x1="8" y1="11" x2="14" y2="11" stroke-dasharray="2 2"/>
-      </svg>
-      <div class="all-tools-empty-title">No tools match your search</div>
-      <div class="all-tools-empty-sub">Try searching for a different format, tool name, or extension.</div>
-      <button type="button" class="all-tools-empty-reset" id="all-tools-reset-btn">Reset Filters</button>
     </div>
   `;
 
@@ -225,8 +240,6 @@ export function renderAllTools(container, activateNav) {
   });
 
   // ─── CARD CLICKS (IDENTICAL LOAD LOGIC) ──────────────────────────────────────
-  const directoryEl = container.querySelector('#all-tools-directory');
-
   container.querySelectorAll('.fmt-card').forEach((card) => {
     card.addEventListener('click', (e) => {
       // Ignore if favourite star was clicked (handled globally)
@@ -255,68 +268,17 @@ export function renderAllTools(container, activateNav) {
     });
   });
 
-  // ─── FILTERING & SEARCH ─────────────────────────────────────────────────────
+  // ─── FILTERING BY CATEGORY PILLS ───────────────────────────────────────────
   let activeFamily = 'all';
-  const searchInput = container.querySelector('#all-tools-search');
-  const clearBtn = container.querySelector('#all-tools-search-clear');
-  const emptyEl = container.querySelector('#all-tools-empty');
   const pills = container.querySelectorAll('.all-tools-pill');
   const sections = container.querySelectorAll('.all-tools-family-section');
 
   function applyFilter() {
-    const query = (searchInput.value || '').trim().toLowerCase();
-    clearBtn.style.display = query ? 'block' : 'none';
-
-    let totalVisible = 0;
-
     sections.forEach((sec) => {
       const fam = sec.dataset.family;
       const matchesFam = activeFamily === 'all' || activeFamily === fam;
-
-      if (!matchesFam) {
-        sec.style.display = 'none';
-        return;
-      }
-
-      let visibleInSec = 0;
-      const cards = sec.querySelectorAll('.fmt-card');
-      cards.forEach((card) => {
-        const toolId = card.dataset.id;
-        const tool = allToolsFlat.find((t) => t.id === toolId);
-        if (!tool) return;
-
-        const matchText = (
-          tool.label + ' ' +
-          tool.desc + ' ' +
-          (tool.ext || '') + ' ' +
-          (tool.tag || '') + ' ' +
-          (tool.subCategory || '')
-        ).toLowerCase();
-
-        const matchesQuery = !query || matchText.includes(query);
-        if (matchesQuery) {
-          card.style.display = 'flex';
-          visibleInSec++;
-        } else {
-          card.style.display = 'none';
-        }
-      });
-
-      if (visibleInSec > 0) {
-        sec.style.display = 'block';
-        totalVisible += visibleInSec;
-      } else {
-        sec.style.display = 'none';
-      }
+      sec.style.display = matchesFam ? 'block' : 'none';
     });
-
-    if (totalVisible === 0) {
-      emptyEl.style.display = 'flex';
-      directoryEl.style.display = 'none';
-    } else {
-      emptyEl.style.display = 'none';
-      directoryEl.style.display = 'block';
-    }
   }
 
   // Pill click
@@ -328,26 +290,4 @@ export function renderAllTools(container, activateNav) {
       applyFilter();
     });
   });
-
-  // Search input
-  searchInput.addEventListener('input', applyFilter);
-
-  // Clear button
-  clearBtn.addEventListener('click', () => {
-    searchInput.value = '';
-    applyFilter();
-    searchInput.focus();
-  });
-
-  // Reset button in empty state
-  const resetBtn = container.querySelector('#all-tools-reset-btn');
-  if (resetBtn) {
-    resetBtn.addEventListener('click', () => {
-      searchInput.value = '';
-      activeFamily = 'all';
-      pills.forEach((p) => p.classList.remove('active'));
-      pills[0].classList.add('active');
-      applyFilter();
-    });
-  }
 }
