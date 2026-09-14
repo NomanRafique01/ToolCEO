@@ -101,9 +101,8 @@
 }
 
 .mod-dl-bar-fill--install {
-  background: linear-gradient(90deg, #00E5C0 0%, #38BDF8 100%);
+  background: var(--accent);
   transition: width 0.28s cubic-bezier(0.2, 0.8, 0.2, 1), opacity 0.25s ease;
-  box-shadow: 0 0 8px rgba(56, 189, 248, 0.35);
   z-index: 2;
   opacity: 0;
 }

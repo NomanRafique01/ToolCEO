@@ -23,6 +23,7 @@ import { renderFavourites, setNavigateToModule as setFavNav } from './favourites
 import { renderRecent } from './recent.js';
 import { renderArchives, setNavigateToModule as setArchiveNav, setActivateNavForArchives, routeZipToExtractor } from './archives.js';
 import { renderAllTools, setNavigateToModule as setAllToolsNav } from './allTools.js';
+import { renderAbout }           from './about.js';
 import { setActiveTool }         from './toolstate.js';
 import { loadModuleStatuses }    from './modulelock.js';
 import { setZipExtractRouter }   from '../tools/shared/progress.js';
@@ -43,6 +44,7 @@ const CATEGORY_RENDERERS = {
   Archives   : renderArchives,
   'All Tools': renderAllTools,
   AllTools   : renderAllTools,
+  About      : renderAbout,
 };
 
 // The original "Explore Tools" grid HTML is captured once on first load so we
@@ -137,6 +139,27 @@ export function initNavigation() {
         setActiveTool(null);
       } else {
         dashPanel.classList.remove('recent-active');
+      }
+
+      if (label === 'About') {
+        dashPanel.classList.add('about-active');
+        document.body.classList.add('about-active');
+      } else {
+        dashPanel.classList.remove('about-active');
+        document.body.classList.remove('about-active');
+      }
+
+      const searchArea = document.querySelector('.topbar-search-area');
+      if (searchArea) {
+        if (label === 'About') {
+          searchArea.style.display = 'none';
+          const searchInput = document.getElementById('header-search-input');
+          if (searchInput) searchInput.blur();
+          const searchDropdown = document.getElementById('header-search-dropdown');
+          if (searchDropdown) searchDropdown.style.display = 'none';
+        } else {
+          searchArea.style.display = '';
+        }
       }
     }
 

@@ -142,7 +142,7 @@ const CONVERSIONS = {
   pdf: [
     {
       id: 'pdf-epub',
-      label: 'PDF → EPUB',
+      label: 'PDF to EPUB',
       desc: 'Convert PDF to reflowable EPUB eBook',
       tag: 'Convert',
       icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
@@ -157,7 +157,7 @@ const CONVERSIONS = {
     },
     {
       id: 'pdf-mobi',
-      label: 'PDF → MOBI',
+      label: 'PDF to MOBI',
       desc: 'Convert PDF to Kindle MOBI format',
       tag: 'Convert',
       icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
@@ -171,7 +171,7 @@ const CONVERSIONS = {
     },
     {
       id: 'pdf-fb2',
-      label: 'PDF → FB2',
+      label: 'PDF to FB2',
       desc: 'Convert PDF to FictionBook 2 format',
       tag: 'Convert',
       icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
@@ -185,7 +185,7 @@ const CONVERSIONS = {
     },
     {
       id: 'pdf-txt',
-      label: 'PDF → TXT',
+      label: 'PDF to TXT',
       desc: 'Extract plain text from PDF eBook',
       tag: 'Convert',
       icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
@@ -199,7 +199,7 @@ const CONVERSIONS = {
     },
     {
       id: 'pdf-rtf',
-      label: 'PDF → RTF',
+      label: 'PDF to RTF',
       desc: 'Convert PDF to Rich Text Format',
       tag: 'Convert',
       icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
@@ -214,7 +214,7 @@ const CONVERSIONS = {
     },
     {
       id: 'pdf-azw3',
-      label: 'PDF → AZW3',
+      label: 'PDF to AZW3',
       desc: 'Convert PDF to Kindle AZW3 (KF8)',
       tag: 'Convert',
       icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
@@ -232,7 +232,7 @@ const CONVERSIONS = {
   epub: [
     {
       id: 'epub-pdf',
-      label: 'EPUB → PDF',
+      label: 'EPUB to PDF',
       desc: 'Convert EPUB eBook to PDF',
       tag: 'Convert',
       icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
@@ -247,7 +247,7 @@ const CONVERSIONS = {
     },
     {
       id: 'epub-mobi',
-      label: 'EPUB → MOBI',
+      label: 'EPUB to MOBI',
       desc: 'Convert EPUB to Kindle MOBI',
       tag: 'Convert',
       icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
@@ -261,7 +261,7 @@ const CONVERSIONS = {
     },
     {
       id: 'epub-fb2',
-      label: 'EPUB → FB2',
+      label: 'EPUB to FB2',
       desc: 'Convert EPUB to FictionBook 2',
       tag: 'Convert',
       icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
@@ -275,7 +275,7 @@ const CONVERSIONS = {
     },
     {
       id: 'epub-txt',
-      label: 'EPUB → TXT',
+      label: 'EPUB to TXT',
       desc: 'Extract plain text from EPUB',
       tag: 'Convert',
       icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
@@ -289,7 +289,7 @@ const CONVERSIONS = {
     },
     {
       id: 'epub-rtf',
-      label: 'EPUB → RTF',
+      label: 'EPUB to RTF',
       desc: 'Convert EPUB to Rich Text Format',
       tag: 'Convert',
       icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
@@ -304,7 +304,7 @@ const CONVERSIONS = {
     },
     {
       id: 'epub-azw3',
-      label: 'EPUB → AZW3',
+      label: 'EPUB to AZW3',
       desc: 'Convert EPUB to Kindle AZW3 (KF8)',
       tag: 'Convert',
       icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
@@ -322,7 +322,7 @@ const CONVERSIONS = {
   mobi: [
     {
       id: 'mobi-pdf',
-      label: 'MOBI → PDF',
+      label: 'MOBI to PDF',
       desc: 'Convert Kindle MOBI to PDF',
       tag: 'Convert',
       icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
@@ -338,7 +338,7 @@ const CONVERSIONS = {
     },
     {
       id: 'mobi-epub',
-      label: 'MOBI → EPUB',
+      label: 'MOBI to EPUB',
       desc: 'Convert Kindle MOBI to EPUB',
       tag: 'Convert',
       icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
@@ -354,7 +354,7 @@ const CONVERSIONS = {
     },
     {
       id: 'mobi-fb2',
-      label: 'MOBI → FB2',
+      label: 'MOBI to FB2',
       desc: 'Convert Kindle MOBI to FictionBook 2',
       tag: 'Convert',
       icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
@@ -369,7 +369,7 @@ const CONVERSIONS = {
     },
     {
       id: 'mobi-txt',
-      label: 'MOBI → TXT',
+      label: 'MOBI to TXT',
       desc: 'Extract plain text from MOBI',
       tag: 'Convert',
       icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
@@ -384,7 +384,7 @@ const CONVERSIONS = {
     },
     {
       id: 'mobi-rtf',
-      label: 'MOBI → RTF',
+      label: 'MOBI to RTF',
       desc: 'Convert MOBI to Rich Text Format',
       tag: 'Convert',
       icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
@@ -400,7 +400,7 @@ const CONVERSIONS = {
     },
     {
       id: 'mobi-azw3',
-      label: 'MOBI → AZW3',
+      label: 'MOBI to AZW3',
       desc: 'Convert Kindle MOBI to AZW3 (KF8)',
       tag: 'Convert',
       icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
@@ -419,7 +419,7 @@ const CONVERSIONS = {
   fb2: [
     {
       id: 'fb2-pdf',
-      label: 'FB2 → PDF',
+      label: 'FB2 to PDF',
       desc: 'Convert FictionBook 2 to PDF',
       tag: 'Convert',
       icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
@@ -435,7 +435,7 @@ const CONVERSIONS = {
     },
     {
       id: 'fb2-epub',
-      label: 'FB2 → EPUB',
+      label: 'FB2 to EPUB',
       desc: 'Convert FictionBook 2 to EPUB',
       tag: 'Convert',
       icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
@@ -451,7 +451,7 @@ const CONVERSIONS = {
     },
     {
       id: 'fb2-mobi',
-      label: 'FB2 → MOBI',
+      label: 'FB2 to MOBI',
       desc: 'Convert FictionBook 2 to Kindle MOBI',
       tag: 'Convert',
       icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
@@ -466,7 +466,7 @@ const CONVERSIONS = {
     },
     {
       id: 'fb2-txt',
-      label: 'FB2 → TXT',
+      label: 'FB2 to TXT',
       desc: 'Extract plain text from FictionBook 2',
       tag: 'Convert',
       icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
@@ -481,7 +481,7 @@ const CONVERSIONS = {
     },
     {
       id: 'fb2-rtf',
-      label: 'FB2 → RTF',
+      label: 'FB2 to RTF',
       desc: 'Convert FictionBook 2 to Rich Text Format',
       tag: 'Convert',
       icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
@@ -497,7 +497,7 @@ const CONVERSIONS = {
     },
     {
       id: 'fb2-azw3',
-      label: 'FB2 → AZW3',
+      label: 'FB2 to AZW3',
       desc: 'Convert FictionBook 2 to Kindle AZW3',
       tag: 'Convert',
       icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
@@ -516,7 +516,7 @@ const CONVERSIONS = {
   txt: [
     {
       id: 'txt-pdf',
-      label: 'TXT → PDF',
+      label: 'TXT to PDF',
       desc: 'Convert plain text file to PDF',
       tag: 'Convert',
       icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
@@ -533,7 +533,7 @@ const CONVERSIONS = {
     },
     {
       id: 'txt-epub',
-      label: 'TXT → EPUB',
+      label: 'TXT to EPUB',
       desc: 'Convert plain text to EPUB eBook',
       tag: 'Convert',
       icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
@@ -549,7 +549,7 @@ const CONVERSIONS = {
     },
     {
       id: 'txt-mobi',
-      label: 'TXT → MOBI',
+      label: 'TXT to MOBI',
       desc: 'Convert plain text to Kindle MOBI',
       tag: 'Convert',
       icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
@@ -564,7 +564,7 @@ const CONVERSIONS = {
     },
     {
       id: 'txt-fb2',
-      label: 'TXT → FB2',
+      label: 'TXT to FB2',
       desc: 'Convert plain text to FictionBook 2',
       tag: 'Convert',
       icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
@@ -579,7 +579,7 @@ const CONVERSIONS = {
     },
     {
       id: 'txt-rtf',
-      label: 'TXT → RTF',
+      label: 'TXT to RTF',
       desc: 'Convert plain text to Rich Text Format',
       tag: 'Convert',
       icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
@@ -595,7 +595,7 @@ const CONVERSIONS = {
     },
     {
       id: 'txt-azw3',
-      label: 'TXT → AZW3',
+      label: 'TXT to AZW3',
       desc: 'Convert plain text to Kindle AZW3',
       tag: 'Convert',
       icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
@@ -614,7 +614,7 @@ const CONVERSIONS = {
   rtf: [
     {
       id: 'rtf-pdf',
-      label: 'RTF → PDF',
+      label: 'RTF to PDF',
       desc: 'Convert Rich Text Format to PDF',
       tag: 'Convert',
       icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
@@ -631,7 +631,7 @@ const CONVERSIONS = {
     },
     {
       id: 'rtf-epub',
-      label: 'RTF → EPUB',
+      label: 'RTF to EPUB',
       desc: 'Convert Rich Text Format to EPUB',
       tag: 'Convert',
       icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
@@ -647,7 +647,7 @@ const CONVERSIONS = {
     },
     {
       id: 'rtf-mobi',
-      label: 'RTF → MOBI',
+      label: 'RTF to MOBI',
       desc: 'Convert Rich Text Format to Kindle MOBI',
       tag: 'Convert',
       icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
@@ -662,7 +662,7 @@ const CONVERSIONS = {
     },
     {
       id: 'rtf-fb2',
-      label: 'RTF → FB2',
+      label: 'RTF to FB2',
       desc: 'Convert Rich Text Format to FictionBook 2',
       tag: 'Convert',
       icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
@@ -677,7 +677,7 @@ const CONVERSIONS = {
     },
     {
       id: 'rtf-txt',
-      label: 'RTF → TXT',
+      label: 'RTF to TXT',
       desc: 'Strip formatting — convert RTF to plain text',
       tag: 'Convert',
       icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
@@ -692,7 +692,7 @@ const CONVERSIONS = {
     },
     {
       id: 'rtf-azw3',
-      label: 'RTF → AZW3',
+      label: 'RTF to AZW3',
       desc: 'Convert Rich Text Format to Kindle AZW3',
       tag: 'Convert',
       icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
@@ -711,7 +711,7 @@ const CONVERSIONS = {
   azw3: [
     {
       id: 'azw3-pdf',
-      label: 'AZW3 → PDF',
+      label: 'AZW3 to PDF',
       desc: 'Convert Kindle AZW3 to PDF',
       tag: 'Convert',
       icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
@@ -727,7 +727,7 @@ const CONVERSIONS = {
     },
     {
       id: 'azw3-epub',
-      label: 'AZW3 → EPUB',
+      label: 'AZW3 to EPUB',
       desc: 'Convert Kindle AZW3 to EPUB',
       tag: 'Convert',
       icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
@@ -743,7 +743,7 @@ const CONVERSIONS = {
     },
     {
       id: 'azw3-mobi',
-      label: 'AZW3 → MOBI',
+      label: 'AZW3 to MOBI',
       desc: 'Convert Kindle AZW3 to legacy MOBI',
       tag: 'Convert',
       icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
@@ -758,7 +758,7 @@ const CONVERSIONS = {
     },
     {
       id: 'azw3-fb2',
-      label: 'AZW3 → FB2',
+      label: 'AZW3 to FB2',
       desc: 'Convert Kindle AZW3 to FictionBook 2',
       tag: 'Convert',
       icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
@@ -773,7 +773,7 @@ const CONVERSIONS = {
     },
     {
       id: 'azw3-txt',
-      label: 'AZW3 → TXT',
+      label: 'AZW3 to TXT',
       desc: 'Extract plain text from Kindle AZW3',
       tag: 'Convert',
       icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">
@@ -788,7 +788,7 @@ const CONVERSIONS = {
     },
     {
       id: 'azw3-rtf',
-      label: 'AZW3 → RTF',
+      label: 'AZW3 to RTF',
       desc: 'Convert Kindle AZW3 to Rich Text Format',
       tag: 'Convert',
       icon: `<svg width="26" height="26" viewBox="0 0 16 16" fill="none">

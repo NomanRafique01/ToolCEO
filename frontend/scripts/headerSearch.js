@@ -295,6 +295,9 @@ export function initHeaderSearch({ activateNav } = {}) {
   // Global Ctrl+K / Cmd+K shortcut
   document.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
+      if (document.body.classList.contains('about-active') || document.getElementById('dashboard-panel')?.classList.contains('about-active')) {
+        return;
+      }
       e.preventDefault();
       searchInput.focus();
       searchInput.select();
