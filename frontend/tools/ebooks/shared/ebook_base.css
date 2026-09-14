@@ -51,6 +51,8 @@
   align-items: center;
   justify-content: center;
   background: #fff;
+  border: 2px solid var(--eb-color, #8B5CF6);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.35);
 }
 
 .dz-ebook-thumb-img {

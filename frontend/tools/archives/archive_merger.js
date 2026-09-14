@@ -437,7 +437,6 @@ function _renderMergePanel() {
           <strong>${_fmt(_totalSize())}</strong> total
         </span>
       </span>
-      <button class="amqp-clear-btn" id="amqp-clear-btn" title="Remove all files">Clear all</button>
     </div>
 
     ${!canMerge ? `
@@ -487,19 +486,6 @@ function _renderMergePanel() {
       if (extEl) extEl.textContent = extMap[_selectedFormat] || '.zip';
     });
   }
-
-  // "Clear all"
-  panel.querySelector('#amqp-clear-btn').addEventListener('click', () => {
-    removeArchiveMergerPanel();
-    const zone = document.getElementById('drop-zone');
-    if (zone) {
-      resetZoneContent(zone);
-      import('../../scripts/dropzone.js').then(({ _updateDropZoneForTool }) => {
-        const t = getActiveTool();
-        if (t && _updateDropZoneForTool) _updateDropZoneForTool(t);
-      }).catch(() => {});
-    }
-  });
 
   // "Merge"
   panel.querySelector('#amqp-merge-btn').addEventListener('click', () => {

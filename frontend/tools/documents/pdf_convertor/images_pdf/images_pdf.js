@@ -1,4 +1,4 @@
-﻿/**
+/**
  * tools/documents/pdf_convertor/images_pdf/images_pdf.js
  *
  * Images → PDF Converter — multi-file queue flow.
@@ -409,7 +409,6 @@ function _renderQueuePanel() {
           <strong>${total}</strong> page${total !== 1 ? 's' : ''} in output PDF
         </span>
       </span>
-      <button class="imgpdf-clear-btn" id="imgpdf-clear-btn" title="Remove all images">Clear all</button>
     </div>
 
     <div class="imgpdf-hint">
@@ -428,18 +427,6 @@ function _renderQueuePanel() {
 
   heroCard.appendChild(panel);
   requestAnimationFrame(() => panel.classList.add('imgpdf-queue-panel--visible'));
-
-  panel.querySelector('#imgpdf-clear-btn').addEventListener('click', () => {
-    removeImagesPdfPanel();
-    const zone = document.getElementById('drop-zone');
-    if (zone) {
-      resetZoneContent(zone);
-      import('../../../../scripts/dropzone.js').then(({ _updateDropZoneForTool }) => {
-        const t = getActiveTool();
-        if (t && _updateDropZoneForTool) _updateDropZoneForTool(t);
-      }).catch(() => {});
-    }
-  });
 
   panel.querySelector('#imgpdf-convert-btn').addEventListener('click', () => {
     if (_queue.length < 1) return;

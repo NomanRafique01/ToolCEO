@@ -62,7 +62,8 @@
   },
   "dependencies": {
     "adm-zip": "^0.6.0",
-    "better-sqlite3": "^13.0.3"
+    "better-sqlite3": "^13.0.3",
+    "fuse.js": "^7.5.0"
   },
   "devDependencies": {
     "electron": "latest",

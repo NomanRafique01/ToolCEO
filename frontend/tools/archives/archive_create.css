@@ -68,6 +68,7 @@
   flex-direction: column;
   align-items: center;
   gap: 5px;
+  flex-shrink: 0;
   cursor: grab;
   user-select: none;
   /* Extra top room for the ordinal badge that sits above the card */
@@ -79,27 +80,39 @@
 
 .dz-archive-card:active { cursor: grabbing; }
 
-.dz-archive-card.is-dragging {
+.dz-archive-card.is-dragging,
+.dz-archive-card--dragging {
   opacity: 0.35;
   transform: scale(0.95);
+}
+
+.dz-archive-card--drag-over .archive-file-icon {
+  box-shadow: 0 0 0 2px var(--archive-color, #84CC16),
+              0 4px 14px color-mix(in srgb, var(--archive-color, #84CC16) 45%, transparent);
+}
+.dz-archive-card--drag-over {
+  transform: scale(1.04);
 }
 
 /* ── Ordinal badge (1, 2, 3…) ── */
 
 .dz-archive-ordinal {
   position: absolute;
-  top: 0;
+  top: 2px;
   left: 50%;
-  z-index: 2;
   transform: translateX(-50%);
-  min-width: 22px;
-  padding: 3px 6px;
-  border-radius: 12px;
   background: var(--archive-color, #84CC16);
   color: #081918;
   font-size: 10px;
   font-weight: 700;
-  text-align: center;
+  line-height: 1;
+  padding: 3px 8px;
+  border-radius: 20px;
+  letter-spacing: 0.02em;
+  z-index: 10;
+  pointer-events: none;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.45);
+  white-space: nowrap;
 }
 
 /* ─── FILE ICON / THUMBNAIL FRAME ─────────────────────────────────────────── */
@@ -110,15 +123,24 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid color-mix(in srgb, var(--archive-color, #84CC16) 55%, var(--border, #333));
-  border-radius: 7px;
-  background: color-mix(in srgb, var(--archive-color, #84CC16) 10%, var(--bg-card, #0d1117));
+  border: 2px solid var(--archive-color, #84CC16);
+  border-radius: 6px;
+  background: var(--bg-card, #0d1117);
   color: var(--archive-color, #84CC16);
-  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.22);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.35);
   /* Clip thumbnails to the rounded card bounds */
   overflow: hidden;
+  flex-shrink: 0;
   /* Pre-composite on its own layer to avoid repaints while scrolling */
   will-change: transform;
+}
+
+.archive-file-icon--thumb {
+  background: #fff;
+}
+
+.dz-archive-card:hover .archive-file-icon {
+  box-shadow: 0 4px 18px color-mix(in srgb, var(--archive-color, #84CC16) 55%, transparent);
 }
 
 /* Thumbnail image — fills the card, no lazy layout shifts */
@@ -128,7 +150,12 @@
   object-fit: cover;
   object-position: top center;
   display: block;
-  border-radius: 5px;
+  border-radius: 3px;
+  pointer-events: none;
+  image-rendering: -webkit-optimize-contrast;
+  image-rendering: high-quality;
+  transform: translateZ(0);
+  backface-visibility: hidden;
   /* Explicitly paint static so scrolling never triggers a decode */
   content-visibility: auto;
   contain-intrinsic-size: 90px 116px;
@@ -155,7 +182,23 @@
   width: 100%;
   height: 100%;
   display: block;
-  border-radius: 5px;
+  border-radius: 3px;
+}
+
+/* ── Drag dots hint ── */
+
+.dz-archive-drag-hint {
+  position: absolute;
+  top: 12px;
+  right: 3px;
+  color: color-mix(in srgb, var(--archive-color, #84CC16) 70%, #fff);
+  opacity: 0;
+  transition: opacity 120ms ease;
+  pointer-events: none;
+}
+
+.dz-archive-card:hover .dz-archive-drag-hint {
+  opacity: 1;
 }
 
 /* Generic text badge label */
@@ -172,44 +215,50 @@
 /* ─── CARD META ─────────────────────────────────────────────────────────────── */
 
 .dz-archive-card-name {
-  width: 100%;
-  overflow: hidden;
-  color: var(--text-primary, #e2e8f0);
   font-size: 10px;
-  text-align: center;
+  color: var(--text-muted, #8b949e);
+  max-width: 94px;
+  overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  text-align: center;
+  line-height: 1.3;
 }
 
 .dz-archive-card-size {
-  color: var(--text-muted, #64748b);
   font-size: 9px;
+  color: color-mix(in srgb, var(--archive-color, #84CC16) 90%, transparent);
+  background: color-mix(in srgb, var(--archive-color, #84CC16) 10%, transparent);
+  border-radius: 10px;
+  padding: 1px 5px;
+  line-height: 1.4;
 }
 
 /* ─── REMOVE BUTTON ─────────────────────────────────────────────────────────── */
 
 .dz-archive-card-remove {
   position: absolute;
-  top: -2px;
-  right: 4px;
-  width: 19px;
-  height: 19px;
-  border: 1px solid var(--border, #333);
+  top: 3px;
+  right: -2px;
+  width: 20px;
+  height: 20px;
   border-radius: 50%;
-  background: var(--bg-surface, #1a1a2e);
-  color: var(--text-muted, #64748b);
-  cursor: pointer;
-  font-size: 13px;
+  background: var(--bg-surface, #1c2128);
+  border: 1.5px solid color-mix(in srgb, var(--archive-color, #84CC16) 55%, var(--border, #333));
+  color: var(--archive-color, #84CC16);
+  font-size: 10px;
   line-height: 1;
+  cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
+  transition: background 120ms ease;
+  z-index: 3;
   padding: 0;
 }
 
 .dz-archive-card-remove:hover {
-  color: var(--archive-color, #84CC16);
-  border-color: var(--archive-color, #84CC16);
+  background: color-mix(in srgb, var(--archive-color, #84CC16) 20%, var(--bg-surface, #1c2128));
 }
 
 /* ─── ADD-MORE BUTTON (last card slot) ────────────────────────────────────── */
@@ -225,9 +274,9 @@
   justify-content: center;
   gap: 5px;
   border: 2px dashed color-mix(in srgb, var(--archive-color, #84CC16) 45%, transparent);
-  border-radius: 7px;
-  background: color-mix(in srgb, var(--archive-color, #84CC16) 7%, transparent);
-  color: var(--archive-color, #84CC16);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--archive-color, #84CC16) 6%, transparent);
+  color: color-mix(in srgb, var(--archive-color, #84CC16) 80%, transparent);
   cursor: pointer;
   font-size: 10px;
   font-weight: 500;

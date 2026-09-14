@@ -43,6 +43,8 @@
   align-items: center;
   justify-content: center;
   background: rgba(0, 0, 0, 0.25);
+  border: 2px solid var(--conv-color, #00E5C0);
+  box-shadow: 0 3px 12px rgba(0, 0, 0, 0.35);
 }
 
 .dz-arc-conv-thumb-frame .archive-family-file-svg {

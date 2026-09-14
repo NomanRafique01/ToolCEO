@@ -132,14 +132,14 @@ function _thumbHTML(item, color) {
   // Directory pickers return each file with its relative path; show the folder
   // family thumbnail instead of a document badge for those entries.
   if (isFolder) {
-    return `<div class="archive-file-icon archive-file-icon--folder" style="--archive-color:${color}">
+    return `<div class="archive-file-icon archive-file-icon--folder" style="--archive-color:${color};border-color:${color}">
       ${getArchiveFolderIconSvg(color)}
     </div>`;
   }
 
   // PDF or image — show rendered thumbnail
   if (item.thumbnail) {
-    return `<div class="archive-file-icon archive-file-icon--thumb" style="--archive-color:${color}">
+    return `<div class="archive-file-icon archive-file-icon--thumb" style="--archive-color:${color};border-color:${color}">
       <img class="archive-thumb-img" src="${esc(item.thumbnail)}"
            alt="${esc(item.file.name)}" draggable="false" />
     </div>`;
@@ -148,7 +148,7 @@ function _thumbHTML(item, color) {
   // Ebook — coloured badge with ebook-style SVG fallback icon
   if (_EBOOK_EXTS.has(ext)) {
     const label = ext.replace('.', '').toUpperCase().slice(0, 5);
-    return `<div class="archive-file-icon archive-file-icon--ebook" style="--archive-color:${color}">
+    return `<div class="archive-file-icon archive-file-icon--ebook" style="--archive-color:${color};border-color:${color}">
       ${_pageThumbSvg(label, color)}
     </div>`;
   }
@@ -156,14 +156,14 @@ function _thumbHTML(item, color) {
   // Archive (ZIP, RAR, 7Z, TAR, GZ …) — distinctive zipper file icon
   if (_ARCHIVE_EXTS.has(ext)) {
     const label = _archiveLabel(item.file.name);
-    return `<div class="archive-file-icon archive-file-icon--archive" style="--archive-color:${color}">
+    return `<div class="archive-file-icon archive-file-icon--archive" style="--archive-color:${color};border-color:${color}">
       ${getArchiveFileIconSvg(label, color)}
     </div>`;
   }
 
   // Generic formats use the same white folded-page thumbnail as ebooks.
   const badgeLabel = (item.file.name.split('.').pop() || 'FILE').slice(0, 5).toUpperCase();
-  return `<div class="archive-file-icon archive-file-icon--ebook" style="--archive-color:${color}">
+  return `<div class="archive-file-icon archive-file-icon--ebook" style="--archive-color:${color};border-color:${color}">
     ${_pageThumbSvg(badgeLabel, color)}
   </div>`;
 }
@@ -186,15 +186,28 @@ function renderQueue() {
   }
   strip.style.setProperty('--archive-color', color);
 
-  strip.innerHTML = _queue.map((item, index) => `
+  strip.innerHTML = _queue.map((item, index) => {
+    const shortName = item.file.name.length > 18
+      ? item.file.name.slice(0, 15) + '…'
+      : item.file.name;
+    return `
     <div class="dz-archive-card" draggable="true" data-index="${index}" style="--archive-color:${color}">
-      <span class="dz-archive-ordinal">${index + 1}</span>
+      <span class="dz-archive-ordinal" aria-label="Position ${index + 1}">${index + 1}</span>
       ${_thumbHTML(item, color)}
-      <span class="dz-archive-card-name" title="${esc(filePath(item.file))}">${esc(item.file.name)}</span>
+      <div class="dz-archive-drag-hint" aria-hidden="true">
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+          <circle cx="3" cy="3" r="1" fill="currentColor"/>
+          <circle cx="7" cy="3" r="1" fill="currentColor"/>
+          <circle cx="3" cy="7" r="1" fill="currentColor"/>
+          <circle cx="7" cy="7" r="1" fill="currentColor"/>
+        </svg>
+      </div>
+      <span class="dz-archive-card-name" title="${esc(filePath(item.file))}">${esc(shortName)}</span>
       <span class="dz-archive-card-size">${formatBytes(item.file.size)}</span>
       <button type="button" class="dz-archive-card-remove" data-remove="${index}"
-              title="Remove file" aria-label="Remove ${esc(item.file.name)}">×</button>
-    </div>`).join('') + `
+              title="Remove file" aria-label="Remove ${esc(item.file.name)}">&#x2715;</button>
+    </div>`;
+  }).join('') + `
     <button type="button" class="dz-archive-add-btn" title="Add more files" style="--archive-color:${color}">
       <span aria-hidden="true">+</span><span>Add files</span>
     </button>`;
@@ -225,12 +238,22 @@ function renderQueue() {
   strip.querySelectorAll('.dz-archive-card').forEach((card) => {
     card.addEventListener('dragstart', () => {
       dragged = Number(card.dataset.index);
-      card.classList.add('is-dragging');
+      card.classList.add('is-dragging', 'dz-archive-card--dragging');
     });
-    card.addEventListener('dragend',   () => card.classList.remove('is-dragging'));
-    card.addEventListener('dragover',  (e) => e.preventDefault());
+    card.addEventListener('dragend', () => {
+      card.classList.remove('is-dragging', 'dz-archive-card--dragging');
+      strip.querySelectorAll('.dz-archive-card--drag-over').forEach((c) => c.classList.remove('dz-archive-card--drag-over'));
+    });
+    card.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      card.classList.add('dz-archive-card--drag-over');
+    });
+    card.addEventListener('dragleave', () => {
+      card.classList.remove('dz-archive-card--drag-over');
+    });
     card.addEventListener('drop', (e) => {
       e.preventDefault();
+      card.classList.remove('dz-archive-card--drag-over');
       const target = Number(card.dataset.index);
       if (dragged >= 0 && dragged !== target) {
         const [item] = _queue.splice(dragged, 1);

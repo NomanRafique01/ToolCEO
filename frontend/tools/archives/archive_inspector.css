@@ -53,15 +53,15 @@
 }
 
 .dz-inspect-thumb-frame {
-  width: 80px;
-  height: 104px;
-  border-radius: 8px;
+  width: 90px;
+  height: 116px;
+  border-radius: 6px;
   overflow: hidden;
   background: var(--bg-card, #0d1117);
   display: flex;
   align-items: center;
   justify-content: center;
-  border: 1.5px solid color-mix(in srgb, var(--inspect-color, #A78BFA) 40%, var(--border, #21262d));
+  border: 2px solid color-mix(in srgb, var(--inspect-color, #A78BFA) 80%, var(--border, #21262d));
   box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
 }
 

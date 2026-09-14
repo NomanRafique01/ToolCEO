@@ -473,7 +473,6 @@ function _renderMergePanel() {
           <strong>${totalPages}</strong> page${totalPages !== 1 ? 's' : ''} total
         </span>
       </span>
-      <button class="mqp-clear-btn" id="mqp-clear-btn" title="Remove all files">Clear all</button>
     </div>
 
     ${!canMerge ? `
@@ -496,19 +495,6 @@ function _renderMergePanel() {
 
   // Animate in
   requestAnimationFrame(() => panel.classList.add('merge-queue-panel--visible'));
-
-  // "Clear all"
-  panel.querySelector('#mqp-clear-btn').addEventListener('click', () => {
-    removeMergePanel();
-    const zone = document.getElementById('drop-zone');
-    if (zone) {
-      resetZoneContent(zone);
-      import('../../../../scripts/dropzone.js').then(({ _updateDropZoneForTool }) => {
-        const t = getActiveTool();
-        if (t && _updateDropZoneForTool) _updateDropZoneForTool(t);
-      }).catch(() => {});
-    }
-  });
 
   // "Merge PDFs"
   panel.querySelector('#mqp-merge-btn').addEventListener('click', () => {

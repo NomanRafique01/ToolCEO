@@ -201,7 +201,7 @@ const PDF_TOOLS = [
 const PDF_CONVERSIONS = [
   {
     id: 'pdf-excel',
-    label: 'PDF → Excel',
+    label: 'PDF to Excel',
     desc: 'Extract tables from PDF into spreadsheet',
     tag: 'Convert',
     color: '#34D399',
@@ -219,7 +219,7 @@ const PDF_CONVERSIONS = [
   },
   {
     id: 'pdf-word',
-    label: 'PDF → Word',
+    label: 'PDF to Word',
     desc: 'Convert PDF to editable Word',
     tag: 'Convert',
     color: '#60A5FA',
@@ -235,7 +235,7 @@ const PDF_CONVERSIONS = [
   },
   {
     id: 'pdf-html',
-    label: 'PDF → HTML',
+    label: 'PDF to HTML',
     desc: 'Export PDF as a web page',
     tag: 'Convert',
     color: '#FB923C',
@@ -251,7 +251,7 @@ const PDF_CONVERSIONS = [
   },
   {
     id: 'pdf-txt',
-    label: 'PDF → TXT',
+    label: 'PDF to TXT',
     desc: 'Extract plain text from PDF',
     tag: 'Convert',
     color: '#A78BFA',
@@ -267,7 +267,7 @@ const PDF_CONVERSIONS = [
   },
   {
     id: 'pdf-images',
-    label: 'PDF → Images',
+    label: 'PDF to Images',
     desc: 'Export each page as PNG/JPG',
     tag: 'Convert',
     color: '#FBBF24',
@@ -283,7 +283,7 @@ const PDF_CONVERSIONS = [
   },
   {
     id: 'pdf-ppt',
-    label: 'PDF → PPT',
+    label: 'PDF to PPT',
     desc: 'Convert PDF to PowerPoint slides',
     tag: 'Convert',
     color: '#FB923C',
@@ -299,7 +299,7 @@ const PDF_CONVERSIONS = [
   },
   {
     id: 'images-pdf',
-    label: 'Images → PDF',
+    label: 'Images to PDF',
     desc: 'Bundle images into a PDF file',
     tag: 'Convert',
     color: '#F472B6',

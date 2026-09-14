@@ -25,8 +25,7 @@
 
 .header-search-wrap {
   position: relative;
-  width: 320px;
-  /* Perfectly matches Recent Conversions width (320px) */
+  width: 460px;
   transform: translateY(15px);
   -webkit-app-region: no-drag;
 }

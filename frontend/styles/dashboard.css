@@ -1139,7 +1139,7 @@
   width: 90px;
   height: 116px;
   /* A4-ish aspect ratio */
-  border-radius: 4px;
+  border-radius: 6px;
   overflow: hidden;
   background: #fff;
   display: block;

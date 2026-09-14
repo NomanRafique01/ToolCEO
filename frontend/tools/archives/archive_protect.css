@@ -41,9 +41,9 @@
 }
 
 .dz-arc-protect-thumb-frame {
-  width: 86px;
-  height: 106px;
-  border-radius: 8px;
+  width: 90px;
+  height: 116px;
+  border-radius: 6px;
   display: flex;
   align-items: center;
   justify-content: center;

@@ -1,45 +1,30 @@
 /**
  * headerSearch.js
+ * ─────────────────────────────────────────────────────────────────────────────
  * Universal header search bar UI component and live quick-launcher.
- * Provides instant search across all conversion tools, keyboard shortcuts (Ctrl+K),
- * category filtering, and tool activation.
+ *
+ * Responsibilities (UI ONLY):
+ *   • Render the search dropdown, filter chips, keyboard navigation.
+ *   • Delegate ALL search logic to searchEngine.js (Fuse.js powered).
+ *   • On tool selection: activate the full tool spec, exit any conflicting
+ *     panel state (modules-active / recent-active), and scroll to top.
+ *
+ * The search bar visual design, Ctrl+K shortcut, chip filters,
+ * and dropdown animations are kept exactly as-is.
+ * ─────────────────────────────────────────────────────────────────────────────
  */
 
-import { getAllDocumentTools } from './documents.js';
-import { getAllImageTools } from './images.js';
-import { getAllEbookTools } from './ebooks.js';
-import { getAllArchiveTools } from './archives.js';
-import { setActiveTool } from './toolstate.js';
-import { getLockedModuleId } from './modulelock.js';
-import { setPendingLockContext } from './modules.js';
+import { setActiveTool }                             from './toolstate.js';
+import { getLockedModuleId }                         from './modulelock.js';
+import { setPendingLockContext }                     from './modules.js';
+import { initSearchEngine, searchTools, getSuggestedTools, getToolById } from './searchEngine.js';
 
-let _activateNav = null;
-let allToolsList = [];
-let activeFilter = 'all';
+let _activateNav  = null;
+let activeFilter  = 'all';
 let selectedIndex = -1;
 
-function initToolsList() {
-  try {
-    const docTools = typeof getAllDocumentTools === 'function' ? getAllDocumentTools() : [];
-    const imgTools = typeof getAllImageTools === 'function' ? getAllImageTools() : [];
-    const ebTools = typeof getAllEbookTools === 'function' ? getAllEbookTools() : [];
-    const arcTools = typeof getAllArchiveTools === 'function' ? getAllArchiveTools() : [];
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
-    allToolsList = [
-      ...docTools.map(t => ({ ...t, family: 'document', familyLabel: 'Document' })),
-      ...imgTools.map(t => ({ ...t, family: 'image', familyLabel: 'Image' })),
-      ...ebTools.map(t => ({ ...t, family: 'ebook', familyLabel: 'eBook' })),
-      ...arcTools.map(t => ({ ...t, family: 'archive', familyLabel: 'Archive' }))
-    ];
-  } catch (err) {
-    console.warn('[HeaderSearch] Could not pre-cache tools list:', err);
-    allToolsList = [];
-  }
-}
-
-/**
- * Renders an SVG icon for a tool or fallback
- */
 function getToolIconHTML(tool) {
   if (tool.icon) return tool.icon;
   return `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -48,30 +33,40 @@ function getToolIconHTML(tool) {
   </svg>`;
 }
 
+function escapeHTML(str) {
+  return String(str || '')
+    .replace(/&/g,  '&amp;')
+    .replace(/</g,  '&lt;')
+    .replace(/>/g,  '&gt;')
+    .replace(/"/g,  '&quot;');
+}
+
+// ─── Init ────────────────────────────────────────────────────────────────────
+
 export function initHeaderSearch({ activateNav } = {}) {
   _activateNav = activateNav;
 
-  const searchWrap = document.getElementById('header-search-wrap');
-  const searchInput = document.getElementById('header-search-input');
-  const searchClear = document.getElementById('header-search-clear');
+  // Pre-warm the search engine immediately (non-blocking, fast)
+  try { initSearchEngine(); } catch (_) {}
+
+  const searchWrap     = document.getElementById('header-search-wrap');
+  const searchInput    = document.getElementById('header-search-input');
+  const searchClear    = document.getElementById('header-search-clear');
   const searchDropdown = document.getElementById('header-search-dropdown');
-  const searchResults = document.getElementById('header-search-results');
-  const filterChips = document.querySelectorAll('.header-search-chip');
-  const shortcutBadge = searchWrap ? searchWrap.querySelector('.header-search-shortcut') : null;
+  const searchResults  = document.getElementById('header-search-results');
+  const filterChips    = document.querySelectorAll('.header-search-chip');
+  const shortcutBadge  = searchWrap ? searchWrap.querySelector('.header-search-shortcut') : null;
 
-  if (!searchWrap || !searchInput || !searchDropdown || !searchResults) {
-    return;
-  }
+  if (!searchWrap || !searchInput || !searchDropdown || !searchResults) return;
 
-  // Detect Mac vs Windows/Linux for shortcut label
+  // Mac shortcut label
   if (shortcutBadge && /Mac|iPhone|iPad|iPod/i.test(navigator.userAgent || '')) {
     shortcutBadge.innerHTML = '<kbd>⌘</kbd><kbd>K</kbd>';
   }
 
-  initToolsList();
+  // ── Dropdown open/close ────────────────────────────────────────────────────
 
   function openDropdown() {
-    if (allToolsList.length === 0) initToolsList();
     searchDropdown.style.display = 'block';
     searchWrap.classList.add('is-focused');
     renderResults();
@@ -83,37 +78,32 @@ export function initHeaderSearch({ activateNav } = {}) {
     selectedIndex = -1;
   }
 
-  function getFilteredTools() {
-    const query = (searchInput.value || '').trim().toLowerCase();
-
-    return allToolsList.filter((tool) => {
-      // Family filter
-      if (activeFilter !== 'all' && tool.family !== activeFilter) {
-        return false;
-      }
-
-      // Query filter
-      if (!query) return true;
-
-      const label = (tool.label || '').toLowerCase();
-      const desc = (tool.desc || '').toLowerCase();
-      const ext = (tool.ext || '').toLowerCase();
-      const id = (tool.id || '').toLowerCase();
-
-      return label.includes(query) || desc.includes(query) || ext.includes(query) || id.includes(query);
-    });
-  }
+  // ── Results rendering ──────────────────────────────────────────────────────
 
   function renderResults() {
     const query = (searchInput.value || '').trim();
-    const filtered = getFilteredTools();
 
-    // Show or hide clear button
+    // Show / hide clear button
     if (searchClear) {
       searchClear.style.display = query.length > 0 ? 'flex' : 'none';
     }
 
-    if (filtered.length === 0) {
+    // Get results from the search engine
+    let results;
+    let sectionTitle;
+
+    if (query) {
+      results      = searchTools(query, activeFilter, 15);
+      sectionTitle = results.length > 0
+        ? `Matching Tools (${results.length})`
+        : '';
+    } else {
+      results      = getSuggestedTools(activeFilter, 8);
+      sectionTitle = 'Popular &amp; Suggested Tools';
+    }
+
+    // ── Empty state ──────────────────────────────────────────────────────────
+    if (results.length === 0) {
       searchResults.innerHTML = `
         <div class="header-search-empty">
           <svg class="header-search-empty-icon" width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6">
@@ -122,33 +112,32 @@ export function initHeaderSearch({ activateNav } = {}) {
             <line x1="8" y1="11" x2="14" y2="11" stroke-dasharray="2 2"/>
           </svg>
           <div class="header-search-empty-title">No tools found</div>
-          <div class="header-search-empty-sub">No results for "${escapeHTML(query)}". Try another format or keyword.</div>
+          <div class="header-search-empty-sub">No results for &ldquo;${escapeHTML(query)}&rdquo;. Try another format or keyword.</div>
         </div>
       `;
       selectedIndex = -1;
       return;
     }
 
-    // If no query is entered, limit to top 10 suggested tools
-    const displayList = query ? filtered.slice(0, 15) : filtered.slice(0, 8);
-    const sectionTitle = query ? `Matching Tools (${filtered.length})` : 'Popular & Suggested Tools';
-
+    // ── Result items ─────────────────────────────────────────────────────────
     let html = `<div class="header-search-section-title">${sectionTitle}</div>`;
 
-    displayList.forEach((tool, index) => {
-      const isLocked = !!getLockedModuleId(tool.id);
+    results.forEach((tool, index) => {
+      const isLocked  = !!getLockedModuleId(tool.id);
       const badgeText = isLocked ? 'Locked' : (tool.ext || tool.familyLabel || 'Tool');
       const isSelected = index === selectedIndex;
 
       html += `
-        <div class="header-search-item${isSelected ? ' is-selected' : ''}" data-tool-id="${tool.id}" data-index="${index}"
+        <div class="header-search-item${isSelected ? ' is-selected' : ''}"
+             data-tool-id="${escapeHTML(tool.id)}"
+             data-index="${index}"
              style="--item-color:${tool.color || '#00E5C0'}; --item-bg:${tool.bg || 'rgba(0,229,192,0.12)'}">
           <div class="header-search-item-icon">${getToolIconHTML(tool)}</div>
           <div class="header-search-item-body">
             <div class="header-search-item-title">${escapeHTML(tool.label)}</div>
-            <div class="header-search-item-desc">${escapeHTML(tool.desc)}</div>
+            <div class="header-search-item-desc">${escapeHTML(tool.desc || '')}</div>
           </div>
-          <span class="header-search-item-badge">${badgeText}</span>
+          <span class="header-search-item-badge">${escapeHTML(badgeText)}</span>
           <span class="header-search-item-arrow">›</span>
         </div>
       `;
@@ -156,50 +145,79 @@ export function initHeaderSearch({ activateNav } = {}) {
 
     searchResults.innerHTML = html;
 
-    // Bind item clicks
+    // Bind click on each result item
     searchResults.querySelectorAll('.header-search-item').forEach((itemEl) => {
       itemEl.addEventListener('click', () => {
-        const toolId = itemEl.dataset.toolId;
-        selectToolById(toolId);
+        selectToolById(itemEl.dataset.toolId);
       });
     });
   }
 
+  // ── Tool Selection Logic ───────────────────────────────────────────────────
+
   function selectToolById(toolId) {
-    const tool = allToolsList.find((t) => t.id === toolId);
+    // Resolve the full enriched tool spec from the search engine
+    const tool = getToolById(toolId);
     if (!tool) return;
 
     closeDropdown();
     searchInput.blur();
 
+    // Module lock guard
     const lockedMod = getLockedModuleId(tool.id);
     if (lockedMod) {
       setPendingLockContext({ moduleId: lockedMod, toolLabel: tool.label });
-      if (typeof _activateNav === 'function') {
-        _activateNav('Modules');
-      }
+      if (typeof _activateNav === 'function') _activateNav('Modules');
       return;
     }
 
-    // Switch to dashboard/workspace if in modules or recent
-    if (typeof _activateNav === 'function') {
-      const dashPanel = document.getElementById('dashboard-panel');
-      if (dashPanel && (dashPanel.classList.contains('modules-active') || dashPanel.classList.contains('recent-active'))) {
-        _activateNav('Dashboard');
+    // ── Exit any conflicting dashboard states ──────────────────────────────
+    const dashPanel = document.getElementById('dashboard-panel');
+    if (dashPanel) {
+      const inModules = dashPanel.classList.contains('modules-active');
+      const inRecent  = dashPanel.classList.contains('recent-active');
+      if (inModules || inRecent) {
+        dashPanel.classList.remove('modules-active', 'recent-active');
+        // Switch sidebar highlight back to Dashboard without losing the tool
+        if (typeof _activateNav === 'function') {
+          // We only need the nav highlight update; we must NOT let activateNav
+          // call setActiveTool(null) or replace the explore grid.
+          // So we patch sidebar highlight directly here instead:
+          document.querySelectorAll('.nav-item, [data-label]').forEach((n) => {
+            n.classList.remove('active');
+            if (n.dataset && n.dataset.label === 'Dashboard') n.classList.add('active');
+          });
+        }
       }
     }
 
-    // Activate the tool
-    setActiveTool(tool.id);
+    // ── Activate the tool via the full object (not just ID) ────────────────
+    // Pass the complete spec so _updateDropZone gets label, mainText, subText,
+    // icon, color, bg, tag — exactly as card clicks do in documents.js / images.js.
+    setActiveTool({
+      id      : tool.id,
+      label   : tool.label,
+      mainText: tool.mainText,
+      subText : tool.subText,
+      icon    : tool.icon    || null,
+      color   : tool.color   || '#00E5C0',
+      bg      : tool.bg      || 'rgba(0,229,192,0.12)',
+      tag     : tool.tag     || tool.familyLabel || 'Tool',
+    });
 
-    // Smooth scroll to drop zone
+    // ── Scroll to top so the drop zone is immediately visible ──────────────
+    // Force #main-content (the fixed scroll root) to top: 0.
+    // We do it immediately AND in the next animation frame to win any race
+    // with the drop zone re-render triggered by setActiveTool / onToolChange.
     const mainContent = document.getElementById('main-content');
-    if (mainContent) {
-      mainContent.scrollTo({ top: 0, behavior: 'smooth' });
+    function _scrollToTop() {
+      if (mainContent) mainContent.scrollTop = 0;
     }
+    _scrollToTop();
+    requestAnimationFrame(_scrollToTop);
   }
 
-  // ── Event Listeners ──
+  // ── Event Listeners ────────────────────────────────────────────────────────
 
   searchInput.addEventListener('focus', openDropdown);
   searchInput.addEventListener('input', () => {
@@ -217,12 +235,12 @@ export function initHeaderSearch({ activateNav } = {}) {
     });
   }
 
-  // Filter chips click
+  // Filter chips
   filterChips.forEach((chip) => {
     chip.addEventListener('click', () => {
       filterChips.forEach((c) => c.classList.remove('active'));
       chip.classList.add('active');
-      activeFilter = chip.dataset.filter || 'all';
+      activeFilter  = chip.dataset.filter || 'all';
       selectedIndex = -1;
       renderResults();
       searchInput.focus();
@@ -249,10 +267,8 @@ export function initHeaderSearch({ activateNav } = {}) {
       e.preventDefault();
       if (items.length > 0) {
         const targetIndex = selectedIndex >= 0 ? selectedIndex : 0;
-        const targetEl = items[targetIndex];
-        if (targetEl) {
-          selectToolById(targetEl.dataset.toolId);
-        }
+        const targetEl    = items[targetIndex];
+        if (targetEl) selectToolById(targetEl.dataset.toolId);
       }
     } else if (e.key === 'Escape') {
       closeDropdown();
@@ -271,14 +287,12 @@ export function initHeaderSearch({ activateNav } = {}) {
     });
   }
 
-  // Global document click to close dropdown
+  // Close on outside click
   document.addEventListener('click', (e) => {
-    if (!searchWrap.contains(e.target)) {
-      closeDropdown();
-    }
+    if (!searchWrap.contains(e.target)) closeDropdown();
   });
 
-  // Global Ctrl + K / Cmd + K shortcut
+  // Global Ctrl+K / Cmd+K shortcut
   document.addEventListener('keydown', (e) => {
     if ((e.ctrlKey || e.metaKey) && e.key.toLowerCase() === 'k') {
       e.preventDefault();
@@ -287,12 +301,4 @@ export function initHeaderSearch({ activateNav } = {}) {
       openDropdown();
     }
   });
-}
-
-function escapeHTML(str) {
-  return String(str || '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;');
 }
