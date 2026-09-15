@@ -6,7 +6,7 @@
 
 import { setBreadcrumb } from './navigation.js';
 
-// Ã¢â€â‚¬Ã¢â€â‚¬ Build info (loaded lazily once) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+// --- Build info (loaded lazily once) -----------------------------------------
 let _buildInfo = null;
 async function getBuildInfo() {
   if (_buildInfo) return _buildInfo;
@@ -19,7 +19,7 @@ async function getBuildInfo() {
   return _buildInfo;
 }
 
-// Ã¢â€â‚¬Ã¢â€â‚¬ Helpers Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+// --- Helpers -----------------------------------------------------------------
 
 function formatBuildDate(iso) {
   if (!iso) return 'N/A';
@@ -37,7 +37,7 @@ function svgIcon(path, size = 16, stroke = 'currentColor') {
     xmlns="http://www.w3.org/2000/svg">${path}</svg>`;
 }
 
-// Ã¢â€â‚¬Ã¢â€â‚¬ Format coverage data Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+// --- Format coverage data ----------------------------------------------------
 const FORMAT_COVERAGE = [
   { label: 'Documents', tools: 55,  color: '#FF6B6B', pct: 32 },
   { label: 'eBooks',    tools: 42,  color: '#FBBF24', pct: 24 },
@@ -47,70 +47,60 @@ const FORMAT_COVERAGE = [
   { label: 'Video',     tools: 0,   color: '#38BDF8', pct: 0, soon: true },
 ];
 
-// Ã¢â€â‚¬Ã¢â€â‚¬ Key features Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+// --- Key features ------------------------------------------------------------
 const FEATURES = [
   {
     icon: svgIcon('<path d="M10 2L4 5v5c0 4 2.67 7.4 6 8.5 3.33-1.1 6-4.5 6-8.5V5L10 2Z" stroke-width="1.7"/>'),
     color: '#84CC16', bg: 'rgba(132,204,22,0.12)',
     name: '100% Offline',
     desc: 'Zero internet required. All processing is self-contained on your device.',
-    detail: 'ToolCEO runs entirely on your local machine Ã¢â‚¬â€ no internet connection is ever needed. All conversion engines are bundled or downloaded once and stored locally. This means fast conversions with no latency, no downtime, and no dependency on third-party servers.',
+    detail: 'ToolCEO executes entirely on your local machine with no external network requirements. All conversion engines operate locally, guaranteeing rapid performance, zero latency, and complete independence from cloud services.',
   },
   {
     icon: svgIcon('<rect x="5" y="9" width="10" height="8" rx="2"/><path d="M7 9V6a3 3 0 0 1 6 0v3"/><circle cx="10" cy="13" r="1" fill="currentColor"/>'),
     color: '#00E5C0', bg: 'rgba(0,229,192,0.12)',
     name: 'Data Privacy',
     desc: 'Your files are never uploaded. No telemetry, no tracking, no accounts.',
-    detail: 'Privacy is built into ToolCEO at every level. Files are read and written only on your device. There is no account system, no analytics SDK, no crash reporting service, and zero network calls during conversion. Your data belongs exclusively to you.',
+    detail: 'Privacy is foundational to ToolCEO. File operations occur exclusively on your hardware. There are no tracking scripts, telemetry collectors, user accounts, or external network requests during conversions. Your data belongs solely to you.',
   },
   {
     icon: svgIcon('<path d="M13 2 6 13h5l-1 9 7-11h-5l1-9Z"/>'),
     color: '#FBBF24', bg: 'rgba(251,191,36,0.12)',
     name: 'High Performance',
     desc: 'Native engine with multi-threaded conversion for large files.',
-    detail: 'Conversions are handled by native, compiled engines Ã¢â‚¬â€ LibreOffice, Calibre, Ghostscript, FFmpeg Ã¢â‚¬â€ that are optimized for speed and correctness. Batch jobs run in parallel worker threads so large files and multi-file queues process as fast as your hardware allows.',
+    detail: 'Conversions are powered by optimized native binaries engineered for maximum speed and fidelity. Multi-threaded processing queues execute tasks in parallel, allowing multi-file batches and large files to complete as quickly as your hardware permits.',
   },
   {
     icon: svgIcon('<rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="15" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="15" width="7" height="7" rx="1.5"/><rect x="15" y="15" width="7" height="7" rx="1.5"/>'),
     color: '#A78BFA', bg: 'rgba(167,139,250,0.12)',
     name: '172+ Tools',
-    desc: 'Documents, eBooks, Archives, Images, Audio & Video Ã¢â‚¬â€ all in one place.',
-    detail: 'From PDF splitting and merging, to eBook format conversion across 42 combinations, to archive creation and extraction Ã¢â‚¬â€ ToolCEO covers 172 distinct tools across 7 categories. All accessible from a single unified interface, no need to install separate apps.',
+    desc: 'Documents, eBooks, Archives, Images, Audio, and Video in one unified workspace.',
+    detail: 'Covering 172 specialized tools across seven major categories, ToolCEO unifies PDF management, eBook format conversion, archive utilities, and multimedia processing within a single coherent desktop environment.',
   },
   {
     icon: svgIcon('<circle cx="12" cy="12" r="3"/><path d="M19.1 5.9A9 9 0 1 0 21 12"/><polyline points="21 3 21 9 15 9"/>'),
     color: '#FB923C', bg: 'rgba(251,146,60,0.12)',
     name: 'Batch Conversion',
     desc: 'Process multiple files simultaneously with live progress tracking.',
-    detail: 'Drop an entire folder of files and ToolCEO will queue and process them all. A live progress bar shows per-file status in real time. Completed files appear in the output panel immediately, so you can download while the rest are still converting.',
+    detail: 'Import multiple files or entire folders to queue and convert them concurrently. Real-time progress indicators provide immediate visibility into conversion status, with finished files accessible the moment processing finishes.',
   },
   {
     icon: svgIcon('<path d="M12 3v13M7 11l5 5 5-5"/><path d="M5 20h14"/>'),
     color: '#38BDF8', bg: 'rgba(56,189,248,0.12)',
     name: 'Modular Engine',
     desc: 'Download only the conversion engines you need. Lightweight by default.',
-    detail: 'Heavy conversion engines like Calibre and LibreOffice are optional modules. The core app ships lean Ã¢â‚¬â€ under 100 MB Ã¢â‚¬â€ and you download only what you actually use. Each module is verified, stored locally, and managed entirely from the Modules page.',
+    detail: 'Heavy processing engines remain optional modules. The core application maintains a minimal footprint under 100 MB, enabling you to install, update, and manage only the specific conversion capabilities your work demands.',
   },
   {
     icon: svgIcon('<circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/><path d="M12 6v1m0 10v1M6 12h1m10 0h1"/>'),
     color: '#FB7185', bg: 'rgba(251,113,133,0.12)',
     name: 'Free & No Limits',
     desc: 'Completely free to use. No file size caps, no conversion limits, no subscriptions.',
-    detail: 'ToolCEO is and always will be free. There are no premium tiers, no per-conversion fees, no file size restrictions, and no daily limits. Convert as many files as you want, as large as your disk allows Ã¢â‚¬â€ forever, with no strings attached.',
+    detail: 'ToolCEO is provided completely free of charge. There are no premium restrictions, file size ceilings, daily quotas, or recurring subscription fees. Convert as many files as you need, as often as your storage permits.',
   },
 ];
 
-// Ã¢â€â‚¬Ã¢â€â‚¬ Technology stack Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
-const TECH_STACK = [
-  { name: 'Electron',   role: 'Desktop shell',     color: '#38BDF8' },
-  { name: 'Python',     role: 'Conversion engine',  color: '#FBBF24' },
-  { name: 'SQLite',     role: 'Local history DB',   color: '#FB923C' },
-  { name: 'PDF.js',     role: 'PDF rendering',      color: '#FF6B6B' },
-  { name: 'Fuse.js',    role: 'Offline search',     color: '#A78BFA' },
-  { name: 'HTML/CSS/JS','role': 'UI layer',         color: '#84CC16' },
-];
-
-// Ã¢â€â‚¬Ã¢â€â‚¬ Main renderer Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬
+// --- Main renderer -----------------------------------------------------------
 
 export async function renderAbout(container) {
   // Mark dashboard panel & body
@@ -130,7 +120,7 @@ export async function renderAbout(container) {
     if (dateEl) dateEl.textContent = formatBuildDate(info.buildDate);
     const buildIdEl = document.getElementById('about-build-id');
     if (buildIdEl && info.buildId) {
-      buildIdEl.textContent = info.buildId.replace('build-', '').slice(0, 12) + 'Ã¢â‚¬Â¦';
+      buildIdEl.textContent = info.buildId.replace('build-', '').slice(0, 12) + '…';
     }
   });
 
@@ -140,7 +130,7 @@ export async function renderAbout(container) {
   container.innerHTML = `
     <div class="about-page">
 
-      <!-- Ã¢â€â‚¬Ã¢â€â‚¬ HERO Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ -->
+      <!-- --- HERO ----------------------------------------------------------- -->
       <div class="about-hero">
         <div class="about-hero-inner">
           <div class="about-hero-logo">
@@ -149,8 +139,7 @@ export async function renderAbout(container) {
           <div class="about-hero-text">
             <div class="about-hero-name">TOOLCEO</div>
             <div class="about-hero-tagline">
-              The professional all-in-one offline file conversion suite.
-              Built for speed, privacy, and reliability Ã¢â‚¬â€ no cloud, no compromise.
+              The professional all-in-one offline file conversion suite, engineered for speed, absolute privacy, and uncompromised local reliability.
             </div>
             <div class="about-hero-badges">
               <span class="about-badge about-badge--version">
@@ -174,7 +163,7 @@ export async function renderAbout(container) {
         </div>
       </div>
 
-      <!-- Ã¢â€â‚¬Ã¢â€â‚¬ STATS Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ -->
+      <!-- --- STATS ---------------------------------------------------------- -->
       <div class="about-stats">
         <div class="about-stat">
           <div class="about-stat-value">172+</div>
@@ -194,10 +183,9 @@ export async function renderAbout(container) {
         </div>
       </div>
 
-      <!-- Ã¢â€â‚¬Ã¢â€â‚¬ BODY (2 columns) Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ -->
+      <!-- --- BODY (Full Width) ---------------------------------------------- -->
       <div class="about-body">
 
-        <!-- LEFT: sections -->
         <div class="about-sections">
 
           <!-- What is ToolCEO -->
@@ -210,17 +198,13 @@ export async function renderAbout(container) {
             </div>
             <div class="about-section-body">
               <p class="about-desc">
-                <strong style="color:var(--text-primary)">ToolCEO</strong> is a high-performance, privacy-first desktop application
-                that gives you complete control over your file conversions Ã¢â‚¬â€ entirely offline. Whether you're converting
-                PDF documents, eBooks, archives, or images, ToolCEO handles it all with precision and speed.
+                <strong style="color:var(--text-primary)">ToolCEO</strong> is a high-performance, privacy-focused desktop application designed to provide comprehensive control over your file conversions entirely offline. Whether converting PDF documents, eBooks, archives, audio, video, or images, ToolCEO delivers precision, efficiency, and speed.
               </p>
               <p class="about-desc">
-                Designed for professionals and power users who demand reliability, ToolCEO runs natively on your device
-                without ever uploading your files to a server. Your data stays on your machine Ã¢â‚¬â€ always.
+                Engineered for privacy-conscious professionals and power users, ToolCEO executes natively on your workstation without transmitting data to external servers. Your source and converted files remain strictly confidential on your local storage at all times.
               </p>
               <p class="about-desc">
-                With a clean, intuitive interface and a modular engine architecture, ToolCEO lets you download only the
-                conversion modules you need, keeping the application lightweight and focused.
+                Featuring an intuitive interface and a modular architecture, ToolCEO allows you to install only the processing engines you require, maintaining optimal system performance and a lean footprint.
               </p>
             </div>
           </div>
@@ -285,53 +269,7 @@ export async function renderAbout(container) {
             </div><!-- /about-section-body -->
           </div><!-- /about-section -->
 
-        </div><!-- /about-sections -->
-
-        <!-- RIGHT: sidebar -->
-        <div class="about-sidebar">
-
-          <!-- App Info -->
-          <div class="about-info-card">
-            <div class="about-info-card-title">Application Info</div>
-            <div class="about-info-rows">
-              <div class="about-info-row">
-                <span class="about-info-key">Application</span>
-                <span class="about-info-val">ToolCEO</span>
-              </div>
-              <div class="about-info-row">
-                <span class="about-info-key">Version</span>
-                <span class="about-info-val about-info-val--accent">1.0.0</span>
-              </div>
-              <div class="about-info-row">
-                <span class="about-info-key">Platform</span>
-                <span class="about-info-val">Windows</span>
-              </div>
-              <div class="about-info-row">
-                <span class="about-info-key">Architecture</span>
-                <span class="about-info-val">x64</span>
-              </div>
-              <div class="about-info-row">
-                <span class="about-info-key">Network Access</span>
-                <span class="about-info-val about-info-val--green">Offline Only</span>
-              </div>
-            </div>
-          </div>
-
-          <!-- Tech Stack -->
-          <div class="about-info-card">
-            <div class="about-info-card-title">Technology Stack</div>
-            <div class="about-tech-list">
-              ${TECH_STACK.map(t => `
-                <div class="about-tech-item">
-                  <div class="about-tech-dot" style="background:${t.color};"></div>
-                  <span class="about-tech-name">${t.name}</span>
-                  <span class="about-tech-role">${t.role}</span>
-                </div>
-              `).join('')}
-            </div>
-          </div>
-
-          <!-- Privacy Guarantee -->
+          <!-- Privacy Guarantee (Bottom Full Width) -->
           <div class="about-privacy-card">
             <div class="about-privacy-header">
               <div class="about-privacy-icon">
@@ -340,44 +278,15 @@ export async function renderAbout(container) {
               <span class="about-privacy-title">Privacy Guarantee</span>
             </div>
             <p class="about-privacy-body">
-              ToolCEO <strong style="color:#84CC16;">never</strong> uploads your files, collects usage data,
-              or requires an account. All conversions are performed locally using offline engines.
-              There is zero cloud dependency Ã¢â‚¬â€ your data never leaves your device.
+              ToolCEO operates with a strict local-first architecture. We do not collect telemetry, track user behavior, or transmit your files across external networks. Every conversion executes directly on your hardware, ensuring your confidential data never leaves your workstation.
             </p>
           </div>
 
-          <!-- Conversion Engines -->
-          <div class="about-info-card">
-            <div class="about-info-card-title">Conversion Engines</div>
-            <div class="about-info-rows">
-              <div class="about-info-row">
-                <span class="about-info-key">Documents</span>
-                <span class="about-info-val about-info-val--purple">LibreOffice</span>
-              </div>
-              <div class="about-info-row">
-                <span class="about-info-key">eBooks</span>
-                <span class="about-info-val about-info-val--amber">Calibre</span>
-              </div>
-              <div class="about-info-row">
-                <span class="about-info-key">Archives</span>
-                <span class="about-info-val about-info-val--green">7-Zip / zipfile</span>
-              </div>
-              <div class="about-info-row">
-                <span class="about-info-key">PDF</span>
-                <span class="about-info-val about-info-val--accent">Ghostscript</span>
-              </div>
-              <div class="about-info-row">
-                <span class="about-info-key">Images</span>
-                <span class="about-info-val" style="color:#FF6B6B;">Pillow / FFmpeg</span>
-              </div>
-            </div>
-          </div>
-
-        </div><!-- /about-sidebar -->
+        </div><!-- /about-sections -->
 
       </div><!-- /about-body -->
 
-      <!-- Ã¢â€â‚¬Ã¢â€â‚¬ FOOTER Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬Ã¢â€â‚¬ -->
+      <!-- --- FOOTER --------------------------------------------------------- -->
       <div class="about-footer">
         <span class="about-footer-copy">
           &copy; ${year} <strong>ToolCEO</strong>. All rights reserved. Built with care for privacy and performance.
@@ -402,7 +311,7 @@ export async function renderAbout(container) {
     }, 120);
   });
 
-  // â”€â”€ Accordion: feature cards expand/collapse on click â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+  // --- Accordion: feature cards expand/collapse on click -------------------
   requestAnimationFrame(() => {
     document.querySelectorAll('.about-feature--accordion').forEach((card) => {
       const detail  = card.querySelector('.about-feature-detail');

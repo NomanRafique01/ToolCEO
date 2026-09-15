@@ -85,13 +85,6 @@ body.about-active .topbar-search-area {
     rgba(0,229,192,0.6) 70%,
     transparent 100%
   );
-  background-size: 200% 100%;
-  animation: about-shimmer 3s ease-in-out infinite;
-}
-
-@keyframes about-shimmer {
-  0%   { background-position: -100% 0; }
-  100% { background-position: 200% 0; }
 }
 
 .about-hero-inner {
@@ -232,22 +225,21 @@ body.about-active .topbar-search-area {
   text-transform: uppercase;
 }
 
-/* --- TWO-COLUMN CONTENT AREA ------------------------------ */
+/* --- CONTENT AREA ----------------------------------------- */
 
 .about-body {
-  display: grid;
-  grid-template-columns: 1fr 310px;
-  gap: 22px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
   margin-bottom: 28px;
-  align-items: start;
+  width: 100%;
 }
-
-/* --- CONTENT SECTIONS ------------------------------------- */
 
 .about-sections {
   display: flex;
   flex-direction: column;
   gap: 20px;
+  width: 100%;
 }
 
 .about-section {
@@ -679,7 +671,7 @@ body.about-active .topbar-search-area {
   background: linear-gradient(135deg, rgba(132,204,22,0.08) 0%, rgba(0,229,192,0.05) 100%);
   border: 1.5px solid rgba(132,204,22,0.22);
   border-radius: 14px;
-  padding: 16px;
+  padding: 18px 22px;
 }
 
 .about-privacy-header {
@@ -705,12 +697,14 @@ body.about-active .topbar-search-area {
   font-size: 13px;
   font-weight: 700;
   color: #84CC16;
+  letter-spacing: 0.02em;
 }
 
 .about-privacy-body {
-  font-size: 11.5px;
+  font-size: 12.5px;
   color: var(--text-muted);
-  line-height: 1.65;
+  line-height: 1.7;
+  margin: 0;
 }
 
 /* --- FOOTER STRIP ------------------------------------------ */

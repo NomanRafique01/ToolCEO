@@ -85,53 +85,53 @@ import {
 } from '../tools/documents/pdf_convertor/images_pdf/images_pdf.js';
 
 // ── DOCX conversion tools — all share one base, each file is a thin wrapper ──
-import { handleDocxPdfFilePicked,  removeDocxPdfPanel  } from '../tools/documents/docx_convertor/docx_pdf.js';
+import { handleDocxPdfFilePicked, removeDocxPdfPanel } from '../tools/documents/docx_convertor/docx_pdf.js';
 import { handleDocxHtmlFilePicked, removeDocxHtmlPanel } from '../tools/documents/docx_convertor/docx_html.js';
-import { handleDocxTxtFilePicked,  removeDocxTxtPanel  } from '../tools/documents/docx_convertor/docx_txt.js';
-import { handleDocxOdtFilePicked,  removeDocxOdtPanel  } from '../tools/documents/docx_convertor/docx_odt.js';
+import { handleDocxTxtFilePicked, removeDocxTxtPanel } from '../tools/documents/docx_convertor/docx_txt.js';
+import { handleDocxOdtFilePicked, removeDocxOdtPanel } from '../tools/documents/docx_convertor/docx_odt.js';
 import { handleDocxEpubFilePicked, removeDocxEpubPanel } from '../tools/documents/docx_convertor/docx_epub.js';
-import { handleDocxMdFilePicked,   removeDocxMdPanel   } from '../tools/documents/docx_convertor/docx_md.js';
+import { handleDocxMdFilePicked, removeDocxMdPanel } from '../tools/documents/docx_convertor/docx_md.js';
 
 // ── XLSX conversion tools — all share one base, each file is a thin wrapper ──
-import { handleXlsxPdfFilePicked,  removeXlsxPdfPanel  } from '../tools/documents/xlsx_convertor/xlsx_pdf.js';
-import { handleXlsxCsvFilePicked,  removeXlsxCsvPanel  } from '../tools/documents/xlsx_convertor/xlsx_csv.js';
+import { handleXlsxPdfFilePicked, removeXlsxPdfPanel } from '../tools/documents/xlsx_convertor/xlsx_pdf.js';
+import { handleXlsxCsvFilePicked, removeXlsxCsvPanel } from '../tools/documents/xlsx_convertor/xlsx_csv.js';
 import { handleXlsxJsonFilePicked, removeXlsxJsonPanel } from '../tools/documents/xlsx_convertor/xlsx_json.js';
 import { handleXlsxHtmlFilePicked, removeXlsxHtmlPanel } from '../tools/documents/xlsx_convertor/xlsx_html.js';
-import { handleXlsxOdsFilePicked,  removeXlsxOdsPanel  } from '../tools/documents/xlsx_convertor/xlsx_ods.js';
+import { handleXlsxOdsFilePicked, removeXlsxOdsPanel } from '../tools/documents/xlsx_convertor/xlsx_ods.js';
 // ── TXT conversion tools — all share one base, each file is a thin wrapper ──
-import { handleTxtPdfFilePicked,  removeTxtPdfPanel  } from '../tools/documents/txt_convertor/txt_pdf.js';
+import { handleTxtPdfFilePicked, removeTxtPdfPanel } from '../tools/documents/txt_convertor/txt_pdf.js';
 import { handleTxtDocxFilePicked, removeTxtDocxPanel } from '../tools/documents/txt_convertor/txt_docx.js';
 import { handleTxtHtmlFilePicked, removeTxtHtmlPanel } from '../tools/documents/txt_convertor/txt_html.js';
-import { handleTxtMdFilePicked,   removeTxtMdPanel   } from '../tools/documents/txt_convertor/txt_md.js';
+import { handleTxtMdFilePicked, removeTxtMdPanel } from '../tools/documents/txt_convertor/txt_md.js';
 import { handleTxtEpubFilePicked, removeTxtEpubPanel } from '../tools/documents/txt_convertor/txt_epub.js';
-import { handleTxtOdtFilePicked,  removeTxtOdtPanel  } from '../tools/documents/txt_convertor/txt_odt.js';
-import { handleTxtRtfFilePicked,  removeTxtRtfPanel  } from '../tools/documents/txt_convertor/txt_rtf.js';
+import { handleTxtOdtFilePicked, removeTxtOdtPanel } from '../tools/documents/txt_convertor/txt_odt.js';
+import { handleTxtRtfFilePicked, removeTxtRtfPanel } from '../tools/documents/txt_convertor/txt_rtf.js';
 
 // ── ODT conversion tools — all share one base, each file is a thin wrapper ──
-import { handleOdtPdfFilePicked,  removeOdtPdfPanel  } from '../tools/documents/odt_convertor/odt_pdf.js';
+import { handleOdtPdfFilePicked, removeOdtPdfPanel } from '../tools/documents/odt_convertor/odt_pdf.js';
 import { handleOdtDocxFilePicked, removeOdtDocxPanel } from '../tools/documents/odt_convertor/odt_docx.js';
 import { handleOdtHtmlFilePicked, removeOdtHtmlPanel } from '../tools/documents/odt_convertor/odt_html.js';
-import { handleOdtTxtFilePicked,  removeOdtTxtPanel  } from '../tools/documents/odt_convertor/odt_txt.js';
+import { handleOdtTxtFilePicked, removeOdtTxtPanel } from '../tools/documents/odt_convertor/odt_txt.js';
 import { handleOdtEpubFilePicked, removeOdtEpubPanel } from '../tools/documents/odt_convertor/odt_epub.js';
-import { handleOdtMdFilePicked,   removeOdtMdPanel   } from '../tools/documents/odt_convertor/odt_md.js';
-import { handleOdtRtfFilePicked,  removeOdtRtfPanel  } from '../tools/documents/odt_convertor/odt_rtf.js';
+import { handleOdtMdFilePicked, removeOdtMdPanel } from '../tools/documents/odt_convertor/odt_md.js';
+import { handleOdtRtfFilePicked, removeOdtRtfPanel } from '../tools/documents/odt_convertor/odt_rtf.js';
 
 // ── CSV conversion tools — all share one base, each file is a thin wrapper ──
 import { handleCsvJsonFilePicked, removeCsvJsonPanel } from '../tools/documents/csv_convertor/csv_json.js';
 import { handleCsvXlsxFilePicked, removeCsvXlsxPanel } from '../tools/documents/csv_convertor/csv_xlsx.js';
 import { handleCsvHtmlFilePicked, removeCsvHtmlPanel } from '../tools/documents/csv_convertor/csv_html.js';
-import { handleCsvMdFilePicked,   removeCsvMdPanel   } from '../tools/documents/csv_convertor/csv_md.js';
-import { handleCsvPdfFilePicked,  removeCsvPdfPanel  } from '../tools/documents/csv_convertor/csv_pdf.js';
-import { handleCsvTxtFilePicked,  removeCsvTxtPanel  } from '../tools/documents/csv_convertor/csv_txt.js';
-import { handleCsvXmlFilePicked,  removeCsvXmlPanel  } from '../tools/documents/csv_convertor/csv_xml.js';
-import { handleCsvSqlFilePicked,  removeCsvSqlPanel  } from '../tools/documents/csv_convertor/csv_sql.js';
+import { handleCsvMdFilePicked, removeCsvMdPanel } from '../tools/documents/csv_convertor/csv_md.js';
+import { handleCsvPdfFilePicked, removeCsvPdfPanel } from '../tools/documents/csv_convertor/csv_pdf.js';
+import { handleCsvTxtFilePicked, removeCsvTxtPanel } from '../tools/documents/csv_convertor/csv_txt.js';
+import { handleCsvXmlFilePicked, removeCsvXmlPanel } from '../tools/documents/csv_convertor/csv_xml.js';
+import { handleCsvSqlFilePicked, removeCsvSqlPanel } from '../tools/documents/csv_convertor/csv_sql.js';
 
 // ── PPTX conversion tools — all share one base, each file is a thin wrapper ──
-import { handlePptxPdfFilePicked,    removePptxPdfPanel    } from '../tools/documents/pptx_convertor/pptx_pdf.js';
-import { handlePptxHtmlFilePicked,   removePptxHtmlPanel   } from '../tools/documents/pptx_convertor/pptx_html.js';
+import { handlePptxPdfFilePicked, removePptxPdfPanel } from '../tools/documents/pptx_convertor/pptx_pdf.js';
+import { handlePptxHtmlFilePicked, removePptxHtmlPanel } from '../tools/documents/pptx_convertor/pptx_html.js';
 import { handlePptxImagesFilePicked, removePptxImagesPanel } from '../tools/documents/pptx_convertor/pptx_images.js';
-import { handlePptxOdpFilePicked,    removePptxOdpPanel    } from '../tools/documents/pptx_convertor/pptx_odp.js';
-import { handlePptxTxtFilePicked,    removePptxTxtPanel    } from '../tools/documents/pptx_convertor/pptx_txt.js';
+import { handlePptxOdpFilePicked, removePptxOdpPanel } from '../tools/documents/pptx_convertor/pptx_odp.js';
+import { handlePptxTxtFilePicked, removePptxTxtPanel } from '../tools/documents/pptx_convertor/pptx_txt.js';
 import { handlePptxRepairFilePicked, removePptxRepairPanel } from '../tools/documents/pptx_convertor/pptx_repair.js';
 
 // ── Images category — shared HD preview handler ──────────────────────────────
@@ -140,116 +140,116 @@ import { isImageTool, handleImageFilePicked, removeImagePreview } from '../tools
 import { handleImageCompressorFilesPicked, removeImageCompressorPanel, initImageCompressorUI } from '../tools/images/image_compressor/image_compressor.js';
 
 // ── JPG conversion tools ──
-import { handleJpgPngFilePicked,  removeJpgPngPanel  } from '../tools/images/jpg_convertor/jpg_png.js';
+import { handleJpgPngFilePicked, removeJpgPngPanel } from '../tools/images/jpg_convertor/jpg_png.js';
 import { handleJpgWebpFilePicked, removeJpgWebpPanel } from '../tools/images/jpg_convertor/jpg_webp.js';
-import { handleJpgPdfFilePicked,  removeJpgPdfPanel  } from '../tools/images/jpg_convertor/jpg_pdf.js';
-import { handleJpgBmpFilePicked,  removeJpgBmpPanel  } from '../tools/images/jpg_convertor/jpg_bmp.js';
+import { handleJpgPdfFilePicked, removeJpgPdfPanel } from '../tools/images/jpg_convertor/jpg_pdf.js';
+import { handleJpgBmpFilePicked, removeJpgBmpPanel } from '../tools/images/jpg_convertor/jpg_bmp.js';
 import { handleJpgTiffFilePicked, removeJpgTiffPanel } from '../tools/images/jpg_convertor/jpg_tiff.js';
-import { handleJpgIcoFilePicked,  removeJpgIcoPanel  } from '../tools/images/jpg_convertor/jpg_ico.js';
-import { handleJpgTxtFilePicked,  removeJpgTxtPanel  } from '../tools/images/jpg_convertor/jpg_txt.js';
+import { handleJpgIcoFilePicked, removeJpgIcoPanel } from '../tools/images/jpg_convertor/jpg_ico.js';
+import { handleJpgTxtFilePicked, removeJpgTxtPanel } from '../tools/images/jpg_convertor/jpg_txt.js';
 
 // ── PNG conversion tools ──
-import { handlePngJpgFilePicked,  removePngJpgPanel  } from '../tools/images/png_convertor/png_jpg.js';
+import { handlePngJpgFilePicked, removePngJpgPanel } from '../tools/images/png_convertor/png_jpg.js';
 import { handlePngWebpFilePicked, removePngWebpPanel } from '../tools/images/png_convertor/png_webp.js';
-import { handlePngPdfFilePicked,  removePngPdfPanel  } from '../tools/images/png_convertor/png_pdf.js';
-import { handlePngBmpFilePicked,  removePngBmpPanel  } from '../tools/images/png_convertor/png_bmp.js';
+import { handlePngPdfFilePicked, removePngPdfPanel } from '../tools/images/png_convertor/png_pdf.js';
+import { handlePngBmpFilePicked, removePngBmpPanel } from '../tools/images/png_convertor/png_bmp.js';
 import { handlePngTiffFilePicked, removePngTiffPanel } from '../tools/images/png_convertor/png_tiff.js';
-import { handlePngIcoFilePicked,  removePngIcoPanel  } from '../tools/images/png_convertor/png_ico.js';
-import { handlePngTxtFilePicked,  removePngTxtPanel  } from '../tools/images/png_convertor/png_txt.js';
+import { handlePngIcoFilePicked, removePngIcoPanel } from '../tools/images/png_convertor/png_ico.js';
+import { handlePngTxtFilePicked, removePngTxtPanel } from '../tools/images/png_convertor/png_txt.js';
 
 // ── WEBP conversion tools ──
-import { handleWebpJpgFilePicked,  removeWebpJpgPanel  } from '../tools/images/webp_convertor/webp_jpg.js';
-import { handleWebpPngFilePicked,  removeWebpPngPanel  } from '../tools/images/webp_convertor/webp_png.js';
-import { handleWebpPdfFilePicked,  removeWebpPdfPanel  } from '../tools/images/webp_convertor/webp_pdf.js';
-import { handleWebpBmpFilePicked,  removeWebpBmpPanel  } from '../tools/images/webp_convertor/webp_bmp.js';
+import { handleWebpJpgFilePicked, removeWebpJpgPanel } from '../tools/images/webp_convertor/webp_jpg.js';
+import { handleWebpPngFilePicked, removeWebpPngPanel } from '../tools/images/webp_convertor/webp_png.js';
+import { handleWebpPdfFilePicked, removeWebpPdfPanel } from '../tools/images/webp_convertor/webp_pdf.js';
+import { handleWebpBmpFilePicked, removeWebpBmpPanel } from '../tools/images/webp_convertor/webp_bmp.js';
 import { handleWebpTiffFilePicked, removeWebpTiffPanel } from '../tools/images/webp_convertor/webp_tiff.js';
-import { handleWebpIcoFilePicked,  removeWebpIcoPanel  } from '../tools/images/webp_convertor/webp_ico.js';
-import { handleWebpTxtFilePicked,  removeWebpTxtPanel  } from '../tools/images/webp_convertor/webp_txt.js';
+import { handleWebpIcoFilePicked, removeWebpIcoPanel } from '../tools/images/webp_convertor/webp_ico.js';
+import { handleWebpTxtFilePicked, removeWebpTxtPanel } from '../tools/images/webp_convertor/webp_txt.js';
 
 // ── SVG conversion tools ──
-import { handleSvgPngFilePicked,  removeSvgPngPanel  } from '../tools/images/svg_convertor/svg_png.js';
-import { handleSvgJpgFilePicked,  removeSvgJpgPanel  } from '../tools/images/svg_convertor/svg_jpg.js';
+import { handleSvgPngFilePicked, removeSvgPngPanel } from '../tools/images/svg_convertor/svg_png.js';
+import { handleSvgJpgFilePicked, removeSvgJpgPanel } from '../tools/images/svg_convertor/svg_jpg.js';
 import { handleSvgWebpFilePicked, removeSvgWebpPanel } from '../tools/images/svg_convertor/svg_webp.js';
-import { handleSvgPdfFilePicked,  removeSvgPdfPanel  } from '../tools/images/svg_convertor/svg_pdf.js';
+import { handleSvgPdfFilePicked, removeSvgPdfPanel } from '../tools/images/svg_convertor/svg_pdf.js';
 
 // ── eBook conversion tools — all share one base, each file is a thin wrapper ──
-import { handleEbook_pdf_epub_FilePicked,  removeEbook_pdf_epub_Panel  } from '../tools/ebooks/pdf/pdf_epub.js';
-import { handleEbook_pdf_mobi_FilePicked,  removeEbook_pdf_mobi_Panel  } from '../tools/ebooks/pdf/pdf_mobi.js';
-import { handleEbook_pdf_azw3_FilePicked,  removeEbook_pdf_azw3_Panel  } from '../tools/ebooks/pdf/pdf_azw3.js';
-import { handleEbook_pdf_fb2_FilePicked,   removeEbook_pdf_fb2_Panel   } from '../tools/ebooks/pdf/pdf_fb2.js';
-import { handleEbook_pdf_txt_FilePicked,   removeEbook_pdf_txt_Panel   } from '../tools/ebooks/pdf/pdf_txt.js';
-import { handleEbook_pdf_rtf_FilePicked,   removeEbook_pdf_rtf_Panel   } from '../tools/ebooks/pdf/pdf_rtf.js';
-import { handleEbook_epub_pdf_FilePicked,  removeEbook_epub_pdf_Panel  } from '../tools/ebooks/epub/epub_pdf.js';
+import { handleEbook_pdf_epub_FilePicked, removeEbook_pdf_epub_Panel } from '../tools/ebooks/pdf/pdf_epub.js';
+import { handleEbook_pdf_mobi_FilePicked, removeEbook_pdf_mobi_Panel } from '../tools/ebooks/pdf/pdf_mobi.js';
+import { handleEbook_pdf_azw3_FilePicked, removeEbook_pdf_azw3_Panel } from '../tools/ebooks/pdf/pdf_azw3.js';
+import { handleEbook_pdf_fb2_FilePicked, removeEbook_pdf_fb2_Panel } from '../tools/ebooks/pdf/pdf_fb2.js';
+import { handleEbook_pdf_txt_FilePicked, removeEbook_pdf_txt_Panel } from '../tools/ebooks/pdf/pdf_txt.js';
+import { handleEbook_pdf_rtf_FilePicked, removeEbook_pdf_rtf_Panel } from '../tools/ebooks/pdf/pdf_rtf.js';
+import { handleEbook_epub_pdf_FilePicked, removeEbook_epub_pdf_Panel } from '../tools/ebooks/epub/epub_pdf.js';
 import { handleEbook_epub_mobi_FilePicked, removeEbook_epub_mobi_Panel } from '../tools/ebooks/epub/epub_mobi.js';
 import { handleEbook_epub_azw3_FilePicked, removeEbook_epub_azw3_Panel } from '../tools/ebooks/epub/epub_azw3.js';
-import { handleEbook_epub_fb2_FilePicked,  removeEbook_epub_fb2_Panel  } from '../tools/ebooks/epub/epub_fb2.js';
-import { handleEbook_epub_txt_FilePicked,  removeEbook_epub_txt_Panel  } from '../tools/ebooks/epub/epub_txt.js';
-import { handleEbook_epub_rtf_FilePicked,  removeEbook_epub_rtf_Panel  } from '../tools/ebooks/epub/epub_rtf.js';
-import { handleEbook_mobi_pdf_FilePicked,  removeEbook_mobi_pdf_Panel  } from '../tools/ebooks/mobi/mobi_pdf.js';
+import { handleEbook_epub_fb2_FilePicked, removeEbook_epub_fb2_Panel } from '../tools/ebooks/epub/epub_fb2.js';
+import { handleEbook_epub_txt_FilePicked, removeEbook_epub_txt_Panel } from '../tools/ebooks/epub/epub_txt.js';
+import { handleEbook_epub_rtf_FilePicked, removeEbook_epub_rtf_Panel } from '../tools/ebooks/epub/epub_rtf.js';
+import { handleEbook_mobi_pdf_FilePicked, removeEbook_mobi_pdf_Panel } from '../tools/ebooks/mobi/mobi_pdf.js';
 import { handleEbook_mobi_epub_FilePicked, removeEbook_mobi_epub_Panel } from '../tools/ebooks/mobi/mobi_epub.js';
 import { handleEbook_mobi_azw3_FilePicked, removeEbook_mobi_azw3_Panel } from '../tools/ebooks/mobi/mobi_azw3.js';
-import { handleEbook_mobi_fb2_FilePicked,  removeEbook_mobi_fb2_Panel  } from '../tools/ebooks/mobi/mobi_fb2.js';
-import { handleEbook_mobi_txt_FilePicked,  removeEbook_mobi_txt_Panel  } from '../tools/ebooks/mobi/mobi_txt.js';
-import { handleEbook_mobi_rtf_FilePicked,  removeEbook_mobi_rtf_Panel  } from '../tools/ebooks/mobi/mobi_rtf.js';
-import { handleEbook_azw3_pdf_FilePicked,  removeEbook_azw3_pdf_Panel  } from '../tools/ebooks/azw3/azw3_pdf.js';
+import { handleEbook_mobi_fb2_FilePicked, removeEbook_mobi_fb2_Panel } from '../tools/ebooks/mobi/mobi_fb2.js';
+import { handleEbook_mobi_txt_FilePicked, removeEbook_mobi_txt_Panel } from '../tools/ebooks/mobi/mobi_txt.js';
+import { handleEbook_mobi_rtf_FilePicked, removeEbook_mobi_rtf_Panel } from '../tools/ebooks/mobi/mobi_rtf.js';
+import { handleEbook_azw3_pdf_FilePicked, removeEbook_azw3_pdf_Panel } from '../tools/ebooks/azw3/azw3_pdf.js';
 import { handleEbook_azw3_epub_FilePicked, removeEbook_azw3_epub_Panel } from '../tools/ebooks/azw3/azw3_epub.js';
 import { handleEbook_azw3_mobi_FilePicked, removeEbook_azw3_mobi_Panel } from '../tools/ebooks/azw3/azw3_mobi.js';
-import { handleEbook_azw3_fb2_FilePicked,  removeEbook_azw3_fb2_Panel  } from '../tools/ebooks/azw3/azw3_fb2.js';
-import { handleEbook_azw3_txt_FilePicked,  removeEbook_azw3_txt_Panel  } from '../tools/ebooks/azw3/azw3_txt.js';
-import { handleEbook_azw3_rtf_FilePicked,  removeEbook_azw3_rtf_Panel  } from '../tools/ebooks/azw3/azw3_rtf.js';
-import { handleEbook_fb2_pdf_FilePicked,   removeEbook_fb2_pdf_Panel   } from '../tools/ebooks/fb2/fb2_pdf.js';
-import { handleEbook_fb2_epub_FilePicked,  removeEbook_fb2_epub_Panel  } from '../tools/ebooks/fb2/fb2_epub.js';
-import { handleEbook_fb2_mobi_FilePicked,  removeEbook_fb2_mobi_Panel  } from '../tools/ebooks/fb2/fb2_mobi.js';
-import { handleEbook_fb2_txt_FilePicked,   removeEbook_fb2_txt_Panel   } from '../tools/ebooks/fb2/fb2_txt.js';
-import { handleEbook_fb2_rtf_FilePicked,   removeEbook_fb2_rtf_Panel   } from '../tools/ebooks/fb2/fb2_rtf.js';
-import { handleEbook_txt_pdf_FilePicked,   removeEbook_txt_pdf_Panel   } from '../tools/ebooks/txt/txt_pdf.js';
-import { handleEbook_txt_epub_FilePicked,  removeEbook_txt_epub_Panel  } from '../tools/ebooks/txt/txt_epub.js';
-import { handleEbook_txt_mobi_FilePicked,  removeEbook_txt_mobi_Panel  } from '../tools/ebooks/txt/txt_mobi.js';
-import { handleEbook_txt_rtf_FilePicked,   removeEbook_txt_rtf_Panel   } from '../tools/ebooks/txt/txt_rtf.js';
-import { handleEbook_rtf_pdf_FilePicked,   removeEbook_rtf_pdf_Panel   } from '../tools/ebooks/rtf/rtf_pdf.js';
-import { handleEbook_rtf_epub_FilePicked,  removeEbook_rtf_epub_Panel  } from '../tools/ebooks/rtf/rtf_epub.js';
-import { handleEbook_rtf_mobi_FilePicked,  removeEbook_rtf_mobi_Panel  } from '../tools/ebooks/rtf/rtf_mobi.js';
-import { handleEbook_rtf_txt_FilePicked,   removeEbook_rtf_txt_Panel   } from '../tools/ebooks/rtf/rtf_txt.js';
+import { handleEbook_azw3_fb2_FilePicked, removeEbook_azw3_fb2_Panel } from '../tools/ebooks/azw3/azw3_fb2.js';
+import { handleEbook_azw3_txt_FilePicked, removeEbook_azw3_txt_Panel } from '../tools/ebooks/azw3/azw3_txt.js';
+import { handleEbook_azw3_rtf_FilePicked, removeEbook_azw3_rtf_Panel } from '../tools/ebooks/azw3/azw3_rtf.js';
+import { handleEbook_fb2_pdf_FilePicked, removeEbook_fb2_pdf_Panel } from '../tools/ebooks/fb2/fb2_pdf.js';
+import { handleEbook_fb2_epub_FilePicked, removeEbook_fb2_epub_Panel } from '../tools/ebooks/fb2/fb2_epub.js';
+import { handleEbook_fb2_mobi_FilePicked, removeEbook_fb2_mobi_Panel } from '../tools/ebooks/fb2/fb2_mobi.js';
+import { handleEbook_fb2_txt_FilePicked, removeEbook_fb2_txt_Panel } from '../tools/ebooks/fb2/fb2_txt.js';
+import { handleEbook_fb2_rtf_FilePicked, removeEbook_fb2_rtf_Panel } from '../tools/ebooks/fb2/fb2_rtf.js';
+import { handleEbook_txt_pdf_FilePicked, removeEbook_txt_pdf_Panel } from '../tools/ebooks/txt/txt_pdf.js';
+import { handleEbook_txt_epub_FilePicked, removeEbook_txt_epub_Panel } from '../tools/ebooks/txt/txt_epub.js';
+import { handleEbook_txt_mobi_FilePicked, removeEbook_txt_mobi_Panel } from '../tools/ebooks/txt/txt_mobi.js';
+import { handleEbook_txt_rtf_FilePicked, removeEbook_txt_rtf_Panel } from '../tools/ebooks/txt/txt_rtf.js';
+import { handleEbook_rtf_pdf_FilePicked, removeEbook_rtf_pdf_Panel } from '../tools/ebooks/rtf/rtf_pdf.js';
+import { handleEbook_rtf_epub_FilePicked, removeEbook_rtf_epub_Panel } from '../tools/ebooks/rtf/rtf_epub.js';
+import { handleEbook_rtf_mobi_FilePicked, removeEbook_rtf_mobi_Panel } from '../tools/ebooks/rtf/rtf_mobi.js';
+import { handleEbook_rtf_txt_FilePicked, removeEbook_rtf_txt_Panel } from '../tools/ebooks/rtf/rtf_txt.js';
 
 // Lookup table: tool id → { handler, remover }
 const _EBOOK_TOOLS = {
-  'pdf-epub' : { h: handleEbook_pdf_epub_FilePicked,  r: removeEbook_pdf_epub_Panel  },
-  'pdf-mobi' : { h: handleEbook_pdf_mobi_FilePicked,  r: removeEbook_pdf_mobi_Panel  },
-  'pdf-azw3' : { h: handleEbook_pdf_azw3_FilePicked,  r: removeEbook_pdf_azw3_Panel  },
-  'pdf-fb2'  : { h: handleEbook_pdf_fb2_FilePicked,   r: removeEbook_pdf_fb2_Panel   },
-  'pdf-txt'  : { h: handleEbook_pdf_txt_FilePicked,   r: removeEbook_pdf_txt_Panel   },
-  'pdf-rtf'  : { h: handleEbook_pdf_rtf_FilePicked,   r: removeEbook_pdf_rtf_Panel   },
-  'epub-pdf' : { h: handleEbook_epub_pdf_FilePicked,  r: removeEbook_epub_pdf_Panel  },
+  'pdf-epub': { h: handleEbook_pdf_epub_FilePicked, r: removeEbook_pdf_epub_Panel },
+  'pdf-mobi': { h: handleEbook_pdf_mobi_FilePicked, r: removeEbook_pdf_mobi_Panel },
+  'pdf-azw3': { h: handleEbook_pdf_azw3_FilePicked, r: removeEbook_pdf_azw3_Panel },
+  'pdf-fb2': { h: handleEbook_pdf_fb2_FilePicked, r: removeEbook_pdf_fb2_Panel },
+  'pdf-txt': { h: handleEbook_pdf_txt_FilePicked, r: removeEbook_pdf_txt_Panel },
+  'pdf-rtf': { h: handleEbook_pdf_rtf_FilePicked, r: removeEbook_pdf_rtf_Panel },
+  'epub-pdf': { h: handleEbook_epub_pdf_FilePicked, r: removeEbook_epub_pdf_Panel },
   'epub-mobi': { h: handleEbook_epub_mobi_FilePicked, r: removeEbook_epub_mobi_Panel },
   'epub-azw3': { h: handleEbook_epub_azw3_FilePicked, r: removeEbook_epub_azw3_Panel },
-  'epub-fb2' : { h: handleEbook_epub_fb2_FilePicked,  r: removeEbook_epub_fb2_Panel  },
-  'epub-txt' : { h: handleEbook_epub_txt_FilePicked,  r: removeEbook_epub_txt_Panel  },
-  'epub-rtf' : { h: handleEbook_epub_rtf_FilePicked,  r: removeEbook_epub_rtf_Panel  },
-  'mobi-pdf' : { h: handleEbook_mobi_pdf_FilePicked,  r: removeEbook_mobi_pdf_Panel  },
+  'epub-fb2': { h: handleEbook_epub_fb2_FilePicked, r: removeEbook_epub_fb2_Panel },
+  'epub-txt': { h: handleEbook_epub_txt_FilePicked, r: removeEbook_epub_txt_Panel },
+  'epub-rtf': { h: handleEbook_epub_rtf_FilePicked, r: removeEbook_epub_rtf_Panel },
+  'mobi-pdf': { h: handleEbook_mobi_pdf_FilePicked, r: removeEbook_mobi_pdf_Panel },
   'mobi-epub': { h: handleEbook_mobi_epub_FilePicked, r: removeEbook_mobi_epub_Panel },
   'mobi-azw3': { h: handleEbook_mobi_azw3_FilePicked, r: removeEbook_mobi_azw3_Panel },
-  'mobi-fb2' : { h: handleEbook_mobi_fb2_FilePicked,  r: removeEbook_mobi_fb2_Panel  },
-  'mobi-txt' : { h: handleEbook_mobi_txt_FilePicked,  r: removeEbook_mobi_txt_Panel  },
-  'mobi-rtf' : { h: handleEbook_mobi_rtf_FilePicked,  r: removeEbook_mobi_rtf_Panel  },
-  'azw3-pdf' : { h: handleEbook_azw3_pdf_FilePicked,  r: removeEbook_azw3_pdf_Panel  },
+  'mobi-fb2': { h: handleEbook_mobi_fb2_FilePicked, r: removeEbook_mobi_fb2_Panel },
+  'mobi-txt': { h: handleEbook_mobi_txt_FilePicked, r: removeEbook_mobi_txt_Panel },
+  'mobi-rtf': { h: handleEbook_mobi_rtf_FilePicked, r: removeEbook_mobi_rtf_Panel },
+  'azw3-pdf': { h: handleEbook_azw3_pdf_FilePicked, r: removeEbook_azw3_pdf_Panel },
   'azw3-epub': { h: handleEbook_azw3_epub_FilePicked, r: removeEbook_azw3_epub_Panel },
   'azw3-mobi': { h: handleEbook_azw3_mobi_FilePicked, r: removeEbook_azw3_mobi_Panel },
-  'azw3-fb2' : { h: handleEbook_azw3_fb2_FilePicked,  r: removeEbook_azw3_fb2_Panel  },
-  'azw3-txt' : { h: handleEbook_azw3_txt_FilePicked,  r: removeEbook_azw3_txt_Panel  },
-  'azw3-rtf' : { h: handleEbook_azw3_rtf_FilePicked,  r: removeEbook_azw3_rtf_Panel  },
-  'fb2-pdf'  : { h: handleEbook_fb2_pdf_FilePicked,   r: removeEbook_fb2_pdf_Panel   },
-  'fb2-epub' : { h: handleEbook_fb2_epub_FilePicked,  r: removeEbook_fb2_epub_Panel  },
-  'fb2-mobi' : { h: handleEbook_fb2_mobi_FilePicked,  r: removeEbook_fb2_mobi_Panel  },
-  'fb2-txt'  : { h: handleEbook_fb2_txt_FilePicked,   r: removeEbook_fb2_txt_Panel   },
-  'fb2-rtf'  : { h: handleEbook_fb2_rtf_FilePicked,   r: removeEbook_fb2_rtf_Panel   },
-  'txt-pdf'  : { h: handleEbook_txt_pdf_FilePicked,   r: removeEbook_txt_pdf_Panel   },
-  'txt-epub' : { h: handleEbook_txt_epub_FilePicked,  r: removeEbook_txt_epub_Panel  },
-  'txt-mobi' : { h: handleEbook_txt_mobi_FilePicked,  r: removeEbook_txt_mobi_Panel  },
-  'txt-rtf'  : { h: handleEbook_txt_rtf_FilePicked,   r: removeEbook_txt_rtf_Panel   },
-  'rtf-pdf'  : { h: handleEbook_rtf_pdf_FilePicked,   r: removeEbook_rtf_pdf_Panel   },
-  'rtf-epub' : { h: handleEbook_rtf_epub_FilePicked,  r: removeEbook_rtf_epub_Panel  },
-  'rtf-mobi' : { h: handleEbook_rtf_mobi_FilePicked,  r: removeEbook_rtf_mobi_Panel  },
-  'rtf-txt'  : { h: handleEbook_rtf_txt_FilePicked,   r: removeEbook_rtf_txt_Panel   },
+  'azw3-fb2': { h: handleEbook_azw3_fb2_FilePicked, r: removeEbook_azw3_fb2_Panel },
+  'azw3-txt': { h: handleEbook_azw3_txt_FilePicked, r: removeEbook_azw3_txt_Panel },
+  'azw3-rtf': { h: handleEbook_azw3_rtf_FilePicked, r: removeEbook_azw3_rtf_Panel },
+  'fb2-pdf': { h: handleEbook_fb2_pdf_FilePicked, r: removeEbook_fb2_pdf_Panel },
+  'fb2-epub': { h: handleEbook_fb2_epub_FilePicked, r: removeEbook_fb2_epub_Panel },
+  'fb2-mobi': { h: handleEbook_fb2_mobi_FilePicked, r: removeEbook_fb2_mobi_Panel },
+  'fb2-txt': { h: handleEbook_fb2_txt_FilePicked, r: removeEbook_fb2_txt_Panel },
+  'fb2-rtf': { h: handleEbook_fb2_rtf_FilePicked, r: removeEbook_fb2_rtf_Panel },
+  'txt-pdf': { h: handleEbook_txt_pdf_FilePicked, r: removeEbook_txt_pdf_Panel },
+  'txt-epub': { h: handleEbook_txt_epub_FilePicked, r: removeEbook_txt_epub_Panel },
+  'txt-mobi': { h: handleEbook_txt_mobi_FilePicked, r: removeEbook_txt_mobi_Panel },
+  'txt-rtf': { h: handleEbook_txt_rtf_FilePicked, r: removeEbook_txt_rtf_Panel },
+  'rtf-pdf': { h: handleEbook_rtf_pdf_FilePicked, r: removeEbook_rtf_pdf_Panel },
+  'rtf-epub': { h: handleEbook_rtf_epub_FilePicked, r: removeEbook_rtf_epub_Panel },
+  'rtf-mobi': { h: handleEbook_rtf_mobi_FilePicked, r: removeEbook_rtf_mobi_Panel },
+  'rtf-txt': { h: handleEbook_rtf_txt_FilePicked, r: removeEbook_rtf_txt_Panel },
 };
 
 const BACKEND = 'http://127.0.0.1:8000';
@@ -257,21 +257,21 @@ const BACKEND = 'http://127.0.0.1:8000';
 // ─── ENDPOINT MAP ─────────────────────────────────────────────────────────────
 const ENDPOINT_MAP = {
   // PDF Tools
-  merge        : { url: `${BACKEND}/api/pdf/merge`,         multi: true  },
-  split        : { url: `${BACKEND}/api/pdf/split`,         multi: false },
-  compress     : { url: `${BACKEND}/api/pdf/compress`,      multi: false },
-  rotate       : { url: `${BACKEND}/api/pdf/rotate`,        multi: false },
-  encrypt      : { url: `${BACKEND}/api/pdf/encrypt`,       multi: false },
-  watermark    : { url: `${BACKEND}/api/pdf/watermark`,     multi: false },
-  ocr          : { url: `${BACKEND}/api/pdf/ocr`,           multi: false },
-  metadata     : { url: `${BACKEND}/api/pdf/metadata`,      multi: false },
+  merge: { url: `${BACKEND}/api/pdf/merge`, multi: true },
+  split: { url: `${BACKEND}/api/pdf/split`, multi: false },
+  compress: { url: `${BACKEND}/api/pdf/compress`, multi: false },
+  rotate: { url: `${BACKEND}/api/pdf/rotate`, multi: false },
+  encrypt: { url: `${BACKEND}/api/pdf/encrypt`, multi: false },
+  watermark: { url: `${BACKEND}/api/pdf/watermark`, multi: false },
+  ocr: { url: `${BACKEND}/api/pdf/ocr`, multi: false },
+  metadata: { url: `${BACKEND}/api/pdf/metadata`, multi: false },
   // PDF Conversions
-  'pdf-docx'   : { url: `${BACKEND}/api/convert/pdf-to-docx`,   multi: false },
-  'pdf-html'   : { url: `${BACKEND}/api/convert/pdf-to-html`,   multi: false },
-  'pdf-txt'    : { url: `${BACKEND}/api/convert/pdf-to-txt`,    multi: false },
-  'pdf-images' : { url: `${BACKEND}/api/convert/pdf-to-images`, multi: false },
-  'images-pdf' : { url: `${BACKEND}/api/convert/images-to-pdf`, multi: true  },
-  'pdf-ppt'    : { url: `${BACKEND}/api/convert/pdf-to-ppt`,    multi: false },
+  'pdf-docx': { url: `${BACKEND}/api/convert/pdf-to-docx`, multi: false },
+  'pdf-html': { url: `${BACKEND}/api/convert/pdf-to-html`, multi: false },
+  'pdf-txt': { url: `${BACKEND}/api/convert/pdf-to-txt`, multi: false },
+  'pdf-images': { url: `${BACKEND}/api/convert/pdf-to-images`, multi: false },
+  'images-pdf': { url: `${BACKEND}/api/convert/images-to-pdf`, multi: true },
+  'pdf-ppt': { url: `${BACKEND}/api/convert/pdf-to-ppt`, multi: false },
 };
 
 // ─── WARNING NOTIFICATIONS ──────────────────────────────────────────────────
@@ -313,12 +313,12 @@ const DEFAULT_ICON_SVG = `
     <line x1="30" y1="40" x2="24" y2="34" stroke="#00E5C0" stroke-width="1.5" stroke-linecap="round"/>
   </svg>`;
 
-const DEFAULT_MAIN  = 'Drop files anywhere to convert';
-const DEFAULT_SUB   = 'or click to browse';
-const DEFAULT_PRIV  = 'Your files never leave your device.';
+const DEFAULT_MAIN = 'Drop files anywhere to convert';
+const DEFAULT_SUB = 'or click to browse';
+const DEFAULT_PRIV = 'Your files never leave your device.';
 const DEFAULT_TITLE = 'Your workspace is ready';
-const DEFAULT_HINT  = 'Drag anywhere';
-const DEFAULT_SUBT  = 'The all-in-one offline file converter for Windows, macOS, and Linux.';
+const DEFAULT_HINT = 'Drag anywhere';
+const DEFAULT_SUBT = 'Professional-grade offline conversion — fully private, zero cloud dependency.';
 
 // ─── HERO + DROP ZONE MORPH ───────────────────────────────────────────────────
 
@@ -330,13 +330,13 @@ function _scaledIcon(svgString, color) {
     .replace('<svg', `<svg class="drop-icon" style="color:${color}"`)
     .replace('<svg class="drop-icon"', '<svg width="48" height="48" class="drop-icon"')
     .replace(/stroke="currentColor"/g, `stroke="${color}"`)
-    .replace(/fill="currentColor"/g,   `fill="${color}"`);
+    .replace(/fill="currentColor"/g, `fill="${color}"`);
 }
 
 function _tagBadge(tag, color, bg) {
   if (!tag) return '';
-  const badgeColor  = color || '#00E5C0';
-  const badgeBg     = bg || `color-mix(in srgb, ${badgeColor} 12%, transparent)`;
+  const badgeColor = color || '#00E5C0';
+  const badgeBg = bg || `color-mix(in srgb, ${badgeColor} 12%, transparent)`;
   const badgeBorder = `color-mix(in srgb, ${badgeColor} 30%, transparent)`;
   return `<span class="hero-tool-badge"
     style="color:${badgeColor};background:${badgeBg};border-color:${badgeBorder}">
@@ -353,10 +353,10 @@ function _updateDropZone(tool) {
   _dlPanelReset();
   const zone = document.getElementById('drop-zone');
 
-  const heroHeader  = document.querySelector('.hero-card-header');
+  const heroHeader = document.querySelector('.hero-card-header');
   const heroTitleEl = heroHeader && heroHeader.querySelector('.hero-title');
-  const heroSubEl   = heroHeader && heroHeader.querySelector('.hero-subtitle');
-  const heroHintEl  = heroHeader && heroHeader.querySelector('.hero-hint');
+  const heroSubEl = heroHeader && heroHeader.querySelector('.hero-subtitle');
+  const heroHintEl = heroHeader && heroHeader.querySelector('.hero-hint');
 
   if (!zone) return;
 
@@ -427,21 +427,21 @@ function _updateDropZone(tool) {
     // Clean up any active SVG conversion panel
     removeSvgPngPanel(); removeSvgJpgPanel(); removeSvgWebpPanel(); removeSvgPdfPanel();
 
-    const mainEl   = zone.querySelector('.drop-main-text');
-    const subEl    = zone.querySelector('.drop-browse');
-    const privEl   = zone.querySelector('.drop-private');
+    const mainEl = zone.querySelector('.drop-main-text');
+    const subEl = zone.querySelector('.drop-browse');
+    const privEl = zone.querySelector('.drop-private');
     const iconSlot = zone.querySelector('.drop-icon');
 
     if (iconSlot) iconSlot.outerHTML = DEFAULT_ICON_SVG;
     if (mainEl) mainEl.textContent = DEFAULT_MAIN;
-    if (subEl)  subEl.textContent  = DEFAULT_SUB;
+    if (subEl) subEl.textContent = DEFAULT_SUB;
     if (privEl) privEl.textContent = DEFAULT_PRIV;
     zone.removeAttribute('style');
     zone.classList.remove('drop-zone--tool-active');
 
     if (heroTitleEl) { heroTitleEl.textContent = DEFAULT_TITLE; heroTitleEl.style.color = ''; }
-    if (heroSubEl)   { heroSubEl.innerHTML = DEFAULT_SUBT; }
-    if (heroHintEl)  { heroHintEl.textContent = DEFAULT_HINT; heroHintEl.style.color = ''; }
+    if (heroSubEl) { heroSubEl.innerHTML = DEFAULT_SUBT; }
+    if (heroHintEl) { heroHintEl.textContent = DEFAULT_HINT; heroHintEl.style.color = ''; }
     return;
   }
 
@@ -529,14 +529,14 @@ function _updateDropZone(tool) {
   if (heroHintEl) { heroHintEl.textContent = 'Drop or click below'; heroHintEl.style.color = color; }
 
   // Fresh DOM query after _resetZoneContent
-  const mainEl      = zone.querySelector('.drop-main-text');
-  const subEl       = zone.querySelector('.drop-browse');
-  const privEl      = zone.querySelector('.drop-private');
+  const mainEl = zone.querySelector('.drop-main-text');
+  const subEl = zone.querySelector('.drop-browse');
+  const privEl = zone.querySelector('.drop-private');
   const currentIcon = zone.querySelector('.drop-icon');
 
   if (currentIcon && icon) currentIcon.outerHTML = _scaledIcon(icon, color);
   if (mainEl) mainEl.textContent = mainText;
-  if (subEl)  subEl.textContent  = subText;
+  if (subEl) subEl.textContent = subText;
   if (privEl) privEl.textContent = 'Your files never leave your device.';
 
   // Check if there is an active background job for this tool.
@@ -601,18 +601,18 @@ function _dlPanelActivate(tool) {
 
   const { label, icon, color, bg } = tool;
   const safeColor = color || '#00E5C0';
-  const safeBg    = bg    || 'rgba(0,229,192,0.08)';
+  const safeBg = bg || 'rgba(0,229,192,0.08)';
 
   panel.style.setProperty('--dl-color', safeColor);
-  panel.style.setProperty('--dl-bg',    safeBg);
+  panel.style.setProperty('--dl-bg', safeBg);
   panel.style.setProperty('border-color', `color-mix(in srgb, ${safeColor} 28%, var(--border))`);
 
   const iconHtml = icon
     ? icon
-        .replace(/width="26"/, 'width="18"').replace(/height="26"/, 'height="18"')
-        .replace(/class="[^"]*"/, '')
-        .replace('<svg', '<svg style="color:currentColor"')
-        .replace(/stroke="currentColor"/g, 'stroke="currentColor"')
+      .replace(/width="26"/, 'width="18"').replace(/height="26"/, 'height="18"')
+      .replace(/class="[^"]*"/, '')
+      .replace('<svg', '<svg style="color:currentColor"')
+      .replace(/stroke="currentColor"/g, 'stroke="currentColor"')
     : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none">
          <path d="M12 3v13M7 11l5 5 5-5" stroke="currentColor" stroke-width="1.7"
                stroke-linecap="round" stroke-linejoin="round"/>
@@ -689,21 +689,21 @@ function _dlPanelReady(filename, jobId, color) {
 
   const tool = getActiveTool();
   const safeColor = color || (tool && tool.color) || '#00E5C0';
-  const safeBg    = (tool && tool.bg) || 'rgba(0,229,192,0.08)';
-  const label     = (tool && tool.label) || 'Output';
-  const icon      = tool && tool.icon;
+  const safeBg = (tool && tool.bg) || 'rgba(0,229,192,0.08)';
+  const label = (tool && tool.label) || 'Output';
+  const icon = tool && tool.icon;
 
   panel.style.display = '';
   panel.style.setProperty('--dl-color', safeColor);
-  panel.style.setProperty('--dl-bg',    safeBg);
+  panel.style.setProperty('--dl-bg', safeBg);
   panel.style.setProperty('border-color', `color-mix(in srgb, ${safeColor} 28%, var(--border))`);
 
   const iconHtml = icon
     ? icon
-        .replace(/width="26"/, 'width="18"').replace(/height="26"/, 'height="18"')
-        .replace(/class="[^"]*"/, '')
-        .replace('<svg', '<svg style="color:currentColor"')
-        .replace(/stroke="currentColor"/g, 'stroke="currentColor"')
+      .replace(/width="26"/, 'width="18"').replace(/height="26"/, 'height="18"')
+      .replace(/class="[^"]*"/, '')
+      .replace('<svg', '<svg style="color:currentColor"')
+      .replace(/stroke="currentColor"/g, 'stroke="currentColor"')
     : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none">
          <path d="M12 3v13M7 11l5 5 5-5" stroke="currentColor" stroke-width="1.7"
                stroke-linecap="round" stroke-linejoin="round"/>
@@ -793,9 +793,9 @@ async function _dlPanelSave(jobId, filename, color, panel) {
     const res = await fetch(`${BACKEND}/api/download/${jobId}`);
     if (!res.ok) throw new Error(`Download failed (${res.status})`);
 
-    const blob     = await res.blob();
+    const blob = await res.blob();
     const arrayBuf = await blob.arrayBuffer();
-    const uint8    = new Uint8Array(arrayBuf);
+    const uint8 = new Uint8Array(arrayBuf);
     const chunkSize = 8192;
     let binary = '';
     for (let i = 0; i < uint8.length; i += chunkSize) {
@@ -815,7 +815,7 @@ async function _dlPanelSave(jobId, filename, color, panel) {
       }
     } else {
       const url = URL.createObjectURL(blob);
-      const a   = document.createElement('a');
+      const a = document.createElement('a');
       a.href = url; a.download = filename; a.click();
       URL.revokeObjectURL(url);
       if (btn) { btn.disabled = false; btn.style.display = 'none'; }
@@ -843,7 +843,7 @@ function _resetZoneContent(zone) {
   ).forEach((el) => el.remove());
   zone.classList.remove(
     'dz-state-processing', 'dz-state-done', 'dz-state-error',
-    'dz-state-scanning',   'dz-has-thumb',  'dz-has-compress-thumb',
+    'dz-state-scanning', 'dz-has-thumb', 'dz-has-compress-thumb',
     'dz-has-encrypt-thumb', 'dz-has-merge-thumbs', 'dz-has-pdf-word-thumb',
     'dz-has-pdf-excel-thumb', 'dz-has-pdf-html-thumb', 'dz-has-pdf-txt-thumb',
     'dz-has-ebook-thumb', 'dz-has-docx-thumb', 'dz-has-pptx-thumb', 'dz-has-xlsx-thumb',
@@ -856,14 +856,14 @@ function _resetZoneContent(zone) {
 }
 
 // ── Ring geometry constants ──────────────────────────────────────────────────
-const _RING_R    = 40;   // circle radius
+const _RING_R = 40;   // circle radius
 const _RING_CIRC = 2 * Math.PI * _RING_R;  // ≈ 251.3
 
 /** Build the circular ring SVG + center text, returns {wrapEl, ringFill, pctEl} */
 function _buildRingWrap(color, pct, label, indeterminate, toolId) {
   // dashoffset encodes progress: 0 = full, CIRC = empty
-  const offset   = indeterminate ? 0 : _RING_CIRC * (1 - pct / 100);
-  const dashArr  = indeterminate
+  const offset = indeterminate ? 0 : _RING_CIRC * (1 - pct / 100);
+  const dashArr = indeterminate
     ? `${_RING_CIRC * 0.35} ${_RING_CIRC * 0.65}`
     : `${_RING_CIRC} ${_RING_CIRC}`;
 
@@ -951,7 +951,7 @@ function _updateProgress(zone, pct, color, toolId) {
     if (activeTool && wrapTool !== activeTool.id) return;
   }
 
-  const ring  = zone.querySelector('.dz-ring-fill');
+  const ring = zone.querySelector('.dz-ring-fill');
   const label = zone.querySelector('.dz-pct');
   if (ring) {
     const offset = _RING_CIRC * (1 - pct / 100);
@@ -1070,9 +1070,9 @@ async function _downloadFile(jobId, filename, color, wrap) {
     const res = await fetch(`${BACKEND}/api/download/${jobId}`);
     if (!res.ok) throw new Error(`Download failed (${res.status})`);
 
-    const blob     = await res.blob();
+    const blob = await res.blob();
     const arrayBuf = await blob.arrayBuffer();
-    const uint8    = new Uint8Array(arrayBuf);
+    const uint8 = new Uint8Array(arrayBuf);
     const chunkSize = 8192;
     let binary = '';
     for (let i = 0; i < uint8.length; i += chunkSize) {
@@ -1094,7 +1094,7 @@ async function _downloadFile(jobId, filename, color, wrap) {
       }
     } else {
       const url = URL.createObjectURL(blob);
-      const a   = document.createElement('a');
+      const a = document.createElement('a');
       a.href = url; a.download = filename; a.click();
       URL.revokeObjectURL(url);
       if (btn) { btn.disabled = false; btn.textContent = '✓ Downloaded'; btn.style.opacity = '0.6'; }
@@ -1275,88 +1275,88 @@ async function _submitFile(files) {
   }
 
   // DOCX conversion tools — dispatch by tool id
-  if (tool.id === 'docx-pdf')  { handleDocxPdfFilePicked(files[0]);  return; }
+  if (tool.id === 'docx-pdf') { handleDocxPdfFilePicked(files[0]); return; }
   if (tool.id === 'docx-html') { handleDocxHtmlFilePicked(files[0]); return; }
-  if (tool.id === 'docx-txt')  { handleDocxTxtFilePicked(files[0]);  return; }
-  if (tool.id === 'docx-odt')  { handleDocxOdtFilePicked(files[0]);  return; }
+  if (tool.id === 'docx-txt') { handleDocxTxtFilePicked(files[0]); return; }
+  if (tool.id === 'docx-odt') { handleDocxOdtFilePicked(files[0]); return; }
   if (tool.id === 'docx-epub') { handleDocxEpubFilePicked(files[0]); return; }
-  if (tool.id === 'docx-md')   { handleDocxMdFilePicked(files[0]);   return; }
+  if (tool.id === 'docx-md') { handleDocxMdFilePicked(files[0]); return; }
 
   // PPTX conversion tools — dispatch by tool id
-  if (tool.id === 'pptx-pdf')    { handlePptxPdfFilePicked(files[0]);    return; }
-  if (tool.id === 'pptx-html')   { handlePptxHtmlFilePicked(files[0]);   return; }
+  if (tool.id === 'pptx-pdf') { handlePptxPdfFilePicked(files[0]); return; }
+  if (tool.id === 'pptx-html') { handlePptxHtmlFilePicked(files[0]); return; }
   if (tool.id === 'pptx-images') { handlePptxImagesFilePicked(files[0]); return; }
-  if (tool.id === 'pptx-odp')    { handlePptxOdpFilePicked(files[0]);    return; }
-  if (tool.id === 'pptx-txt')    { handlePptxTxtFilePicked(files[0]);    return; }
+  if (tool.id === 'pptx-odp') { handlePptxOdpFilePicked(files[0]); return; }
+  if (tool.id === 'pptx-txt') { handlePptxTxtFilePicked(files[0]); return; }
   if (tool.id === 'pptx-repair') { handlePptxRepairFilePicked(files[0]); return; }
 
   // XLSX conversion tools — dispatch by tool id
-  if (tool.id === 'xlsx-pdf')  { handleXlsxPdfFilePicked(files[0]);  return; }
-  if (tool.id === 'xlsx-csv')  { handleXlsxCsvFilePicked(files[0]);  return; }
+  if (tool.id === 'xlsx-pdf') { handleXlsxPdfFilePicked(files[0]); return; }
+  if (tool.id === 'xlsx-csv') { handleXlsxCsvFilePicked(files[0]); return; }
   if (tool.id === 'xlsx-json') { handleXlsxJsonFilePicked(files[0]); return; }
   if (tool.id === 'xlsx-html') { handleXlsxHtmlFilePicked(files[0]); return; }
-  if (tool.id === 'xlsx-ods')  { handleXlsxOdsFilePicked(files[0]);  return; }
+  if (tool.id === 'xlsx-ods') { handleXlsxOdsFilePicked(files[0]); return; }
 
   // TXT conversion tools — dispatch by tool id
-  if (tool.id === 'txt-pdf')  { handleTxtPdfFilePicked(files[0]);  return; }
+  if (tool.id === 'txt-pdf') { handleTxtPdfFilePicked(files[0]); return; }
   if (tool.id === 'txt-docx') { handleTxtDocxFilePicked(files[0]); return; }
   if (tool.id === 'txt-html') { handleTxtHtmlFilePicked(files[0]); return; }
-  if (tool.id === 'txt-md')   { handleTxtMdFilePicked(files[0]);   return; }
+  if (tool.id === 'txt-md') { handleTxtMdFilePicked(files[0]); return; }
   if (tool.id === 'txt-epub') { handleTxtEpubFilePicked(files[0]); return; }
-  if (tool.id === 'txt-odt')  { handleTxtOdtFilePicked(files[0]);  return; }
-  if (tool.id === 'txt-rtf')  { handleTxtRtfFilePicked(files[0]);  return; }
+  if (tool.id === 'txt-odt') { handleTxtOdtFilePicked(files[0]); return; }
+  if (tool.id === 'txt-rtf') { handleTxtRtfFilePicked(files[0]); return; }
 
   // ODT conversion tools — dispatch by tool id
-  if (tool.id === 'odt-pdf')  { handleOdtPdfFilePicked(files[0]);  return; }
+  if (tool.id === 'odt-pdf') { handleOdtPdfFilePicked(files[0]); return; }
   if (tool.id === 'odt-docx') { handleOdtDocxFilePicked(files[0]); return; }
   if (tool.id === 'odt-html') { handleOdtHtmlFilePicked(files[0]); return; }
-  if (tool.id === 'odt-txt')  { handleOdtTxtFilePicked(files[0]);  return; }
+  if (tool.id === 'odt-txt') { handleOdtTxtFilePicked(files[0]); return; }
   if (tool.id === 'odt-epub') { handleOdtEpubFilePicked(files[0]); return; }
-  if (tool.id === 'odt-md')   { handleOdtMdFilePicked(files[0]);   return; }
-  if (tool.id === 'odt-rtf')  { handleOdtRtfFilePicked(files[0]);  return; }
+  if (tool.id === 'odt-md') { handleOdtMdFilePicked(files[0]); return; }
+  if (tool.id === 'odt-rtf') { handleOdtRtfFilePicked(files[0]); return; }
 
   // CSV conversion tools — dispatch by tool id
   if (tool.id === 'csv-json') { handleCsvJsonFilePicked(files[0]); return; }
   if (tool.id === 'csv-xlsx') { handleCsvXlsxFilePicked(files[0]); return; }
   if (tool.id === 'csv-html') { handleCsvHtmlFilePicked(files[0]); return; }
-  if (tool.id === 'csv-md')   { handleCsvMdFilePicked(files[0]);   return; }
-  if (tool.id === 'csv-pdf')  { handleCsvPdfFilePicked(files[0]);  return; }
-  if (tool.id === 'csv-txt')  { handleCsvTxtFilePicked(files[0]);  return; }
-  if (tool.id === 'csv-xml')  { handleCsvXmlFilePicked(files[0]);  return; }
-  if (tool.id === 'csv-sql')  { handleCsvSqlFilePicked(files[0]);  return; }
+  if (tool.id === 'csv-md') { handleCsvMdFilePicked(files[0]); return; }
+  if (tool.id === 'csv-pdf') { handleCsvPdfFilePicked(files[0]); return; }
+  if (tool.id === 'csv-txt') { handleCsvTxtFilePicked(files[0]); return; }
+  if (tool.id === 'csv-xml') { handleCsvXmlFilePicked(files[0]); return; }
+  if (tool.id === 'csv-sql') { handleCsvSqlFilePicked(files[0]); return; }
 
   // JPG conversion tools — pass ALL files (multi-select supported; base handles dedup)
-  if (tool.id === 'jpg-png')  { handleJpgPngFilePicked(files);  return; }
+  if (tool.id === 'jpg-png') { handleJpgPngFilePicked(files); return; }
   if (tool.id === 'jpg-webp') { handleJpgWebpFilePicked(files); return; }
-  if (tool.id === 'jpg-pdf')  { handleJpgPdfFilePicked(files);  return; }
-  if (tool.id === 'jpg-bmp')  { handleJpgBmpFilePicked(files);  return; }
+  if (tool.id === 'jpg-pdf') { handleJpgPdfFilePicked(files); return; }
+  if (tool.id === 'jpg-bmp') { handleJpgBmpFilePicked(files); return; }
   if (tool.id === 'jpg-tiff') { handleJpgTiffFilePicked(files); return; }
-  if (tool.id === 'jpg-ico')  { handleJpgIcoFilePicked(files);  return; }
-  if (tool.id === 'jpg-txt')  { handleJpgTxtFilePicked(files);  return; }
+  if (tool.id === 'jpg-ico') { handleJpgIcoFilePicked(files); return; }
+  if (tool.id === 'jpg-txt') { handleJpgTxtFilePicked(files); return; }
 
   // PNG conversion tools — dispatch by tool id
-  if (tool.id === 'png-jpg')  { handlePngJpgFilePicked(files);  return; }
+  if (tool.id === 'png-jpg') { handlePngJpgFilePicked(files); return; }
   if (tool.id === 'png-webp') { handlePngWebpFilePicked(files); return; }
-  if (tool.id === 'png-pdf')  { handlePngPdfFilePicked(files);  return; }
-  if (tool.id === 'png-bmp')  { handlePngBmpFilePicked(files);  return; }
+  if (tool.id === 'png-pdf') { handlePngPdfFilePicked(files); return; }
+  if (tool.id === 'png-bmp') { handlePngBmpFilePicked(files); return; }
   if (tool.id === 'png-tiff') { handlePngTiffFilePicked(files); return; }
-  if (tool.id === 'png-ico')  { handlePngIcoFilePicked(files);  return; }
-  if (tool.id === 'png-txt')  { handlePngTxtFilePicked(files);  return; }
+  if (tool.id === 'png-ico') { handlePngIcoFilePicked(files); return; }
+  if (tool.id === 'png-txt') { handlePngTxtFilePicked(files); return; }
 
   // WEBP conversion tools — dispatch by tool id
-  if (tool.id === 'webp-jpg')  { handleWebpJpgFilePicked(files);  return; }
-  if (tool.id === 'webp-png')  { handleWebpPngFilePicked(files);  return; }
-  if (tool.id === 'webp-pdf')  { handleWebpPdfFilePicked(files);  return; }
-  if (tool.id === 'webp-bmp')  { handleWebpBmpFilePicked(files);  return; }
+  if (tool.id === 'webp-jpg') { handleWebpJpgFilePicked(files); return; }
+  if (tool.id === 'webp-png') { handleWebpPngFilePicked(files); return; }
+  if (tool.id === 'webp-pdf') { handleWebpPdfFilePicked(files); return; }
+  if (tool.id === 'webp-bmp') { handleWebpBmpFilePicked(files); return; }
   if (tool.id === 'webp-tiff') { handleWebpTiffFilePicked(files); return; }
-  if (tool.id === 'webp-ico')  { handleWebpIcoFilePicked(files);  return; }
-  if (tool.id === 'webp-txt')  { handleWebpTxtFilePicked(files);  return; }
+  if (tool.id === 'webp-ico') { handleWebpIcoFilePicked(files); return; }
+  if (tool.id === 'webp-txt') { handleWebpTxtFilePicked(files); return; }
 
   // SVG conversion tools — dispatch by tool id
-  if (tool.id === 'svg-png')  { handleSvgPngFilePicked(files);  return; }
-  if (tool.id === 'svg-jpg')  { handleSvgJpgFilePicked(files);  return; }
+  if (tool.id === 'svg-png') { handleSvgPngFilePicked(files); return; }
+  if (tool.id === 'svg-jpg') { handleSvgJpgFilePicked(files); return; }
   if (tool.id === 'svg-webp') { handleSvgWebpFilePicked(files); return; }
-  if (tool.id === 'svg-pdf')  { handleSvgPdfFilePicked(files);  return; }
+  if (tool.id === 'svg-pdf') { handleSvgPdfFilePicked(files); return; }
 
   // Image Compressor — dispatch before generic preview fallback
   if (tool.id === 'image_compressor') {
@@ -1383,7 +1383,7 @@ async function _submitFile(files) {
     return;
   }
 
-  const zone  = document.getElementById('drop-zone');
+  const zone = document.getElementById('drop-zone');
   const color = tool.color || '#00E5C0';
 
   // ── Build form data ────────────────────────────────────────────────────────
@@ -1404,7 +1404,7 @@ async function _submitFile(files) {
   // ── POST to backend ────────────────────────────────────────────────────────
   let jobId;
   try {
-    const res  = await fetch(endpoint.url, { method: 'POST', body: fd });
+    const res = await fetch(endpoint.url, { method: 'POST', body: fd });
     const json = await res.json();
     if (!res.ok) {
       const detail = json.detail;
@@ -1422,7 +1422,7 @@ async function _submitFile(files) {
 
   // ── Subscribe to SSE progress ──────────────────────────────────────────────
   const sse = new EventSource(`${BACKEND}/api/progress/${jobId}`);
-  let  lastPct = 0;
+  let lastPct = 0;
 
   // Upgrade from 'submitting' to 'running' now that we have a real jobId + SSE
   setBgJob({ jobId, tool, filename: earlyFilename, progress: 10, state: 'running', sse });
@@ -1433,12 +1433,12 @@ async function _submitFile(files) {
 
     const { state, progress, error } = data;
     const pct = typeof progress === 'number' ? progress : lastPct;
-    lastPct   = pct;
+    lastPct = pct;
 
     const bg = getBgJob(jobId);
     if (bg && bg.jobId === jobId) {
       bg.progress = Math.max(10, Math.min(100, pct));
-      bg.state    = state === 'done' ? 'done' : (state === 'error' ? 'error' : 'running');
+      bg.state = state === 'done' ? 'done' : (state === 'error' ? 'error' : 'running');
       if (data.filename) bg.filename = data.filename;
       syncBgJobBar();
     }
@@ -1538,7 +1538,7 @@ async function _handlePasteFromClipboard() {
             }
           }
         }
-      } catch (_) {}
+      } catch (_) { }
     }
 
     // Method 3: Text file path fallback
@@ -1556,7 +1556,7 @@ async function _handlePasteFromClipboard() {
             }
           }
         }
-      } catch (_) {}
+      } catch (_) { }
     }
 
     if (files.length > 0) {
@@ -1595,7 +1595,7 @@ async function _handlePasteFromClipboard() {
 // ─── INIT ─────────────────────────────────────────────────────────────────────
 
 export function initDropZone() {
-  const dropZone  = document.getElementById('drop-zone');
+  const dropZone = document.getElementById('drop-zone');
   const fileInput = document.getElementById('file-input');
 
   if (!dropZone || !fileInput) return;
@@ -1622,7 +1622,7 @@ export function initDropZone() {
     if (dropZone && typeof dropZone.scrollIntoView === 'function') {
       try {
         dropZone.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      } catch (_) {}
+      } catch (_) { }
     }
   });
 
@@ -1781,8 +1781,8 @@ export function initDropZone() {
     if (!getActiveTool()) { showNoToolWarning(); return; }
     // If already processing, scanning, done, or a file thumbnail is currently loaded, do not open file window
     if (dropZone.classList.contains('dz-state-processing')) return;
-    if (dropZone.classList.contains('dz-state-scanning'))   return;
-    if (dropZone.classList.contains('dz-state-done'))       return;
+    if (dropZone.classList.contains('dz-state-scanning')) return;
+    if (dropZone.classList.contains('dz-state-done')) return;
     if (dropZone.classList.contains('dz-has-extract-done')) return;
     if (
       dropZone.classList.contains('dz-has-thumb') ||
@@ -1812,53 +1812,53 @@ export function initDropZone() {
     ) {
       const accept = tool.id.startsWith('png-') ? 'image/png,.png' : 'image/webp,.webp';
       fileInput.multiple = true;
-      fileInput.accept   = accept;
+      fileInput.accept = accept;
       fileInput.click();
       return;
     }
     // Image Compressor with existing queue: clicking zone opens picker to add more
     if (tool && tool.id === 'image_compressor' && dropZone.classList.contains('dz-has-imgcmp-thumbs')) {
       fileInput.multiple = true;
-      fileInput.accept   = 'image/*,.jpg,.jpeg,.png,.webp,.avif,.gif,.bmp,.dib,.tiff,.tif,.ico,.heic,.heif,.svg';
+      fileInput.accept = 'image/*,.jpg,.jpeg,.png,.webp,.avif,.gif,.bmp,.dib,.tiff,.tif,.ico,.heic,.heif,.svg';
       fileInput.click();
       return;
     }
     if (tool && tool.id === 'merge') {
       fileInput.multiple = true;
-      fileInput.accept   = '.pdf,application/pdf';
+      fileInput.accept = '.pdf,application/pdf';
     } else if (tool && tool.id === 'images-pdf') {
       fileInput.multiple = true;
-      fileInput.accept   = 'image/*';
+      fileInput.accept = 'image/*';
     } else if (tool && tool.id.startsWith('jpg-')) {
       // JPG tools support multi-select from the OS picker
       fileInput.multiple = true;
-      fileInput.accept   = 'image/jpeg,.jpg,.jpeg';
+      fileInput.accept = 'image/jpeg,.jpg,.jpeg';
     } else if (tool && tool.id.startsWith('png-')) {
       // PNG tools support multi-select from the OS picker
       fileInput.multiple = true;
-      fileInput.accept   = 'image/png,.png';
+      fileInput.accept = 'image/png,.png';
     } else if (tool && tool.id.startsWith('webp-')) {
       // WEBP tools support multi-select from the OS picker
       fileInput.multiple = true;
-      fileInput.accept   = 'image/webp,.webp';
+      fileInput.accept = 'image/webp,.webp';
     } else if (tool && tool.id === 'encrypt') {
       fileInput.multiple = false;
-      fileInput.accept   = '.pdf,.tceo,application/pdf,application/octet-stream';
+      fileInput.accept = '.pdf,.tceo,application/pdf,application/octet-stream';
     } else if (tool && tool.id === 'image_compressor') {
       fileInput.multiple = true;
-      fileInput.accept   = 'image/*,.jpg,.jpeg,.png,.webp,.avif,.gif,.bmp,.dib,.tiff,.tif,.ico,.heic,.heif,.svg';
+      fileInput.accept = 'image/*,.jpg,.jpeg,.png,.webp,.avif,.gif,.bmp,.dib,.tiff,.tif,.ico,.heic,.heif,.svg';
     } else if (tool && tool.id === 'archive-merge') {
       fileInput.multiple = true;
-      fileInput.accept   = '*/*';
+      fileInput.accept = '*/*';
     } else if (tool && tool.id === 'archive-protect') {
       fileInput.multiple = false;
-      fileInput.accept   = '.zip,.7z,.rar,.tar,.tar.gz,.tar.bz2,.tar.xz,.gz,.bz2,.xz,.wim,.iso,.cab';
+      fileInput.accept = '.zip,.7z,.rar,.tar,.tar.gz,.tar.bz2,.tar.xz,.gz,.bz2,.xz,.wim,.iso,.cab';
     } else if (tool && tool.id === 'archive-unlock') {
       fileInput.multiple = false;
-      fileInput.accept   = '.zip,.7z,.rar,.tar,.tar.gz,.tar.bz2,.tar.xz,.gz,.bz2,.xz';
+      fileInput.accept = '.zip,.7z,.rar,.tar,.tar.gz,.tar.bz2,.tar.xz,.gz,.bz2,.xz';
     } else if (tool && tool.id === 'archive-duplicate') {
       fileInput.multiple = false;
-      fileInput.accept   = '.zip,.7z,.rar,.tar,.tar.gz,.tar.bz2,.tar.xz,.gz,.bz2,.xz,.wim';
+      fileInput.accept = '.zip,.7z,.rar,.tar,.tar.gz,.tar.bz2,.tar.xz,.gz,.bz2,.xz,.wim';
     } else if (tool && isArchiveCreateTool(tool.id)) {
       fileInput.multiple = true;
       fileInput.accept = '*/*';
@@ -1866,73 +1866,73 @@ export function initDropZone() {
     } else if (tool && isArchiveExtractTool(tool.id)) {
       fileInput.multiple = false;
       const _EXTRACT_ACCEPTS = {
-        'archive-extract-zip':     '.zip,application/zip',
-        'archive-extract-rar':     '.rar,application/x-rar-compressed,application/vnd.rar',
-        'archive-extract-7z':      '.7z,application/x-7z-compressed',
-        'archive-extract-tar':     '.tar,application/x-tar',
-        'archive-extract-tar-gz':  '.tar.gz,.tgz,application/gzip',
+        'archive-extract-zip': '.zip,application/zip',
+        'archive-extract-rar': '.rar,application/x-rar-compressed,application/vnd.rar',
+        'archive-extract-7z': '.7z,application/x-7z-compressed',
+        'archive-extract-tar': '.tar,application/x-tar',
+        'archive-extract-tar-gz': '.tar.gz,.tgz,application/gzip',
         'archive-extract-tar-bz2': '.tar.bz2,.tbz2,application/x-bzip2',
-        'archive-extract-tar-xz':  '.tar.xz,.txz,application/x-xz',
-        'archive-extract-gz':      '.gz,application/gzip',
-        'archive-extract-bz2':     '.bz2,application/x-bzip2',
-        'archive-extract-xz':      '.xz,application/x-xz',
-        'archive-extract-cab':     '.cab,application/vnd.ms-cab-compressed',
-        'archive-extract-iso':     '.iso,application/x-iso9660-image',
-        'archive-extract-dmg':     '.dmg,application/x-apple-diskimage',
+        'archive-extract-tar-xz': '.tar.xz,.txz,application/x-xz',
+        'archive-extract-gz': '.gz,application/gzip',
+        'archive-extract-bz2': '.bz2,application/x-bzip2',
+        'archive-extract-xz': '.xz,application/x-xz',
+        'archive-extract-cab': '.cab,application/vnd.ms-cab-compressed',
+        'archive-extract-iso': '.iso,application/x-iso9660-image',
+        'archive-extract-dmg': '.dmg,application/x-apple-diskimage',
       };
       fileInput.accept = _EXTRACT_ACCEPTS[tool.id] || '*/*';
     } else if (tool && ARCHIVE_CONVERT_IDS.has(tool.id)) {
       const _CONVERT_ACCEPTS = {
-        'arc-zip-to-7z':     '.zip,application/zip',
-        'arc-zip-to-tar':    '.zip,application/zip',
+        'arc-zip-to-7z': '.zip,application/zip',
+        'arc-zip-to-tar': '.zip,application/zip',
         'arc-zip-to-tar-gz': '.zip,application/zip',
-        'arc-zip-to-rar':    '.zip,application/zip',
+        'arc-zip-to-rar': '.zip,application/zip',
 
-        'arc-tar-to-zip':    '.tar,application/x-tar',
-        'arc-tar-to-7z':     '.tar,application/x-tar',
-        'arc-tar-to-gz':     '.tar,application/x-tar',
-        'arc-tar-to-rar':    '.tar,application/x-tar',
+        'arc-tar-to-zip': '.tar,application/x-tar',
+        'arc-tar-to-7z': '.tar,application/x-tar',
+        'arc-tar-to-gz': '.tar,application/x-tar',
+        'arc-tar-to-rar': '.tar,application/x-tar',
 
-        'arc-7z-to-zip':     '.7z,application/x-7z-compressed',
-        'arc-7z-to-tar':     '.7z,application/x-7z-compressed',
-        'arc-7z-to-tar-gz':  '.7z,application/x-7z-compressed',
-        'arc-7z-to-rar':     '.7z,application/x-7z-compressed',
+        'arc-7z-to-zip': '.7z,application/x-7z-compressed',
+        'arc-7z-to-tar': '.7z,application/x-7z-compressed',
+        'arc-7z-to-tar-gz': '.7z,application/x-7z-compressed',
+        'arc-7z-to-rar': '.7z,application/x-7z-compressed',
 
         'arc-tar-gz-to-zip': '.tar.gz,.tgz,application/gzip',
-        'arc-tar-gz-to-7z':  '.tar.gz,.tgz,application/gzip',
+        'arc-tar-gz-to-7z': '.tar.gz,.tgz,application/gzip',
         'arc-tar-gz-to-tar': '.tar.gz,.tgz,application/gzip',
         'arc-tar-gz-to-rar': '.tar.gz,.tgz,application/gzip',
 
-        'arc-rar-to-zip':    '.rar,application/x-rar-compressed,application/vnd.rar',
-        'arc-rar-to-7z':     '.rar,application/x-rar-compressed,application/vnd.rar',
-        'arc-rar-to-tar':    '.rar,application/x-rar-compressed,application/vnd.rar',
+        'arc-rar-to-zip': '.rar,application/x-rar-compressed,application/vnd.rar',
+        'arc-rar-to-7z': '.rar,application/x-rar-compressed,application/vnd.rar',
+        'arc-rar-to-tar': '.rar,application/x-rar-compressed,application/vnd.rar',
         'arc-rar-to-tar-gz': '.rar,application/x-rar-compressed,application/vnd.rar',
       };
       fileInput.multiple = false;
-      fileInput.accept   = _CONVERT_ACCEPTS[tool.id] || '*/*';
+      fileInput.accept = _CONVERT_ACCEPTS[tool.id] || '*/*';
     } else if (tool) {
       // ── Per-format image accept filters ──────────────────────────────────────
       const _IMG_ACCEPT = {
         // Top-level image category entry tools
-        'jpg'            : 'image/jpeg,.jpg,.jpeg',
-        'png'            : 'image/png,.png',
-        'webp'           : 'image/webp,.webp',
-        'gif'            : 'image/gif,.gif',
-        'bmp'            : 'image/bmp,.bmp',
-        'tiff'           : 'image/tiff,.tiff,.tif',
-        'svg'            : 'image/svg+xml,.svg',
+        'jpg': 'image/jpeg,.jpg,.jpeg',
+        'png': 'image/png,.png',
+        'webp': 'image/webp,.webp',
+        'gif': 'image/gif,.gif',
+        'bmp': 'image/bmp,.bmp',
+        'tiff': 'image/tiff,.tiff,.tif',
+        'svg': 'image/svg+xml,.svg',
       };
       const imgAccept = _IMG_ACCEPT[tool.id];
       if (imgAccept) {
         fileInput.multiple = false;
-        fileInput.accept   = imgAccept;
+        fileInput.accept = imgAccept;
       } else {
         fileInput.multiple = false;
-        fileInput.accept   = PDF_TOOL_IDS.has(tool.id) ? '.pdf,application/pdf' : '*/*';
+        fileInput.accept = PDF_TOOL_IDS.has(tool.id) ? '.pdf,application/pdf' : '*/*';
       }
     } else {
       fileInput.multiple = false;
-      fileInput.accept   = '*/*';
+      fileInput.accept = '*/*';
     }
     fileInput.click();
   });
@@ -1966,14 +1966,14 @@ export function initDropZone() {
     dropZone.classList.remove('drag-active');
     if (!getActiveTool()) { showNoToolWarning(); return; }
     if (dropZone.classList.contains('dz-state-processing')) return;
-    if (dropZone.classList.contains('dz-state-scanning'))   return;
-    if (dropZone.classList.contains('dz-state-done'))       return;
+    if (dropZone.classList.contains('dz-state-scanning')) return;
+    if (dropZone.classList.contains('dz-state-done')) return;
     if (dropZone.classList.contains('dz-has-extract-done')) return;
     // For JPG/PNG/WEBP tools with a queue already shown, let additional drops add to the queue
     if (dropZone.classList.contains('dz-has-jpg-thumbs') ||
-        dropZone.classList.contains('dz-has-png-thumbs') ||
-        dropZone.classList.contains('dz-has-webp-thumbs') ||
-        dropZone.classList.contains('dz-has-imgcmp-thumbs')) {
+      dropZone.classList.contains('dz-has-png-thumbs') ||
+      dropZone.classList.contains('dz-has-webp-thumbs') ||
+      dropZone.classList.contains('dz-has-imgcmp-thumbs')) {
       if (e.dataTransfer.files.length > 0) _submitFile(e.dataTransfer.files);
       return;
     }
@@ -2043,7 +2043,7 @@ export function initDropZone() {
     const maxScroll = strip.scrollHeight - strip.clientHeight;
     const currentScroll = strip.scrollTop;
     const scrollingDown = e.deltaY > 0;
-    const scrollingUp   = e.deltaY < 0;
+    const scrollingUp = e.deltaY < 0;
 
     if (scrollingDown) {
       if (currentScroll >= maxScroll - 1.5) {
