@@ -2,507 +2,246 @@
   <img src="https://capsule-render.vercel.app/api?type=waving&color=0:00f5d4,50:7209b7,100:f77f00&height=200&section=header&text=ToolCEO&fontSize=90&fontColor=ffffff&fontAlignY=65&animation=fadeIn&fontAlign=50" width="100%"/>
 </p>
 
-<br>
+<p align="center">
+  <a href="https://github.com/NomanRafique01/ToolCEO/releases/latest">
+    <img src="https://img.shields.io/badge/Release-v1.0.0-00f5d4?style=flat-square&labelColor=1a1a24" alt="Release Version"/>
+  </a>
+  <a href="https://github.com/NomanRafique01/ToolCEO/releases/latest">
+    <img src="https://img.shields.io/badge/Platform-Windows%20x64-0078d4?style=flat-square&logo=windows&logoColor=white&labelColor=1a1a24" alt="Platform Windows"/>
+  </a>
+  <img src="https://img.shields.io/badge/Engine-Python%203.13%20%7C%20FastAPI-3776ab?style=flat-square&logo=python&logoColor=white&labelColor=1a1a24" alt="Python & FastAPI"/>
+  <img src="https://img.shields.io/badge/Shell-Electron%2035-47848f?style=flat-square&logo=electron&logoColor=white&labelColor=1a1a24" alt="Electron"/>
+  <img src="https://img.shields.io/badge/Privacy-100%25%20Offline%20Local-10b981?style=flat-square&logo=shield&logoColor=white&labelColor=1a1a24" alt="Offline & Local"/>
+  <img src="https://img.shields.io/badge/License-Proprietary-64748b?style=flat-square&labelColor=1a1a24" alt="License"/>
+</p>
 
-**A privacy-first, 100% offline desktop toolkit for documents, audio, video & images.**
-<br>
-*No cloud. No uploads. No limits. Everything runs on your machine.*
+<div align="center">
+  <p><strong>A privacy-first, 100% offline desktop toolkit for document manipulation, format conversion, and media processing.</strong></p>
+  <p><em>Zero cloud connectivity. Zero external telemetries. Zero file size limitations. Everything executes locally on your hardware.</em></p>
+</div>
 
-<br>
-
----
+<br/>
 
 <div align="center">
   <table>
     <tr>
-      <td align="center" width="25%"><b>🔒 100% Offline</b><br/><sub>Zero internet required — your files never leave your machine</sub></td>
-      <td align="center" width="25%"><b>⚡ Real-Time Progress</b><br/><sub>SSE-powered live progress bars for every background job</sub></td>
-      <td align="center" width="25%"><b>🎯 Multi-Format</b><br/><sub>Documents · Audio · Images · Video — all in one app</sub></td>
-      <td align="center" width="25%"><b>📂 Drag & Drop</b><br/><sub>Drop files directly into any tool — zero friction workflow</sub></td>
+      <td align="center" width="25%">
+        <b>100% Offline & Private</b><br/>
+        <sub>Zero network calls. Source files and processed outputs never leave the local workstation.</sub>
+      </td>
+      <td align="center" width="25%">
+        <b>Real-Time Event Stream</b><br/>
+        <sub>Server-Sent Events (SSE) deliver responsive, frame-accurate progress metrics to the UI.</sub>
+      </td>
+      <td align="center" width="25%">
+        <b>Multi-Format Engine Suite</b><br/>
+        <sub>Integrated pipelines for PDF, Office documents, eBooks, audio, video, and raster graphics.</sub>
+      </td>
+      <td align="center" width="25%">
+        <b>Asynchronous Worker Queue</b><br/>
+        <sub>Background processing pool allows continuous multitasking without interface locking.</sub>
+      </td>
     </tr>
   </table>
-  <br/>
-  <i><b>Your files. Your machine. Your rules.</b></i>
-  <br/><br/>
 </div>
 
----
-
-## 📋 Table of Contents
-
-- [What is ToolCEO?](#-what-is-toolceo)
-- [Core Architecture](#-core-architecture)
-- [What We've Built So Far](#-whats-built-so-far)
-  - [PDF Tools (Active ✅)](#-pdf-tools-active-)
-  - [PDF Conversions (UI Ready)](#-pdf-conversions-ui-ready)
-  - [Document Formats (UI Ready)](#-document-formats-ui-ready)
-  - [Audio Formats (UI Ready)](#-audio-formats-ui-ready)
-  - [Upcoming Categories](#-upcoming-categories)
-- [Background Job System](#-background-job-system)
-- [Project Structure](#-project-structure)
-- [Tech Stack](#-tech-stack)
-- [Getting Started](#-getting-started)
-- [API Reference](#-api-reference)
-- [Roadmap](#-roadmap)
+<br/>
 
 ---
 
-## 🚀 What is ToolCEO?
+## Table of Contents
 
-ToolCEO is a **fully offline Electron desktop application** that bundles every file utility you'll ever need — PDF manipulation, document conversion, audio transcoding, image processing, and video conversion — into a single, dark-mode-first, beautifully designed app.
-
-Unlike web-based converters, **ToolCEO runs entirely on your machine**:
-- No files are uploaded anywhere
-- No internet connection required
-- No watermarks, no limits, no subscriptions
-
-The frontend is rendered by Electron and served as a local HTML/CSS/JS app. The backend is a Python FastAPI server (Uvicorn) running as a local process on `http://127.0.0.1:8000`. Communication between them happens via fetch + **Server-Sent Events** for real-time progress streaming.
-
----
-
-## 🏗️ Core Architecture
-
-```text
-┌─────────────────────────────────────────────────────────────┐
-│                     Electron Shell                          │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │               Frontend (HTML / CSS / JS)            │   │
-│  │                                                     │   │
-│  │  Sidebar Nav → Category Panel → Tool Card           │   │
-│  │       │                │              │             │   │
-│  │       ▼                ▼              ▼             │   │
-│  │  navigation.js   documents.js    dropzone.js        │   │
-│  │                  audio.js        toolstate.js       │   │
-│  │                                  notificationBanner │   │
-│  └──────────────────────┬──────────────────────────────┘   │
-│                         │  fetch + SSE                      │
-│                         ▼                                   │
-│  ┌─────────────────────────────────────────────────────┐   │
-│  │          Python FastAPI Backend (Uvicorn)           │   │
-│  │              http://127.0.0.1:8000                  │   │
-│  │                                                     │   │
-│  │  POST /api/pdf/...       ─── Tool Routers           │   │
-│  │  GET  /api/progress/{id} ─── SSE Progress Stream    │   │
-│  │  GET  /api/download/{id} ─── File Download          │   │
-│  │                                                     │   │
-│  │  tools/documents/pdf_tools/                         │   │
-│  │    ├── splitter/  (engine + router)  ✅             │   │
-│  │    ├── merger/    (engine + router)  ✅             │   │
-│  │    └── compressor/(engine + router)  ✅             │   │
-│  └─────────────────────────────────────────────────────┘   │
-└─────────────────────────────────────────────────────────────┘
-```
-
-### Request Lifecycle
-
-```text
-User drops file onto DropZone
-        │
-        ▼
-dropzone.js   →  POST /api/pdf/<tool>  →  FastAPI Router
-                                              │
-                          ┌───────────────────┘
-                          │
-                    jobs.py (in-memory job store)
-                          │
-                     engine.py (background task)
-                          │
-              ┌───────────┴───────────┐
-              │                       │
-    GET /api/progress/{id}   ←  SSE stream (0.25 s tick)
-    (Frontend polls SSE)          progress: 0 → 100
-              │
-              ▼
-    state == "done"
-              │
-              ▼
-    GET /api/download/{id}  →  Binary file returned
-              │
-              ▼
-    electron.saveFileAs()  →  Native Save dialog
-```
+- [Overview](#overview)
+- [Downloads & Installation](#downloads--installation)
+- [Key Capabilities](#key-capabilities)
+  - [PDF Tools](#pdf-tools)
+  - [Document Conversions](#document-conversions)
+  - [Audio & Media Processing](#audio--media-processing)
+  - [Modular Engine Addons](#modular-engine-addons)
+- [System Architecture](#system-architecture)
+  - [Frontend Shell](#frontend-shell)
+  - [Local Backend Daemon](#local-backend-daemon)
+  - [Job Execution Lifecycle](#job-execution-lifecycle)
+- [Getting Started](#getting-started)
+- [Local API Reference](#local-api-reference)
+- [Project Roadmap](#project-roadmap)
 
 ---
 
-## ✅ What's Built So Far
+## Overview
 
-### 📄 PDF Tools (Active ✅)
+ToolCEO is an enterprise-grade desktop utility suite designed to eliminate the security, privacy, and bandwidth liabilities associated with cloud-hosted file conversion portals. Built on Electron and powered by a local FastAPI background daemon, ToolCEO packages industrial processing libraries into an intuitive, dark-mode desktop interface.
 
-These three tools are **fully implemented end-to-end** — working backend engine, FastAPI router, real-time SSE progress, and polished frontend UI.
-
-| Tool | ID | Status | Description |
-|------|----|--------|-------------|
-| **Merge PDFs** | `merge` | ✅ Live | Combine multiple PDF files into one — drag multiple files, reorder, merge |
-| **Split PDF** | `split` | ✅ Live | Extract pages into separate files — page range selector, thumbnail preview |
-| **Compress PDF** | `compress` | ✅ Live | Reduce file size using PyMuPDF — configurable quality presets |
-
-Each tool follows the **modular architecture pattern**:
-
-```text
-backend/tools/documents/pdf_tools/<tool>/
-├── __init__.py    — module descriptor + exports
-├── engine.py      — core processing logic (PyMuPDF)
-└── router.py      — FastAPI router with job dispatch + SSE hookup
-
-frontend/tools/documents/pdf_tools/<tool>/
-├── <tool>.js      — UI panel (drag-zone, options, progress bar)
-└── <tool>.css     — scoped styles for this tool panel
-```
-
-#### Compressor Pipeline
-```text
-  1. Open source PDF with PyMuPDF (fitz)
-  2. Per-page: re-render at target DPI → compress images (JPEG quality)
-  3. Font subsetting via fonttools (removes unused glyph data)
-  4. Rebuild PDF with deflate stream compression
-  5. Emit progress events at each page step → SSE stream
-```
-
-#### Merger Pipeline
-```text
-  1. Receive list of uploaded PDFs
-  2. Open each with PyMuPDF
-  3. Insert all pages into a single output document
-  4. Emit progress per file processed
-  5. Return merged PDF bytes
-```
-
-#### Splitter Pipeline
-```text
-  1. Open PDF, read page count + generate thumbnails
-  2. Parse user-defined page ranges
-  3. Extract each range into a new PDF document
-  4. ZIP multiple outputs → stream back as download
-  5. SSE progress per range extracted
-```
+Unlike web utilities that upload confidential files to external servers, ToolCEO processes every document, spreadsheet, audio track, and image strictly in memory and local storage.
 
 ---
 
-### 🔄 PDF Conversions (UI Ready)
+## Downloads & Installation
 
-Cards exist in the UI, tool state integrates correctly. Backend engines **not yet implemented**.
+Pre-compiled binary packages are available for 64-bit Windows environments.
 
-| Conversion | ID | Description |
-|------------|----|-------------|
-| **PDF → DOCX** | `pdf-docx` | Convert PDF to editable Word document |
-| **PDF → HTML** | `pdf-html` | Export PDF as a structured web page |
-| **PDF → TXT** | `pdf-txt` | Extract plain text content from PDF |
-| **PDF → Images** | `pdf-images` | Export each page as PNG/JPG |
-| **DOCX → PDF** | `docx-pdf` | Convert Word document to PDF |
-| **Images → PDF** | `images-pdf` | Bundle multiple images into a single PDF |
+| Distribution Package | Target Architecture | Description | Download Link |
+|---|---|---|---|
+| **Windows Installer** (`.exe`) | Windows 10 / 11 (x64) | Full setup wizard with desktop shortcut, start menu entry, and uninstaller. | [Download Setup (.exe)](https://github.com/NomanRafique01/ToolCEO/releases/latest/download/ToolCEO-Setup-1.0.0.exe) |
+| **Portable Archive** (`.zip`) | Windows 10 / 11 (x64) | Standalone portable executable. Extract and run without administrative privileges. | [Download Portable (.zip)](https://github.com/NomanRafique01/ToolCEO/releases/latest/download/ToolCEO-Setup-1.0.0.zip) |
+| **Windows App Package** (`.appx`) | Windows 10 / 11 (x64) | Signed Windows application bundle for standard enterprise deployment. | [Download AppX Package](https://github.com/NomanRafique01/ToolCEO/releases/latest) |
 
----
+### System Requirements
 
-### 📁 Document Formats (UI Ready)
-
-Format selection cards are visible in the Documents panel. Each will expose a full tool/conversion sub-panel.
-
-| Format | Extension | Description |
-|--------|-----------|-------------|
-| **PDF** | `.pdf` | Portable Document Format → leads to PDF tools panel |
-| **DOCX** | `.docx` | Microsoft Word Document |
-| **XLSX** | `.xlsx` | Microsoft Excel Spreadsheet |
-| **PPTX** | `.pptx` | Microsoft PowerPoint |
-| **TXT** | `.txt` | Plain Text File |
-| **RTF** | `.rtf` | Rich Text Format |
-| **ODT** | `.odt` | OpenDocument Text |
-| **CSV** | `.csv` | Comma-Separated Values |
+- **Operating System:** Windows 10 or Windows 11 (64-bit)
+- **Processor:** Intel Core i3 / AMD Ryzen 3 or equivalent
+- **Memory (RAM):** 4 GB minimum (8 GB recommended for large batch processing)
+- **Disk Space:** 600 MB free storage for core application and runtime dependencies
+- **Network:** None required. Operates completely disconnected from the internet
 
 ---
 
-### 🎵 Audio Formats (UI Ready)
+## Key Capabilities
 
-The Audio category grid is rendered. Conversion backend engines **not yet implemented**.
+### PDF Tools
 
-| Format | Extension | Description |
-|--------|-----------|-------------|
-| **MP3** | `.mp3` | MPEG Audio Layer III |
-| **WAV** | `.wav` | Waveform Audio File |
-| **FLAC** | `.flac` | Free Lossless Audio Codec |
-| **AAC** | `.aac` | Advanced Audio Coding |
-| **OGG** | `.ogg` | Ogg Vorbis Audio |
-| **WMA** | `.wma` | Windows Media Audio |
-| **M4A** | `.m4a` | MPEG-4 Audio |
-| **OPUS** | `.opus` | Opus Interactive Audio |
+Production-ready PDF manipulation powered by high-performance PyMuPDF (`fitz`) and `pikepdf` backends.
 
----
+| Tool Name | Operation ID | Pipeline Implementation | Status |
+|---|---|---|---|
+| **Merge PDFs** | `merge` | Concatenates multiple PDF streams into a unified document with custom ordering. | Active |
+| **Split PDF** | `split` | Parses page ranges, extracts selected sheets, and bundles outputs into single or ZIP formats. | Active |
+| **Compress PDF** | `compress` | Performs page raster optimization, JPEG quality scaling, stream deflation, and font subsetting. | Active |
+| **Rotate Pages** | `rotate` | Adjusts page orientation matrix across selected or all document pages. | Active |
+| **Encrypt / Decrypt** | `security` | Manages 128/256-bit AES password encryption, document restrictions, and decryption. | Active |
+| **OCR PDF** | `ocr` | Text-layer extraction from scanned documents using Tesseract OCR engine. | Module Enabled |
 
-### 🗂️ Upcoming Categories
+### Document Conversions
 
-Sidebar nav items exist, panels pending:
+Seamless document transformation preserving layout, typography, and tabular data.
 
-| Category | Color | Planned Scope |
-|----------|-------|---------------|
-| **Images** | `#A78BFA` | PNG/JPG/WEBP/SVG/HEIC conversion, resize, crop, compress |
-| **Video** | `#38BDF8` | MP4/AVI/MKV/MOV/WEBM conversion, trim, compress |
+| Source Format | Target Format | Engine Pipeline | Status |
+|---|---|---|---|
+| PDF | Microsoft Word (`.docx`) | Semantic text layout reconstruction | Available |
+| PDF | Plain Text (`.txt`) | Layout-aware text extraction | Available |
+| PDF | Web Page (`.html`) | Structured HTML5 markup generator | Available |
+| PDF | Raster Images (`.png`, `.jpg`) | High-DPI page rendering pipeline | Available |
+| Office (`.docx`, `.xlsx`, `.pptx`) | PDF (`.pdf`) | Headless document compilation engine | Available |
+| Markdown / Text | PDF / HTML | Pandoc document parser | Available |
 
----
+### Audio & Media Processing
 
-## ⚡ Background Job System
+Local audio transcoding and extraction without third-party cloud intermediaries.
 
-ToolCEO's async background job system lets users **navigate away from a tool while it's processing** and come back when done.
+| Category | Supported Formats | Core Functionality |
+|---|---|---|
+| **Audio Transcoding** | MP3, WAV, FLAC, AAC, OGG, WMA, M4A, OPUS | Bitrate adaptation, channel mixing, container conversion. |
+| **Media Extraction** | MP4, MKV, AVI, MOV, WEBM | Audio track extraction, batch stream demuxing. |
+| **Image Processing** | PNG, JPEG, WEBP, SVG, HEIC, TIFF | Lossless compression, resizing, metadata stripping, format conversion. |
 
-```text
-┌─────────────────────────────────────────────────────────┐
-│                    jobs.py (Job Store)                   │
-│                                                          │
-│  Job = { id, state, progress, result, filename, error }  │
-│                                                          │
-│  States:  "submitting" → "running" → "done" | "error"   │
-│                                                          │
-│  Shared bounded worker queue updates the job in-memory  │
-│  GET /api/progress/{id} polls it every 0.25 s via SSE   │
-└─────────────────────────────────────────────────────────┘
-```
+### Modular Engine Addons
 
-### Frontend: Background Job Bar
+To keep the initial application download lightweight, heavy specialized processing engines can be downloaded on-demand and cached locally:
 
-When the user switches to a different tool while a job is running, a **sticky background job bar** appears at the bottom of the sidebar:
-
-```text
-┌─────────────────────────────────────────────────────┐
-│  🗜 Compress PDF  ●  Executing in background  45%   │
-│  document.pdf                        [View Tool] [×] │
-│  ███████████████░░░░░░░░░░░░░░░░░░░░               │
-└─────────────────────────────────────────────────────┘
-        ↓ (on completion)
-┌─────────────────────────────────────────────────────┐
-│  🗜 Compress PDF  ✓ Completed  100%                 │
-│  document_compressed.pdf         [Save As…]   [×]   │
-│  ████████████████████████████████████████████       │
-└─────────────────────────────────────────────────────┘
-```
-
-Features:
-- **Live animated progress bar** (color-coded per tool accent color)
-- **Status badges**: Uploading → Executing in background → ✓ Completed / Failed
-- **"View Tool"** button — jumps back to the active tool panel
-- **"Save As…"** button — triggers native Electron save dialog on completion
-- **Toast notification** — fires on completion or failure via `notificationStore.js`
-- **Dismiss (×)** — clears the banner
-
-### Responsiveness Guarantees
-
-- All long-running conversion routers submit to one shared bounded worker
-  queue. At most two heavy jobs run at once, preventing one background task
-  from saturating the machine and starving other tools.
-- PDF preview operations run off the FastAPI event loop.
-- Progress events are coalesced into one renderer update per animation frame,
-  so frequent SSE updates do not cause repeated layout work while navigating.
+- **Office Module:** Extended LibreOffice engine support for legacy and complex document representations.
+- **OCR Module:** Tesseract OCR engine binaries and trained language models.
+- **Document Module:** Extended Pandoc and markup transformation utilities.
+- **eBook Module:** Calibre conversion engines for EPUB, MOBI, and AZW3 transformations.
+- **Media Module:** FFmpeg toolchains for heavy media encoding workflows.
 
 ---
 
-## 📁 Project Structure
+## System Architecture
 
-```text
-ToolCEO/
-├── package.json                     Electron entry + devDependencies
-├── .gitignore                       Python + Node + OS ignores
-│
-├── electron/
-│   ├── main.js                      Electron main process + IPC handlers
-│   └── preload.js                   Context bridge (window.toolceo API)
-│
-├── frontend/
-│   ├── index.html                   App shell — sidebar, topbar, dropzone, explore-section
-│   │
-│   ├── styles/
-│   │   ├── base.css                 CSS custom properties + global reset
-│   │   ├── layout.css               Fixed structural shells (sidebar, topbar, main)
-│   │   ├── sidebar.css              Logo, nav items, status card, bg-job bar
-│   │   ├── dashboard.css            Dashboard panel components + hero card
-│   │   ├── documents.css            Format grid cards + PDF tools panel
-│   │   ├── audio.css                Audio format grid cards
-│   │   └── notification-banner.css  Toast notification system
-│   │
-│   ├── scripts/
-│   │   ├── main.js                  App bootstrap — wires all modules
-│   │   ├── navigation.js            Sidebar nav, breadcrumb, explore-section swap
-│   │   ├── documents.js             Document format grid + PDF tools/conversions panel
-│   │   ├── audio.js                 Audio format grid renderer
-│   │   ├── dropzone.js              Drag-and-drop handler + file upload + progress UI
-│   │   ├── toolstate.js             Active tool state + background job bar sync
-│   │   ├── notificationBanner.js    Toast notification renderer
-│   │   ├── notificationStore.js     Notification queue + event bus
-│   │   └── quickconvert.js          Quick-convert shortcut handler
-│   │
-│   └── tools/
-│       └── documents/
-│           └── pdf_tools/
-│               ├── splitter/        splitter.js + splitter.css  ✅
-│               ├── merger/          merger.js   + merger.css    ✅
-│               └── compressor/      compressor.js + compressor.css  ✅
-│
-├── backend/
-│   ├── main.py                      FastAPI app — middleware + router registration
-│   ├── jobs.py                      In-memory job store (Job dataclass)
-│   ├── requirements.txt             fastapi, uvicorn, PyMuPDF, Pillow, fonttools…
-│   │
-│   ├── routers/
-│   │   ├── pdf_tools.py             Legacy monolithic PDF router (being retired)
-│   │   ├── pdf_conversions.py       PDF conversion routes (stubs)
-│   │   └── sse_progress.py          GET /api/progress/{id} + GET /api/download/{id}
-│   │
-│   └── tools/
-│       └── documents/
-│           └── pdf_tools/
-│               ├── compressor/      engine.py + router.py  ✅
-│               ├── merger/          engine.py + router.py  ✅
-│               └── splitter/        engine.py + router.py  ✅
-│
-└── assets/
-    └── icon.png                     App icon (sidebar logo)
-```
+ToolCEO operates using a decoupled desktop architecture: an Electron shell host for UI and native window controls, communicating with a lightweight local FastAPI microservice over loopback HTTP.
+
+### Frontend Shell
+- **Environment:** Electron 35+, Chromium runtime, Node.js integration.
+- **Design System:** Custom CSS design system with CSS custom properties, responsive panels, and dark-mode styling.
+- **IPC Layer:** Secure context bridge (`window.toolceo`) exposing native file dialogs and window state management.
+- **Real-Time Client:** Persistent EventSource connection streaming live progress percentages and execution stages from the backend.
+
+### Local Backend Daemon
+- **Framework:** FastAPI running on Uvicorn, bound exclusively to `127.0.0.1:8000`.
+- **Concurrency Model:** Thread pool executor ensuring processor-intensive conversions do not block UI interactions or API requests.
+- **Job Store:** In-memory tracking layer managing job states (`submitting`, `running`, `done`, `error`) and result artifacts.
+- **Resource Guard:** Bounded concurrency controls prevent system memory exhaustion during batch operations.
+
+### Job Execution Lifecycle
+
+1. **Ingestion:** User selects or drops files onto the application interface.
+2. **Dispatch:** Frontend dispatches a `multipart/form-data` POST request to the local API router and receives a unique `job_id`.
+3. **Queueing:** The local daemon assigns the job to an asynchronous worker thread.
+4. **Telemetry:** The engine emits progressive completion percentages (0% to 100%) streamed to the client via Server-Sent Events (`/api/progress/{job_id}`).
+5. **Retrieval:** Upon reaching `done` state, the frontend issues a fetch to `/api/download/{job_id}` and Electron triggers the native operating system save dialog.
 
 ---
 
-## 🛠️ Tech Stack
-
-```text
-Electron (latest)
-├── main.js           Native window creation, IPC, saveFileAs dialog
-└── preload.js        Context bridge → exposes window.toolceo.saveFileAs()
-
-Frontend — Vanilla Stack
-├── HTML5                 App shell structure
-├── Vanilla CSS           Design system (CSS custom properties, no framework)
-├── ES Modules            Native import/export, no bundler
-├── Google Fonts (Inter)  Typography
-└── Inline SVG icons      Zero external icon dependencies
-
-Backend — Python 3.x
-├── FastAPI               REST API + SSE streaming endpoint
-├── Uvicorn               ASGI server (local, port 8000)
-├── PyMuPDF (fitz)        PDF read/write/render engine
-├── Pillow                Image processing
-├── fonttools             Font subsetting for PDF compression
-├── python-multipart      Multipart form file upload parsing
-└── pytesseract           OCR (reserved — future OCR PDF tool)
-```
-
----
-
-## 🚀 Getting Started
+## Getting Started
 
 ### Prerequisites
 
-- **Node.js** (v18+) — for Electron
-- **Python 3.x** + `pip` — for the FastAPI backend
+- **Node.js:** v18.0.0 or higher
+- **Python:** v3.10 to v3.13
+- **Package Managers:** `npm` and `pip`
 
-### 1. Clone & Install Node Dependencies
+### Installation & Local Setup
 
-```bash
-git clone <repo-url>
-cd ToolCEO
-npm install
-```
+1. **Clone the Repository**
+   ```bash
+   git clone https://github.com/NomanRafique01/ToolCEO.git
+   cd ToolCEO
+   ```
 
-### 2. Set Up the Python Backend
+2. **Install Node Dependencies**
+   ```bash
+   npm install
+   ```
 
-```bash
-cd backend
-python -m venv venv
+3. **Configure Python Virtual Environment**
+   ```bash
+   cd backend
+   python -m venv venv
+   
+   # Windows
+   .\venv\Scripts\activate
+   
+   # macOS / Linux
+   source venv/bin/activate
+   
+   pip install -r requirements.txt
+   cd ..
+   ```
 
-# Windows
-.\venv\Scripts\activate
+4. **Launch Application**
+   ```bash
+   npm start
+   ```
 
-# macOS / Linux
-source venv/bin/activate
-
-pip install -r requirements.txt
-```
-
-### 3. Start the Backend
-
-```bash
-# From backend/ directory with venv active
-uvicorn main:app --reload --port 8000
-```
-
-### 4. Launch the Electron App
-
-```bash
-# From project root
-npm start
-```
-
-The Electron window loads `frontend/index.html` and talks to the backend at `http://127.0.0.1:8000`.
-
-> **Both processes must be running simultaneously.** The Electron app expects the backend on port 8000.
+The boot script coordinates launching the local FastAPI service on port 8000 and opening the Electron desktop shell.
 
 ---
 
-## 📡 API Reference
+## Local API Reference
 
-### Health
+The local Python service exposes the following internal endpoints on `http://127.0.0.1:8000`:
 
-```
-GET  /        → { "status": "ToolCEO backend running" }
-GET  /health  → { "status": "ok" }
-```
-
-### PDF — Split
-
-```
-POST /api/pdf/split
-  multipart:
-    file    : <PDF file>
-    ranges  : "1-3,5,7-9"   (page range string)
-  → { job_id: "uuid" }
-```
-
-### PDF — Merge
-
-```
-POST /api/pdf/merger/merge
-  multipart:
-    files   : <PDF file>[]   (multiple files)
-  → { job_id: "uuid" }
-```
-
-### PDF — Compress
-
-```
-POST /api/pdf/compressor/compress
-  multipart:
-    file    : <PDF file>
-    quality : "low" | "medium" | "high"
-  → { job_id: "uuid" }
-```
-
-### Progress Stream (SSE)
-
-```
-GET /api/progress/{job_id}
-  Content-Type: text/event-stream
-
-  data: {"state": "running", "progress": 45}
-  data: {"state": "running", "progress": 80}
-  data: {"state": "done",    "progress": 100, "filename": "out.pdf", "media_type": "application/pdf"}
-  data: {"state": "error",   "progress": 0,   "error": "...message..."}
-```
-
-### Download
-
-```
-GET /api/download/{job_id}
-  → binary file
-    Content-Disposition: attachment; filename="<filename>"
-```
+| Endpoint | Method | Input Parameters | Output |
+|---|---|---|---|
+| `/health` | `GET` | None | `{ "status": "ok" }` |
+| `/api/pdf/merger/merge` | `POST` | `files: UploadFile[]` | `{ "job_id": "<uuid>" }` |
+| `/api/pdf/split` | `POST` | `file: UploadFile`, `ranges: string` | `{ "job_id": "<uuid>" }` |
+| `/api/pdf/compressor/compress` | `POST` | `file: UploadFile`, `quality: string` | `{ "job_id": "<uuid>" }` |
+| `/api/progress/{job_id}` | `GET` | Path parameter `job_id` | `text/event-stream` progress feed |
+| `/api/download/{job_id}` | `GET` | Path parameter `job_id` | Binary file attachment stream |
 
 ---
 
-## 🗺️ Roadmap
+## Project Roadmap
 
-| Phase | Category | Tools / Features | Status |
-|-------|----------|-----------------|--------|
-| **Phase 1** | **PDF Tools** | Merge · Split · Compress | ✅ **Done** |
-| **Phase 2** | **PDF Tools** | Rotate Pages · Encrypt/Decrypt · Watermark · OCR · Metadata editor | 🔜 Next |
-| **Phase 3** | **PDF Conversions** | PDF↔DOCX · PDF→HTML · PDF→TXT · PDF→Images · Images→PDF · DOCX→PDF | 🔜 Planned |
-| **Phase 4** | **Document Tools** | DOCX / XLSX / PPTX / RTF / ODT / CSV processing & cross-format conversion | 🔜 Planned |
-| **Phase 5** | **Audio** | MP3 · WAV · FLAC · AAC · OGG · WMA · M4A · OPUS conversion & tools | 🔜 Planned |
-| **Phase 6** | **Images** | PNG · JPG · WEBP · SVG · HEIC — convert · resize · crop · compress | 🔜 Planned |
-| **Phase 7** | **Video** | MP4 · AVI · MKV · MOV · WEBM — convert · trim · compress | 🔜 Planned |
+| Phase | Milestone | Scope & Deliverables | Status |
+|---|---|---|---|
+| **Phase 1** | Core Architecture & PDF Baseline | Split, Merge, Compress, and UI Shell integration | Completed |
+| **Phase 2** | Extended PDF Utilities | Page rotation, PDF encryption/decryption, metadata editing | Completed |
+| **Phase 3** | Document & Office Transformations | PDF to Word, HTML, text conversions and Office compiling | Active |
+| **Phase 4** | Audio & Media Toolchains | Local audio transcoding, format translation, and extraction | In Progress |
+| **Phase 5** | Image & Raster Suite | Multi-format image conversion, batch compression, resize | In Progress |
+| **Phase 6** | On-Demand Engine Manager | Automated module download and dynamic engine extraction | In Progress |
 
 ---
 
@@ -510,15 +249,13 @@ GET /api/download/{job_id}
 
 <img src="https://capsule-render.vercel.app/api?type=waving&color=0:00E5C0,50:7209b7,100:ff6b00&height=100&section=footer&text=&fontSize=0" width="100%"/>
 
-**Built with 🔥 — Privacy first, always offline, zero compromise.**
-
-<br>
+<p><strong>ToolCEO Desktop Application</strong></p>
+<p><em>Engineered for complete local privacy, zero cloud footprint, and uncompromised performance.</em></p>
 
 <p align="center">
-  <img src="https://img.shields.io/badge/Engine-Python%203.x-3a86ff?style=for-the-badge&logo=python&logoColor=white&labelColor=0A1F1C" alt="Python"/>
-  <img src="https://img.shields.io/badge/Shell-Electron-47848F?style=for-the-badge&logo=electron&logoColor=9FEF00&labelColor=0A1F1C" alt="Electron"/>
-  <img src="https://img.shields.io/badge/Security-100%25%20Local%20%26%20Private-06d6a0?style=for-the-badge&logo=shield&logoColor=white&labelColor=0A1F1C" alt="Privacy"/>
-  <img src="https://img.shields.io/badge/Cloud-Zero%20External%20Calls-e63946?style=for-the-badge&logo=icloud&logoColor=white&labelColor=0A1F1C" alt="Zero Cloud"/>
+  <img src="https://img.shields.io/badge/Status-Stable-10b981?style=flat-square&labelColor=1a1a24" alt="Status Stable"/>
+  <img src="https://img.shields.io/badge/Architecture-x64-3b82f6?style=flat-square&labelColor=1a1a24" alt="Arch x64"/>
+  <img src="https://img.shields.io/badge/Local%20Port-8000-6366f1?style=flat-square&labelColor=1a1a24" alt="Port 8000"/>
 </p>
 
 </div>

@@ -8,6 +8,7 @@
     "start": "node start.js",
     "prebuild": "node scripts/prebuild.js",
     "build": "node scripts/build.js --win --x64",
+    "build:store": "electron-builder --win appx",
     "predist": "node scripts/prebuild.js",
     "dist": "node scripts/build.js --win --x64"
   },
@@ -17,7 +18,10 @@
     "npmRebuild": false,
     "compression": "normal",
     "win": {
-      "target": "nsis",
+      "target": [
+        "nsis",
+        "appx"
+      ],
       "icon": "assets/icon.ico"
     },
     "nsis": {
@@ -32,6 +36,13 @@
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "ToolCEO"
+    },
+    "appx": {
+      "applicationId": "ToolCEO",
+      "identityName": "NomanRafique.ToolCEO",
+      "publisher": "CN=E0E92099-0173-4976-BD98-C12569B9D850",
+      "publisherDisplayName": "Noman Rafique",
+      "backgroundColor": "#1a2e2a"
     },
     "extraResources": [
       {

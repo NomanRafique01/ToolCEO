@@ -1,0 +1,920 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privacy Policy — ToolCEO</title>
+  <meta name="description" content="ToolCEO Privacy Policy — ToolCEO is a 100% offline desktop application that collects no personal data, no telemetry, and performs all file processing locally on your device." />
+  <meta name="robots" content="index, follow" />
+
+  <style>
+    /* ── Design Tokens ─────────────────────────────────────────── */
+    :root {
+      --accent:          #00E5C0;
+      --accent-dark:     #00B89A;
+      --accent-light:    #E0FAF6;
+      --accent-muted:    rgba(0, 229, 192, 0.12);
+
+      --bg:              #FFFFFF;
+      --bg-surface:      #F7FAFA;
+      --bg-card:         #FFFFFF;
+      --bg-header:       #081918;
+
+      --text-primary:    #0D1F1C;
+      --text-secondary:  #3A5250;
+      --text-muted:      #6B8A87;
+
+      --border:          #D8ECEB;
+      --border-strong:   #B0D8D5;
+
+      --shadow-sm:       0 1px 3px rgba(8, 25, 24, 0.06);
+      --shadow-md:       0 4px 16px rgba(8, 25, 24, 0.08);
+      --shadow-lg:       0 8px 32px rgba(8, 25, 24, 0.12);
+
+      --radius-sm:       6px;
+      --radius-md:       10px;
+      --radius-lg:       16px;
+
+      --font:            "Segoe UI", -apple-system, system-ui, sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    html { scroll-behavior: smooth; -webkit-text-size-adjust: 100%; }
+
+    body {
+      font-family: var(--font);
+      font-size: 16px;
+      line-height: 1.75;
+      color: var(--text-primary);
+      background: var(--bg-surface);
+    }
+
+    /* ── Header ────────────────────────────────────────────────── */
+    .site-header {
+      background: var(--bg-header);
+      border-bottom: 1px solid rgba(0, 229, 192, 0.18);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      width: 100%;
+    }
+    .header-inner {
+      width: 100%;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 0 32px;
+      height: 68px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .logo-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      text-decoration: none;
+      transition: opacity 0.15s ease;
+    }
+    .logo-group:hover { opacity: 0.9; }
+    .logo-icon-svg {
+      width: 38px;
+      height: 38px;
+      flex-shrink: 0;
+      filter: drop-shadow(0 0 8px rgba(0, 229, 192, 0.35));
+    }
+    .logo-wordmark {
+      font-size: 19px;
+      font-weight: 800;
+      letter-spacing: 0.16em;
+      color: #F0EDE4;
+      line-height: 1;
+    }
+    .logo-wordmark span { color: var(--accent); }
+    .header-right {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+    .header-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      padding: 6px 14px;
+      border-radius: 999px;
+      background: rgba(0, 229, 192, 0.12);
+      border: 1px solid rgba(0, 229, 192, 0.3);
+      box-shadow: 0 0 12px rgba(0, 229, 192, 0.12);
+      font-size: 12.5px;
+      font-weight: 600;
+      color: var(--accent);
+      letter-spacing: 0.03em;
+      white-space: nowrap;
+    }
+    .header-badge-dot {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 6px var(--accent);
+      animation: pulse 2s ease-in-out infinite;
+    }
+    .header-badge-icon {
+      color: var(--accent);
+      flex-shrink: 0;
+    }
+    @media (max-width: 640px) {
+      .header-inner { padding: 0 16px; }
+    }
+    @keyframes pulse {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50%       { opacity: 0.45; transform: scale(0.8); }
+    }
+
+    /* ── Hero Banner ───────────────────────────────────────────── */
+    .hero-banner {
+      background: linear-gradient(135deg, #071514 0%, #0A1F1C 50%, #0D2824 100%);
+      border-bottom: 1px solid rgba(0, 229, 192, 0.15);
+      padding: 56px 24px 48px;
+      text-align: center;
+      position: relative;
+      overflow: hidden;
+    }
+    .hero-banner::before {
+      content: '';
+      position: absolute; inset: 0;
+      background: radial-gradient(ellipse 70% 60% at 50% 0%, rgba(0,229,192,0.08) 0%, transparent 70%);
+      pointer-events: none;
+    }
+    .hero-banner::after {
+      content: '';
+      position: absolute; bottom: 0; left: 0; right: 0; height: 1px;
+      background: linear-gradient(90deg, transparent 0%, rgba(0,229,192,0.4) 50%, transparent 100%);
+    }
+    .hero-inner { position: relative; max-width: 640px; margin: 0 auto; }
+    .hero-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 5px 14px;
+      border-radius: 999px;
+      background: rgba(0,229,192,0.1);
+      border: 1px solid rgba(0,229,192,0.22);
+      font-size: 11.5px;
+      font-weight: 600;
+      letter-spacing: 0.06em;
+      color: var(--accent);
+      text-transform: uppercase;
+      margin-bottom: 20px;
+    }
+    .hero-title {
+      font-size: clamp(26px, 4vw, 36px);
+      font-weight: 700;
+      letter-spacing: -0.02em;
+      color: #F0EDE4;
+      line-height: 1.2;
+      margin-bottom: 14px;
+    }
+    .hero-title em { font-style: normal; color: var(--accent); }
+    .hero-sub {
+      font-size: 15px;
+      color: #8FAAA6;
+      line-height: 1.6;
+      max-width: 480px;
+      margin: 0 auto 28px;
+    }
+    .hero-meta {
+      display: inline-flex;
+      align-items: center;
+      gap: 20px;
+      flex-wrap: wrap;
+      justify-content: center;
+      font-size: 12.5px;
+      color: #6B8A87;
+    }
+    .hero-meta-item { display: flex; align-items: center; gap: 5px; }
+    .hero-meta-item svg { color: var(--accent); opacity: 0.8; }
+
+    /* ── Layout ────────────────────────────────────────────────── */
+    .page-wrapper {
+      max-width: 1060px;
+      margin: 0 auto;
+      padding: 48px 28px 80px;
+      display: grid;
+      grid-template-columns: 240px 1fr;
+      gap: 40px;
+      align-items: start;
+    }
+    @media (max-width: 768px) {
+      .page-wrapper { grid-template-columns: 1fr; padding: 28px 20px 60px; gap: 28px; }
+    }
+
+    /* ── Table of Contents & Left Sidebar ──────────────────────── */
+    .toc-sidebar { position: sticky; top: 84px; }
+    .toc-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+    }
+    .toc-header {
+      padding: 14px 16px 12px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .toc-header-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+    .toc-header-label { font-size: 11px; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-muted); }
+    .toc-list { list-style: none; padding: 10px 0; }
+    .toc-list li a {
+      display: flex;
+      align-items: baseline;
+      gap: 8px;
+      padding: 7px 16px;
+      font-size: 13px;
+      color: var(--text-secondary);
+      text-decoration: none;
+      transition: color 0.15s, background 0.15s;
+      border-left: 2px solid transparent;
+      line-height: 1.3;
+    }
+    .toc-list li a:hover {
+      color: var(--accent-dark);
+      background: var(--accent-muted);
+      border-left-color: var(--accent);
+    }
+    .toc-num { font-size: 10px; font-weight: 700; color: var(--accent); letter-spacing: 0.04em; min-width: 16px; opacity: 0.8; }
+    @media (max-width: 720px) { .toc-sidebar { position: static; } }
+
+    /* ── Main Content ──────────────────────────────────────────── */
+    .content-main { min-width: 0; }
+
+    .guarantee-strip {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+      gap: 12px;
+      margin-bottom: 40px;
+    }
+    .guarantee-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 16px 14px;
+      text-align: center;
+      box-shadow: var(--shadow-sm);
+      transition: box-shadow 0.2s, transform 0.2s;
+    }
+    .guarantee-card:hover { box-shadow: var(--shadow-md); transform: translateY(-1px); }
+    .guarantee-card-icon {
+      width: 36px; height: 36px;
+      border-radius: var(--radius-sm);
+      background: var(--accent-muted);
+      border: 1px solid rgba(0,229,192,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 10px;
+      color: var(--accent);
+    }
+    .guarantee-card-label { font-size: 12px; font-weight: 700; color: var(--text-primary); line-height: 1.3; }
+    .guarantee-card-sub { font-size: 11px; color: var(--text-muted); margin-top: 3px; line-height: 1.3; }
+
+    /* ── Policy Sections ───────────────────────────────────────── */
+    .policy-section {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-lg);
+      padding: 32px 32px 28px;
+      margin-bottom: 20px;
+      box-shadow: var(--shadow-sm);
+      scroll-margin-top: 88px;
+      transition: box-shadow 0.2s;
+    }
+    .policy-section:hover { box-shadow: var(--shadow-md); }
+    .policy-section:target {
+      border-color: rgba(0,229,192,0.35);
+      box-shadow: 0 0 0 3px rgba(0,229,192,0.08), var(--shadow-md);
+    }
+    @media (max-width: 600px) { .policy-section { padding: 24px 20px 20px; } }
+
+    .section-header {
+      display: flex;
+      align-items: flex-start;
+      gap: 14px;
+      margin-bottom: 20px;
+      padding-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+    }
+    .section-number {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      width: 30px; height: 30px;
+      border-radius: 50%;
+      background: var(--accent-muted);
+      border: 1.5px solid rgba(0,229,192,0.3);
+      font-size: 12px;
+      font-weight: 700;
+      color: var(--accent-dark);
+      flex-shrink: 0;
+      margin-top: 2px;
+    }
+    .section-heading-group { flex: 1; }
+    .section-heading-group h2 {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-primary);
+      letter-spacing: -0.01em;
+      line-height: 1.3;
+    }
+    .section-tag {
+      display: inline-block;
+      margin-top: 5px;
+      padding: 2px 9px;
+      border-radius: 999px;
+      font-size: 10.5px;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      text-transform: uppercase;
+      background: var(--accent-muted);
+      border: 1px solid rgba(0,229,192,0.22);
+      color: var(--accent-dark);
+    }
+    .section-tag.tag-none {
+      background: rgba(16,185,129,0.1);
+      border-color: rgba(16,185,129,0.25);
+      color: #059669;
+    }
+
+    .policy-section p {
+      font-size: 15px;
+      color: var(--text-secondary);
+      line-height: 1.8;
+      margin-bottom: 14px;
+    }
+    .policy-section p:last-child { margin-bottom: 0; }
+
+    /* Callouts */
+    .callout {
+      border-radius: var(--radius-md);
+      padding: 16px 18px;
+      margin: 18px 0;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+    }
+    .callout-accent { background: var(--accent-muted); border: 1px solid rgba(0,229,192,0.25); border-left: 3px solid var(--accent); }
+    .callout-success { background: rgba(16,185,129,0.07); border: 1px solid rgba(16,185,129,0.2); border-left: 3px solid #10B981; }
+    .callout-info { background: rgba(59,130,246,0.07); border: 1px solid rgba(59,130,246,0.2); border-left: 3px solid #3B82F6; }
+    .callout-icon { flex-shrink: 0; margin-top: 1px; }
+    .callout-accent .callout-icon { color: var(--accent); }
+    .callout-success .callout-icon { color: #10B981; }
+    .callout-info .callout-icon { color: #3B82F6; }
+    .callout-text { font-size: 14px; color: var(--text-secondary); line-height: 1.65; }
+    .callout-text strong { color: var(--text-primary); font-weight: 600; }
+
+    /* Key statement */
+    .key-statement {
+      background: var(--accent-muted);
+      border: 1px solid rgba(0,229,192,0.22);
+      border-radius: var(--radius-md);
+      padding: 20px 22px;
+      margin: 20px 0;
+      position: relative;
+    }
+    .key-statement::before {
+      content: '"';
+      position: absolute;
+      top: -8px; left: 18px;
+      font-size: 48px;
+      color: var(--accent);
+      opacity: 0.25;
+      font-family: Georgia, serif;
+      line-height: 1;
+    }
+    .key-statement p {
+      font-size: 15px !important;
+      font-weight: 600 !important;
+      color: var(--text-primary) !important;
+      font-style: italic;
+      line-height: 1.6 !important;
+      margin: 0 !important;
+      padding-left: 4px;
+    }
+
+    /* Check list */
+    .check-list { list-style: none; margin: 16px 0; display: flex; flex-direction: column; gap: 10px; }
+    .check-list li { display: flex; align-items: flex-start; gap: 10px; font-size: 14.5px; color: var(--text-secondary); line-height: 1.55; }
+    .check-icon {
+      flex-shrink: 0;
+      width: 18px; height: 18px;
+      border-radius: 50%;
+      background: rgba(16,185,129,0.12);
+      border: 1.5px solid rgba(16,185,129,0.3);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin-top: 1px;
+    }
+    .check-icon.cross { background: rgba(239,68,68,0.08); border-color: rgba(239,68,68,0.25); }
+
+    /* Contact card */
+    .contact-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 20px 22px;
+      margin-top: 18px;
+      display: grid;
+      gap: 10px;
+    }
+    .contact-row { display: flex; align-items: center; gap: 10px; font-size: 14px; }
+    .contact-row-icon {
+      width: 30px; height: 30px;
+      border-radius: var(--radius-sm);
+      background: var(--accent-muted);
+      border: 1px solid rgba(0,229,192,0.2);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      color: var(--accent);
+    }
+    .contact-row-label { font-weight: 600; color: var(--text-primary); min-width: 80px; }
+    .contact-row-value { color: var(--text-secondary); }
+    .contact-row-value a {
+      color: var(--accent-dark);
+      text-decoration: none;
+      border-bottom: 1px dashed rgba(0,184,154,0.4);
+      transition: border-color 0.15s, color 0.15s;
+    }
+    .contact-row-value a:hover { color: var(--accent); border-bottom-color: var(--accent); }
+
+    /* ── Footer ────────────────────────────────────────────────── */
+    .site-footer {
+      background: #071514;
+      border-top: 1px solid rgba(0,229,192,0.12);
+      padding: 36px 24px;
+    }
+    .footer-inner {
+      max-width: 860px;
+      margin: 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 16px;
+    }
+    .footer-left { display: flex; flex-direction: column; gap: 6px; }
+    .footer-brand { display: flex; align-items: center; gap: 8px; }
+    .footer-brand-name { font-size: 14px; font-weight: 700; letter-spacing: 0.1em; color: #F0EDE4; }
+    .footer-brand-name span { color: var(--accent); }
+    .footer-copy { font-size: 12px; color: #6B8A87; }
+    .footer-right { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; text-align: right; }
+    .footer-links { display: flex; gap: 16px; }
+    .footer-links a { font-size: 13px; color: #8FAAA6; text-decoration: none; transition: color 0.15s; }
+    .footer-links a:hover { color: var(--accent); }
+    .footer-last-updated { font-size: 11.5px; color: #4A6A66; }
+    @media (max-width: 600px) {
+      .footer-inner { flex-direction: column; align-items: flex-start; }
+      .footer-right { align-items: flex-start; text-align: left; }
+    }
+
+    /* Skip link */
+    .skip-link {
+      position: absolute; top: -100%; left: 16px;
+      background: var(--accent); color: #071514;
+      font-weight: 700; padding: 8px 16px;
+      border-radius: 0 0 var(--radius-sm) var(--radius-sm);
+      text-decoration: none; font-size: 13px; z-index: 999;
+      transition: top 0.15s;
+    }
+    .skip-link:focus { top: 0; }
+
+    @media print {
+      .site-header, .toc-sidebar, .site-footer { display: none; }
+      .page-wrapper { grid-template-columns: 1fr; padding: 0; gap: 16px; }
+      .policy-section { border: 1px solid #ccc; box-shadow: none; break-inside: avoid; }
+      body { font-size: 14px; background: #fff; color: #111; }
+    }
+  </style>
+</head>
+<body>
+
+  <a href="#main-content" class="skip-link">Skip to main content</a>
+
+  <!-- HEADER -->
+  <header class="site-header" role="banner">
+    <div class="header-inner">
+      <!-- ToolCEO Logo on Left Side -->
+      <a href="#" class="logo-group" aria-label="ToolCEO">
+        <svg class="logo-icon-svg" viewBox="0 0 38 38" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+          <rect width="38" height="38" rx="9" fill="#0A221F"/>
+          <path d="M19 6L8 10.8V19c0 6.4 4.5 11.6 11 13.4 6.5-1.8 11-7 11-13.4v-8.2L19 6Z" stroke="#00E5C0" stroke-width="1.6" stroke-linejoin="round" fill="rgba(0,229,192,0.12)"/>
+          <path d="M14.5 19l3.2 3.2 5.8-5.8" stroke="#00E5C0" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span class="logo-wordmark">TOOL<span>CEO</span></span>
+      </a>
+
+      <!-- Zero Collection Badge in Header -->
+      <div class="header-badge" role="status" aria-label="Privacy guarantee: Zero Data Collection">
+        <span class="header-badge-dot" aria-hidden="true"></span>
+        <svg class="header-badge-icon" width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M8 1L2 4v4.5C2 12 5 14.5 8 15.5c3-1 6-3.5 6-7V4L8 1Z" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round"/>
+          <path d="M5.5 8l2 2 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        <span>Zero Data Collection</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- HERO BANNER -->
+  <section class="hero-banner" aria-label="Privacy Policy overview">
+    <div class="hero-inner">
+      <div class="hero-pill">
+        <svg width="12" height="12" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M8 1L2 4v4.5C2 12 5 14.5 8 15.5c3-1 6-3.5 6-7V4L8 1Z" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round"/>
+          <path d="M5.5 8l2 2 3-3" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Privacy Policy
+      </div>
+      <h1 class="hero-title">Your Privacy is<br/><em>Completely Protected</em></h1>
+      <p class="hero-sub">
+        ToolCEO is a fully offline desktop application. We collect no data,
+        store no data, and send no data anywhere — ever.
+      </p>
+      <div class="hero-meta">
+        <div class="hero-meta-item">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <rect x="2" y="3" width="12" height="11" rx="2" stroke="currentColor" stroke-width="1.3"/>
+            <path d="M5 1v4M11 1v4M2 7h12" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+          </svg>
+          Effective: September 16, 2026
+        </div>
+        <div class="hero-meta-item">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/>
+            <path d="M8 5v3l2 2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+          </svg>
+          Last Updated: September 16, 2026
+        </div>
+        <div class="hero-meta-item">
+          <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M8 1L2 4v4.5C2 12 5 14.5 8 15.5c3-1 6-3.5 6-7V4L8 1Z" stroke="currentColor" stroke-width="1.3"/>
+          </svg>
+          Platform: Windows Desktop
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- PAGE BODY -->
+  <div class="page-wrapper">
+
+    <!-- TOC sidebar (Left Side) -->
+    <aside class="toc-sidebar" aria-label="Table of contents">
+      <nav class="toc-card">
+        <div class="toc-header">
+          <div class="toc-header-dot" aria-hidden="true"></div>
+          <span class="toc-header-label">Contents</span>
+        </div>
+        <ul class="toc-list">
+          <li><a href="#section-intro"><span class="toc-num">01</span>Introduction</a></li>
+          <li><a href="#section-collection"><span class="toc-num">02</span>Information We Collect</a></li>
+          <li><a href="#section-use"><span class="toc-num">03</span>How We Use Your Data</a></li>
+          <li><a href="#section-storage"><span class="toc-num">04</span>Data Storage &amp; Security</a></li>
+          <li><a href="#section-third-party"><span class="toc-num">05</span>Third-Party Services</a></li>
+          <li><a href="#section-children"><span class="toc-num">06</span>Children's Privacy</a></li>
+          <li><a href="#section-changes"><span class="toc-num">07</span>Changes to This Policy</a></li>
+          <li><a href="#section-contact"><span class="toc-num">08</span>Contact Information</a></li>
+        </ul>
+      </nav>
+    </aside>
+
+    <!-- Main content -->
+    <main class="content-main" id="main-content">
+
+      <!-- Privacy Guarantee Strip -->
+      <div class="guarantee-strip" role="list" aria-label="Privacy guarantees">
+        <div class="guarantee-card" role="listitem">
+          <div class="guarantee-card-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
+              <path d="M8 1L2 4v4.5C2 12 5 14.5 8 15.5c3-1 6-3.5 6-7V4L8 1Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+              <path d="M5.5 8l2 2 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="guarantee-card-label">No Data Collected</div>
+          <div class="guarantee-card-sub">Absolutely zero</div>
+        </div>
+        <div class="guarantee-card" role="listitem">
+          <div class="guarantee-card-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
+              <rect x="1" y="7" width="14" height="8" rx="2" stroke="currentColor" stroke-width="1.3"/>
+              <path d="M4 7V5a4 4 0 0 1 8 0v2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+              <circle cx="8" cy="11" r="1.2" fill="currentColor"/>
+            </svg>
+          </div>
+          <div class="guarantee-card-label">100% Offline</div>
+          <div class="guarantee-card-sub">No internet needed</div>
+        </div>
+        <div class="guarantee-card" role="listitem">
+          <div class="guarantee-card-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
+              <rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.3"/>
+              <path d="M6 8l2 2 2-2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round"/>
+              <path d="M8 5v5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="guarantee-card-label">Local Processing</div>
+          <div class="guarantee-card-sub">Files stay on device</div>
+        </div>
+        <div class="guarantee-card" role="listitem">
+          <div class="guarantee-card-icon" aria-hidden="true">
+            <svg width="18" height="18" viewBox="0 0 16 16" fill="none">
+              <circle cx="8" cy="8" r="6" stroke="currentColor" stroke-width="1.3"/>
+              <path d="M5 5l6 6M11 5l-6 6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+            </svg>
+          </div>
+          <div class="guarantee-card-label">No Tracking</div>
+          <div class="guarantee-card-sub">No cookies or analytics</div>
+        </div>
+      </div>
+
+      <!-- SECTION 1 -->
+      <section class="policy-section" id="section-intro">
+        <div class="section-header">
+          <div class="section-number" aria-hidden="true">01</div>
+          <div class="section-heading-group">
+            <h2>Introduction &amp; Overview</h2>
+            <span class="section-tag">About This Policy</span>
+          </div>
+        </div>
+        <p>
+          Welcome to <strong>ToolCEO</strong>, a professional file conversion and processing
+          desktop application developed by <strong>Noman Rafique</strong>.
+          This Privacy Policy explains our data practices — or more precisely, the complete
+          absence of any data collection.
+        </p>
+        <div class="key-statement">
+          <p>"ToolCEO does not collect, store, transmit, or share any personal data of any kind, at any time, under any circumstances."</p>
+        </div>
+        <p>
+          ToolCEO is engineered as a fully <strong>offline, self-contained</strong> Windows desktop
+          application. All operations — including file conversion, compression, archiving, and
+          format transformation — are executed entirely on your local device using your device's
+          own processing resources.
+        </p>
+        <p>
+          This policy applies to the ToolCEO desktop application and is intended to meet
+          the requirements of the <strong>Microsoft Store</strong>, the
+          <strong>Children's Online Privacy Protection Act (COPPA)</strong>, and general
+          international privacy best practices including GDPR principles.
+        </p>
+        <div class="callout callout-accent">
+          <div class="callout-icon" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.3"/>
+              <line x1="8" y1="7" x2="8" y2="11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              <circle cx="8" cy="5" r="0.8" fill="currentColor"/>
+            </svg>
+          </div>
+          <div class="callout-text">
+            <strong>Plain language summary:</strong> ToolCEO works entirely on your computer.
+            Nothing you do inside the app is ever sent to us, to any server, or to any
+            third party. Your files and your work are yours alone.
+          </div>
+        </div>
+      </section>
+
+      <!-- SECTION 2 -->
+      <section class="policy-section" id="section-collection">
+        <div class="section-header">
+          <div class="section-number" aria-hidden="true">02</div>
+          <div class="section-heading-group">
+            <h2>Information We Collect</h2>
+            <span class="section-tag tag-none">None</span>
+          </div>
+        </div>
+        <p><strong>We collect no information whatsoever.</strong> The following is an explicit list of data types that ToolCEO does <em>not</em> collect:</p>
+        <ul class="check-list" aria-label="Data not collected">
+          <li><span class="check-icon cross" aria-label="Not collected"><svg width="9" height="9" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M3 3l6 6M9 3l-6 6" stroke="#EF4444" stroke-width="1.6" stroke-linecap="round"/></svg></span>Personal identification information (name, email address, phone number, etc.)</li>
+          <li><span class="check-icon cross" aria-label="Not collected"><svg width="9" height="9" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M3 3l6 6M9 3l-6 6" stroke="#EF4444" stroke-width="1.6" stroke-linecap="round"/></svg></span>Device identifiers, hardware IDs, or machine fingerprints</li>
+          <li><span class="check-icon cross" aria-label="Not collected"><svg width="9" height="9" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M3 3l6 6M9 3l-6 6" stroke="#EF4444" stroke-width="1.6" stroke-linecap="round"/></svg></span>Usage data, telemetry, analytics, or crash reports</li>
+          <li><span class="check-icon cross" aria-label="Not collected"><svg width="9" height="9" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M3 3l6 6M9 3l-6 6" stroke="#EF4444" stroke-width="1.6" stroke-linecap="round"/></svg></span>File names, file contents, or file metadata of any files you process</li>
+          <li><span class="check-icon cross" aria-label="Not collected"><svg width="9" height="9" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M3 3l6 6M9 3l-6 6" stroke="#EF4444" stroke-width="1.6" stroke-linecap="round"/></svg></span>IP addresses, geographic location data, or network information</li>
+          <li><span class="check-icon cross" aria-label="Not collected"><svg width="9" height="9" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M3 3l6 6M9 3l-6 6" stroke="#EF4444" stroke-width="1.6" stroke-linecap="round"/></svg></span>Browser cookies, local storage tokens, or session identifiers</li>
+          <li><span class="check-icon cross" aria-label="Not collected"><svg width="9" height="9" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M3 3l6 6M9 3l-6 6" stroke="#EF4444" stroke-width="1.6" stroke-linecap="round"/></svg></span>Account information, login credentials, or authentication data</li>
+          <li><span class="check-icon cross" aria-label="Not collected"><svg width="9" height="9" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M3 3l6 6M9 3l-6 6" stroke="#EF4444" stroke-width="1.6" stroke-linecap="round"/></svg></span>Payment information or financial data of any kind</li>
+        </ul>
+        <p>ToolCEO operates with <strong>no user accounts, no registration, and no login</strong>. There is no mechanism within the application to collect or transmit any data because the application has no outbound network connectivity.</p>
+        <div class="callout callout-success">
+          <div class="callout-icon" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M8 1L2 4v4.5C2 12 5 14.5 8 15.5c3-1 6-3.5 6-7V4L8 1Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+              <path d="M5.5 8l2 2 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="callout-text"><strong>We do not use cookies, analytics, or tracking of any kind.</strong> Files you convert are never uploaded to any server.</div>
+        </div>
+      </section>
+
+      <!-- SECTION 3 -->
+      <section class="policy-section" id="section-use">
+        <div class="section-header">
+          <div class="section-number" aria-hidden="true">03</div>
+          <div class="section-heading-group">
+            <h2>How We Use Your Information</h2>
+            <span class="section-tag tag-none">We Don't</span>
+          </div>
+        </div>
+        <p>Because ToolCEO collects no information, <strong>we use no information</strong>. There is no data processing pipeline, no data retention, no data analysis, and no data sharing — because there is no data to work with.</p>
+        <p>All file processing performed by ToolCEO happens entirely within your device's local environment. When you open a file, convert it, compress it, or export it:</p>
+        <ul class="check-list">
+          <li><span class="check-icon" aria-label="Confirmed"><svg width="9" height="9" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2 6l3 3 5-5" stroke="#10B981" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>The operation runs entirely on your local CPU and memory</li>
+          <li><span class="check-icon" aria-label="Confirmed"><svg width="9" height="9" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2 6l3 3 5-5" stroke="#10B981" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>The output file is saved directly to your chosen local directory</li>
+          <li><span class="check-icon" aria-label="Confirmed"><svg width="9" height="9" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2 6l3 3 5-5" stroke="#10B981" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>No network request is made at any point during the operation</li>
+          <li><span class="check-icon" aria-label="Confirmed"><svg width="9" height="9" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2 6l3 3 5-5" stroke="#10B981" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>No copy of your file is retained by the application after processing</li>
+          <li><span class="check-icon" aria-label="Confirmed"><svg width="9" height="9" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2 6l3 3 5-5" stroke="#10B981" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>No internet connection is required or used — not even for licensing checks</li>
+        </ul>
+        <div class="callout callout-info">
+          <div class="callout-icon" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <circle cx="8" cy="8" r="6.5" stroke="currentColor" stroke-width="1.3"/>
+              <line x1="8" y1="7" x2="8" y2="11" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
+              <circle cx="8" cy="5" r="0.8" fill="currentColor"/>
+            </svg>
+          </div>
+          <div class="callout-text"><strong>All file processing happens locally on your device.</strong> Your documents, images, audio files, and any other content you process with ToolCEO remain exclusively on your machine and are under your complete control at all times.</div>
+        </div>
+      </section>
+
+      <!-- SECTION 4 -->
+      <section class="policy-section" id="section-storage">
+        <div class="section-header">
+          <div class="section-number" aria-hidden="true">04</div>
+          <div class="section-heading-group">
+            <h2>Data Storage &amp; Security</h2>
+            <span class="section-tag">Local Only</span>
+          </div>
+        </div>
+        <p>ToolCEO stores only the minimal application data required for its own operation, such as user preferences and conversion history, in <strong>local application data directories on your Windows device</strong>. This data never leaves your device.</p>
+        <p>Specifically, ToolCEO may store the following locally:</p>
+        <ul class="check-list">
+          <li><span class="check-icon" aria-label="Stored locally"><svg width="9" height="9" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2 6l3 3 5-5" stroke="#10B981" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Application settings and preferences (stored in your local app data folder)</li>
+          <li><span class="check-icon" aria-label="Stored locally"><svg width="9" height="9" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2 6l3 3 5-5" stroke="#10B981" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Recent conversion history (file names only, stored locally for your convenience)</li>
+          <li><span class="check-icon" aria-label="Stored locally"><svg width="9" height="9" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2 6l3 3 5-5" stroke="#10B981" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Tool-specific configuration options saved between sessions</li>
+        </ul>
+        <p>All of the above is stored <em>exclusively on your device</em> and can be cleared at any time by uninstalling the application or clearing the application data folder. <strong>None of this information is transmitted externally.</strong></p>
+        <div class="callout callout-accent">
+          <div class="callout-icon" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <rect x="2" y="7" width="12" height="7" rx="2" stroke="currentColor" stroke-width="1.3"/>
+              <path d="M5 7V5a3 3 0 0 1 6 0v2" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+              <circle cx="8" cy="11" r="1" fill="currentColor"/>
+            </svg>
+          </div>
+          <div class="callout-text"><strong>Security model:</strong> Because ToolCEO collects no data and operates fully offline, there is no server-side attack surface, no database to breach, and no network transmission to intercept. Your data security is protected by the security of your own Windows device.</div>
+        </div>
+      </section>
+
+      <!-- SECTION 5 -->
+      <section class="policy-section" id="section-third-party">
+        <div class="section-header">
+          <div class="section-number" aria-hidden="true">05</div>
+          <div class="section-heading-group">
+            <h2>Third-Party Services</h2>
+            <span class="section-tag tag-none">None</span>
+          </div>
+        </div>
+        <p><strong>ToolCEO integrates with no third-party services of any kind.</strong> The application does not use, embed, or call:</p>
+        <ul class="check-list">
+          <li><span class="check-icon cross" aria-label="Not used"><svg width="9" height="9" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M3 3l6 6M9 3l-6 6" stroke="#EF4444" stroke-width="1.6" stroke-linecap="round"/></svg></span>Analytics platforms (Google Analytics, Mixpanel, Amplitude, etc.)</li>
+          <li><span class="check-icon cross" aria-label="Not used"><svg width="9" height="9" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M3 3l6 6M9 3l-6 6" stroke="#EF4444" stroke-width="1.6" stroke-linecap="round"/></svg></span>Advertising networks or ad SDKs of any kind</li>
+          <li><span class="check-icon cross" aria-label="Not used"><svg width="9" height="9" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M3 3l6 6M9 3l-6 6" stroke="#EF4444" stroke-width="1.6" stroke-linecap="round"/></svg></span>Cloud storage or file-sharing services</li>
+          <li><span class="check-icon cross" aria-label="Not used"><svg width="9" height="9" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M3 3l6 6M9 3l-6 6" stroke="#EF4444" stroke-width="1.6" stroke-linecap="round"/></svg></span>Social media SDKs or login integrations</li>
+          <li><span class="check-icon cross" aria-label="Not used"><svg width="9" height="9" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M3 3l6 6M9 3l-6 6" stroke="#EF4444" stroke-width="1.6" stroke-linecap="round"/></svg></span>Crash reporting or error tracking services (Sentry, Bugsnag, etc.)</li>
+          <li><span class="check-icon cross" aria-label="Not used"><svg width="9" height="9" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M3 3l6 6M9 3l-6 6" stroke="#EF4444" stroke-width="1.6" stroke-linecap="round"/></svg></span>Remote APIs, webhooks, or external web services</li>
+          <li><span class="check-icon cross" aria-label="Not used"><svg width="9" height="9" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M3 3l6 6M9 3l-6 6" stroke="#EF4444" stroke-width="1.6" stroke-linecap="round"/></svg></span>Any content delivery networks (CDN) for runtime content</li>
+        </ul>
+        <p>All processing engines and libraries used by ToolCEO are bundled <strong>locally within the application package</strong> itself. No external network call is made at runtime.</p>
+      </section>
+
+      <!-- SECTION 6 -->
+      <section class="policy-section" id="section-children">
+        <div class="section-header">
+          <div class="section-number" aria-hidden="true">06</div>
+          <div class="section-heading-group">
+            <h2>Children's Privacy</h2>
+            <span class="section-tag">COPPA Compliant</span>
+          </div>
+        </div>
+        <p>ToolCEO complies with the <strong>Children's Online Privacy Protection Act (COPPA)</strong> and equivalent international regulations protecting minors' privacy.</p>
+        <p>Because ToolCEO collects <em>absolutely no personal information from any user</em> — regardless of age — it is inherently safe for use by children and does not require parental consent for data collection purposes.</p>
+        <div class="callout callout-success">
+          <div class="callout-icon" aria-hidden="true">
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none">
+              <path d="M8 1L2 4v4.5C2 12 5 14.5 8 15.5c3-1 6-3.5 6-7V4L8 1Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
+              <path d="M5.5 8l2 2 3-3" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </div>
+          <div class="callout-text"><strong>ToolCEO does not knowingly collect any information from children under the age of 13</strong>, or from users of any age. No registration, account creation, or personal information is ever requested or required.</div>
+        </div>
+        <p>If you are a parent or guardian with concerns about your child's use of ToolCEO, you may review this Privacy Policy in full. If you believe that your child has somehow provided us with personal information (which is not possible through the application's design), please contact us at the address listed below and we will address your concerns promptly.</p>
+      </section>
+
+      <!-- SECTION 7 -->
+      <section class="policy-section" id="section-changes">
+        <div class="section-header">
+          <div class="section-number" aria-hidden="true">07</div>
+          <div class="section-heading-group">
+            <h2>Changes to This Policy</h2>
+            <span class="section-tag">Policy Updates</span>
+          </div>
+        </div>
+        <p>We may update this Privacy Policy from time to time to reflect changes in the application or applicable legal requirements. When we make changes, we will:</p>
+        <ul class="check-list">
+          <li><span class="check-icon" aria-label="Commitment"><svg width="9" height="9" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2 6l3 3 5-5" stroke="#10B981" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Update the "Last Updated" date at the top of this page</li>
+          <li><span class="check-icon" aria-label="Commitment"><svg width="9" height="9" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2 6l3 3 5-5" stroke="#10B981" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Publish the revised policy at the same URL where this policy is hosted</li>
+          <li><span class="check-icon" aria-label="Commitment"><svg width="9" height="9" viewBox="0 0 12 12" fill="none" aria-hidden="true"><path d="M2 6l3 3 5-5" stroke="#10B981" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg></span>Note any material changes clearly at the top of the updated policy</li>
+        </ul>
+        <p>We strongly commit to our core principle: <strong>ToolCEO will never introduce data collection, telemetry, or any form of tracking</strong> without explicit, prominent disclosure and user consent. Any future version that changes this fundamental privacy guarantee will be clearly communicated before taking effect.</p>
+        <p>Your continued use of ToolCEO after any changes to this Privacy Policy will constitute your acceptance of the updated terms. We encourage you to review this policy periodically.</p>
+      </section>
+
+      <!-- SECTION 8 -->
+      <section class="policy-section" id="section-contact">
+        <div class="section-header">
+          <div class="section-number" aria-hidden="true">08</div>
+          <div class="section-heading-group">
+            <h2>Contact Information</h2>
+            <span class="section-tag">Get in Touch</span>
+          </div>
+        </div>
+        <p>If you have any questions, concerns, or requests regarding this Privacy Policy or the privacy practices of ToolCEO, please contact us. We aim to respond to all privacy-related inquiries within <strong>5 business days</strong>.</p>
+        <div class="contact-card" role="group" aria-label="Contact details">
+          <div class="contact-row">
+            <div class="contact-row-icon" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                <circle cx="8" cy="6" r="3" stroke="currentColor" stroke-width="1.3"/>
+                <path d="M2 14c0-3.3 2.7-6 6-6s6 2.7 6 6" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <span class="contact-row-label">Developer</span>
+            <span class="contact-row-value">Noman Rafique</span>
+          </div>
+          <div class="contact-row">
+            <div class="contact-row-icon" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                <rect x="1" y="3" width="14" height="11" rx="2" stroke="currentColor" stroke-width="1.3"/>
+                <path d="M1 6l7 5 7-5" stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <span class="contact-row-label">Email</span>
+            <span class="contact-row-value">
+              <a href="mailto:nomanrafique.official01@gmail.com" id="contact-email">nomanrafique.official01@gmail.com</a>
+            </span>
+          </div>
+          <div class="contact-row">
+            <div class="contact-row-icon" aria-hidden="true">
+              <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+                <path d="M8 1L2 4v4.5C2 12 5 14.5 8 15.5c3-1 6-3.5 6-7V4L8 1Z" stroke="currentColor" stroke-width="1.3"/>
+              </svg>
+            </div>
+            <span class="contact-row-label">App</span>
+            <span class="contact-row-value">ToolCEO — Professional File Converter (Windows)</span>
+          </div>
+        </div>
+        <p style="margin-top:18px;font-size:14px;color:var(--text-muted);">When contacting us, please include "Privacy Policy" in the subject line for the fastest response. All privacy-related requests will be handled with the utmost care and attention.</p>
+      </section>
+
+    </main>
+  </div>
+
+  <!-- FOOTER -->
+  <footer class="site-footer" role="contentinfo">
+    <div class="footer-inner">
+      <div class="footer-left">
+        <div class="footer-brand">
+          <svg width="20" height="20" viewBox="0 0 34 34" fill="none" aria-hidden="true">
+            <rect width="34" height="34" rx="8" fill="#0A1F1C"/>
+            <path d="M17 5L7 9.5V17c0 5.8 4 10.4 10 12 6-1.6 10-6.2 10-12V9.5L17 5Z" stroke="#00E5C0" stroke-width="1.4" stroke-linejoin="round" fill="rgba(0,229,192,0.08)"/>
+            <path d="M13 17l3 3 5-5" stroke="#00E5C0" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+          <span class="footer-brand-name">TOOL<span>CEO</span></span>
+        </div>
+        <div class="footer-copy">&copy; 2026 Noman Rafique. All rights reserved.</div>
+      </div>
+      <div class="footer-right">
+        <nav class="footer-links" aria-label="Footer navigation">
+          <a href="#main-content">Back to Top &#8593;</a>
+        </nav>
+        <div class="footer-last-updated">Last updated: September 16, 2026 &nbsp;&middot;&nbsp; Effective: September 16, 2026</div>
+      </div>
+    </div>
+  </footer>
+
+</body>
+</html>
