@@ -1189,13 +1189,29 @@ async function _extractZip(zipPath, enginesDir, moduleId, onProgress = () => {},
   // CRITICAL: All AdmZip work (including entry counting via new AdmZip()) runs
   // inside a worker_threads Worker so the Electron main process is NEVER blocked
   // by readFileSync or synchronous extraction on large module zips.
+  //
+  // In packaged ASAR builds, worker eval strings cannot resolve require('adm-zip')
+  // because the worker runs outside Electron's ASAR virtual filesystem.
+  // Fix: resolve the absolute disk path of adm-zip in the main process first,
+  // then pass it as workerData.admZipPath so the worker uses require(admZipPath).
   if (!extracted && !isCancelled()) {
     const { Worker } = require('worker_threads');
 
+    // Resolve adm-zip in main process context where ASAR require() works correctly.
+    // The resolved path is a real filesystem path the worker can load directly.
+    let admZipPath;
+    try {
+      admZipPath = require.resolve('adm-zip');
+    } catch (_) {
+      // Fallback: try to find it relative to main.js location
+      admZipPath = path.join(__dirname, '..', 'node_modules', 'adm-zip', 'adm-zip.js');
+    }
+
     // Entry counting (new AdmZip()) is inside the worker — never on the main thread.
+    // The worker uses the resolved absolute admZipPath to bypass ASAR limitations.
     const workerCode = `
       const { workerData, parentPort } = require('worker_threads');
-      const AdmZip = require('adm-zip');
+      const AdmZip = require(workerData.admZipPath);
       try {
         const zip = new AdmZip(workerData.zipPath);
         const entries = zip.getEntries();
@@ -1222,7 +1238,7 @@ async function _extractZip(zipPath, enginesDir, moduleId, onProgress = () => {},
     await new Promise((resolve, reject) => {
       const worker = new Worker(workerCode, {
         eval: true,
-        workerData: { zipPath, enginesDir },
+        workerData: { zipPath, enginesDir, admZipPath },
       });
       if (_activeInstall) _activeInstall.child = worker;
 

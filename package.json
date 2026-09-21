@@ -17,6 +17,9 @@
     "productName": "ToolCEO",
     "npmRebuild": false,
     "compression": "normal",
+    "asarUnpack": [
+      "node_modules/adm-zip/**"
+    ],
     "win": {
       "target": [
         "nsis",
@@ -37,12 +40,15 @@
       "createStartMenuShortcut": true,
       "shortcutName": "ToolCEO"
     },
+    "directories": {
+      "buildResources": "assets"
+    },
     "appx": {
       "applicationId": "ToolCEO",
       "identityName": "NomanRafique.ToolCEO",
       "publisher": "CN=E0E92099-0173-4976-BD98-C12569B9D850",
       "publisherDisplayName": "Noman Rafique",
-      "backgroundColor": "#1a2e2a"
+      "backgroundColor": "transparent"
     },
     "extraResources": [
       {
