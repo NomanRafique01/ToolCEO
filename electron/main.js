@@ -1068,14 +1068,8 @@ async function _extractZip(zipPath, enginesDir, moduleId, onProgress = () => {},
   const expectedEngines = MODULE_ENGINE_MAP[moduleId] || [];
   let extracted = false;
 
-  // Accurately count total files in ~15ms without slow/timed-out CLI subprocesses
-  let totalFiles = 0;
-  try {
-    const zip = new AdmZip(zipPath);
-    totalFiles = zip.getEntries().length;
-  } catch (_) {
-    totalFiles = 0;
-  }
+  // NOTE: Entry counting is done inside the AdmZip worker thread (Tier 3) to avoid
+  // blocking the Electron main process with a synchronous readFileSync on large zips.
 
   // 1. Try 7-Zip if available
   const sevenZipCandidates = [
@@ -1158,12 +1152,8 @@ async function _extractZip(zipPath, enginesDir, moduleId, onProgress = () => {},
             const now = Date.now();
             if (now - lastEmit >= 100) {
               lastEmit = now;
-              let pct = 0;
-              if (totalFiles > 0) {
-                pct = Math.min(99, Math.floor((count / totalFiles) * 100));
-              } else {
-                pct = Math.min(99, Math.floor(count / 150));
-              }
+              // Use heuristic estimate — no blocking pre-count needed
+              const pct = Math.min(99, Math.floor(count / 150));
               if (pct >= lastPct) {
                 lastPct = pct;
                 onProgress(pct, 'Installing module files…');
@@ -1195,62 +1185,72 @@ async function _extractZip(zipPath, enginesDir, moduleId, onProgress = () => {},
     }
   }
 
-  // 3. Fallback: worker_threads AdmZip (never freezes, smooth per-entry progress)
+  // ─── Tier 3: Worker-thread AdmZip ─────────────────────────────────────────
+  // CRITICAL: All AdmZip work (including entry counting via new AdmZip()) runs
+  // inside a worker_threads Worker so the Electron main process is NEVER blocked
+  // by readFileSync or synchronous extraction on large module zips.
   if (!extracted && !isCancelled()) {
-    try {
-      const { Worker } = require('worker_threads');
-      const workerCode = `
-        const { workerData, parentPort } = require('worker_threads');
-        const AdmZip = require('adm-zip');
-        try {
-          const zip = new AdmZip(workerData.zipPath);
-          const entries = zip.getEntries();
-          const total = entries.length;
-          let lastSent = 0;
-          for (let i = 0; i < total; i++) {
-            zip.extractEntryTo(entries[i], workerData.enginesDir, true, true);
-            const now = Date.now();
-            if (now - lastSent >= 100 || i === total - 1) {
-              lastSent = now;
-              const pct = Math.min(99, Math.floor(((i + 1) / total) * 100));
-              parentPort.postMessage({ type: 'progress', percent: pct });
-            }
-          }
-          parentPort.postMessage({ ok: true });
-        } catch (err) {
-          parentPort.postMessage({ ok: false, error: err.message });
-        }
-      `;
-      await new Promise((resolve, reject) => {
-        const worker = new Worker(workerCode, {
-          eval: true,
-          workerData: { zipPath, enginesDir },
-        });
-        if (_activeInstall) _activeInstall.child = worker;
+    const { Worker } = require('worker_threads');
 
-        worker.on('message', (msg) => {
-          if (isCancelled()) return;
-          if (msg.type === 'progress') {
-            onProgress(msg.percent, 'Installing module files…');
-          } else if (msg.ok) {
-            resolve();
-          } else {
-            reject(new Error(msg.error));
+    // Entry counting (new AdmZip()) is inside the worker — never on the main thread.
+    const workerCode = `
+      const { workerData, parentPort } = require('worker_threads');
+      const AdmZip = require('adm-zip');
+      try {
+        const zip = new AdmZip(workerData.zipPath);
+        const entries = zip.getEntries();
+        const total = entries.length;
+        let lastSent = 0;
+        for (let i = 0; i < total; i++) {
+          const entry = entries[i];
+          if (!entry.isDirectory) {
+            zip.extractEntryTo(entry, workerData.enginesDir, true, true);
           }
-        });
-        worker.on('error', reject);
-        worker.on('exit', (code) => {
-          if (code !== 0 && !isCancelled()) reject(new Error(`Worker stopped with exit code ${code}`));
-          else resolve();
-        });
+          const now = Date.now();
+          if (now - lastSent >= 100 || i === total - 1) {
+            lastSent = now;
+            const pct = Math.min(99, Math.floor(((i + 1) / total) * 100));
+            parentPort.postMessage({ type: 'progress', percent: pct });
+          }
+        }
+        parentPort.postMessage({ ok: true });
+      } catch (err) {
+        parentPort.postMessage({ ok: false, error: err.message });
+      }
+    `;
+
+    await new Promise((resolve, reject) => {
+      const worker = new Worker(workerCode, {
+        eval: true,
+        workerData: { zipPath, enginesDir },
       });
-      extracted = true;
-    } catch (err) {
-      console.warn('Worker thread AdmZip failed, last resort in-process fallback:', err.message);
-      const zip = new AdmZip(zipPath);
-      await zip.extractAllToAsync(enginesDir, true);
-      extracted = true;
-    }
+      if (_activeInstall) _activeInstall.child = worker;
+
+      // Prevent double-resolve/reject from message + exit events
+      let settled = false;
+      const settle = (fn, val) => { if (!settled) { settled = true; fn(val); } };
+
+      worker.on('message', (msg) => {
+        if (isCancelled()) { settle(resolve, undefined); return; }
+        if (msg.type === 'progress') {
+          onProgress(msg.percent, 'Installing module files…');
+        } else if (msg.ok) {
+          settle(resolve, undefined);
+        } else {
+          settle(reject, new Error(msg.error || 'AdmZip worker extraction failed'));
+        }
+      });
+
+      worker.on('error', (err) => settle(reject, err));
+
+      worker.on('exit', (code) => {
+        if (isCancelled()) settle(resolve, undefined);
+        else if (code !== 0) settle(reject, new Error(`AdmZip worker stopped with exit code ${code}`));
+        else settle(resolve, undefined);
+      });
+    });
+
+    extracted = true;
   }
 
   if (isCancelled()) return;
