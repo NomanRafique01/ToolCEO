@@ -535,7 +535,7 @@ function _showPanel(moduleName, expectedSize, phase = 'downloading') {
     }
     _el('mod-dl-title').innerHTML = `Installing <strong>${moduleName}</strong>`;
     const sizeEl = _el('mod-dl-size');
-    if (sizeEl) sizeEl.textContent = 'Installing module files…';
+    if (sizeEl) sizeEl.textContent = 'Installing module files — this may take a few minutes…';
 
     // The completed download bar smoothly fades out without retreating backward
     if (dlBar) {
@@ -633,7 +633,7 @@ function _updateProgress({ percent = 0, receivedBytes = 0, totalBytes = 0, phase
     }
     const sizeEl = _el('mod-dl-size');
     if (sizeEl) {
-      sizeEl.textContent = message || 'Installing module files…';
+      sizeEl.textContent = message || 'Installing module files — this may take a few minutes…';
     }
     return;
   }
