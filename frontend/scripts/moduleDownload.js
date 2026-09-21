@@ -400,7 +400,7 @@ export function initModuleDownloadPanel() {
 
       pushNotification({
         type: 'success',
-        message: `${completedModuleName} installed successfully! All related tools are now unlocked.`,
+        message: `All tools related to the ${completedModuleName} are now unlocked and ready to use.`,
       });
 
       notifyModuleState(completedModuleId, 'installed');

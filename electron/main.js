@@ -819,6 +819,18 @@ async function _safeUnlink(filePath, retries = 5, delayMs = 300) {
   }
 }
 
+const MODULE_DISPLAY_NAMES = {
+  office: 'Office Module',
+  ocr: 'OCR Module',
+  document: 'Document Module',
+  ebook: 'eBook Module',
+  media: 'Media Module',
+};
+
+function _getModuleDisplayName(moduleId) {
+  return MODULE_DISPLAY_NAMES[moduleId] || (moduleId.charAt(0).toUpperCase() + moduleId.slice(1) + ' Module');
+}
+
 /**
  * Map of engine executables to verify whether a module is actually installed on disk.
  */
@@ -1948,8 +1960,8 @@ app.whenReady().then(async () => {
     // Update status to downloaded (persisted across app restarts)
     _writeModuleStatus(moduleId, 'downloaded');
 
-    const modName = moduleId.charAt(0).toUpperCase() + moduleId.slice(1) + ' Module';
-    _notify(modName + ' downloaded', `${modName} downloaded successfully. Starting installation…`);
+    const modName = _getModuleDisplayName(moduleId);
+    _notify(`${modName} Downloaded`, `${modName} package downloaded successfully. Starting installation…`);
 
     _activeDownload = null;
 
@@ -2129,8 +2141,8 @@ app.whenReady().then(async () => {
 
     _writeModuleStatus(moduleId, 'downloaded');
 
-    const modName = moduleId.charAt(0).toUpperCase() + moduleId.slice(1) + ' Module';
-    _notify(modName + ' downloaded', `${modName} downloaded successfully. Starting installation…`);
+    const modName = _getModuleDisplayName(moduleId);
+    _notify(`${modName} Downloaded`, `${modName} package downloaded successfully. Starting installation…`);
 
     _activeDownload = null;
 
@@ -2218,8 +2230,8 @@ app.whenReady().then(async () => {
     // Update status to installed
     _writeModuleStatus(moduleId, 'installed');
 
-    const modName = moduleId.charAt(0).toUpperCase() + moduleId.slice(1) + ' Module';
-    _notify(modName + ' installed', `${modName} installed successfully! All tools are now unlocked.`);
+    const modName = _getModuleDisplayName(moduleId);
+    _notify(`${modName} Installed`, `All tools related to the ${modName} are now unlocked and ready to use.`);
 
     if (mainWindow && !mainWindow.isDestroyed()) {
       mainWindow.webContents.send('module-install-complete', { moduleId });
