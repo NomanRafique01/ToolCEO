@@ -839,7 +839,8 @@ function _resetZoneContent(zone) {
     '.dz-jpg-thumb-strip, .dz-png-thumb-strip, .dz-webp-thumb-strip, .dz-svg-thumb-strip, ' +
     '.dz-archive-thumb-strip, .dz-arc-conv-thumb-wrap, ' +
     '.dz-extract-thumb-wrap, .archive-extract-done-wrap, ' +
-    '.dz-inspect-thumb-wrap, .dz-split-thumb-wrap, .dz-merge-arc-strip'
+    '.dz-inspect-thumb-wrap, .dz-split-thumb-wrap, .dz-merge-arc-strip, ' +
+    '.dz-arc-protect-thumb-wrap, .dz-arc-duplicate-thumb-wrap, .dz-imgcmp-thumb-strip'
   ).forEach((el) => el.remove());
   zone.classList.remove(
     'dz-state-processing', 'dz-state-done', 'dz-state-error',
@@ -851,7 +852,8 @@ function _resetZoneContent(zone) {
     'dz-has-jpg-thumbs', 'dz-has-png-thumbs', 'dz-has-webp-thumbs', 'dz-has-svg-thumbs',
     'dz-has-archive-thumbs', 'dz-has-arc-conv-thumb',
     'dz-has-extract-thumb', 'dz-has-extract-done',
-    'dz-has-inspect-thumb', 'dz-has-split-thumb', 'dz-has-merge-arc-thumbs'
+    'dz-has-inspect-thumb', 'dz-has-split-thumb', 'dz-has-merge-arc-thumbs',
+    'dz-has-arc-protect-thumb', 'dz-has-arc-duplicate-thumb', 'dz-has-imgcmp-thumbs'
   );
 }
 
@@ -906,9 +908,13 @@ function _buildRingWrap(color, pct, label, indeterminate, toolId) {
 
 /** Show the circular ring progress — centred inside the drop zone. */
 function _showProgress(zone, pct, color, label, toolId) {
+  const activeTool = getActiveTool();
+  if (!activeTool) return;
+  if (toolId && activeTool.id !== toolId) return;
+
   _resetZoneContent(zone);
   zone.classList.add('dz-state-processing');
-  const owner = toolId || getActiveTool()?.id;
+  const owner = toolId || activeTool?.id;
   const wrap = _buildRingWrap(color, pct, label || 'Processing', false, owner);
   zone.appendChild(wrap);
   _wireDzCancelBtn(wrap, zone);
@@ -916,9 +922,13 @@ function _showProgress(zone, pct, color, label, toolId) {
 
 /** Show an indeterminate scanning ring — spinning arc. */
 function _showScanProgress(zone, color, toolId) {
+  const activeTool = getActiveTool();
+  if (!activeTool) return;
+  if (toolId && activeTool.id !== toolId) return;
+
   _resetZoneContent(zone);
   zone.classList.add('dz-state-scanning');
-  const owner = toolId || getActiveTool()?.id;
+  const owner = toolId || activeTool?.id;
   const wrap = _buildRingWrap(color, 0, 'Scanning', true, owner);
   zone.appendChild(wrap);
   _wireDzCancelBtn(wrap, zone);
@@ -940,7 +950,8 @@ function _wireDzCancelBtn(wrap, zone) {
 function _updateProgress(zone, pct, color, toolId) {
   if (!zone) return;
   const activeTool = getActiveTool();
-  if (toolId && activeTool && activeTool.id !== toolId) return;
+  if (!activeTool) return;
+  if (toolId && activeTool.id !== toolId) return;
 
   const wrap = zone.querySelector('.dz-progress-wrap');
   if (!wrap) return;
@@ -1011,9 +1022,11 @@ function _resetAfterSave(zone) {
 
 /** Show download-ready state — card is centred inside the drop zone. */
 function _showDownload(zone, filename, jobId, color, toolId) {
-  const currentBgJob = jobId ? getBgJob(jobId) : (toolId ? getBgJobForTool(toolId) : null);
   const activeT = getActiveTool();
+  if (!activeT) return;
+  const currentBgJob = jobId ? getBgJob(jobId) : (toolId ? getBgJobForTool(toolId) : null);
   const tid = toolId || currentBgJob?.tool?.id || activeT?.id;
+  if (tid && activeT.id !== tid) return;
   const onReset = () => {
     _resetZoneContent(zone);
     if (jobId) clearBgJob(jobId, true);

@@ -1,8 +1,7 @@
 /* ─────────────────────────────────────────────────────────────
    tools/documents/pdf_convertor/images_pdf/images_pdf.css
    Styles for the Images → PDF Converter tool.
-   Mirrors the merger tool layout — multi-image card strip in the
-   drop zone, drag-to-reorder, queue panel below.
+   Fully redesigned to mirror the PNG / JPG convertor UI.
    ───────────────────────────────────────────────────────────── */
 
 :root {
@@ -15,7 +14,7 @@
   padding: 0 !important;
   height: auto !important;
   min-height: 220px !important;
-  max-height: 520px !important;
+  max-height: 560px !important;
   display: flex !important;
   flex-direction: column !important;
   justify-content: flex-start !important;
@@ -31,6 +30,99 @@
   display: none !important;
 }
 
+/* ─── TOOLBAR ───────────────────────────────────────────────────────────────── */
+
+.dz-queue-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px 8px;
+  flex-shrink: 0;
+}
+
+.dz-queue-toolbar-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.dz-queue-count-pill {
+  display: inline-flex;
+  align-items: center;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 3px 9px;
+  border-radius: 20px;
+  white-space: nowrap;
+  letter-spacing: 0.03em;
+  flex-shrink: 0;
+}
+
+.dz-queue-info-text {
+  font-size: 11.5px;
+  color: var(--text-muted, #8b949e);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.dz-queue-toolbar-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.dz-queue-add-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 5px 11px;
+  border-radius: 7px;
+  border: 1px solid;
+  font-size: 12px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: filter 130ms ease;
+  white-space: nowrap;
+}
+
+.dz-queue-add-btn:hover { filter: brightness(1.15); }
+
+.dz-queue-clear-btn {
+  background: none;
+  border: 1px solid var(--border, #30363d);
+  border-radius: 7px;
+  padding: 5px 10px;
+  font-size: 12px;
+  color: var(--text-muted, #8b949e);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: border-color 120ms ease, color 120ms ease;
+}
+
+.dz-queue-clear-btn:hover {
+  border-color: #F87171;
+  color: #F87171;
+}
+
+/* ─── REORDER BANNER ────────────────────────────────────────────────────────── */
+
+.dz-imgpdf-reorder-banner {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font-size: 11.5px;
+  font-weight: 500;
+  padding: 6px 14px;
+  border-top: 1px solid;
+  border-bottom: 1px solid;
+  flex-shrink: 0;
+  letter-spacing: 0.01em;
+}
+
 /* ─── THUMBNAIL STRIP ───────────────────────────────────────────────────────── */
 
 .dz-imgpdf-thumb-strip {
@@ -39,13 +131,13 @@
   flex-wrap: wrap !important;
   align-items: flex-start !important;
   justify-content: flex-start !important;
-  gap: 16px 12px !important;
+  gap: 18px 12px !important;
   width: 100% !important;
   flex: 1 1 auto !important;
   overflow-y: auto !important;
   overflow-x: hidden !important;
-  max-height: 440px !important;
-  padding: 16px 16px 20px 16px !important;
+  max-height: 420px !important;
+  padding: 18px 16px 20px 16px !important;
   box-sizing: border-box !important;
 }
 
@@ -59,12 +151,17 @@
   gap: 5px;
   flex-shrink: 0;
   width: 96px;
-  cursor: grab;
   user-select: none;
   transition: transform 140ms ease, opacity 140ms ease;
 }
 
-.dz-imgpdf-card:active { cursor: grabbing; }
+/* Only show grab cursor when draggable */
+.dz-imgpdf-card--draggable {
+  cursor: grab;
+}
+.dz-imgpdf-card--draggable:active {
+  cursor: grabbing;
+}
 
 .dz-imgpdf-card--dragging {
   opacity: 0.35;
@@ -72,19 +169,16 @@
 }
 
 .dz-imgpdf-card--drag-over .dz-imgpdf-thumb-frame {
-  box-shadow: 0 0 0 2px var(--imgpdf-color, #F472B6),
-              0 4px 14px color-mix(in srgb, var(--imgpdf-color, #F472B6) 45%, transparent);
-}
-
-.dz-imgpdf-card--drag-over {
-  transform: scale(1.04);
+  box-shadow: 0 0 0 2.5px var(--imgpdf-color, #F472B6),
+              0 4px 18px color-mix(in srgb, var(--imgpdf-color, #F472B6) 45%, transparent);
+  transform: scale(1.05);
 }
 
 /* ── Ordinal badge ── */
 
 .dz-imgpdf-ordinal {
   position: absolute;
-  top: -8px;
+  top: -9px;
   left: 50%;
   transform: translateX(-50%);
   background: var(--imgpdf-color, #F472B6);
@@ -92,19 +186,21 @@
   font-size: 10px;
   font-weight: 700;
   line-height: 1;
-  padding: 2px 6px;
+  padding: 2px 7px;
   border-radius: 20px;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.03em;
   z-index: 2;
   pointer-events: none;
+  white-space: nowrap;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
 }
 
-/* ── Thumbnail frame (square for images) ── */
+/* ── Thumbnail frame ── */
 
 .dz-imgpdf-thumb-frame {
   width: 90px;
   height: 90px;
-  border-radius: 6px;
+  border-radius: 8px;
   overflow: hidden;
   display: flex;
   align-items: center;
@@ -112,12 +208,12 @@
   background: #1c2128;
   border: 2px solid var(--imgpdf-color, #F472B6);
   box-shadow: 0 3px 12px rgba(0, 0, 0, 0.35);
-  transition: box-shadow 130ms ease, transform 130ms ease;
+  transition: box-shadow 130ms ease, transform 130ms ease, border-color 130ms ease;
   flex-shrink: 0;
 }
 
 .dz-imgpdf-card:hover .dz-imgpdf-thumb-frame {
-  box-shadow: 0 4px 18px color-mix(in srgb, var(--imgpdf-color, #F472B6) 55%, transparent);
+  box-shadow: 0 4px 20px color-mix(in srgb, var(--imgpdf-color, #F472B6) 55%, transparent);
 }
 
 .dz-imgpdf-thumb-img {
@@ -125,7 +221,7 @@
   height: 100%;
   object-fit: cover;
   display: block;
-  border-radius: 3px;
+  border-radius: 5px;
   pointer-events: none;
   image-rendering: -webkit-optimize-contrast;
   image-rendering: high-quality;
@@ -142,15 +238,15 @@
 
 .dz-imgpdf-drag-hint {
   position: absolute;
-  top: 3px;
-  right: 3px;
-  color: color-mix(in srgb, var(--imgpdf-color, #F472B6) 70%, #fff);
+  top: 4px;
+  right: 4px;
+  color: color-mix(in srgb, var(--imgpdf-color, #F472B6) 75%, #fff);
   opacity: 0;
   transition: opacity 120ms ease;
   pointer-events: none;
 }
 
-.dz-imgpdf-card:hover .dz-imgpdf-drag-hint {
+.dz-imgpdf-card--draggable:hover .dz-imgpdf-drag-hint {
   opacity: 1;
 }
 
@@ -171,8 +267,8 @@
 
 .dz-imgpdf-card-remove {
   position: absolute;
-  top: -7px;
-  right: -7px;
+  top: -8px;
+  right: -8px;
   width: 20px;
   height: 20px;
   border-radius: 50%;
@@ -185,12 +281,14 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: background 120ms ease;
+  transition: background 120ms ease, transform 100ms ease;
   z-index: 3;
+  padding: 0;
 }
 
 .dz-imgpdf-card-remove:hover {
   background: color-mix(in srgb, var(--imgpdf-color, #F472B6) 20%, var(--bg-surface));
+  transform: scale(1.15);
 }
 
 /* ─── ADD IMAGE BUTTON ──────────────────────────────────────────────────────── */
@@ -199,10 +297,10 @@
   flex-shrink: 0;
   width: 90px;
   height: 90px;
-  border-radius: 6px;
-  border: 2px dashed color-mix(in srgb, var(--imgpdf-color, #F472B6) 45%, transparent);
-  background: color-mix(in srgb, var(--imgpdf-color, #F472B6) 6%, transparent);
-  color: color-mix(in srgb, var(--imgpdf-color, #F472B6) 80%, transparent);
+  border-radius: 8px;
+  border: 2px dashed color-mix(in srgb, var(--imgpdf-color, #F472B6) 40%, transparent);
+  background: color-mix(in srgb, var(--imgpdf-color, #F472B6) 5%, transparent);
+  color: color-mix(in srgb, var(--imgpdf-color, #F472B6) 75%, transparent);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -212,7 +310,8 @@
   font-weight: 500;
   cursor: pointer;
   transition: border-color 130ms ease, background 130ms ease, color 130ms ease;
-  margin-bottom: 0;
+  align-self: flex-start;
+  margin-top: 0;
 }
 
 .dz-imgpdf-add-btn:hover {
@@ -255,40 +354,64 @@
 .imgpdf-summary-badge {
   display: flex;
   align-items: center;
-  gap: 6px;
+  gap: 7px;
   font-size: 13px;
   color: var(--text-muted);
+  flex: 1;
+  min-width: 0;
 }
 
 .imgpdf-summary-text strong {
   color: var(--text-primary);
 }
 
-.imgpdf-clear-btn {
-  background: none;
-  border: 1px solid var(--border);
-  border-radius: 7px;
-  padding: 4px 10px;
+/* ── Mode toggle row ── */
+
+.imgpdf-mode-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 2px 0 4px;
+  flex-wrap: wrap;
+}
+
+.imgpdf-mode-label {
   font-size: 12px;
-  color: var(--text-muted);
+  color: var(--text-muted, #8b949e);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.imgpdf-mode-toggle {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.imgpdf-mode-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  background: var(--bg-card, #161b22);
+  border: 1px solid var(--border, #30363d);
+  border-radius: 7px;
+  padding: 5px 11px;
+  font-size: 12px;
+  color: var(--text-muted, #8b949e);
   cursor: pointer;
-  transition: border-color 120ms ease, color 120ms ease;
+  transition: border-color 130ms ease, color 130ms ease, background 130ms ease;
+  white-space: nowrap;
 }
 
-.imgpdf-clear-btn:hover {
-  border-color: #F87171;
-  color: #F87171;
+.imgpdf-mode-btn:hover {
+  border-color: color-mix(in srgb, var(--imgpdf-color, #F472B6) 55%, transparent);
+  color: var(--text-primary, #e6edf3);
 }
 
-/* ── Hint row ── */
-
-.imgpdf-hint {
-  font-size: 12px;
-  color: var(--text-muted);
-  padding: 6px 10px;
-  background: color-mix(in srgb, var(--imgpdf-color, #F472B6) 8%, transparent);
-  border-radius: 7px;
-  border: 1px solid color-mix(in srgb, var(--imgpdf-color, #F472B6) 16%, transparent);
+.imgpdf-mode-btn--active {
+  border-color: var(--imgpdf-color, #F472B6);
+  background: color-mix(in srgb, var(--imgpdf-color, #F472B6) 12%, var(--bg-card, #161b22));
+  color: var(--imgpdf-color, #F472B6);
 }
 
 /* ── Actions row ── */
@@ -321,6 +444,7 @@
   font-size: 13px;
   color: var(--text-muted);
   margin-left: -4px;
+  white-space: nowrap;
 }
 
 .imgpdf-convert-btn {
@@ -328,14 +452,20 @@
   color: #fff;
   border: none;
   border-radius: 8px;
-  padding: 7px 18px;
+  padding: 7px 20px;
   font-size: 13px;
   font-weight: 600;
   cursor: pointer;
-  transition: filter 150ms ease;
+  transition: filter 150ms ease, transform 100ms ease;
   white-space: nowrap;
 }
 
 .imgpdf-convert-btn:hover {
   filter: brightness(1.12);
+  transform: translateY(-1px);
+}
+
+.imgpdf-convert-btn:active {
+  transform: translateY(0);
+  filter: brightness(0.95);
 }

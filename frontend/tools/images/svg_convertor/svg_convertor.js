@@ -1,4 +1,4 @@
-﻿/**
+/**
  * tools/images/svg_convertor/svg_convertor.js
  *
  * Multi-SVG queue flow for all 4 SVG conversion tools:
@@ -84,6 +84,7 @@ export function removeSvgPanel() {
   const zone = document.getElementById('drop-zone');
   if (zone) {
     zone.querySelector('.dz-svg-thumb-strip')?.remove();
+    zone.querySelector('.dz-svg-reorder-banner')?.remove();
     zone.classList.remove('dz-has-svg-thumbs');
   }
 
@@ -102,6 +103,7 @@ function _renderStrip() {
   const color = tool ? (tool.color || _FALLBACK_COLOR) : _FALLBACK_COLOR;
 
   zone.querySelector('.dz-svg-thumb-strip')?.remove();
+  zone.querySelector('.dz-svg-reorder-banner')?.remove();
 
   if (_queue.length === 0) {
     zone.classList.remove('dz-has-svg-thumbs');
@@ -109,6 +111,29 @@ function _renderStrip() {
   }
 
   zone.classList.add('dz-has-svg-thumbs');
+
+  // Reorder banner — shown when svg-pdf + single + 2+ files
+  const isPdfSingle = _toolId === 'svg-pdf' && _pdfMode === 'single' && _queue.length > 1;
+  if (isPdfSingle) {
+    const banner = document.createElement('div');
+    banner.className = 'dz-svg-reorder-banner';
+    banner.style.cssText = `display:flex;align-items:center;gap:7px;font-size:11.5px;font-weight:500;
+      padding:6px 14px;border-top:1px solid color-mix(in srgb,${color} 30%,transparent);
+      border-bottom:1px solid color-mix(in srgb,${color} 30%,transparent);
+      background:color-mix(in srgb,${color} 8%,transparent);
+      color:${color};flex-shrink:0;`;
+    banner.innerHTML = `
+      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <circle cx="5" cy="4" r="1.2" fill="${color}"/>
+        <circle cx="5" cy="8" r="1.2" fill="${color}"/>
+        <circle cx="5" cy="12" r="1.2" fill="${color}"/>
+        <circle cx="11" cy="4" r="1.2" fill="${color}"/>
+        <circle cx="11" cy="8" r="1.2" fill="${color}"/>
+        <circle cx="11" cy="12" r="1.2" fill="${color}"/>
+      </svg>
+      <span>Drag SVGs to reorder PDF pages</span>`;
+    zone.appendChild(banner);
+  }
 
   const strip = document.createElement('div');
   strip.className = 'dz-jpg-thumb-strip dz-svg-thumb-strip';
@@ -136,6 +161,11 @@ function _renderStrip() {
   strip.appendChild(addBtn);
 
   zone.appendChild(strip);
+
+  // Enable drag-to-reorder in single PDF mode
+  if (isPdfSingle) {
+    _initSvgDragReorder(strip, color);
+  }
 }
 
 function _buildCard(item, idx, color) {
@@ -143,6 +173,12 @@ function _buildCard(item, idx, color) {
   card.className   = 'dz-jpg-card';
   card.dataset.idx = String(idx);
   card.style.setProperty('--jpg-color', color);
+
+  const isPdfSingle = _toolId === 'svg-pdf' && _pdfMode === 'single' && _queue.length > 1;
+  if (isPdfSingle) {
+    card.draggable = true;
+    card.style.cursor = 'grab';
+  }
 
   const shortName = item.file.name.length > 18
     ? item.file.name.slice(0, 15) + '…'
@@ -159,7 +195,15 @@ function _buildCard(item, idx, color) {
          <path d="M35 50 h20" stroke="${color}" stroke-width="1.8" stroke-linecap="round"/>
        </svg>`;
 
+  const ordinalHTML = isPdfSingle
+    ? `<span style="position:absolute;top:-9px;left:50%;transform:translateX(-50%);
+         background:${color};color:#fff;font-size:10px;font-weight:700;
+         padding:2px 7px;border-radius:20px;z-index:2;pointer-events:none;
+         white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,0.3);" aria-label="Position ${idx + 1}">${idx + 1}</span>`
+    : '';
+
   card.innerHTML = `
+    ${ordinalHTML}
     <div class="dz-jpg-thumb-frame">
       ${thumbContent}
     </div>
@@ -176,6 +220,84 @@ function _buildCard(item, idx, color) {
   });
 
   return card;
+}
+
+// ─── SVG-PDF DRAG-TO-REORDER ──────────────────────────────────────────────────
+
+function _initSvgDragReorder(strip, color) {
+  let _dragSrcIdx      = -1;
+  let _lockedScrollTop = null;
+  let _isCardDragging  = false;
+  let _pinRaf          = null;
+
+  function _onWheelDuringDrag(e) { if (_isCardDragging) e.preventDefault(); }
+
+  function _lockMainScroll() {
+    const mc = document.getElementById('main-content');
+    if (!mc) return;
+    _lockedScrollTop = mc.scrollTop;
+    _isCardDragging  = true;
+    if (!mc._svgScrollLockBound) {
+      mc._svgScrollLockBound = true;
+      mc.addEventListener('scroll', () => {
+        if (_isCardDragging && _lockedScrollTop !== null && mc.scrollTop !== _lockedScrollTop)
+          mc.scrollTop = _lockedScrollTop;
+      }, { passive: false });
+    }
+    const _pinFrame = () => {
+      if (!_isCardDragging) return;
+      if (mc.scrollTop !== _lockedScrollTop) mc.scrollTop = _lockedScrollTop;
+      _pinRaf = requestAnimationFrame(_pinFrame);
+    };
+    _pinRaf = requestAnimationFrame(_pinFrame);
+    window.addEventListener('wheel', _onWheelDuringDrag, { passive: false });
+  }
+
+  function _unlockMainScroll() {
+    _isCardDragging = false;
+    if (_pinRaf !== null) { cancelAnimationFrame(_pinRaf); _pinRaf = null; }
+    window.removeEventListener('wheel', _onWheelDuringDrag);
+    const mc = document.getElementById('main-content');
+    if (mc && _lockedScrollTop !== null) mc.scrollTop = _lockedScrollTop;
+    _lockedScrollTop = null;
+  }
+
+  function _lockDz() { const z = document.getElementById('drop-zone'); if (z) z.dataset.cardDragging = '1'; }
+  function _unlockDz() { const z = document.getElementById('drop-zone'); if (z) delete z.dataset.cardDragging; }
+
+  strip.querySelectorAll('.dz-jpg-card').forEach((card) => {
+    card.addEventListener('dragstart', (e) => {
+      _dragSrcIdx = parseInt(card.dataset.idx, 10);
+      card.style.opacity = '0.35';
+      e.dataTransfer.effectAllowed = 'move';
+      e.dataTransfer.setData('text/plain', String(_dragSrcIdx));
+      _lockDz();
+      _lockMainScroll();
+    });
+    card.addEventListener('dragend', () => {
+      card.style.opacity = '';
+      _unlockMainScroll();
+      _unlockDz();
+    });
+    card.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      e.dataTransfer.dropEffect = 'move';
+    });
+    card.addEventListener('drop', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      _unlockMainScroll();
+      _unlockDz();
+      const targetIdx = parseInt(card.dataset.idx, 10);
+      if (_dragSrcIdx === targetIdx || _dragSrcIdx < 0) { _dragSrcIdx = -1; return; }
+      const moved = _queue.splice(_dragSrcIdx, 1)[0];
+      _queue.splice(targetIdx, 0, moved);
+      _renderStrip();
+      _renderPanel();
+      _dragSrcIdx = -1;
+    });
+  });
 }
 
 // ─── FILE PICKER ─────────────────────────────────────────────────────────────

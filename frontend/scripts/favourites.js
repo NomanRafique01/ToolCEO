@@ -251,6 +251,9 @@ function _buildFavCardHTML_byId(id) {
 }
 
 export function renderFavourites(container) {
+  // Reset any active tool so the hero drop zone displays our default drop zone
+  setActiveTool(null);
+
   // Update breadcrumb
   const bar = document.getElementById('breadcrumb-bar');
   if (bar) {

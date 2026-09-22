@@ -141,6 +141,10 @@ export function initNavigation() {
         dashPanel.classList.remove('recent-active');
       }
 
+      if (label === 'Favorites' || label === 'Favourites') {
+        setActiveTool(null);
+      }
+
       if (label === 'About') {
         dashPanel.classList.add('about-active');
         document.body.classList.add('about-active');
@@ -197,7 +201,10 @@ export function initNavigation() {
   setZipExtractRouter((file) => routeZipToExtractor(file, activateNav));
 
   navItems.forEach((item) => {
-    item.addEventListener('click', () => activateNav(item.dataset.label));
+    item.addEventListener('click', () => {
+      setActiveTool(null);
+      activateNav(item.dataset.label);
+    });
   });
 
   // Bind View All link on dashboard recent panel
