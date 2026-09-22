@@ -5,8 +5,8 @@
  *
  * Flow:
  *   1. Tool selected → support text only below drop zone
- *   2. Files dropped → thumb strip in drop zone + settings panel (levels + Convert)
- *   3. Convert clicked → panel + thumbs cleared, progress → download
+ *   2. Files dropped → thumb strip in drop zone + settings panel (levels + Compress)
+ *   3. Compress clicked → panel + thumbs cleared, progress → download
  *
  * Exports:
  *   initImageCompressorUI()
@@ -363,7 +363,7 @@ function _renderPanel() {
     </div>
 
     <div class="imgcmp-actions">
-      <button class="imgcmp-convert-btn" id="imgcmp-convert-btn" type="button">Convert</button>
+      <button class="imgcmp-convert-btn" id="imgcmp-convert-btn" type="button">Compress</button>
     </div>`;
 
   heroCard.appendChild(panel);
@@ -499,7 +499,7 @@ async function _submitCompress() {
 
   const zone = document.getElementById('drop-zone');
 
-  // Clear compressor UI immediately on Convert
+  // Clear compressor UI immediately on Compress
   removeImageCompressorPanel({ resetQueue: true, revokePreviews: false });
   if (zone) resetZoneContent(zone);
 
