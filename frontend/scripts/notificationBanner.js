@@ -248,16 +248,16 @@ function _showNextInQueue() {
   }
 
   if (_displayQueue.length > 0) {
-    // If multiple notifications are queued, display current for 2 seconds
+    // If multiple notifications are queued, display current for 3.5 seconds
     _activeTimer = setTimeout(() => {
       _transitionToNext();
-    }, 2000);
+    }, 3500);
   } else {
-    // All notifications disappear smoothly after 3 seconds (active progress pills are exempt)
+    // All notifications disappear smoothly after 4.5 seconds (active progress pills are exempt)
     if (_activeItem.type !== 'progress') {
       _activeTimer = setTimeout(() => {
         _transitionToNext();
-      }, 3000);
+      }, 4500);
     }
   }
 }
@@ -358,12 +358,12 @@ function _handleNotificationUpdates(allNotifications) {
   if (!_activeItem && !_isDismissing) {
     _showNextInQueue();
   } else if (_activeItem && !_isDismissing && hasNew && _displayQueue.length > 0) {
-    // Another notification was fired! Check if active notification has shown for 2s:
+    // Another notification was fired! Check if active notification has shown for 3.5s:
     const elapsed = Date.now() - _activeStartTime;
-    if (elapsed >= 2000) {
+    if (elapsed >= 3500) {
       _transitionToNext();
     } else {
-      const remaining = 2000 - elapsed;
+      const remaining = 3500 - elapsed;
       if (_activeTimer) clearTimeout(_activeTimer);
       _activeTimer = setTimeout(() => {
         _transitionToNext();
