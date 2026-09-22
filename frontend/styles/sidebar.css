@@ -21,6 +21,7 @@
   height: 55px;
   object-fit: contain;
   display: block;
+  filter: drop-shadow(0 0 6px rgba(0, 229, 192, 0.35));
 }
 
 .logo-name {

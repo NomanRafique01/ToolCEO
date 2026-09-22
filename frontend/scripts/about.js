@@ -134,7 +134,7 @@ export async function renderAbout(container) {
       <div class="about-hero">
         <div class="about-hero-inner">
           <div class="about-hero-logo">
-            <img src="assets/icon.png" alt="ToolCEO" draggable="false" />
+            <img src="assets/icon1.png" alt="ToolCEO" draggable="false" />
           </div>
           <div class="about-hero-text">
             <div class="about-hero-name">TOOLCEO</div>

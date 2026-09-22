@@ -105,14 +105,65 @@
       transform: translateY(-5vh);
     }
 
-    .app-loading-icon {
-      width: 110px;
-      height: 110px;
+    /* ── App icon square card ── */
+    .app-loading-icon-square {
+      width: 108px;
+      height: 108px;
       margin-bottom: 28px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(145deg, #0F2E29 0%, #081B19 100%);
+      border: 1.5px solid rgba(0, 229, 192, 0.32);
+      border-radius: 24px;
+      box-shadow:
+        inset 0 1px 1px 0 rgba(255, 255, 255, 0.16),
+        inset 0 0 20px rgba(0, 229, 192, 0.08),
+        0 14px 32px rgba(0, 0, 0, 0.45),
+        0 0 24px rgba(0, 229, 192, 0.22);
+      animation: iconSquarePulse 3s ease-in-out infinite alternate;
+      overflow: hidden;
+    }
+
+    .app-loading-icon-square::before {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 22px;
+      background: radial-gradient(circle at 50% 18%, rgba(0, 229, 192, 0.15), transparent 70%);
+      pointer-events: none;
+    }
+
+    .app-loading-icon {
+      width: 82px;
+      height: 82px;
       object-fit: contain;
+      position: relative;
+      z-index: 1;
       filter:
-        drop-shadow(0 8px 12px rgba(0, 0, 0, 0.28))
-        drop-shadow(0 0 7px rgba(0, 229, 192, 0.42));
+        drop-shadow(0 6px 12px rgba(0, 0, 0, 0.35))
+        drop-shadow(0 0 8px rgba(0, 229, 192, 0.35));
+    }
+
+    @keyframes iconSquarePulse {
+      0% {
+        box-shadow:
+          inset 0 1px 1px rgba(255, 255, 255, 0.16),
+          inset 0 0 16px rgba(0, 229, 192, 0.08),
+          0 14px 32px rgba(0, 0, 0, 0.45),
+          0 0 20px rgba(0, 229, 192, 0.18);
+        border-color: rgba(0, 229, 192, 0.28);
+      }
+      100% {
+        box-shadow:
+          inset 0 1px 1px rgba(255, 255, 255, 0.22),
+          inset 0 0 22px rgba(0, 229, 192, 0.16),
+          0 16px 36px rgba(0, 0, 0, 0.50),
+          0 0 32px rgba(0, 229, 192, 0.34),
+          0 0 54px rgba(0, 229, 192, 0.10);
+        border-color: rgba(0, 229, 192, 0.46);
+      }
     }
 
     .app-loading-name {
@@ -172,7 +223,9 @@
 
   <div id="app-loading" aria-label="Loading ToolCEO">
     <div class="app-loading-content">
-      <img class="app-loading-icon" src="assets/icon.png" alt="ToolCEO" draggable="false" />
+      <div class="app-loading-icon-square">
+        <img class="app-loading-icon" src="assets/icon1.png" alt="ToolCEO" draggable="false" />
+      </div>
       <div class="app-loading-name">TOOLCEO</div>
       <div class="app-loading-subtitle">Professional File Converter</div>
       <div class="app-loading-progress" aria-hidden="true"></div>
@@ -363,7 +416,7 @@
     <!-- Logo — left portion aligned with sidebar width -->
     <div class="topbar-logo">
       <div class="logo-icon-wrap">
-        <img src="assets/icon.png" class="logo-icon" alt="ToolCEO" />
+        <img src="assets/icon1.png" class="logo-icon" alt="ToolCEO" />
       </div>
       <span class="logo-name">ToolCEO</span>
     </div>

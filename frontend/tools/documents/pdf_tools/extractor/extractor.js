@@ -606,7 +606,9 @@ async function _submitExtract() {
     const bg = getBgJob(jobId);
     if (bg && bg.jobId === jobId) {
       bg.progress = Math.max(10, Math.min(100, pct));
-      bg.state = state === 'done' ? 'done' : (state === 'error' ? 'error' : 'running');
+      // Don't mark NO_IMAGES as 'error' — it will be silently cleared below.
+      const isNoImages = state === 'error' && error && error.startsWith('NO_IMAGES:');
+      bg.state = state === 'done' ? 'done' : (state === 'error' && !isNoImages ? 'error' : 'running');
       if (data.filename) bg.filename = data.filename;
       syncBgJobBar();
     }
@@ -642,6 +644,20 @@ async function _submitExtract() {
     }
 
     if (state === 'error') {
+      // ── "No images" is not a real failure — show graceful notification ──
+      if (error && error.startsWith('NO_IMAGES:')) {
+        pushNotification({
+          type: 'info',
+          message: 'No images were found in the selected file.',
+        });
+        // Close the extractor panel (Change file / Extract Images bar)
+        removeExtractorPanel();
+        // Reset zone fully to idle — no red error state, no stale panel
+        if (zone) resetZoneContent(zone);
+        // Silently remove the bg-job so "Failed" badge never appears
+        clearBgJob(jobId, true);
+        return;
+      }
       if (zone) showError(zone, error || 'Processing failed. Please try again.', tool.id);
     }
   };

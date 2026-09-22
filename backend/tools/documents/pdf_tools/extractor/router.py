@@ -96,7 +96,13 @@ def _run_extract_job(
         )
         job_store.set_done(job_id, result, output_filename, "application/zip")
     except ValueError as exc:
-        job_store.set_error(job_id, str(exc))
+        msg = str(exc)
+        # Tag "no images" outcomes so the frontend can handle them gracefully
+        # (info notification instead of red error state).
+        if "no embedded images" in msg.lower():
+            job_store.set_error(job_id, f"NO_IMAGES:{msg}")
+        else:
+            job_store.set_error(job_id, msg)
     except Exception as exc:
         job_store.set_error(job_id, f"Unexpected error: {exc}")
 

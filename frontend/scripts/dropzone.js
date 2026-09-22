@@ -1451,7 +1451,9 @@ async function _submitFile(files) {
     const bg = getBgJob(jobId);
     if (bg && bg.jobId === jobId) {
       bg.progress = Math.max(10, Math.min(100, pct));
-      bg.state = state === 'done' ? 'done' : (state === 'error' ? 'error' : 'running');
+      // Don't mark NO_IMAGES as 'error' — it will be silently cleared below.
+      const isNoImages = state === 'error' && error && error.startsWith('NO_IMAGES:');
+      bg.state = state === 'done' ? 'done' : (state === 'error' && !isNoImages ? 'error' : 'running');
       if (data.filename) bg.filename = data.filename;
       syncBgJobBar();
     }
@@ -1479,6 +1481,24 @@ async function _submitFile(files) {
     }
 
     if (state === 'error') {
+      // ── "No images" is not a real failure — show a graceful notification ──
+      const NO_IMAGES_PREFIX = 'NO_IMAGES:';
+      if (error && error.startsWith(NO_IMAGES_PREFIX)) {
+        const friendlyMsg = 'No images were found in the selected file.';
+        // Show a graceful info/warning notification (not red error)
+        pushNotification({
+          type: 'info',
+          message: friendlyMsg,
+          autoDismiss: false,
+        });
+        // Reset drop zone back to idle — no red error state
+        if (getActiveTool()?.id === tool.id) {
+          _resetZoneContent(zone);
+        }
+        // Remove the bg-job silently so "Failed" badge never appears
+        clearBgJob(jobId, true);
+        return;
+      }
       if (getActiveTool()?.id === tool.id) {
         _showError(zone, error || 'Processing failed. Please try again.');
       }
