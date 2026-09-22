@@ -16,6 +16,7 @@
 
 import { getActiveTool, setBgJob, getBgJob, syncBgJobBar, clearBgJob } from '../../../scripts/toolstate.js';
 import { pushNotification } from '../../../scripts/notificationStore.js';
+import { isRestoringToolFiles } from '../../../scripts/fileState.js';
 import {
   showProgress,
   showScanProgress,
@@ -50,6 +51,9 @@ const _EXT_MAP = {
   svg: 'SVG',
 };
 
+const _MAX_RENDERED_CARDS = 240;
+const _BATCH_SIZE = 24;
+
 /** @type {{ file: File, format: string, thumbnail: string|null }[]} */
 let _queue = [];
 let _level   = 'maximum';
@@ -69,13 +73,23 @@ function _fmtBytes(bytes) {
   return `${(bytes / (1024 * 1024)).toFixed(2)} MB`;
 }
 
-function _readDataUri(file) {
-  return new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload  = () => resolve(r.result);
-    r.onerror = () => reject(new Error('read failed'));
-    r.readAsDataURL(file);
-  });
+function _createPreviewUrl(file) {
+  if (!file || file.type === 'image/svg+xml' || /\.svg$/i.test(file.name || '')) return null;
+  try {
+    return URL.createObjectURL(file);
+  } catch (_) {
+    return null;
+  }
+}
+
+function _revokePreviewUrl(item) {
+  if (!item || !item.thumbnail || !String(item.thumbnail).startsWith('blob:')) return;
+  try { URL.revokeObjectURL(item.thumbnail); } catch (_) {}
+  item.thumbnail = null;
+}
+
+function _revokeQueuePreviews(queue = _queue) {
+  queue.forEach(_revokePreviewUrl);
 }
 
 async function _detectFormat(file) {
@@ -119,7 +133,7 @@ function _outputExtForFormat(format) {
 
 // ─── PUBLIC: TEARDOWN ────────────────────────────────────────────────────────
 
-export function removeImageCompressorPanel() {
+export function removeImageCompressorPanel({ resetQueue = true, revokePreviews = false } = {}) {
   document.getElementById('imgcmp-panel')?.remove();
   document.getElementById('imgcmp-support-text')?.remove();
 
@@ -129,8 +143,11 @@ export function removeImageCompressorPanel() {
     zone.classList.remove('dz-has-imgcmp-thumbs');
   }
 
-  _queue = [];
-  _level = 'maximum';
+  if (resetQueue) {
+    if (revokePreviews) _revokeQueuePreviews();
+    _queue = [];
+    _level = 'maximum';
+  }
 }
 
 // ─── PUBLIC: INIT ON TOOL SELECT ─────────────────────────────────────────────
@@ -178,9 +195,18 @@ function _renderStrip() {
   const strip = document.createElement('div');
   strip.className = 'dz-imgcmp-thumb-strip';
 
-  _queue.forEach((item, idx) => {
-    strip.appendChild(_buildThumbCard(item, idx, color));
+  const visibleItems = _queue.slice(0, _MAX_RENDERED_CARDS);
+  const hiddenCount = Math.max(0, _queue.length - visibleItems.length);
+
+  const frag = document.createDocumentFragment();
+  visibleItems.forEach((item, idx) => {
+    frag.appendChild(_buildThumbCard(item, idx, color));
   });
+  strip.appendChild(frag);
+
+  if (hiddenCount > 0) {
+    strip.appendChild(_buildSummaryCard(hiddenCount, color));
+  }
 
   const addBtn = document.createElement('button');
   addBtn.className = 'dz-imgcmp-add-btn';
@@ -202,6 +228,17 @@ function _renderStrip() {
   zone.appendChild(strip);
 }
 
+function _buildSummaryCard(hiddenCount, color) {
+  const card = document.createElement('div');
+  card.className = 'dz-imgcmp-summary-card';
+  card.style.setProperty('--imgcmp-color', color);
+  card.innerHTML = `
+    <div class="dz-imgcmp-summary-count">+${hiddenCount}</div>
+    <span>more images</span>
+    <small>included in compression</small>`;
+  return card;
+}
+
 function _buildThumbCard(item, idx, color) {
   const card = document.createElement('div');
   card.className   = 'dz-imgcmp-card';
@@ -214,7 +251,7 @@ function _buildThumbCard(item, idx, color) {
 
   const thumbContent = item.thumbnail
     ? `<img class="dz-imgcmp-thumb-img" src="${item.thumbnail}"
-           alt="${_esc(item.file.name)}" draggable="false"/>`
+           alt="${_esc(item.file.name)}" draggable="false" loading="lazy" decoding="async"/>`
     : `<svg viewBox="0 0 90 90" width="90" height="90" xmlns="http://www.w3.org/2000/svg">
          <rect x="0" y="0" width="90" height="90" fill="#1c2128"/>
          <rect x="10" y="10" width="70" height="70" rx="6" fill="#2d333b"
@@ -237,7 +274,8 @@ function _buildThumbCard(item, idx, color) {
   card.querySelector('.dz-imgcmp-card-remove').addEventListener('click', (e) => {
     e.stopPropagation();
     e.preventDefault();
-    _queue.splice(idx, 1);
+    const removed = _queue.splice(idx, 1);
+    removed.forEach(_revokePreviewUrl);
     _renderStrip();
     _renderPanel();
     if (_queue.length === 0) _renderSupportText();
@@ -344,6 +382,7 @@ function _renderPanel() {
 
   panel.querySelector('#imgcmp-clear-btn')?.addEventListener('click', (e) => {
     e.stopPropagation();
+    _revokeQueuePreviews();
     _queue = [];
     _renderStrip();
     _renderPanel();
@@ -366,7 +405,7 @@ function _renderPanel() {
 async function _addFiles(fileArray) {
   const accepted = fileArray.filter(_isAccepted);
 
-  if (accepted.length < fileArray.length) {
+  if (!isRestoringToolFiles() && accepted.length < fileArray.length) {
     pushNotification({
       type: 'warning',
       message: 'Some files skipped — unsupported format.',
@@ -390,11 +429,9 @@ async function _addFiles(fileArray) {
     showScanProgress(zone, color, `Loading ${fresh.length} image${fresh.length !== 1 ? 's' : ''}…`);
   }
 
-  // Process in concurrent batches of 6 to avoid blocking the main thread.
-  const BATCH_SIZE = 6;
   let processed = 0;
-  for (let i = 0; i < fresh.length; i += BATCH_SIZE) {
-    const chunk = fresh.slice(i, i + BATCH_SIZE);
+  for (let i = 0; i < fresh.length; i += _BATCH_SIZE) {
+    const chunk = fresh.slice(i, i + _BATCH_SIZE);
 
     // Only update the label text — do NOT touch stroke-dashoffset via updateProgress()
     // because that fights the CSS @keyframes spin animation and causes it to stutter.
@@ -405,8 +442,7 @@ async function _addFiles(fileArray) {
 
     await Promise.all(chunk.map(async (file) => {
       const format = await _detectFormat(file);
-      let thumbnail = null;
-      try { thumbnail = await _readDataUri(file); } catch (_) {}
+      const thumbnail = _createPreviewUrl(file);
       _queue.push({ file, format, thumbnail });
     }));
 
@@ -465,7 +501,7 @@ async function _submitCompress() {
   const zone = document.getElementById('drop-zone');
 
   // Clear compressor UI immediately on Convert
-  removeImageCompressorPanel();
+  removeImageCompressorPanel({ resetQueue: true, revokePreviews: false });
   if (zone) resetZoneContent(zone);
 
   const fd = new FormData();
@@ -487,6 +523,7 @@ async function _submitCompress() {
       throw new Error(msg || `Server error ${res.status}`);
     }
     jobId = json.job_id;
+    _revokeQueuePreviews(queueSnapshot);
   } catch (err) {
     if (getActiveTool()?.id === tool.id) {
       showError(zone, `Upload failed: ${err.message}`, tool.id);
