@@ -50,6 +50,7 @@
       "publisherDisplayName": "Noman Rafique",
       "backgroundColor": "transparent"
     },
+    "appxManifestCreated": "scripts/fix-appx-manifest.js",
     "extraResources": [
       {
         "from": "engines/",
