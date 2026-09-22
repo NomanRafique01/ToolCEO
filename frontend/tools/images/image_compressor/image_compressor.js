@@ -16,7 +16,6 @@
 
 import { getActiveTool, setBgJob, getBgJob, syncBgJobBar, clearBgJob } from '../../../scripts/toolstate.js';
 import { pushNotification } from '../../../scripts/notificationStore.js';
-import { isRestoringToolFiles } from '../../../scripts/fileState.js';
 import {
   showProgress,
   showScanProgress,
@@ -405,7 +404,7 @@ function _renderPanel() {
 async function _addFiles(fileArray) {
   const accepted = fileArray.filter(_isAccepted);
 
-  if (!isRestoringToolFiles() && accepted.length < fileArray.length) {
+  if (accepted.length < fileArray.length) {
     pushNotification({
       type: 'warning',
       message: 'Some files skipped — unsupported format.',

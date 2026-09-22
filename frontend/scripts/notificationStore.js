@@ -24,6 +24,8 @@
  *   - error   : persistent until manually dismissed (or 10s if autoDismiss is true)
  */
 
+import { isRestoringToolFiles } from './fileState.js';
+
 let _store   = [];
 let _history = [];
 let _counter = 0;
@@ -44,6 +46,10 @@ function _clearTimer(id) {
 }
 
 export function pushNotification({ type = 'success', message = '', detail = '', autoDismiss } = {}) {
+  if (isRestoringToolFiles() && (type === 'warning' || type === 'info')) {
+    return null;
+  }
+
   // ── Deduplication: Check if an identical notification already exists ──────
   const existingIndex = _store.findIndex((n) => n.type === type && n.message === message);
 
