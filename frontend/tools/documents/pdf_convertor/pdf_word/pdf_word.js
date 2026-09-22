@@ -1,4 +1,4 @@
-﻿/**
+/**
  * tools/documents/pdf_convertor/pdf_word/pdf_word.js
  *
  * PDF → Word Converter — single-file flow.
@@ -239,7 +239,7 @@ export async function handlePdfWordFilePicked(file) {
       pageCount = offlineInfo.pageCount || 1;
       thumbnail = offlineInfo.thumbnail || null;
     } catch (offlineErr) {
-      showError(zone, `Could not read PDF: ${offlineErr.message}`);
+      showError(zone, `Could not read PDF: ${offlineErr.message}`, tool?.id);
       return;
     }
   }
@@ -274,10 +274,10 @@ async function _submitConvert(file, outputFilename) {
   fd.append('file', file);
   fd.append('output_filename', outputFilename);
 
-  showProgress(zone, 10, color, 'Converting…');
+  showProgress(zone, 10, color, 'Converting…', tool.id);
 
   const earlyFilename = `${_pdfWordBaseName || outputFilename}.docx`;
-  setBgJob({ jobId: null, tool, filename: earlyFilename, progress: 5, state: 'submitting', sse: null });
+  const clientJobKey = setBgJob({ jobId: null, tool, filename: earlyFilename, progress: 5, state: 'submitting', sse: null });
 
   let jobId;
   try {
@@ -292,8 +292,8 @@ async function _submitConvert(file, outputFilename) {
     }
     jobId = json.job_id;
   } catch (err) {
-    showError(zone, `Upload failed: ${err.message}`);
-    clearBgJob();
+    showError(zone, `Upload failed: ${err.message}`, tool.id);
+    clearBgJob(clientJobKey);
     return;
   }
 
@@ -348,12 +348,12 @@ async function _submitConvert(file, outputFilename) {
     }
 
     if (state === 'error') {
-      showError(zone, error || 'Conversion failed. Please try again.');
+      showError(zone, error || 'Conversion failed. Please try again.', tool.id);
     }
   };
 
   sse.onerror = () => {
     sse.close();
-    showError(zone, 'Lost connection to backend. Is the server running?');
+    showError(zone, 'Lost connection to backend. Is the server running?', tool.id);
   };
 }

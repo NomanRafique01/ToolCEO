@@ -659,11 +659,11 @@ async function _submitMerge(outputFilename) {
   fd.append('passwords', JSON.stringify(_queue.map(() => '')));
 
   // Show progress ring
-  showProgress(zone, 0, color, 'Merging…');
+  showProgress(zone, 0, color, 'Merging…', tool.id);
 
   // Register job immediately so bar appears if user switches tools during upload
   const earlyFilename = `${outputFilename}.pdf`;
-  setBgJob({ jobId: null, tool, filename: earlyFilename, progress: 5, state: 'submitting', sse: null });
+  const clientJobKey = setBgJob({ jobId: null, tool, filename: earlyFilename, progress: 5, state: 'submitting', sse: null });
 
   // POST to backend
   let jobId;
@@ -679,8 +679,8 @@ async function _submitMerge(outputFilename) {
     }
     jobId = json.job_id;
   } catch (err) {
-    showError(zone, `Upload failed: ${err.message}`);
-    clearBgJob();
+    showError(zone, `Upload failed: ${err.message}`, tool.id);
+    clearBgJob(clientJobKey);
     return;
   }
 
@@ -737,12 +737,12 @@ async function _submitMerge(outputFilename) {
     }
 
     if (state === 'error') {
-      showError(zone, error || 'Merge failed. Please try again.');
+      showError(zone, error || 'Merge failed. Please try again.', tool.id);
     }
   };
 
   sse.onerror = () => {
     sse.close();
-    showError(zone, 'Lost connection to backend. Is the server running?');
+    showError(zone, 'Lost connection to backend. Is the server running?', tool.id);
   };
 }

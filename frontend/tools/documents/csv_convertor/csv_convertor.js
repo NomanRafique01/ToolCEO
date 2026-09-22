@@ -1,4 +1,4 @@
-﻿/**
+/**
  * tools/documents/csv_convertor/csv_convertor.js
  *
  * Shared base for all 8 CSV conversion tools.
@@ -281,8 +281,8 @@ async function _submitConvert(file, outputFilename) {
   fd.append('file', file);
   fd.append('output_filename', outputFilename);
 
-  showProgress(zone, 10, color, 'Converting…');
-  setBgJob({ jobId: null, tool, filename: earlyName, progress: 5, state: 'submitting', sse: null });
+  showProgress(zone, 10, color, 'Converting…', tool.id);
+  const clientJobKey = setBgJob({ jobId: null, tool, filename: earlyName, progress: 5, state: 'submitting', sse: null });
 
   let jobId;
   try {
@@ -297,8 +297,8 @@ async function _submitConvert(file, outputFilename) {
     }
     jobId = json.job_id;
   } catch (err) {
-    showError(zone, `Upload failed: ${err.message}`);
-    clearBgJob();
+    showError(zone, `Upload failed: ${err.message}`, tool.id);
+    clearBgJob(clientJobKey);
     return;
   }
 
@@ -353,12 +353,12 @@ async function _submitConvert(file, outputFilename) {
     }
 
     if (state === 'error') {
-      showError(zone, error || 'Conversion failed. Please try again.');
+      showError(zone, error || 'Conversion failed. Please try again.', tool.id);
     }
   };
 
   sse.onerror = () => {
     sse.close();
-    showError(zone, 'Lost connection to backend. Is the server running?');
+    showError(zone, 'Lost connection to backend. Is the server running?', tool.id);
   };
 }

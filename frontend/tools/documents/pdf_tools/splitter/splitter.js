@@ -1,4 +1,4 @@
-﻿/**
+/**
  * tools/documents/pdf_tools/splitter/splitter.js
  *
  * Self-contained Splitter tool module.
@@ -280,7 +280,7 @@ export async function handleSplitFilePicked(file) {
       pageCount = offlineInfo.pageCount || 1;
       thumbnailDataUri = offlineInfo.thumbnail || null;
     } catch (offlineErr) {
-      showError(zone, `Could not read PDF: ${offlineErr.message}`);
+      showError(zone, `Could not read PDF: ${offlineErr.message}`, tool?.id);
       return;
     }
   }
@@ -322,12 +322,12 @@ async function _submitSplitFile(file, fromVal, toVal) {
   }
 
   // Show progress inside drop zone
-  showProgress(zone, 0, color, 'Processing…');
+  showProgress(zone, 0, color, 'Processing…', tool.id);
 
   // Register job immediately so bar appears if user switches tools during upload
   const baseName = _splitBaseName || 'document';
   const earlyFilename = `${baseName}_split_pdfs.zip`;
-  setBgJob({ jobId: null, tool, filename: earlyFilename, progress: 5, state: 'submitting', sse: null });
+  const clientJobKey = setBgJob({ jobId: null, tool, filename: earlyFilename, progress: 5, state: 'submitting', sse: null });
 
   let jobId;
   try {
@@ -342,9 +342,9 @@ async function _submitSplitFile(file, fromVal, toVal) {
     }
     jobId = json.job_id;
   } catch (err) {
-    showError(zone, `Upload failed: ${err.message}`);
+    showError(zone, `Upload failed: ${err.message}`, tool.id);
     if (panel) panel.classList.remove('split-info-panel--submitting');
-    clearBgJob();
+    clearBgJob(clientJobKey);
     return;
   }
 
@@ -407,14 +407,14 @@ async function _submitSplitFile(file, fromVal, toVal) {
     }
 
     if (state === 'error') {
-      showError(zone, error || 'Processing failed. Please try again.');
+      showError(zone, error || 'Processing failed. Please try again.', tool.id);
       if (panel) panel.classList.remove('split-info-panel--submitting');
     }
   };
 
   sse.onerror = () => {
     sse.close();
-    showError(zone, 'Lost connection to backend. Is the server running?');
+    showError(zone, 'Lost connection to backend. Is the server running?', tool.id);
     if (panel) panel.classList.remove('split-info-panel--submitting');
   };
 }

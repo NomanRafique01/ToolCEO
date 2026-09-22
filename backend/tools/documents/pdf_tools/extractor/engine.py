@@ -249,6 +249,7 @@ def extract_images_zip(
 
     out = io.BytesIO()
     image_total = 0
+    seen_xrefs: set[int] = set()
 
     try:
         with zipfile.ZipFile(out, "w", compression=zipfile.ZIP_DEFLATED) as zf:
@@ -259,6 +260,9 @@ def extract_images_zip(
 
                 for image_info in page_images:
                     xref = int(image_info[0])
+                    if xref in seen_xrefs:
+                        continue
+                    seen_xrefs.add(xref)
                     png = _pixmap_to_png(doc, xref)
                     image_total += 1
                     zf.writestr(

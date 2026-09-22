@@ -1,4 +1,4 @@
-﻿/**
+/**
  * tools/documents/pdf_tools/water_mark/water_mark.js
  *
  * Interactive PDF Watermark Editor — ToolCEO
@@ -1012,7 +1012,7 @@ async function _loadPdfIntoViewer(container, file) {
   if (zone) {
     removeWatermarkPanel();
     resetZoneContent(zone);
-    showProgress(zone, 10, color, 'Reading PDF offline…');
+    showProgress(zone, 10, color, 'Reading PDF offline…', tool?.id);
   }
 
   try {
@@ -1046,7 +1046,7 @@ async function _loadPdfIntoViewer(container, file) {
     }
 
   } catch (err) {
-    if (zone) showError(zone, `Could not read PDF: ${err.message}`);
+    if (zone) showError(zone, `Could not read PDF: ${err.message}`, tool?.id);
     pushNotification({
       type: 'error',
       message: 'PDF Load Failed',
@@ -1165,10 +1165,10 @@ async function _submitWatermark(file, opts, outputFilename) {
   fd.append('sign_width_pct', String(payload.sign_width_pct));
   fd.append('output_filename', outputFilename);
 
-  showProgress(zone, 10, color, 'Applying Watermark…');
+  showProgress(zone, 10, color, 'Applying Watermark…', tool.id);
 
   const earlyFilename = `${_wmBaseName || 'document'}_watermarked.pdf`;
-  setBgJob({ jobId: null, tool, filename: earlyFilename, progress: 5, state: 'submitting', sse: null });
+  const clientJobKey = setBgJob({ jobId: null, tool, filename: earlyFilename, progress: 5, state: 'submitting', sse: null });
 
   let jobId;
   try {
@@ -1183,8 +1183,8 @@ async function _submitWatermark(file, opts, outputFilename) {
     }
     jobId = json.job_id;
   } catch (err) {
-    showError(zone, `Upload failed: ${err.message}`);
-    clearBgJob();
+    showError(zone, `Upload failed: ${err.message}`, tool.id);
+    clearBgJob(clientJobKey);
     return;
   }
 
@@ -1235,12 +1235,12 @@ async function _submitWatermark(file, opts, outputFilename) {
     }
 
     if (state === 'error') {
-      showError(zone, error || 'Watermarking failed. Please try again.');
+      showError(zone, error || 'Watermarking failed. Please try again.', tool.id);
     }
   };
 
   sse.onerror = () => {
     sse.close();
-    showError(zone, 'Lost connection to backend server.');
+    showError(zone, 'Lost connection to backend server.', tool.id);
   };
 }

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * tools/documents/pdf_tools/extractor/extractor.js
  *
  * Owns the Extract Images flow: PDF scan, drop-zone thumbnail, rotate-style
@@ -476,7 +476,7 @@ async function _loadPdfIntoViewer(container, file) {
   if (!zone) return;
 
   removeExtractorPanel();
-  showProgress(zone, 10, color, 'Reading PDF offline…');
+  showProgress(zone, 10, color, 'Reading PDF offline…', tool?.id);
   _renderToken += 1;
   const token = _renderToken;
 
@@ -489,7 +489,7 @@ async function _loadPdfIntoViewer(container, file) {
       pdfDoc: offlineInfo.pdfDoc || null,
     };
   } catch (offlineErr) {
-    showError(zone, `Could not read PDF: ${offlineErr.message}`);
+    showError(zone, `Could not read PDF: ${offlineErr.message}`, tool?.id);
     return;
   }
 
@@ -566,8 +566,8 @@ async function _submitExtract() {
   if (_activeContainer) _closeViewer(_activeContainer);
   document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'smooth' });
 
-  if (zone) showProgress(zone, 0, color, 'Extracting images...');
-  setBgJob({ jobId: null, tool, filename: outputName, progress: 5, state: 'submitting', sse: null });
+  if (zone) showProgress(zone, 0, color, 'Extracting images...', tool?.id);
+  const clientJobKey = setBgJob({ jobId: null, tool, filename: outputName, progress: 5, state: 'submitting', sse: null });
 
   const fd = new FormData();
   fd.append('file', file);
@@ -586,8 +586,8 @@ async function _submitExtract() {
     }
     jobId = json.job_id;
   } catch (err) {
-    if (zone) showError(zone, `Upload failed: ${err.message}`);
-    clearBgJob();
+    if (zone) showError(zone, `Upload failed: ${err.message}`, tool?.id);
+    clearBgJob(clientJobKey);
     return;
   }
 
@@ -642,13 +642,13 @@ async function _submitExtract() {
     }
 
     if (state === 'error') {
-      if (zone) showError(zone, error || 'Processing failed. Please try again.');
+      if (zone) showError(zone, error || 'Processing failed. Please try again.', tool.id);
     }
   };
 
   sse.onerror = () => {
     sse.close();
-    if (zone) showError(zone, 'Lost connection to backend. Is the server running?');
+    if (zone) showError(zone, 'Lost connection to backend. Is the server running?', tool.id);
   };
 }
 

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * tools/documents/pdf_convertor/pdf_ppt/pdf_ppt.js
  *
  * PDF → PPT Converter — single-file flow.
@@ -237,7 +237,7 @@ export async function handlePdfPptFilePicked(file) {
       pageCount = offlineInfo.pageCount || 1;
       thumbnail = offlineInfo.thumbnail || null;
     } catch (offlineErr) {
-      showError(zone, `Could not read PDF: ${offlineErr.message}`);
+      showError(zone, `Could not read PDF: ${offlineErr.message}`, tool?.id);
       return;
     }
   }
@@ -272,10 +272,10 @@ async function _submitConvert(file, outputFilename) {
   fd.append('file', file);
   fd.append('output_filename', outputFilename);
 
-  showProgress(zone, 9, color, 'Converting…');
+  showProgress(zone, 9, color, 'Converting…', tool.id);
 
   const earlyFilename = `${_pdfPptBaseName || outputFilename}_converted.pptx`;
-  setBgJob({ jobId: null, tool, filename: earlyFilename, progress: 5, state: 'submitting', sse: null });
+  const clientJobKey = setBgJob({ jobId: null, tool, filename: earlyFilename, progress: 5, state: 'submitting', sse: null });
 
   let jobId;
   try {
@@ -290,8 +290,8 @@ async function _submitConvert(file, outputFilename) {
     }
     jobId = json.job_id;
   } catch (err) {
-    showError(zone, `Upload failed: ${err.message}`);
-    clearBgJob();
+    showError(zone, `Upload failed: ${err.message}`, tool.id);
+    clearBgJob(clientJobKey);
     return;
   }
 
@@ -319,7 +319,7 @@ async function _submitConvert(file, outputFilename) {
     }
 
     if (state === 'running' || state === 'pending') {
-      updateProgress(document.getElementById('drop-zone'), Math.max(10, Math.min(90, pct)), color);
+      updateProgress(document.getElementById('drop-zone'), Math.max(10, Math.min(90, pct)), color, tool.id);
       return;
     }
 
@@ -346,12 +346,12 @@ async function _submitConvert(file, outputFilename) {
     }
 
     if (state === 'error') {
-      showError(document.getElementById('drop-zone'), error || 'Conversion failed. Please try again.');
+      showError(document.getElementById('drop-zone'), error || 'Conversion failed. Please try again.', tool.id);
     }
   };
 
   sse.onerror = () => {
     sse.close();
-    showError(document.getElementById('drop-zone'), 'Lost connection to backend. Is the server running?');
+    showError(document.getElementById('drop-zone'), 'Lost connection to backend. Is the server running?', tool.id);
   };
 }

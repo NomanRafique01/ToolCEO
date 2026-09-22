@@ -1,4 +1,4 @@
-﻿/**
+/**
  * tools/documents/pdf_tools/compressor/compressor.js
  *
  * PDF Compressor — size-reduction only.
@@ -331,11 +331,11 @@ async function _submitCompress(file, opts, outputFilename) {
   if (opts.max_file_size != null) fd.append('max_file_size', String(opts.max_file_size));
   fd.append('output_filename', outputFilename);
 
-  showProgress(zone, 10, color, 'Compressing…');
+  showProgress(zone, 10, color, 'Compressing…', tool.id);
 
   // Register job immediately so bar appears if user switches tools during upload
   const earlyFilename = `${_compressBaseName}_compressed.pdf`;
-  setBgJob({ jobId: null, tool, filename: earlyFilename, progress: 5, state: 'submitting', sse: null });
+  const clientJobKey = setBgJob({ jobId: null, tool, filename: earlyFilename, progress: 5, state: 'submitting', sse: null });
 
   let jobId;
   try {
@@ -350,8 +350,8 @@ async function _submitCompress(file, opts, outputFilename) {
     }
     jobId = json.job_id;
   } catch (err) {
-    showError(zone, `Upload failed: ${err.message}`);
-    clearBgJob();
+    showError(zone, `Upload failed: ${err.message}`, tool.id);
+    clearBgJob(clientJobKey);
     return;
   }
 
@@ -407,12 +407,12 @@ async function _submitCompress(file, opts, outputFilename) {
     }
 
     if (state === 'error') {
-      showError(zone, error || 'Compression failed. Please try again.');
+      showError(zone, error || 'Compression failed. Please try again.', tool.id);
     }
   };
 
   sse.onerror = () => {
     sse.close();
-    showError(zone, 'Lost connection to backend. Is the server running?');
+    showError(zone, 'Lost connection to backend. Is the server running?', tool.id);
   };
 }

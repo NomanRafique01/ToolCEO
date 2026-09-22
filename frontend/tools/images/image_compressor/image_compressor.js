@@ -489,7 +489,7 @@ async function _submitCompress() {
     jobId = json.job_id;
   } catch (err) {
     if (getActiveTool()?.id === tool.id) {
-      showError(zone, `Upload failed: ${err.message}`);
+      showError(zone, `Upload failed: ${err.message}`, tool.id);
     }
     clearBgJob();
     _queue = queueSnapshot;
@@ -564,7 +564,7 @@ async function _submitCompress() {
 
     if (state === 'error') {
       if (getActiveTool()?.id === tool.id) {
-        showError(zone, error || 'Compression failed. Please try again.');
+        showError(zone, error || 'Compression failed. Please try again.', tool.id);
       }
       clearBgJob(jobId);
     }
@@ -573,7 +573,7 @@ async function _submitCompress() {
   sse.onerror = () => {
     sse.close();
     if (getActiveTool()?.id === tool.id) {
-      showError(zone, 'Lost connection to backend. Is the server running?');
+      showError(zone, 'Lost connection to backend. Is the server running?', tool.id);
     }
     clearBgJob(jobId);
   };

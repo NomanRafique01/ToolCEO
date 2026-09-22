@@ -1,4 +1,4 @@
-﻿/**
+/**
  * tools/ebooks/shared/ebook_base.js
  *
  * Single shared base for every eBook conversion tool.
@@ -283,10 +283,10 @@ async function _submitConvert(file, outputFilename) {
   fd.append('target_format', dst);
   fd.append('output_filename', outputFilename);
 
-  showProgress(zone, 10, color, 'Converting…');
+  showProgress(zone, 10, color, 'Converting…', tool.id);
 
   const earlyFilename = `${_ebookBaseName || outputFilename}.${dst}`;
-  setBgJob({ jobId: null, tool, filename: earlyFilename, progress: 5, state: 'submitting', sse: null });
+  const clientJobKey = setBgJob({ jobId: null, tool, filename: earlyFilename, progress: 5, state: 'submitting', sse: null });
 
   let jobId;
   try {
@@ -301,8 +301,8 @@ async function _submitConvert(file, outputFilename) {
     }
     jobId = json.job_id;
   } catch (err) {
-    showError(zone, `Upload failed: ${err.message}`);
-    clearBgJob();
+    showError(zone, `Upload failed: ${err.message}`, tool.id);
+    clearBgJob(clientJobKey);
     return;
   }
 
@@ -360,12 +360,12 @@ async function _submitConvert(file, outputFilename) {
     }
 
     if (state === 'error') {
-      showError(zone, error || 'Conversion failed. Please try again.');
+      showError(zone, error || 'Conversion failed. Please try again.', tool.id);
     }
   };
 
   sse.onerror = () => {
     sse.close();
-    showError(zone, 'Lost connection to backend. Is the server running?');
+    showError(zone, 'Lost connection to backend. Is the server running?', tool.id);
   };
 }

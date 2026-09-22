@@ -1,4 +1,4 @@
-﻿/**
+/**
  * tools/documents/pdf_tools/editor/editor.js
  *
  * Owns the Edit PDF load flow: PDF scan, page grid, and in-browser page
@@ -651,7 +651,7 @@ async function _loadPdfIntoViewer(container, file) {
   if (!zone) return;
 
   removeEditorPanel();
-  showProgress(zone, 10, color, 'Reading PDF offline…');
+  showProgress(zone, 10, color, 'Reading PDF offline…', tool?.id);
   _renderToken += 1;
   const token = _renderToken;
 
@@ -664,7 +664,7 @@ async function _loadPdfIntoViewer(container, file) {
       pdfDoc: offlineInfo.pdfDoc,
     };
   } catch (offlineErr) {
-    showError(zone, `Could not read PDF: ${offlineErr.message}`);
+    showError(zone, `Could not read PDF: ${offlineErr.message}`, tool?.id);
     return;
   }
 
@@ -1019,7 +1019,7 @@ async function _saveEditedPdf(viewer) {
 
   if (zone) {
     resetZoneContent(zone);
-    showProgress(zone, 15, color, 'Saving PDF...');
+    showProgress(zone, 15, color, 'Saving PDF...', tool?.id);
   }
   setBgJob({ jobId: null, tool, filename: outName, progress: 15, state: 'running', sse: null });
   syncBgJobBar();
@@ -1060,12 +1060,12 @@ async function _saveEditedPdf(viewer) {
     }
 
     if (zone && getActiveTool()?.id === 'editor') {
-      setTimeout(() => showDownloadBlobCard(zone, blob, outName, color, _resetAfterEditorSave), 200);
+      setTimeout(() => showDownloadBlobCard(zone, blob, outName, color, _resetAfterEditorSave, tool?.id), 200);
     }
 
 
   } catch (err) {
-    if (zone) showError(zone, err.message || 'Unable to save edited PDF.');
+    if (zone) showError(zone, err.message || 'Unable to save edited PDF.', tool?.id);
     clearBgJob();
   }
 }

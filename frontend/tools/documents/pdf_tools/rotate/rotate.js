@@ -1,4 +1,4 @@
-﻿/**
+/**
  * tools/documents/pdf_tools/rotate/rotate.js
  *
  * Owns the Rotate Pages view swap, PDF.js thumbnail rendering, rotation state,
@@ -616,7 +616,7 @@ async function _applyAndSave(viewer) {
 
   if (zone) {
     resetZoneContent(zone);
-    showProgress(zone, 15, color, 'Processing PDF…');
+    showProgress(zone, 15, color, 'Processing PDF…', tool?.id);
   }
 
   // 4. Register background progress job (triggers bg progress bar)
@@ -696,7 +696,7 @@ async function _applyAndSave(viewer) {
       });
     }
   } catch (err) {
-    if (zone) showError(zone, err.message || 'Unable to save modified PDF.');
+    if (zone) showError(zone, err.message || 'Unable to save modified PDF.', tool?.id);
     clearBgJob();
     pushNotification({
       type: 'error',

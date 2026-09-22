@@ -621,7 +621,7 @@ function startBackend() {
       resolve(true);
     });
     req.on('error', () => resolve(false));
-    req.setTimeout(800, () => { req.destroy(); resolve(false); });
+    req.setTimeout(2000, () => { req.destroy(); resolve(false); });
   });
 
   checkAlreadyRunning().then((alreadyUp) => {

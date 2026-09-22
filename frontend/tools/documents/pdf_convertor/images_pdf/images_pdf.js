@@ -682,8 +682,8 @@ async function _submitConvert(outputFilename) {
   _queue   = [];
   _pdfMode = 'individual';
 
-  showProgress(zone, 0, color, 'Converting…');
-  setBgJob({ jobId: null, tool, filename: earlyName, progress: 5, state: 'submitting', sse: null });
+  showProgress(zone, 0, color, 'Converting…', tool.id);
+  const clientJobKey = setBgJob({ jobId: null, tool, filename: earlyName, progress: 5, state: 'submitting', sse: null });
 
   let jobId;
   try {
@@ -698,10 +698,10 @@ async function _submitConvert(outputFilename) {
     }
     jobId = json.job_id;
   } catch (err) {
-    showError(zone, `Upload failed: ${err.message}`);
+    showError(zone, `Upload failed: ${err.message}`, tool.id);
     // Restore queue on failure
     _queue = queueSnapshot;
-    clearBgJob();
+    clearBgJob(clientJobKey);
     return;
   }
 
@@ -754,14 +754,14 @@ async function _submitConvert(outputFilename) {
     }
 
     if (state === 'error') {
-      showError(zone, error || 'Conversion failed. Please try again.');
-      clearBgJob();
+      showError(zone, error || 'Conversion failed. Please try again.', tool.id);
+      clearBgJob(jobId);
     }
   };
 
   sse.onerror = () => {
     sse.close();
-    showError(zone, 'Lost connection to backend. Is the server running?');
-    clearBgJob();
+    showError(zone, 'Lost connection to backend. Is the server running?', tool.id);
+    clearBgJob(jobId);
   };
 }
