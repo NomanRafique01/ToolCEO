@@ -22,6 +22,7 @@
 
 import { clearBgJob, getActiveTool, getBgJob, getBgJobForTool, setBgJob } from '../../scripts/toolstate.js';
 import { buildConversionMeta } from '../../scripts/historyTracker.js';
+import { applyToolDropZoneSnapshot, captureToolDropZoneSnapshot, shouldSuppressRestoreScan } from '../../scripts/fileState.js';
 
 const BACKEND = 'http://127.0.0.1:8000';
 
@@ -117,6 +118,7 @@ export function showProgress(zone, pct, color, label, toolId) {
   if (!activeTool) return;
   if (toolId && activeTool.id !== toolId) return;
 
+  captureToolDropZoneSnapshot(toolId || activeTool.id, zone);
   resetZoneContent(zone);
   zone.classList.add('dz-state-processing');
   const owner = toolId || activeTool?.id;
@@ -127,6 +129,10 @@ export function showProgress(zone, pct, color, label, toolId) {
 
 /** Show an indeterminate scanning ring — spinning arc. */
 export function showScanProgress(zone, color, label = 'Scanning', toolId) {
+  if (shouldSuppressRestoreScan()) {
+    return;
+  }
+
   const activeTool = getActiveTool();
   if (!activeTool) return;
   if (toolId && activeTool.id !== toolId) return;
@@ -145,10 +151,21 @@ function _wireCancelBtn(wrap, zone) {
   if (!btn) return;
   btn.addEventListener('click', (e) => {
     e.stopPropagation();
+    const tool = getActiveTool();
     clearBgJob();            // closes SSE + hides bg-job bar
-    resetZoneContent(zone);  // remove ring overlay
+    if (!tool) {
+      resetZoneContent(zone);
+    }
     // Let individual tool modules react (e.g. re-show idle state)
-    document.dispatchEvent(new CustomEvent('progress-cancelled'));
+    document.dispatchEvent(new CustomEvent('progress-cancelled', { detail: { restored: !!tool } }));
+    if (tool) {
+      setTimeout(() => {
+        applyToolDropZoneSnapshot(tool.id, zone);
+        document.dispatchEvent(new CustomEvent('tool-file-restore-requested', {
+          detail: { tool, reason: 'progress-cancel' },
+        }));
+      }, 0);
+    }
   });
 }
 

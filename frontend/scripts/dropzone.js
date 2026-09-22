@@ -19,6 +19,7 @@ import { handleArchiveDuplicateFilePicked, removeArchiveDuplicatePanel } from '.
  */
 
 import { getActiveTool, setActiveTool, onToolChange, setBgJob, getBgJob, getBgJobForTool, syncBgJobBar, clearBgJob } from './toolstate.js';
+import { applyToolDropZoneSnapshot, captureToolDropZoneSnapshot, clearToolFileState, getToolFileState, isRestoringToolFiles, saveToolFiles, setRestoringToolFiles, shouldSuppressRestoreScan } from './fileState.js';
 import { pushNotification } from './notificationStore.js';
 import { showDownload, showDownloadBlobCard } from '../tools/shared/progress.js';
 import { buildConversionMeta } from './historyTracker.js';
@@ -253,6 +254,7 @@ const _EBOOK_TOOLS = {
 };
 
 const BACKEND = 'http://127.0.0.1:8000';
+let _renderedToolId = null;
 
 // ─── ENDPOINT MAP ─────────────────────────────────────────────────────────────
 const ENDPOINT_MAP = {
@@ -347,6 +349,76 @@ function _tagBadge(tag, color, bg) {
 /** Also exported so the splitter module can re-apply tool state after "Change file". */
 export function _updateDropZoneForTool(tool) { _updateDropZone(tool); }
 
+function _shouldAppendFilesForTool(toolId) {
+  if (!toolId) return false;
+  return toolId === 'merge' ||
+    toolId === 'images-pdf' ||
+    toolId === 'archive-merge' ||
+    toolId === 'image_compressor' ||
+    isArchiveCreateTool(toolId) ||
+    toolId.startsWith('jpg-') ||
+    toolId.startsWith('png-') ||
+    toolId.startsWith('webp-') ||
+    toolId.startsWith('svg-');
+}
+
+function _rememberToolFiles(tool, files) {
+  if (isRestoringToolFiles() || !tool || !tool.id) return;
+  saveToolFiles(tool, files, {
+    mode: _shouldAppendFilesForTool(tool.id) ? 'append' : 'replace',
+  });
+}
+
+function _clearActiveToolFiles() {
+  const tool = getActiveTool();
+  if (tool && tool.id) clearToolFileState(tool.id);
+}
+
+function _captureDropZoneSnapshot(zone) {
+  if (!zone || !_renderedToolId) return;
+  captureToolDropZoneSnapshot(_renderedToolId, zone);
+}
+
+function _captureActiveToolSnapshot() {
+  const tool = getActiveTool();
+  const zone = document.getElementById('drop-zone');
+  if (tool && zone) captureToolDropZoneSnapshot(tool.id, zone);
+}
+
+function _waitForPaint() {
+  return new Promise((resolve) => {
+    if (typeof requestAnimationFrame !== 'function') {
+      setTimeout(resolve, 0);
+      return;
+    }
+    requestAnimationFrame(() => requestAnimationFrame(resolve));
+  });
+}
+
+async function _restoreToolFiles(tool, { resetToolUi = false, showScan = false } = {}) {
+  if (!tool || !tool.id) return;
+  const state = getToolFileState(tool.id);
+  if (!state || !state.files || state.files.length === 0) return;
+
+  setRestoringToolFiles(true, { suppressScan: !showScan });
+  try {
+    if (resetToolUi) {
+      _removeAllPanels();
+    }
+    applyToolDropZoneSnapshot(tool.id, document.getElementById('drop-zone'));
+    await _submitFile(state.files);
+    saveToolFiles(tool, state.files, { mode: 'replace' });
+    await _waitForPaint();
+    captureToolDropZoneSnapshot(tool.id, document.getElementById('drop-zone'));
+  } finally {
+    setRestoringToolFiles(false);
+  }
+}
+
+export function clearFileStateForActiveTool() {
+  _clearActiveToolFiles();
+}
+
 function _updateDropZone(tool) {
   // Reset the download panel when the tool changes; it will only become
   // active again after a conversion completes (_dlPanelReady is called then).
@@ -359,6 +431,7 @@ function _updateDropZone(tool) {
   const heroHintEl = heroHeader && heroHeader.querySelector('.hero-hint');
 
   if (!zone) return;
+  _captureDropZoneSnapshot(zone);
 
   // ── RESET ──────────────────────────────────────────────────────────────────
   if (!tool) {
@@ -442,6 +515,7 @@ function _updateDropZone(tool) {
     if (heroTitleEl) { heroTitleEl.textContent = DEFAULT_TITLE; heroTitleEl.style.color = ''; }
     if (heroSubEl) { heroSubEl.innerHTML = DEFAULT_SUBT; }
     if (heroHintEl) { heroHintEl.textContent = DEFAULT_HINT; heroHintEl.style.color = ''; }
+    _renderedToolId = null;
     return;
   }
 
@@ -577,6 +651,9 @@ function _updateDropZone(tool) {
       return;
     }
   }
+
+  _restoreToolFiles(tool);
+  _renderedToolId = tool.id;
 }
 
 // ─── DOWNLOAD PANEL (right-column panel) ──────────────────────────────────────
@@ -912,6 +989,7 @@ function _showProgress(zone, pct, color, label, toolId) {
   if (!activeTool) return;
   if (toolId && activeTool.id !== toolId) return;
 
+  captureToolDropZoneSnapshot(toolId || activeTool.id, zone);
   _resetZoneContent(zone);
   zone.classList.add('dz-state-processing');
   const owner = toolId || activeTool?.id;
@@ -922,6 +1000,10 @@ function _showProgress(zone, pct, color, label, toolId) {
 
 /** Show an indeterminate scanning ring — spinning arc. */
 function _showScanProgress(zone, color, toolId) {
+  if (shouldSuppressRestoreScan()) {
+    return;
+  }
+
   const activeTool = getActiveTool();
   if (!activeTool) return;
   if (toolId && activeTool.id !== toolId) return;
@@ -940,9 +1022,18 @@ function _wireDzCancelBtn(wrap, zone) {
   if (!btn) return;
   btn.addEventListener('click', (e) => {
     e.stopPropagation();
+    const tool = getActiveTool();
     clearBgJob();
-    _resetZoneContent(zone);
-    document.dispatchEvent(new CustomEvent('progress-cancelled'));
+    if (!tool) {
+      _resetZoneContent(zone);
+    }
+    document.dispatchEvent(new CustomEvent('progress-cancelled', { detail: { restored: !!tool } }));
+    if (tool) {
+      setTimeout(() => {
+        applyToolDropZoneSnapshot(tool.id, zone);
+        _restoreToolFiles(tool, { resetToolUi: true, showScan: true });
+      }, 0);
+    }
   });
 }
 
@@ -1001,9 +1092,50 @@ function _removeAllPanels() {
   if (typeof removeArchiveSplitterPanel === 'function') removeArchiveSplitterPanel();
   if (typeof removeArchiveMergerPanel === 'function') removeArchiveMergerPanel();
   if (typeof removeArchiveConvertPanel === 'function') removeArchiveConvertPanel();
+  if (typeof removeArchiveProtectPanel === 'function') removeArchiveProtectPanel();
   if (typeof removeArchiveDuplicatePanel === 'function') removeArchiveDuplicatePanel();
+  if (typeof removeDocxPdfPanel === 'function') {
+    removeDocxPdfPanel(); removeDocxHtmlPanel(); removeDocxTxtPanel();
+    removeDocxOdtPanel(); removeDocxEpubPanel(); removeDocxMdPanel();
+  }
+  if (typeof removeXlsxPdfPanel === 'function') {
+    removeXlsxPdfPanel(); removeXlsxCsvPanel(); removeXlsxJsonPanel();
+    removeXlsxHtmlPanel(); removeXlsxOdsPanel();
+  }
+  if (typeof removePptxPdfPanel === 'function') {
+    removePptxPdfPanel(); removePptxHtmlPanel(); removePptxImagesPanel();
+    removePptxOdpPanel(); removePptxTxtPanel(); removePptxRepairPanel();
+  }
+  if (typeof removeTxtPdfPanel === 'function') {
+    removeTxtPdfPanel(); removeTxtDocxPanel(); removeTxtHtmlPanel();
+    removeTxtMdPanel(); removeTxtEpubPanel(); removeTxtOdtPanel(); removeTxtRtfPanel();
+  }
+  if (typeof removeOdtPdfPanel === 'function') {
+    removeOdtPdfPanel(); removeOdtDocxPanel(); removeOdtHtmlPanel();
+    removeOdtTxtPanel(); removeOdtEpubPanel(); removeOdtMdPanel(); removeOdtRtfPanel();
+  }
+  if (typeof removeCsvJsonPanel === 'function') {
+    removeCsvJsonPanel(); removeCsvXlsxPanel(); removeCsvHtmlPanel(); removeCsvMdPanel();
+    removeCsvPdfPanel(); removeCsvTxtPanel(); removeCsvXmlPanel(); removeCsvSqlPanel();
+  }
+  Object.values(_EBOOK_TOOLS).forEach(({ r }) => r());
   if (typeof removeImagePreview === 'function') removeImagePreview();
   if (typeof removeImageCompressorPanel === 'function') removeImageCompressorPanel();
+  if (typeof removeJpgPngPanel === 'function') {
+    removeJpgPngPanel(); removeJpgWebpPanel(); removeJpgPdfPanel(); removeJpgBmpPanel();
+    removeJpgTiffPanel(); removeJpgIcoPanel(); removeJpgTxtPanel();
+  }
+  if (typeof removePngJpgPanel === 'function') {
+    removePngJpgPanel(); removePngWebpPanel(); removePngPdfPanel(); removePngBmpPanel();
+    removePngTiffPanel(); removePngIcoPanel(); removePngTxtPanel();
+  }
+  if (typeof removeWebpJpgPanel === 'function') {
+    removeWebpJpgPanel(); removeWebpPngPanel(); removeWebpPdfPanel(); removeWebpBmpPanel();
+    removeWebpTiffPanel(); removeWebpIcoPanel(); removeWebpTxtPanel();
+  }
+  if (typeof removeSvgPngPanel === 'function') {
+    removeSvgPngPanel(); removeSvgJpgPanel(); removeSvgWebpPanel(); removeSvgPdfPanel();
+  }
 }
 
 /**
@@ -1143,6 +1275,8 @@ async function _submitFile(files) {
       return;
     }
   }
+
+  _rememberToolFiles(tool, fileArray);
 
   // Split tool has its own two-step flow — delegated to the splitter module
   if (tool.id === 'split') {
@@ -1634,6 +1768,29 @@ export function initDropZone() {
   if (!dropZone || !fileInput) return;
 
   onToolChange(_updateDropZone);
+
+  document.addEventListener('click', (e) => {
+    const target = e.target;
+    if (!(target instanceof Element)) return;
+    _captureActiveToolSnapshot();
+
+    const clearsLoadedFiles = target.closest(
+      '[data-tool-close], [data-clear-tool-files], ' +
+      '.sip-change-btn, .enc-change-btn, .pw-change-btn, .archive-change-btn, .ai-change-btn, ' +
+      '.arc-protect-change-btn, .xip-secondary-btn, ' +
+      '.dz-queue-clear-btn, .jpg-queue-clear-btn, .imgcmp-clear-btn'
+    );
+
+    if (clearsLoadedFiles) {
+      _clearActiveToolFiles();
+    }
+  }, true);
+
+  document.addEventListener('tool-file-restore-requested', (e) => {
+    const tool = e.detail && e.detail.tool ? e.detail.tool : getActiveTool();
+    const reason = e.detail && e.detail.reason;
+    if (tool) _restoreToolFiles(tool, { resetToolUi: true, showScan: reason === 'progress-cancel' });
+  });
 
   // Handle clicking the background progress bar / card or "View Tool" button:
   // switch back to the tool that was executing in the background and auto-scroll
