@@ -1,25 +1,34 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ToolCEO</title>
   <style>
     :root {
-      --bg-primary:   #081918;
-      --bg-surface:   #0F2D29;
-      --bg-card:      #112C28;
-      --accent:       #00E5C0;
+      --bg-primary: #081918;
+      --bg-surface: #0F2D29;
+      --bg-card: #112C28;
+      --accent: #00E5C0;
       --accent-hover: #00CCA8;
       --text-primary: #F0EDE4;
-      --text-muted:   #8FAAA6;
-      --border:       #1A3D38;
+      --text-muted: #8FAAA6;
+      --border: #1A3D38;
     }
 
-    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-    html, body {
-      width: 100%; height: 100%;
+    html,
+    body {
+      width: 100%;
+      height: 100%;
       overflow: hidden;
       background: var(--bg-primary);
       font-family: 'Segoe UI', sans-serif;
@@ -29,7 +38,8 @@
 
     /* ── Full wrapper ── */
     .splash {
-      width: 100%; height: 100%;
+      width: 100%;
+      height: 100%;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -39,7 +49,11 @@
       animation: fadeIn 0.4s ease 0.05s forwards;
     }
 
-    @keyframes fadeIn { to { opacity: 1; } }
+    @keyframes fadeIn {
+      to {
+        opacity: 1;
+      }
+    }
 
     /* ── Content stack ── */
     .content {
@@ -52,8 +66,8 @@
 
     /* ── App icon square card ── */
     .app-icon-square {
-      width: 108px;
-      height: 108px;
+      width: 600px;
+      height: 600px;
       margin-bottom: 28px;
       position: relative;
       display: flex;
@@ -87,8 +101,7 @@
       position: relative;
       z-index: 1;
       filter:
-        drop-shadow(0 6px 12px rgba(0, 0, 0, 0.35))
-        drop-shadow(0 0 8px rgba(0, 229, 192, 0.35));
+        drop-shadow(0 6px 12px rgba(0, 0, 0, 0.35)) drop-shadow(0 0 8px rgba(0, 229, 192, 0.35));
     }
 
     @keyframes iconSquarePulse {
@@ -100,6 +113,7 @@
           0 0 20px rgba(0, 229, 192, 0.18);
         border-color: rgba(0, 229, 192, 0.28);
       }
+
       100% {
         box-shadow:
           inset 0 1px 1px rgba(255, 255, 255, 0.22),
@@ -155,8 +169,13 @@
     }
 
     @keyframes fillBar {
-      from { width: 0%; }
-      to   { width: 100%; }
+      from {
+        width: 0%;
+      }
+
+      to {
+        width: 100%;
+      }
     }
 
     /* ── Loading message ── */
@@ -169,7 +188,8 @@
 
     .loading-msg span {
       position: absolute;
-      left: 0; right: 0;
+      left: 0;
+      right: 0;
       font-size: 12px;
       color: var(--text-muted);
       letter-spacing: 0.03em;
@@ -177,12 +197,15 @@
       transition: opacity 0.4s ease;
     }
 
-    .loading-msg span.active { opacity: 1; }
+    .loading-msg span.active {
+      opacity: 1;
+    }
 
     /* ── Version pinned bottom-right ── */
     .version {
       position: absolute;
-      bottom: 22px; right: 28px;
+      bottom: 22px;
+      right: 28px;
       font-size: 11px;
       color: var(--border);
       letter-spacing: 0.06em;
@@ -190,6 +213,7 @@
     }
   </style>
 </head>
+
 <body>
   <div class="splash">
     <div class="content">
@@ -237,5 +261,5 @@
 
   </script>
 </body>
-</html>
 
+</html>

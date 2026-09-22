@@ -117,11 +117,7 @@ function _renderStrip() {
   if (isPdfSingle) {
     const banner = document.createElement('div');
     banner.className = 'dz-svg-reorder-banner';
-    banner.style.cssText = `display:flex;align-items:center;gap:7px;font-size:11.5px;font-weight:500;
-      padding:6px 14px;border-top:1px solid color-mix(in srgb,${color} 30%,transparent);
-      border-bottom:1px solid color-mix(in srgb,${color} 30%,transparent);
-      background:color-mix(in srgb,${color} 8%,transparent);
-      color:${color};flex-shrink:0;`;
+    banner.style.setProperty('--jpg-color', color);
     banner.innerHTML = `
       <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
         <circle cx="5" cy="4" r="1.2" fill="${color}"/>
@@ -174,10 +170,10 @@ function _buildCard(item, idx, color) {
   card.dataset.idx = String(idx);
   card.style.setProperty('--jpg-color', color);
 
-  const isPdfSingle = _toolId === 'svg-pdf' && _pdfMode === 'single' && _queue.length > 1;
+  const isPdfSingle = _toolId === 'svg-pdf' && _pdfMode === 'single';
   if (isPdfSingle) {
     card.draggable = true;
-    card.style.cursor = 'grab';
+    card.classList.add('dz-jpg-card--draggable');
   }
 
   const shortName = item.file.name.length > 18
@@ -196,17 +192,25 @@ function _buildCard(item, idx, color) {
        </svg>`;
 
   const ordinalHTML = isPdfSingle
-    ? `<span style="position:absolute;top:-9px;left:50%;transform:translateX(-50%);
-         background:${color};color:#fff;font-size:10px;font-weight:700;
-         padding:2px 7px;border-radius:20px;z-index:2;pointer-events:none;
-         white-space:nowrap;box-shadow:0 1px 4px rgba(0,0,0,0.3);" aria-label="Position ${idx + 1}">${idx + 1}</span>`
+    ? `<span class="dz-jpg-ordinal" aria-label="Position ${idx + 1}">${idx + 1}</span>`
     : '';
+
+  const dragHintHTML = isPdfSingle ? `
+    <div class="dz-jpg-drag-hint" aria-hidden="true">
+      <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+        <circle cx="3" cy="3" r="1" fill="currentColor"/>
+        <circle cx="7" cy="3" r="1" fill="currentColor"/>
+        <circle cx="3" cy="7" r="1" fill="currentColor"/>
+        <circle cx="7" cy="7" r="1" fill="currentColor"/>
+      </svg>
+    </div>` : '';
 
   card.innerHTML = `
     ${ordinalHTML}
     <div class="dz-jpg-thumb-frame">
       ${thumbContent}
     </div>
+    ${dragHintHTML}
     <span class="dz-jpg-card-name" title="${_esc(item.file.name)}">${_esc(shortName)}</span>
     <button class="dz-jpg-card-remove" type="button"
             aria-label="Remove ${_esc(item.file.name)}">&#x2715;</button>`;
@@ -214,7 +218,8 @@ function _buildCard(item, idx, color) {
   card.querySelector('.dz-jpg-card-remove').addEventListener('click', (e) => {
     e.stopPropagation();
     e.preventDefault();
-    _queue.splice(idx, 1);
+    const currentIdx = parseInt(card.dataset.idx, 10);
+    _queue.splice(!isNaN(currentIdx) && currentIdx >= 0 ? currentIdx : idx, 1);
     _renderStrip();
     _renderPanel();
   });
@@ -268,14 +273,16 @@ function _initSvgDragReorder(strip, color) {
   strip.querySelectorAll('.dz-jpg-card').forEach((card) => {
     card.addEventListener('dragstart', (e) => {
       _dragSrcIdx = parseInt(card.dataset.idx, 10);
-      card.style.opacity = '0.35';
+      card.classList.add('dz-jpg-card--dragging');
       e.dataTransfer.effectAllowed = 'move';
       e.dataTransfer.setData('text/plain', String(_dragSrcIdx));
       _lockDz();
       _lockMainScroll();
     });
     card.addEventListener('dragend', () => {
-      card.style.opacity = '';
+      card.classList.remove('dz-jpg-card--dragging');
+      strip.querySelectorAll('.dz-jpg-card--drag-over')
+           .forEach((c) => c.classList.remove('dz-jpg-card--drag-over'));
       _unlockMainScroll();
       _unlockDz();
     });
@@ -283,18 +290,44 @@ function _initSvgDragReorder(strip, color) {
       e.preventDefault();
       e.stopPropagation();
       e.dataTransfer.dropEffect = 'move';
+      strip.querySelectorAll('.dz-jpg-card--drag-over')
+           .forEach((c) => c.classList.remove('dz-jpg-card--drag-over'));
+      card.classList.add('dz-jpg-card--drag-over');
+    });
+    card.addEventListener('dragleave', () => {
+      card.classList.remove('dz-jpg-card--drag-over');
     });
     card.addEventListener('drop', (e) => {
       e.preventDefault();
       e.stopPropagation();
       _unlockMainScroll();
       _unlockDz();
+      strip.querySelectorAll('.dz-jpg-card--drag-over')
+           .forEach((c) => c.classList.remove('dz-jpg-card--drag-over'));
       const targetIdx = parseInt(card.dataset.idx, 10);
       if (_dragSrcIdx === targetIdx || _dragSrcIdx < 0) { _dragSrcIdx = -1; return; }
       const moved = _queue.splice(_dragSrcIdx, 1)[0];
       _queue.splice(targetIdx, 0, moved);
-      _renderStrip();
-      _renderPanel();
+
+      // Move DOM nodes in-place (smooth UX)
+      const cards   = Array.from(strip.querySelectorAll('.dz-jpg-card'));
+      const srcCard = cards[_dragSrcIdx];
+      const tgtCard = cards[targetIdx];
+      if (srcCard && tgtCard) {
+        if (_dragSrcIdx < targetIdx) {
+          tgtCard.after(srcCard);
+        } else {
+          tgtCard.before(srcCard);
+        }
+        strip.querySelectorAll('.dz-jpg-card').forEach((c, i) => {
+          c.dataset.idx = String(i);
+          const ord = c.querySelector('.dz-jpg-ordinal');
+          if (ord) {
+            ord.textContent = String(i + 1);
+            ord.setAttribute('aria-label', `Position ${i + 1}`);
+          }
+        });
+      }
       _dragSrcIdx = -1;
     });
   });
@@ -439,6 +472,9 @@ function _renderPanel() {
           hintEl.innerHTML = `<strong>${total}</strong> file${total !== 1 ? 's' : ''} &nbsp;·&nbsp; ${newHint}`;
         }
         if (extEl) extEl.textContent = `.${_pdfMode === 'single' ? 'pdf' : 'zip'}`;
+
+        // Re-render strip to toggle drag reorder banner, ordinals, and draggable cards
+        _renderStrip();
       });
     });
   }
@@ -548,6 +584,7 @@ async function _submitConvert(outputFilename) {
   // Teardown UI
   const zone = document.getElementById('drop-zone');
   zone?.querySelector('.dz-svg-thumb-strip')?.remove();
+  zone?.querySelector('.dz-svg-reorder-banner')?.remove();
   zone?.classList.remove('dz-has-svg-thumbs');
   document.getElementById('svg-queue-panel')?.remove();
   _queue   = [];

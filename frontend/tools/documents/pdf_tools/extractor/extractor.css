@@ -138,7 +138,7 @@ body.has-extractor-viewer .features-strip {
   height: 34px;
   padding: 0 13px;
   border-radius: 8px;
-  border-color: color-mix(in srgb, var(--extractor-color) 35%, transparent);
+  border: 1px solid color-mix(in srgb, var(--extractor-color) 40%, transparent);
   color: var(--extractor-color);
   background: var(--extractor-bg);
   font-size: 12px;
@@ -148,18 +148,21 @@ body.has-extractor-viewer .features-strip {
 .extractor-action-btn:hover {
   border-color: var(--extractor-color);
   background: var(--extractor-bg-strong);
+  color: #FFFFFF;
 }
 
-.extractor-save-btn {
-  color: #241018;
-  background: var(--extractor-color);
-  border-color: var(--extractor-color);
+.extractor-action-btn.extractor-save-btn {
+  color: #0A1F1C !important;
+  background: var(--extractor-color, #F472B6) !important;
+  border: 1px solid var(--extractor-color, #F472B6) !important;
   font-weight: 700;
+  box-shadow: 0 2px 10px rgba(244, 114, 182, 0.35);
 }
 
-.extractor-save-btn:hover {
-  filter: brightness(1.08);
-  box-shadow: 0 0 14px color-mix(in srgb, var(--extractor-color) 36%, transparent);
+.extractor-action-btn.extractor-save-btn:hover {
+  filter: brightness(1.12);
+  box-shadow: 0 4px 16px rgba(244, 114, 182, 0.5);
+  transform: translateY(-1px);
 }
 
 .extractor-search-wrap {
@@ -315,7 +318,7 @@ body.has-extractor-viewer .features-strip {
   display: none;
   align-items: center;
   justify-content: center;
-  color: #241018;
+  color: #0A1F1C;
   background: var(--extractor-color);
   box-shadow: 0 8px 18px rgba(0, 0, 0, 0.32);
 }
@@ -343,16 +346,30 @@ body.has-extractor-viewer .features-strip {
   align-items: center;
   justify-content: center;
   border-radius: 8px;
-  border-color: color-mix(in srgb, var(--extractor-color) 35%, transparent);
-  color: var(--extractor-color);
-  background: var(--extractor-bg);
+  border: 1px solid var(--border, #1A3D38);
+  color: var(--text-muted);
+  background: rgba(255, 255, 255, 0.05);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
 }
 
 .extractor-page-btn:hover {
   border-color: var(--extractor-color);
-  background: var(--extractor-bg-strong);
+  color: var(--extractor-color);
+  background: var(--extractor-bg);
+}
+
+.extractor-card-selected .extractor-select-btn {
+  background: var(--extractor-color, #F472B6) !important;
+  color: #0A1F1C !important;
+  border-color: var(--extractor-color, #F472B6) !important;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(244, 114, 182, 0.35);
+}
+
+.extractor-card-selected .extractor-select-btn:hover {
+  filter: brightness(1.12);
+  box-shadow: 0 4px 12px rgba(244, 114, 182, 0.5);
 }
 
 .extractor-empty-state {
@@ -431,14 +448,21 @@ body.has-extractor-viewer .features-strip {
 }
 
 .xip-primary-btn {
-  color: #241018;
-  background: var(--extractor-color);
-  border-color: var(--extractor-color);
+  color: #0A1F1C !important;
+  background: var(--extractor-color) !important;
+  border-color: var(--extractor-color) !important;
+  font-weight: 700;
+  box-shadow: 0 2px 8px rgba(244, 114, 182, 0.35);
 }
 
-.xip-secondary-btn:hover,
+.xip-secondary-btn:hover {
+  filter: brightness(1.12);
+  background: var(--extractor-bg);
+}
+
 .xip-primary-btn:hover {
-  filter: brightness(1.08);
+  filter: brightness(1.12);
+  box-shadow: 0 4px 14px rgba(244, 114, 182, 0.5);
 }
 
 @keyframes extractorSkeleton {
