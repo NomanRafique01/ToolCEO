@@ -21,6 +21,7 @@ import { handleArchiveDuplicateFilePicked, removeArchiveDuplicatePanel } from '.
 import { getActiveTool, setActiveTool, onToolChange, setBgJob, getBgJob, getBgJobForTool, syncBgJobBar, clearBgJob } from './toolstate.js';
 import { applyToolDropZoneSnapshot, captureToolDropZoneSnapshot, clearToolFileState, getToolFileState, isRestoringToolFiles, saveToolFiles, setRestoringToolFiles, shouldSuppressRestoreScan } from './fileState.js';
 import { pushNotification } from './notificationStore.js';
+import { getToolFamily } from './toolFamily.js';
 import { showDownload, showDownloadBlobCard } from '../tools/shared/progress.js';
 import { buildConversionMeta } from './historyTracker.js';
 import {
@@ -255,6 +256,9 @@ const _EBOOK_TOOLS = {
 
 const BACKEND = 'http://127.0.0.1:8000';
 let _renderedToolId = null;
+let _restoreNoticeContext = null;
+let _lastRestoreNoticeAt = 0;
+let _restoreGuardUntil = 0;
 
 // ─── ENDPOINT MAP ─────────────────────────────────────────────────────────────
 const ENDPOINT_MAP = {
@@ -374,6 +378,93 @@ function _clearActiveToolFiles() {
   if (tool && tool.id) clearToolFileState(tool.id);
 }
 
+function _isForgetFilesClick(target) {
+  if (!(target instanceof Element)) return false;
+  return !!target.closest(
+    '[data-tool-close], [data-clear-tool-files], ' +
+    '.dz-save-close, .dl-panel-close, ' +
+    '[class*="thumb-remove"], [class*="card-remove"], [class*="queue-clear"], ' +
+    '.dz-img-preview-remove, .mqp-clear-btn, ' +
+    '.sip-change-btn, .enc-change-btn, .pw-change-btn, .archive-change-btn, .ai-change-btn, ' +
+    '.arc-protect-change-btn, .xip-secondary-btn, ' +
+    '.dz-queue-clear-btn, .jpg-queue-clear-btn, .imgcmp-clear-btn'
+  );
+}
+
+function _restoreNounForFamily(family, count) {
+  const nouns = {
+    document: ['document', 'documents'],
+    image: ['image', 'images'],
+    audio: ['audio file', 'audio files'],
+    video: ['video', 'videos'],
+    ebook: ['ebook', 'ebooks'],
+    archive: ['archive', 'archives'],
+    data: ['data file', 'data files'],
+  };
+  const pair = nouns[family] || ['file', 'files'];
+  return count === 1 ? pair[0] : pair[1];
+}
+
+function _buildRestoreNotice(tool, files) {
+  const fileArray = Array.from(files || []).filter(Boolean);
+  const count = fileArray.length || 1;
+  const firstFile = fileArray[0];
+  const idParts = String(tool?.id || '').split(/[-_]/).filter(Boolean);
+  const inputFormat = firstFile?.name || idParts[0] || '';
+  const outputFormat = idParts.length > 1 ? idParts[idParts.length - 1] : '';
+  const family = getToolFamily(inputFormat, firstFile?.name, outputFormat, tool?.category);
+  const noun = _restoreNounForFamily(family, count);
+  const verb = count === 1 ? 'is' : 'are';
+  return {
+    message: `Please wait, your ${noun} ${verb} loading.`,
+    detail: tool?.label ? `${tool.label} is restoring your previous selection.` : 'Your previous selection is being restored.',
+  };
+}
+
+function _showRestoreWaitNotice() {
+  if (!_isRestoreGuardActive() || !_restoreNoticeContext) return false;
+  const now = Date.now();
+  if (now - _lastRestoreNoticeAt < 1200) return true;
+  _lastRestoreNoticeAt = now;
+  pushNotification({
+    type: 'info',
+    message: _restoreNoticeContext.message,
+    detail: _restoreNoticeContext.detail,
+    autoDismiss: true,
+    allowDuringRestore: true,
+  });
+  return true;
+}
+
+function _isRestoreGuardActive() {
+  return isRestoringToolFiles() || Date.now() < _restoreGuardUntil;
+}
+
+function _isDropZoneControlClick(target) {
+  if (!(target instanceof Element)) return false;
+  const control = target.closest('button, [role="button"], input, select, textarea, a');
+  if (!control) return false;
+  return !!control.closest(
+    '#drop-zone, .hero-card, ' +
+    '#split-panel, #merge-panel, #compress-panel, #encrypt-panel, #rotate-panel, ' +
+    '#editor-panel, #watermark-panel, #extractor-panel, ' +
+    '#archive-create-panel, #archive-extract-panel, #archive-convert-panel, #archive-inspector-panel, #archive-splitter-panel, #archive-merger-panel, #archive-protect-panel, #archive-duplicate-panel, ' +
+    '#image-compressor-panel, .split-info-panel, .merge-queue-panel, .compress-settings-panel, .encrypt-settings-panel, ' +
+    '.extractor-info-panel, .imgcmp-panel, .cmp-panel, .enc-panel, .image-preview-container, .ebook-settings-panel, ' +
+    '.docx-panel, .xlsx-panel, .pptx-panel, .txt-panel, .odt-panel, .csv-panel'
+  );
+}
+
+function _finishRestoreGuard() {
+  _restoreGuardUntil = Date.now() + 1800;
+  setRestoringToolFiles(false);
+  setTimeout(() => {
+    if (Date.now() >= _restoreGuardUntil) {
+      _restoreNoticeContext = null;
+    }
+  }, 1900);
+}
+
 function _captureDropZoneSnapshot(zone) {
   if (!zone || !_renderedToolId) return;
   captureToolDropZoneSnapshot(_renderedToolId, zone);
@@ -400,6 +491,8 @@ async function _restoreToolFiles(tool, { resetToolUi = false, showScan = false }
   const state = getToolFileState(tool.id);
   if (!state || !state.files || state.files.length === 0) return;
 
+  _restoreNoticeContext = _buildRestoreNotice(tool, state.files);
+  _restoreGuardUntil = Date.now() + 2500;
   setRestoringToolFiles(true, { suppressScan: !showScan });
   try {
     if (resetToolUi) {
@@ -411,7 +504,7 @@ async function _restoreToolFiles(tool, { resetToolUi = false, showScan = false }
     await _waitForPaint();
     captureToolDropZoneSnapshot(tool.id, document.getElementById('drop-zone'));
   } finally {
-    setRestoringToolFiles(false);
+    _finishRestoreGuard();
   }
 }
 
@@ -1023,17 +1116,13 @@ function _wireDzCancelBtn(wrap, zone) {
   btn.addEventListener('click', (e) => {
     e.stopPropagation();
     const tool = getActiveTool();
+    const ownerToolId = wrap.dataset.toolId || tool?.id;
     clearBgJob();
-    if (!tool) {
-      _resetZoneContent(zone);
-    }
-    document.dispatchEvent(new CustomEvent('progress-cancelled', { detail: { restored: !!tool } }));
-    if (tool) {
-      setTimeout(() => {
-        applyToolDropZoneSnapshot(tool.id, zone);
-        _restoreToolFiles(tool, { resetToolUi: true, showScan: true });
-      }, 0);
-    }
+    if (ownerToolId) clearToolFileState(ownerToolId);
+    _resetZoneContent(zone);
+    document.dispatchEvent(new CustomEvent('progress-cancelled', {
+      detail: { restored: false, toolId: ownerToolId || null },
+    }));
   });
 }
 
@@ -1770,20 +1859,22 @@ export function initDropZone() {
   onToolChange(_updateDropZone);
 
   document.addEventListener('click', (e) => {
+    if (!_isRestoreGuardActive() || !_isDropZoneControlClick(e.target)) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    _showRestoreWaitNotice();
+  }, true);
+
+  document.addEventListener('click', (e) => {
     const target = e.target;
     if (!(target instanceof Element)) return;
-    _captureActiveToolSnapshot();
 
-    const clearsLoadedFiles = target.closest(
-      '[data-tool-close], [data-clear-tool-files], ' +
-      '.sip-change-btn, .enc-change-btn, .pw-change-btn, .archive-change-btn, .ai-change-btn, ' +
-      '.arc-protect-change-btn, .xip-secondary-btn, ' +
-      '.dz-queue-clear-btn, .jpg-queue-clear-btn, .imgcmp-clear-btn'
-    );
-
-    if (clearsLoadedFiles) {
+    if (_isForgetFilesClick(target)) {
       _clearActiveToolFiles();
+      return;
     }
+
+    _captureActiveToolSnapshot();
   }, true);
 
   document.addEventListener('tool-file-restore-requested', (e) => {

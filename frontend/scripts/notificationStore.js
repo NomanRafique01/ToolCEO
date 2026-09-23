@@ -45,8 +45,8 @@ function _clearTimer(id) {
   }
 }
 
-export function pushNotification({ type = 'success', message = '', detail = '', autoDismiss } = {}) {
-  if (isRestoringToolFiles() && (type === 'warning' || type === 'info')) {
+export function pushNotification({ type = 'success', message = '', detail = '', autoDismiss, allowDuringRestore = false } = {}) {
+  if (!allowDuringRestore && isRestoringToolFiles() && (type === 'warning' || type === 'info')) {
     return null;
   }
 

@@ -22,7 +22,7 @@
 
 import { clearBgJob, getActiveTool, getBgJob, getBgJobForTool, setBgJob } from '../../scripts/toolstate.js';
 import { buildConversionMeta } from '../../scripts/historyTracker.js';
-import { applyToolDropZoneSnapshot, captureToolDropZoneSnapshot, shouldSuppressRestoreScan } from '../../scripts/fileState.js';
+import { captureToolDropZoneSnapshot, clearToolFileState, shouldSuppressRestoreScan } from '../../scripts/fileState.js';
 
 const BACKEND = 'http://127.0.0.1:8000';
 
@@ -33,6 +33,12 @@ let _zipExtractRouter = null;
  * @param {function(File): void} fn
  */
 export function setZipExtractRouter(fn) { _zipExtractRouter = fn; }
+
+function forgetDownloadOwnerFiles(toolId) {
+  const activeTool = getActiveTool();
+  const ownerToolId = toolId || activeTool?.id;
+  if (ownerToolId) clearToolFileState(ownerToolId);
+}
 
 // ── Ring geometry constants ──────────────────────────────────────────────────
 
@@ -152,20 +158,14 @@ function _wireCancelBtn(wrap, zone) {
   btn.addEventListener('click', (e) => {
     e.stopPropagation();
     const tool = getActiveTool();
+    const ownerToolId = wrap.dataset.toolId || tool?.id;
     clearBgJob();            // closes SSE + hides bg-job bar
-    if (!tool) {
-      resetZoneContent(zone);
-    }
+    if (ownerToolId) clearToolFileState(ownerToolId);
+    resetZoneContent(zone);
     // Let individual tool modules react (e.g. re-show idle state)
-    document.dispatchEvent(new CustomEvent('progress-cancelled', { detail: { restored: !!tool } }));
-    if (tool) {
-      setTimeout(() => {
-        applyToolDropZoneSnapshot(tool.id, zone);
-        document.dispatchEvent(new CustomEvent('tool-file-restore-requested', {
-          detail: { tool, reason: 'progress-cancel' },
-        }));
-      }, 0);
-    }
+    document.dispatchEvent(new CustomEvent('progress-cancelled', {
+      detail: { restored: false, toolId: ownerToolId || null },
+    }));
   });
 }
 
@@ -309,6 +309,7 @@ export function showDownload(zone, filename, jobId, color, onReset, toolId) {
   if (closeBtn) {
     closeBtn.addEventListener('click', (e) => {
       e.stopPropagation();
+      forgetDownloadOwnerFiles(ownerToolId);
       resetZoneContent(zone);
       clearBgJob(jobId, true);
       if (typeof onReset === 'function') onReset();
@@ -584,6 +585,7 @@ export function showDownloadBlobCard(zone, blob, filename, color, onReset, toolI
   if (closeBtn) {
     closeBtn.addEventListener('click', (e) => {
       e.stopPropagation();
+      forgetDownloadOwnerFiles(toolId);
       resetZoneContent(zone);
       clearBgJob();
       if (typeof onReset === 'function') onReset();

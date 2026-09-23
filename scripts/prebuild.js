@@ -7,6 +7,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { spawnSync } = require('child_process');
 
 const rootDir = path.join(__dirname, '..');
 const modulesJsonPath = path.join(rootDir, 'modules.json');
@@ -14,6 +15,23 @@ const buildInfoRootPath = path.join(rootDir, 'build-info.json');
 const buildInfoFrontendPath = path.join(rootDir, 'frontend', 'build-info.json');
 
 console.log('[prebuild] Preparing clean build environment...');
+
+// 0. Regenerate branded Microsoft Store / MSIX tile assets.
+try {
+  const iconScript = path.join(rootDir, 'scripts', 'generate_store_icons.js');
+  const result = spawnSync(process.execPath, [iconScript], {
+    cwd: rootDir,
+    stdio: 'inherit',
+    shell: false,
+  });
+
+  if (result.status !== 0) {
+    process.exit(result.status || 1);
+  }
+} catch (err) {
+  console.error('[prebuild] Error generating Microsoft Store icons:', err.message);
+  process.exit(1);
+}
 
 // 1. Reset modules.json
 try {

@@ -1,4 +1,5 @@
 const _toolFiles = new Map();
+const _consumedToolIds = new Set();
 let _isRestoringToolFiles = false;
 let _suppressRestoreScan = true;
 
@@ -56,6 +57,7 @@ export function saveToolFiles(tool, files, { mode = 'replace' } = {}) {
   if (!tool || !tool.id) return null;
   const incoming = Array.from(files || []).filter(Boolean);
   if (incoming.length === 0) return getToolFileState(tool.id);
+  _consumedToolIds.delete(tool.id);
 
   const current = _toolFiles.get(tool.id);
   const nextFiles = mode === 'append' && current
@@ -74,6 +76,7 @@ export function saveToolFiles(tool, files, { mode = 'replace' } = {}) {
 
 export function getToolFileState(toolId) {
   if (!toolId) return null;
+  if (_consumedToolIds.has(toolId)) return null;
   const state = _toolFiles.get(toolId);
   if (!state) return null;
   return {
@@ -87,8 +90,15 @@ export function clearToolFileState(toolId) {
   _toolFiles.delete(toolId);
 }
 
+export function consumeToolFileState(toolId) {
+  if (!toolId) return;
+  _toolFiles.delete(toolId);
+  _consumedToolIds.add(toolId);
+}
+
 export function clearAllToolFileStates() {
   _toolFiles.clear();
+  _consumedToolIds.clear();
 }
 
 export function hasToolFileState(toolId) {
@@ -98,6 +108,7 @@ export function hasToolFileState(toolId) {
 
 export function saveToolDropZoneSnapshot(toolId, snapshot) {
   if (!toolId || !snapshot) return;
+  if (_consumedToolIds.has(toolId)) return;
   const current = _toolFiles.get(toolId);
   if (!current) return;
   _toolFiles.set(toolId, {
@@ -112,6 +123,7 @@ export function saveToolDropZoneSnapshot(toolId, snapshot) {
 
 export function captureToolDropZoneSnapshot(toolId, zone) {
   if (!toolId || !zone) return;
+  if (_consumedToolIds.has(toolId)) return;
   const nodes = Array.from(zone.querySelectorAll(DROPZONE_STATE_SELECTOR))
     .filter((node) => !node.matches('.dz-progress-wrap, .dz-download-wrap, .dz-error-wrap'));
   if (nodes.length === 0) return;
@@ -153,6 +165,7 @@ window.toolceoFileState = {
   get: getToolFileState,
   save: saveToolFiles,
   clear: clearToolFileState,
+  consume: consumeToolFileState,
   clearAll: clearAllToolFileStates,
   has: hasToolFileState,
   captureSnapshot: captureToolDropZoneSnapshot,

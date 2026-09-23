@@ -1,116 +1,155 @@
-﻿/**
+/**
  * scripts/generate_store_icons.js
- * Generates all required Microsoft Store (MSIX/AppX) icon assets
- * from assets/icon.png into assets/appx/
- *
- * Usage: node scripts/generate_store_icons.js
+ * Generates Microsoft Store / MSIX visual assets from the branded ToolCEO icon.
  */
 
 'use strict';
 
 const path = require('path');
-const fs   = require('fs');
+const fs = require('fs');
 const { Jimp } = require('jimp');
 
-const SRC  = path.resolve(__dirname, '../assets/icon.png');
-const OUT  = path.resolve(__dirname, '../assets/appx');
+const ROOT = path.resolve(__dirname, '..');
+const SRC = path.join(ROOT, 'assets', 'icon.png');
+const OUT = path.join(ROOT, 'assets', 'appx');
 
-const ICONS = [
-  // StoreLogo
-  { file: 'StoreLogo.png',                     w: 50,   h: 50   },
-  { file: 'StoreLogo.scale-100.png',            w: 50,   h: 50   },
-  { file: 'StoreLogo.scale-125.png',            w: 63,   h: 63   },
-  { file: 'StoreLogo.scale-150.png',            w: 75,   h: 75   },
-  { file: 'StoreLogo.scale-200.png',            w: 100,  h: 100  },
-  { file: 'StoreLogo.scale-400.png',            w: 200,  h: 200  },
-  // Square44
-  { file: 'Square44x44Logo.png',                w: 44,   h: 44   },
-  { file: 'Square44x44Logo.scale-100.png',      w: 44,   h: 44   },
-  { file: 'Square44x44Logo.scale-125.png',      w: 55,   h: 55   },
-  { file: 'Square44x44Logo.scale-150.png',      w: 66,   h: 66   },
-  { file: 'Square44x44Logo.scale-200.png',      w: 88,   h: 88   },
-  { file: 'Square44x44Logo.scale-400.png',      w: 176,  h: 176  },
-  { file: 'Square44x44Logo.targetsize-16.png',  w: 16,   h: 16   },
-  { file: 'Square44x44Logo.targetsize-24.png',  w: 24,   h: 24   },
-  { file: 'Square44x44Logo.targetsize-32.png',  w: 32,   h: 32   },
-  { file: 'Square44x44Logo.targetsize-48.png',  w: 48,   h: 48   },
-  { file: 'Square44x44Logo.targetsize-256.png', w: 256,  h: 256  },
-  // Square71
-  { file: 'Square71x71Logo.png',                w: 71,   h: 71   },
-  { file: 'Square71x71Logo.scale-100.png',      w: 71,   h: 71   },
-  { file: 'Square71x71Logo.scale-125.png',      w: 89,   h: 89   },
-  { file: 'Square71x71Logo.scale-150.png',      w: 107,  h: 107  },
-  { file: 'Square71x71Logo.scale-200.png',      w: 142,  h: 142  },
-  { file: 'Square71x71Logo.scale-400.png',      w: 284,  h: 284  },
-  // Square150
-  { file: 'Square150x150Logo.png',              w: 150,  h: 150  },
-  { file: 'Square150x150Logo.scale-100.png',    w: 150,  h: 150  },
-  { file: 'Square150x150Logo.scale-125.png',    w: 188,  h: 188  },
-  { file: 'Square150x150Logo.scale-150.png',    w: 225,  h: 225  },
-  { file: 'Square150x150Logo.scale-200.png',    w: 300,  h: 300  },
-  { file: 'Square150x150Logo.scale-400.png',    w: 600,  h: 600  },
-  // Square310
-  { file: 'Square310x310Logo.png',              w: 310,  h: 310  },
-  { file: 'Square310x310Logo.scale-100.png',    w: 310,  h: 310  },
-  { file: 'Square310x310Logo.scale-125.png',    w: 388,  h: 388  },
-  { file: 'Square310x310Logo.scale-150.png',    w: 465,  h: 465  },
-  { file: 'Square310x310Logo.scale-200.png',    w: 620,  h: 620  },
-  { file: 'Square310x310Logo.scale-400.png',    w: 1240, h: 1240 },
-  // Wide310x150
-  { file: 'Wide310x150Logo.png',                w: 310,  h: 150  },
-  { file: 'Wide310x150Logo.scale-100.png',      w: 310,  h: 150  },
-  { file: 'Wide310x150Logo.scale-125.png',      w: 388,  h: 188  },
-  { file: 'Wide310x150Logo.scale-150.png',      w: 465,  h: 225  },
-  { file: 'Wide310x150Logo.scale-200.png',      w: 620,  h: 300  },
-  { file: 'Wide310x150Logo.scale-400.png',      w: 1240, h: 600  },
+const SCALES = [
+  { suffix: 'scale-100', factor: 1 },
+  { suffix: 'scale-125', factor: 1.25 },
+  { suffix: 'scale-150', factor: 1.5 },
+  { suffix: 'scale-200', factor: 2 },
+  { suffix: 'scale-400', factor: 4 },
 ];
 
-async function generateIcon(src, outPath, w, h) {
-  const img = await Jimp.read(src);
+const APP_LIST_TARGET_SIZES = [16, 20, 24, 30, 32, 36, 40, 48, 60, 64, 72, 80, 96, 256];
 
-  if (w === h) {
-    img.resize({ w, h });
-    await img.write(outPath);
-  } else {
-    // Wide tile: fit inside canvas centered on transparent bg
-    const ratio = Math.min(w / img.width, h / img.height);
-    const nw = Math.round(img.width  * ratio);
-    const nh = Math.round(img.height * ratio);
-    img.resize({ w: nw, h: nh });
-    const canvas = new Jimp({ width: w, height: h, color: 0x00000000 });
-    const x = Math.floor((w - nw) / 2);
-    const y = Math.floor((h - nh) / 2);
-    canvas.composite(img, x, y);
-    await canvas.write(outPath);
+const RESOURCES = [
+  { name: 'AppList', w: 44, h: 44, scales: true, targetSizes: true },
+  { name: 'SmallTile', w: 71, h: 71, scales: true, lightTile: true },
+  { name: 'MedTile', w: 150, h: 150, scales: true, lightTile: true },
+  { name: 'WideTile', w: 310, h: 150, scales: true, lightTile: true },
+  { name: 'LargeTile', w: 310, h: 310, scales: true, lightTile: true },
+  { name: 'StoreLogo', w: 50, h: 50, scales: true, lightStore: true },
+];
+
+const LEGACY_ALIASES = [
+  { from: 'AppList', to: 'Square44x44Logo', targetSizes: true },
+  { from: 'SmallTile', to: 'Square71x71Logo' },
+  { from: 'MedTile', to: 'Square150x150Logo' },
+  { from: 'WideTile', to: 'Wide310x150Logo' },
+  { from: 'LargeTile', to: 'Square310x310Logo' },
+];
+
+function pickSource() {
+  if (!fs.existsSync(SRC)) {
+    throw new Error('No source icon found. Expected assets/icon.png.');
+  }
+  return SRC;
+}
+
+async function writeFittedIcon(source, outPath, width, height) {
+  const img = source.clone();
+  const ratio = Math.min(width / img.bitmap.width, height / img.bitmap.height);
+  const fittedWidth = Math.max(1, Math.round(img.bitmap.width * ratio));
+  const fittedHeight = Math.max(1, Math.round(img.bitmap.height * ratio));
+
+  img.resize({ w: fittedWidth, h: fittedHeight });
+
+  const canvas = new Jimp({ width, height, color: 0x00000000 });
+  canvas.composite(
+    img,
+    Math.floor((width - fittedWidth) / 2),
+    Math.floor((height - fittedHeight) / 2)
+  );
+  await canvas.write(outPath);
+}
+
+async function copyPng(fromName, toName) {
+  await fs.promises.copyFile(path.join(OUT, fromName), path.join(OUT, toName));
+}
+
+function scaledName(name, scale) {
+  return `${name}.${scale.suffix}.png`;
+}
+
+function targetSizeName(name, size, suffix = '') {
+  return `${name}.targetsize-${size}${suffix}.png`;
+}
+
+async function generateResource(source, resource) {
+  await writeFittedIcon(source, path.join(OUT, `${resource.name}.png`), resource.w, resource.h);
+
+  if (resource.scales) {
+    for (const scale of SCALES) {
+      const width = Math.round(resource.w * scale.factor);
+      const height = Math.round(resource.h * scale.factor);
+      const baseName = scaledName(resource.name, scale);
+      await writeFittedIcon(source, path.join(OUT, baseName), width, height);
+
+      if (resource.lightTile) {
+        await copyPng(baseName, `${resource.name}.${scale.suffix}_altform-colorful_theme-light.png`);
+      }
+
+      if (resource.lightStore) {
+        await copyPng(baseName, `${resource.name}.${scale.suffix}_altform-colorful_theme-light.png`);
+      }
+    }
+  }
+
+  if (resource.targetSizes) {
+    for (const size of APP_LIST_TARGET_SIZES) {
+      const baseName = targetSizeName(resource.name, size);
+      await writeFittedIcon(source, path.join(OUT, baseName), size, size);
+      await copyPng(baseName, targetSizeName(resource.name, size, '_altform-unplated'));
+      await copyPng(baseName, targetSizeName(resource.name, size, '_altform-lightunplated'));
+    }
+  }
+}
+
+async function generateLegacyAliases() {
+  for (const alias of LEGACY_ALIASES) {
+    await copyPng(`${alias.from}.png`, `${alias.to}.png`);
+
+    for (const scale of SCALES) {
+      const sourceName = scaledName(alias.from, scale);
+      await copyPng(sourceName, scaledName(alias.to, scale));
+
+      const lightVariant = `${alias.from}.${scale.suffix}_altform-colorful_theme-light.png`;
+      if (fs.existsSync(path.join(OUT, lightVariant))) {
+        await copyPng(lightVariant, `${alias.to}.${scale.suffix}_altform-colorful_theme-light.png`);
+      }
+    }
+
+    if (alias.targetSizes) {
+      for (const size of APP_LIST_TARGET_SIZES) {
+        for (const suffix of ['', '_altform-unplated', '_altform-lightunplated']) {
+          await copyPng(targetSizeName(alias.from, size, suffix), targetSizeName(alias.to, size, suffix));
+        }
+      }
+    }
   }
 }
 
 async function main() {
-  if (!fs.existsSync(SRC)) {
-    console.error('ERROR: Source not found: ' + SRC);
-    process.exit(1);
-  }
+  const src = pickSource();
+  const source = await Jimp.read(src);
+
   fs.mkdirSync(OUT, { recursive: true });
-  console.log('\nGenerating Microsoft Store icons -> ' + OUT + '\n');
+  console.log(`[icons] Generating Microsoft Store visual assets from ${path.relative(ROOT, src)}`);
 
-  let ok = 0, fail = 0;
-  for (const { file, w, h } of ICONS) {
-    const outPath = path.join(OUT, file);
-    try {
-      await generateIcon(SRC, outPath, w, h);
-      console.log('  OK  ' + file.padEnd(52) + w + 'x' + h);
-      ok++;
-    } catch (err) {
-      console.error('  FAIL ' + file + ' -- ' + err.message);
-      fail++;
-    }
+  for (const resource of RESOURCES) {
+    await generateResource(source, resource);
   }
+  await generateLegacyAliases();
 
-  console.log('\n--------------------------------------------------');
-  console.log('Generated: ' + ok + '   Failed: ' + fail);
-  console.log('Output: ' + OUT);
-  console.log('\nAdd to package.json "appx" section:');
-  console.log('  "assets": "assets/appx"\n');
+  console.log(`[icons] Wrote branded APPX assets to ${path.relative(ROOT, OUT)}`);
 }
 
-main().catch(err => { console.error('Fatal:', err); process.exit(1); });
+module.exports = { main };
+
+if (require.main === module) {
+  main().catch((err) => {
+    console.error('[icons] Fatal:', err.message);
+    process.exit(1);
+  });
+}

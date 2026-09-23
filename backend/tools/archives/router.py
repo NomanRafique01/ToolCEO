@@ -51,7 +51,7 @@ def _run_extract_job(
         job_store.set_progress(job_id, 5)
         job = job_store.get_job(job_id)
         if job and destination_dir:
-            job.destination_dir = destination_dir
+            job_store.set_job_metadata(job_id, destination_dir=destination_dir)
         result, filename, media_type = extract_archive(
             archive_bytes,
             original_filename,
@@ -67,7 +67,7 @@ def _run_extract_job(
         job_store.set_progress(job_id, 100)
         job_store.set_done(job_id, result, filename, media_type)
         if job and destination_dir:
-            job.destination_dir = destination_dir
+            job_store.set_job_metadata(job_id, destination_dir=destination_dir)
     except ArchiveCancelled:
         job_store.set_cancelled(job_id)
     except ValueError as exc:
@@ -144,7 +144,7 @@ async def extract(
     content = await file.read()
     job = job_store.create_job()
     if destination_dir:
-        job.destination_dir = destination_dir
+        job_store.set_job_metadata(job.id, destination_dir=destination_dir)
     job_executor.submit(
         _run_extract_job,
         job.id,

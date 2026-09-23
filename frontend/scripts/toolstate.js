@@ -1,4 +1,5 @@
 import { pushNotification } from './notificationStore.js';
+import { consumeToolFileState } from './fileState.js';
 
 let _activeTool = null;
 const _listeners = [];
@@ -58,6 +59,13 @@ function _visibleJobs() {
 export function setBgJob(job) {
   if (!job) return null;
   const incoming = { ...job };
+  if (
+    incoming.tool &&
+    incoming.tool.id &&
+    (incoming.state === 'submitting' || incoming.state === 'running')
+  ) {
+    consumeToolFileState(incoming.tool.id);
+  }
   let key = incoming.jobId ? String(incoming.jobId) : incoming.clientId || _makeClientId();
   let existing = _bgJobs.get(key);
 

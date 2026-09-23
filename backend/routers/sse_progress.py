@@ -15,7 +15,7 @@ import json
 from fastapi import APIRouter, HTTPException
 from fastapi.responses import Response, StreamingResponse
 
-from jobs import get_job
+from jobs import get_job_snapshot
 
 router = APIRouter(prefix="", tags=["Progress"])
 
@@ -26,27 +26,27 @@ async def stream_progress(job_id: str):
 
     async def event_gen():
         while True:
-            job = get_job(job_id)
+            job = get_job_snapshot(job_id)
             if job is None:
                 data = json.dumps({"state": "error", "error": "Job not found", "progress": 0})
                 yield f"data: {data}\n\n"
                 return
 
-            payload = {"state": job.state, "progress": job.progress}
-            if job.state == "done":
-                payload["filename"]   = job.filename
-                payload["media_type"] = job.media_type
+            payload = {"state": job["state"], "progress": job["progress"]}
+            if job["state"] == "done":
+                payload["filename"]   = job["filename"]
+                payload["media_type"] = job["media_type"]
                 # Optional stats (set by image_compressor or archives router)
                 for _stat in ("original_size", "compressed_size", "saved_percent", "destination_dir"):
-                    val = getattr(job, _stat, None)
+                    val = job.get(_stat)
                     if val is not None:
                         payload[_stat] = val
-            if job.state == "error":
-                payload["error"] = job.error or "Unknown error"
+            if job["state"] == "error":
+                payload["error"] = job["error"] or "Unknown error"
 
             yield f"data: {json.dumps(payload)}\n\n"
 
-            if job.state in ("done", "error"):
+            if job["state"] in ("done", "error"):
                 return
 
             await asyncio.sleep(0.25)
@@ -85,24 +85,24 @@ def download_result(job_id: str):
 
 
 def _do_download(job_id: str):
-    job = get_job(job_id)
+    job = get_job_snapshot(job_id, include_result=True)
     # If the job exists but is still running, wait up to 10 s for it to finish.
     # This closes the race between the SSE "done" event and the download request
     # arriving at the server before set_done() has been called.
-    if job is not None and job.state != "done" and job.state != "error":
+    if job is not None and job["state"] != "done" and job["state"] != "error":
         import time as _time
         for _ in range(40):          # 40 × 0.25 s = 10 s max
             _time.sleep(0.25)
-            job = get_job(job_id)
-            if job is None or job.state in ("done", "error"):
+            job = get_job_snapshot(job_id, include_result=True)
+            if job is None or job["state"] in ("done", "error"):
                 break
 
-    if job is None or job.state != "done" or job.result is None:
+    if job is None or job["state"] != "done" or job["result"] is None:
         raise HTTPException(status_code=404, detail="Job not ready or not found.")
-    filename = (job.filename or "download").strip()
+    filename = (job["filename"] or "download").strip()
     if "." not in filename.rsplit("/", 1)[-1].rsplit("\\", 1)[-1]:
-        filename += ".zip" if job.media_type == "application/zip" else ".bin"
-    media_type = job.media_type or "application/pdf"
+        filename += ".zip" if job["media_type"] == "application/zip" else ".bin"
+    media_type = job["media_type"] or "application/pdf"
 
     # Build a safe Content-Disposition header.
     # The simple `filename="..."` form breaks if the name contains quotes,
@@ -122,7 +122,7 @@ def _do_download(job_id: str):
         content_disposition = f"attachment; filename*=UTF-8''{encoded}"
 
     return Response(
-        content=bytes(job.result),   # ensure plain bytes, not memoryview/bytearray
+        content=bytes(job["result"]),   # ensure plain bytes, not memoryview/bytearray
         media_type=media_type,
         headers={"Content-Disposition": content_disposition},
     )
