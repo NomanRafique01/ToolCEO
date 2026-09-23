@@ -397,4 +397,9 @@ The local Python service exposes internal endpoints on `http://127.0.0.1:8000`:
   <img src="https://img.shields.io/badge/Local%20Port-8000-6366f1?style=flat-square&labelColor=1a1a24" alt="Port 8000"/>
 </p>
 
+<p align="center">
+  <strong>Repository Visitors</strong><br/>
+  <img src="https://hits.sh/github.com/NomanRafique01/ToolCEO.svg?style=flat-square&label=Visitors&color=00E5C0&labelColor=1a1a24" alt="Repository visitor counter"/>
+</p>
+
 </div>
