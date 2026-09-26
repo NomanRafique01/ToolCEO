@@ -138,14 +138,12 @@
   }
 }
 
-/* Close button inside dropzone */
+/* Close button — embedded in the header bar, right side */
 .dz-phone-close-btn {
-  position: absolute;
-  top: 10px;
-  right: 10px;
-  width: 28px;
-  height: 28px;
-  border-radius: 8px;
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  border-radius: 6px;
   background: rgba(255, 255, 255, 0.06);
   border: 1px solid rgba(255, 255, 255, 0.1);
   color: #94A3B8;
@@ -225,12 +223,18 @@
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin-right: 44px;
   padding: 9px 12px;
   background: linear-gradient(90deg, var(--tool-accent-soft, rgba(0, 229, 192, 0.10)), rgba(255, 255, 255, 0.02) 60%);
   border: 1px solid rgba(255, 255, 255, 0.08);
   border-left: 3px solid var(--tool-accent, #00E5C0);
   border-radius: 8px;
+}
+
+.dz-phone-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
 }
 
 .dz-phone-header-text h3 {
@@ -306,17 +310,18 @@
   display: flex;
   flex-direction: column;
   gap: 5px;
-  width: 100%;
-  max-width: 280px;
+  width: 190px;
 }
 
 .dz-phone-step {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   justify-content: flex-start;
   gap: 8px;
   font-size: 11px;
   color: #94A3B8;
+  text-align: left;
+  line-height: 1.5;
 }
 
 .dz-phone-step-num {
@@ -331,6 +336,7 @@
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  margin-top: 1px;
 }
 
 /* Actions Row (Cancel + Copy Link) */
