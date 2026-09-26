@@ -36,6 +36,13 @@ contextBridge.exposeInMainWorld('toolceo', {
   readClipboardFile: () =>
     ipcRenderer.invoke('read-clipboard-file'),
 
+  // ── Mobile QR file transfer ──────────────────────────────────────────────────
+  generateQrCode: (text, options) =>
+    ipcRenderer.invoke('generate-qr-code', text, options),
+
+  getNetworkIp: () =>
+    ipcRenderer.invoke('get-network-ip'),
+
   // ── Vault file: subscribe to vault-file-open events from main process ────────
   // callback: (filePath: string) => void
   // Returns an unsubscribe function.
@@ -45,6 +52,7 @@ contextBridge.exposeInMainWorld('toolceo', {
     return () => ipcRenderer.removeListener('vault-file-open', handler);
   },
 });
+
 
 // ─── Module management API ────────────────────────────────────────────────────
 contextBridge.exposeInMainWorld('electronAPI', {

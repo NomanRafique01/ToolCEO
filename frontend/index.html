@@ -29,6 +29,7 @@
   <link rel="stylesheet" href="styles/documents.css" />
   <link rel="stylesheet" href="styles/audio.css" />
   <link rel="stylesheet" href="styles/cards.css" />
+  <link rel="stylesheet" href="styles/mobile_transfer.css" />
   <!-- Tool-specific stylesheets -->
   <link rel="stylesheet" href="tools/documents/pdf_tools/splitter/splitter.css" />
   <link rel="stylesheet" href="tools/documents/pdf_tools/merger/merger.css" />
@@ -510,13 +511,22 @@
               <span class="drop-main-text">Drop files anywhere to convert</span>
               <span class="drop-browse">or click to browse</span>
               <span class="drop-private">Your files never leave your device.</span>
-              <button type="button" class="dz-paste-btn" id="dz-paste-btn" title="Paste file from clipboard">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                  <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
-                  <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
-                </svg>
-                <span>Paste File</span>
-              </button>
+              <div class="dz-actions-wrap">
+                <button type="button" class="dz-paste-btn" id="dz-paste-btn" title="Paste file from clipboard">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+                    <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+                  </svg>
+                  <span>Paste File</span>
+                </button>
+                <button type="button" class="dz-phone-btn" id="dz-phone-btn" title="Send files from phone via QR code">
+                  <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="5" y="2" width="14" height="20" rx="2" ry="2"/>
+                    <line x1="12" y1="18" x2="12.01" y2="18"/>
+                  </svg>
+                  <span>From Phone</span>
+                </button>
+              </div>
             </div>
           </div>
 

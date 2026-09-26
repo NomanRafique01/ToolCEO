@@ -55,7 +55,7 @@ const _EXT = {
 let _queue   = [];
 let _toolId  = '';
 /** 'single' | 'individual' — only relevant for png-pdf with multiple images */
-let _pdfMode = 'individual';
+let _pdfMode = 'single';
 
 // ─── UTILITIES ───────────────────────────────────────────────────────────────
 
@@ -70,7 +70,19 @@ function _isPng(file) {
   return n.endsWith('.png');
 }
 
-function _readDataUri(file) {
+async function _readDataUri(file) {
+  if (typeof createImageBitmap === 'function') {
+    try {
+      const bmp = await createImageBitmap(file, { resizeWidth: 160, resizeHeight: 160, resizeQuality: 'low' });
+      const canvas = document.createElement('canvas');
+      canvas.width = bmp.width;
+      canvas.height = bmp.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(bmp, 0, 0);
+      bmp.close();
+      return canvas.toDataURL('image/jpeg', 0.65);
+    } catch (_) {}
+  }
   return new Promise((resolve, reject) => {
     const r = new FileReader();
     r.onload  = () => resolve(r.result);
@@ -93,7 +105,7 @@ export function removePngPanel() {
 
   _queue   = [];
   _toolId  = '';
-  _pdfMode = 'individual';
+  _pdfMode = 'single';
 }
 
 // ─── THUMBNAIL STRIP ─────────────────────────────────────────────────────────
@@ -389,10 +401,10 @@ function _renderPanel() {
   let outHint;
   if (isPdf && isMulti) {
     outHint = _pdfMode === 'single'
-      ? `${total} images → <strong>1</strong> merged PDF`
-      : `${total} images → <strong>${total}</strong> PDFs packed in a .zip`;
+      ? `<strong>${total}</strong> images → <strong>1</strong> merged PDF`
+      : `<strong>${total}</strong> images → <strong>${total}</strong> PDFs packed in a .zip`;
   } else if (isMulti) {
-    outHint = `${total} images → <strong>${total}</strong> files packed in a .zip`;
+    outHint = `<strong>${total}</strong> images → <strong>${total}</strong> files packed in a .zip`;
   } else {
     outHint = `1 image → converted <strong>.${ext}</strong> file`;
   }
@@ -465,7 +477,7 @@ function _renderPanel() {
             stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
         <span class="jpg-queue-badge-text" id="png-queue-hint">
-          <strong>${total}</strong> image${total !== 1 ? 's' : ''} &nbsp;·&nbsp; ${outHint}
+          ${outHint}
         </span>
       </span>
       <button class="jpg-queue-clear-btn" id="png-queue-clear" type="button">Clear all</button>
@@ -498,9 +510,9 @@ function _renderPanel() {
         const extEl  = panel.querySelector('#png-queue-ext');
         if (hintEl) {
           const newHint = _pdfMode === 'single'
-            ? `${total} images → <strong>1</strong> merged PDF`
-            : `${total} images → <strong>${total}</strong> PDFs packed in a .zip`;
-          hintEl.innerHTML = `<strong>${total}</strong> image${total !== 1 ? 's' : ''} &nbsp;·&nbsp; ${newHint}`;
+            ? `<strong>${total}</strong> images → <strong>1</strong> merged PDF`
+            : `<strong>${total}</strong> images → <strong>${total}</strong> PDFs packed in a .zip`;
+          hintEl.innerHTML = newHint;
         }
         if (extEl) extEl.textContent = `.${_pdfMode === 'single' ? 'pdf' : 'zip'}`;
 
@@ -591,6 +603,9 @@ async function _addFiles(fileArray) {
 
 export async function handlePngFilesPicked(files, toolId) {
   _toolId = toolId;
+  if (toolId === 'png-pdf') {
+    _pdfMode = 'single';
+  }
   await _addFiles(Array.from(files));
 }
 
@@ -620,7 +635,7 @@ async function _submitConvert(outputFilename) {
   document.getElementById('png-queue-panel')?.remove();
   _queue   = [];
   _toolId  = '';
-  _pdfMode = 'individual';
+  _pdfMode = 'single';
 
   if (zone) resetZoneContent(zone);
 

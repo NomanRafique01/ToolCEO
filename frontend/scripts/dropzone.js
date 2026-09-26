@@ -1225,6 +1225,11 @@ function _removeAllPanels() {
   if (typeof removeSvgPngPanel === 'function') {
     removeSvgPngPanel(); removeSvgJpgPanel(); removeSvgWebpPanel(); removeSvgPdfPanel();
   }
+  const dz = document.getElementById('drop-zone');
+  if (dz) {
+    dz.querySelector('.dz-phone-panel')?.remove();
+    dz.classList.remove('dz-has-phone-transfer');
+  }
 }
 
 /**
@@ -1348,6 +1353,10 @@ async function _downloadFile(jobId, filename, color, wrap) {
 // The imports at the top of this file delegate split handling there.
 
 // ─── GENERIC SUBMIT FILE ──────────────────────────────────────────────────────
+
+export function handleExternalFiles(files) {
+  return _submitFile(files);
+}
 
 async function _submitFile(files) {
   const tool = getActiveTool();
@@ -1985,6 +1994,17 @@ export function initDropZone() {
     });
   }
 
+  // ── From Phone Button Click ───────────────────────────────────────────────
+  const phoneBtn = document.getElementById('dz-phone-btn');
+  if (phoneBtn) {
+    phoneBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      import('./mobileTransferModal.js').then(({ openMobileTransferModal }) => {
+        openMobileTransferModal();
+      }).catch(err => console.error('[dropzone] Failed to open mobile transfer modal:', err));
+    });
+  }
+
   // ── Global Keyboard Paste Event (Ctrl+V / Cmd+V) ──────────────────────────
   window.addEventListener('paste', async (e) => {
     const activeEl = document.activeElement;
@@ -2051,16 +2071,17 @@ export function initDropZone() {
     if (e.target === fileInput) return;
     // Don't open file picker when clicking interactive elements from any tool panel
     if (e.target.closest(
-      '.dz-download-wrap, .dz-error-wrap, .dz-pdf-thumb-remove, ' +
+      '.dz-phone-panel, .dz-download-wrap, .dz-error-wrap, .dz-pdf-thumb-remove, ' +
       '.dz-merge-card-remove, .dz-merge-add-btn, .merge-queue-panel, .split-info-panel, ' +
       '.compress-settings-panel, .dz-compress-thumb-remove, .cmp-panel, ' +
-      '.encrypt-settings-panel, .dz-encrypt-thumb-remove, .enc-panel, .extractor-info-panel, .dz-editor-thumb-remove, .dz-paste-btn, ' +
+      '.encrypt-settings-panel, .dz-encrypt-thumb-remove, .enc-panel, .extractor-info-panel, .dz-editor-thumb-remove, .dz-paste-btn, .dz-phone-btn, .dz-actions-wrap, ' +
       '.dz-pdf-word-thumb-wrap, .dz-pdf-excel-thumb-wrap, .dz-pdf-html-thumb-wrap, .dz-pdf-txt-thumb-wrap, ' +
       '.imgcmp-panel, .dz-imgcmp-add-btn, .dz-imgcmp-card-remove, ' +
       '.dz-arc-conv-thumb-wrap, .dz-extract-thumb-wrap'
     )) return;
     if (!getActiveTool()) { showNoToolWarning(); return; }
-    // If already processing, scanning, done, or a file thumbnail is currently loaded, do not open file window
+    // If already processing, scanning, done, or phone transfer active, do not open file window
+    if (dropZone.classList.contains('dz-has-phone-transfer')) return;
     if (dropZone.classList.contains('dz-state-processing')) return;
     if (dropZone.classList.contains('dz-state-scanning')) return;
     if (dropZone.classList.contains('dz-state-done')) return;

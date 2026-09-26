@@ -664,7 +664,7 @@ function _spawnBackend() {
     const enginesDir = path.join(process.resourcesPath, 'engines');
     console.log('[backend] Launching packaged backend from:', backendExePath);
     console.log('[backend] Engines dir:', enginesDir);
-    backendProcess = spawn(backendExePath, [], {
+    backendProcess = spawn(backendExePath, ['--port', String(BACKEND_PORT)], {
       detached: false,
       stdio: 'ignore',
       windowsHide: true,
@@ -681,7 +681,7 @@ function _spawnBackend() {
     console.log('[backend] Launching dev backend on port', BACKEND_PORT, 'with:', pythonCmd);
     backendProcess = spawn(
       pythonCmd,
-      ['-m', 'uvicorn', 'main:app', '--host', '127.0.0.1', '--port', String(BACKEND_PORT)],
+      ['-m', 'uvicorn', 'main:app', '--host', '0.0.0.0', '--port', String(BACKEND_PORT)],
       { cwd: backendDir, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true, env }
     );
 
@@ -1785,6 +1785,39 @@ app.whenReady().then(async () => {
     } catch (err) {
       return { ok: false, error: err.message };
     }
+  });
+
+  // ── IPC: Generate QR code data URL for mobile transfer ──────────────────────
+  ipcMain.handle('generate-qr-code', async (_event, text, options = {}) => {
+    try {
+      const QRCode = require('qrcode');
+      const dataUrl = await QRCode.toDataURL(text, {
+        width: options.width || 256,
+        margin: options.margin !== undefined ? options.margin : 2,
+        color: {
+          dark: options.dark || '#000000',
+          light: options.light || '#ffffff',
+        },
+      });
+      return { ok: true, dataUrl };
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
+  });
+
+  // ── IPC: Get local LAN IP address ───────────────────────────────────────────
+  ipcMain.handle('get-network-ip', () => {
+    try {
+      const interfaces = os.networkInterfaces();
+      for (const name of Object.keys(interfaces)) {
+        for (const iface of interfaces[name]) {
+          if (iface.family === 'IPv4' && !iface.internal && !iface.address.startsWith('169.254.')) {
+            return iface.address;
+          }
+        }
+      }
+    } catch (_) {}
+    return '127.0.0.1';
   });
 
   // ── IPC: Read modules.json — returns dynamic status for all modules ───────

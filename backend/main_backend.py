@@ -16,4 +16,13 @@ import uvicorn
 
 if __name__ == "__main__":
     port = int(os.environ.get("TOOLCEO_PORT", 8765))
-    uvicorn.run(app, host="127.0.0.1", port=port, log_level="info")
+    for idx, arg in enumerate(sys.argv[1:]):
+        if arg == "--port" and idx + 2 < len(sys.argv):
+            try:
+                port = int(sys.argv[idx + 2])
+            except ValueError:
+                pass
+    host = os.environ.get("TOOLCEO_HOST", "0.0.0.0")
+    uvicorn.run(app, host=host, port=port, log_level="info")
+
+

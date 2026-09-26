@@ -37,7 +37,7 @@ const BACKEND = 'http://127.0.0.1:8765';
 /** @type {{ file: File, thumbnail: string|null }[]} */
 let _queue   = [];
 /** 'single' | 'individual' */
-let _pdfMode = 'individual';
+let _pdfMode = 'single';
 
 // Accepted image extensions
 const IMAGE_EXTS = new Set([
@@ -59,11 +59,55 @@ function _isImage(file) {
   return IMAGE_EXTS.has(ext);
 }
 
-function _readDataUri(file) {
-  return new Promise((resolve, reject) => {
+/**
+ * Creates a lightweight downscaled thumbnail to prevent memory spikes
+ * and renderer crashes when 40+ large photos are added.
+ */
+async function _createThumbnail(file) {
+  if (typeof createImageBitmap === 'function') {
+    try {
+      const bmp = await createImageBitmap(file, { resizeWidth: 160, resizeHeight: 160, resizeQuality: 'low' });
+      const canvas = document.createElement('canvas');
+      canvas.width = bmp.width;
+      canvas.height = bmp.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(bmp, 0, 0);
+      bmp.close();
+      return canvas.toDataURL('image/jpeg', 0.65);
+    } catch (_) {}
+  }
+  return new Promise((resolve) => {
     const reader = new FileReader();
-    reader.onload  = () => resolve(reader.result);
-    reader.onerror = reject;
+    reader.onload = (e) => {
+      const img = new Image();
+      img.onload = () => {
+        try {
+          const maxDim = 160;
+          let w = img.width;
+          let h = img.height;
+          if (w > maxDim || h > maxDim) {
+            if (w > h) {
+              h = Math.round((h * maxDim) / w);
+              w = maxDim;
+            } else {
+              w = Math.round((w * maxDim) / h);
+              h = maxDim;
+            }
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          resolve(canvas.toDataURL('image/jpeg', 0.65));
+        } catch (_) {
+          resolve(e.target.result);
+        }
+      };
+      img.onerror = () => resolve(null);
+      img.src = e.target.result;
+    };
+    reader.onerror = () => resolve(null);
     reader.readAsDataURL(file);
   });
 }
@@ -87,7 +131,7 @@ export function removeImagesPdfPanel() {
   }
 
   _queue   = [];
-  _pdfMode = 'individual';
+  _pdfMode = 'single';
 }
 
 // ─── THUMBNAIL STRIP ──────────────────────────────────────────────────────────
@@ -158,26 +202,6 @@ function _renderThumbStrip() {
   });
 
   zone.appendChild(toolbar);
-
-  // ── Reorder banner (only in single mode) ─────────────────────────────────
-  if (_pdfMode === 'single' && _queue.length > 1) {
-    const banner = document.createElement('div');
-    banner.className = 'dz-imgpdf-reorder-banner';
-    banner.style.borderColor = `color-mix(in srgb, ${color} 30%, transparent)`;
-    banner.style.background  = `color-mix(in srgb, ${color} 8%, transparent)`;
-    banner.innerHTML = `
-      <svg width="13" height="13" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-        <circle cx="5" cy="4" r="1.2" fill="${color}"/>
-        <circle cx="5" cy="8" r="1.2" fill="${color}"/>
-        <circle cx="5" cy="12" r="1.2" fill="${color}"/>
-        <circle cx="11" cy="4" r="1.2" fill="${color}"/>
-        <circle cx="11" cy="8" r="1.2" fill="${color}"/>
-        <circle cx="11" cy="12" r="1.2" fill="${color}"/>
-      </svg>
-      <span style="color:${color}">Drag images to reorder PDF pages</span>
-    `;
-    zone.appendChild(banner);
-  }
 
   // ── Card strip ───────────────────────────────────────────────────────────
   const strip = document.createElement('div');
@@ -453,10 +477,10 @@ function _renderQueuePanel() {
   let outHint;
   if (isMulti) {
     outHint = _pdfMode === 'single'
-      ? `${total} images → <strong>1</strong> merged PDF`
-      : `${total} images → <strong>${total}</strong> PDFs packed in a .zip`;
+      ? `<strong>${total}</strong> images → <strong>1</strong> merged PDF`
+      : `<strong>${total}</strong> images → <strong>${total}</strong> PDFs packed in a .zip`;
   } else {
-    outHint = `1 image → converted <strong>.pdf</strong> file`;
+    outHint = `<strong>1</strong> image → converted <strong>.pdf</strong> file`;
   }
 
   const extHint     = (isMulti && _pdfMode === 'individual') ? 'zip' : 'pdf';
@@ -464,7 +488,7 @@ function _renderQueuePanel() {
     ? _queue[0].file.name.replace(/\.[^.]+$/, '') + '_converted'
     : 'images_converted';
 
-  // Mode toggle — only shown when 2+ images
+  // Mode toggle — only shown when 2+ images (Single PDF active by default)
   const modeToggleHTML = isMulti ? `
     <div class="imgpdf-mode-row" id="imgpdf-mode-row">
       <span class="imgpdf-mode-label">Output mode</span>
@@ -507,8 +531,6 @@ function _renderQueuePanel() {
           <path d="M12 2l3 3h-3V2Z" stroke="${color}" stroke-width="1.1" stroke-linejoin="round"/>
         </svg>
         <span class="imgpdf-summary-text" id="imgpdf-summary-text">
-          <strong>${total}</strong> image${total !== 1 ? 's' : ''}
-          &nbsp;·&nbsp;
           ${outHint}
         </span>
       </span>
@@ -534,33 +556,62 @@ function _renderQueuePanel() {
     panel.querySelectorAll('.imgpdf-mode-btn').forEach((btn) => {
       btn.addEventListener('click', () => {
         _pdfMode = btn.dataset.mode;
+        const isSingle = _pdfMode === 'single';
 
         // Update button active state
         panel.querySelectorAll('.imgpdf-mode-btn').forEach((b) =>
           b.classList.toggle('imgpdf-mode-btn--active', b.dataset.mode === _pdfMode)
         );
 
-        // Update summary text
+        // Update summary text cleanly (no duplicate "42 images")
         const summaryEl = panel.querySelector('#imgpdf-summary-text');
         const extEl     = panel.querySelector('#imgpdf-filename-ext');
-        const newHint   = _pdfMode === 'single'
-          ? `${total} images → <strong>1</strong> merged PDF`
-          : `${total} images → <strong>${total}</strong> PDFs packed in a .zip`;
+        const newHint   = isSingle
+          ? `<strong>${total}</strong> images → <strong>1</strong> merged PDF`
+          : `<strong>${total}</strong> images → <strong>${total}</strong> PDFs packed in a .zip`;
         if (summaryEl) {
-          summaryEl.innerHTML = `<strong>${total}</strong> image${total !== 1 ? 's' : ''} &nbsp;·&nbsp; ${newHint}`;
+          summaryEl.innerHTML = newHint;
         }
-        if (extEl) extEl.textContent = `.${_pdfMode === 'individual' ? 'zip' : 'pdf'}`;
+        if (extEl) extEl.textContent = `.${isSingle ? 'pdf' : 'zip'}`;
 
         // Update toolbar hint
         const toolbarHint = document.getElementById('dz-imgpdf-toolbar-hint');
         if (toolbarHint) {
-          toolbarHint.textContent = _pdfMode === 'single'
+          toolbarHint.textContent = isSingle
             ? 'Drag images to reorder PDF pages'
             : 'Each image will become a separate PDF';
         }
 
-        // Re-render strip to toggle drag+ordinals
-        _renderThumbStrip();
+        // Fast in-place DOM update instead of full rebuild to prevent crash with many images
+        const strip = document.querySelector('.dz-imgpdf-thumb-strip');
+        if (strip) {
+          const cards = strip.querySelectorAll('.dz-imgpdf-card');
+          cards.forEach((card, idx) => {
+            card.draggable = isSingle;
+            card.classList.toggle('dz-imgpdf-card--draggable', isSingle);
+
+            let ord = card.querySelector('.dz-imgpdf-ordinal');
+            if (isSingle) {
+              if (!ord) {
+                ord = document.createElement('span');
+                ord.className = 'dz-imgpdf-ordinal';
+                card.prepend(ord);
+              }
+              ord.textContent = String(idx + 1);
+              ord.setAttribute('aria-label', `Position ${idx + 1}`);
+              ord.style.display = '';
+            } else if (ord) {
+              ord.style.display = 'none';
+            }
+
+            const hint = card.querySelector('.dz-imgpdf-drag-hint');
+            if (hint) hint.style.display = isSingle ? '' : 'none';
+          });
+
+          if (isSingle) {
+            _initDragReorder(strip, color);
+          }
+        }
       });
     });
   }
@@ -579,13 +630,16 @@ function _refreshQueuePanelHint() {
   const panel = document.getElementById('images-pdf-queue-panel');
   if (!panel) return;
 
-  const total      = _queue.length;
-  const summaryEl  = panel.querySelector('#imgpdf-summary-text');
+  const total     = _queue.length;
+  const summaryEl = panel.querySelector('#imgpdf-summary-text');
   if (summaryEl) {
-    const hint = _pdfMode === 'single'
-      ? `${total} images → <strong>1</strong> merged PDF`
-      : `${total} images → <strong>${total}</strong> PDFs packed in a .zip`;
-    summaryEl.innerHTML = `<strong>${total}</strong> image${total !== 1 ? 's' : ''} &nbsp;·&nbsp; ${hint}`;
+    if (total > 1) {
+      summaryEl.innerHTML = _pdfMode === 'single'
+        ? `<strong>${total}</strong> images → <strong>1</strong> merged PDF`
+        : `<strong>${total}</strong> images → <strong>${total}</strong> PDFs packed in a .zip`;
+    } else {
+      summaryEl.innerHTML = `<strong>1</strong> image → converted <strong>.pdf</strong> file`;
+    }
   }
 }
 
@@ -631,7 +685,7 @@ async function _addFiles(fileArray) {
 
     await Promise.all(chunk.map(async (file) => {
       let thumbnail = null;
-      try { thumbnail = await _readDataUri(file); } catch (_) {}
+      try { thumbnail = await _createThumbnail(file); } catch (_) {}
       _queue.push({ file, thumbnail });
     }));
   }
@@ -680,7 +734,7 @@ async function _submitConvert(outputFilename) {
   // Clear local state before fetch (prevent stale refs)
   const queueSnapshot = _queue.slice();
   _queue   = [];
-  _pdfMode = 'individual';
+  _pdfMode = 'single';
 
   showProgress(zone, 0, color, 'Converting…', tool.id);
   const clientJobKey = setBgJob({ jobId: null, tool, filename: earlyName, progress: 5, state: 'submitting', sse: null });

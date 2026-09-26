@@ -25,7 +25,7 @@ from __future__ import annotations
 
 import io
 import zipfile
-from typing import List
+from typing import List, Optional
 
 from fastapi import APIRouter, File, Form, UploadFile
 from fastapi.responses import JSONResponse

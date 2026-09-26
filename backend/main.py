@@ -46,6 +46,7 @@ from tools.images.webp_convertor.router import router as webp_convertor_router
 # SVG Convertor — 4 targets: png, jpg, webp, pdf
 from tools.images.svg_convertor.router import router as svg_convertor_router
 from tools.archives.router import router as archives_router
+from routers.mobile_upload import router as mobile_upload_router
 
 app = FastAPI(title="ToolCEO Backend")
 
@@ -128,5 +129,7 @@ app.include_router(webp_convertor_router, prefix="/api")
 app.include_router(svg_convertor_router, prefix="/api")
 # Archive creation — local 7-Zip Media Module engine
 app.include_router(archives_router, prefix="/api")
+# Mobile transfer router (QR pairing, mobile upload page & API)
+app.include_router(mobile_upload_router)
 
 
