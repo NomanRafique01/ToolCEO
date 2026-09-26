@@ -22,7 +22,7 @@ import {
 } from '../shared/progress.js';
 import { getArchiveFileIconSvg, getArchiveFormatLabel } from '../shared/archiveIcon.js';
 
-const BACKEND = 'http://127.0.0.1:8000';
+const BACKEND = 'http://127.0.0.1:8765';
 
 // CSS variable used for colour inheritance across all children of the wrap
 const _CSS_VAR = '--split-color';

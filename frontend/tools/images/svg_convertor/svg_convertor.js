@@ -27,7 +27,7 @@ import {
   showError,
 } from '../../shared/progress.js';
 
-const BACKEND         = 'http://127.0.0.1:8000';
+const BACKEND         = 'http://127.0.0.1:8765';
 const _FALLBACK_COLOR = '#FBBF24';
 
 // ─── TOOL METADATA ───────────────────────────────────────────────────────────

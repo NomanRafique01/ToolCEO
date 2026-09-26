@@ -4,7 +4,7 @@ import { showScanProgress, showProgress, updateProgress, resetZoneContent, showD
 import { loadPdfDocument, renderPdfPageToDataUri } from '../shared/pdfRenderer.js';
 import { getArchiveFileIconSvg, getArchiveFolderIconSvg, getArchiveFormatLabel } from '../shared/archiveIcon.js';
 
-const BACKEND = 'http://127.0.0.1:8000';
+const BACKEND = 'http://127.0.0.1:8765';
 const ARCHIVE_IDS = new Set([
   'archive-files-zip', 'archive-files-tar', 'archive-files-tar-gz', 'archive-files-tar-bz2',
   'archive-files-7z', 'archive-folder-zip', 'archive-folder-7z',

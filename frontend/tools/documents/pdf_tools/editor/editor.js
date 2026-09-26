@@ -32,7 +32,7 @@ import {
   util as fabricUtil,
 } from '../../../../vendor/fabric/index.min.mjs';
 
-const BACKEND = 'http://127.0.0.1:8000';
+const BACKEND = 'http://127.0.0.1:8765';
 const EDITOR_COLOR = '#00E5C0';
 const PDFJS_URL = '../../../../vendor/pdfjs/pdf.min.js';
 const PDFJS_WORKER_URL = '../../../../vendor/pdfjs/pdf.worker.min.js';

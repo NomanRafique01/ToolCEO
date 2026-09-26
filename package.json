@@ -38,6 +38,8 @@
       "installerIcon": "assets/icon.ico",
       "uninstallerIcon": "assets/icon.ico",
       "installerHeaderIcon": "assets/icon.ico",
+      "include": "assets/installer.nsh",
+      "uninstallDisplayName": "ToolCEO",
       "createDesktopShortcut": true,
       "createStartMenuShortcut": true,
       "shortcutName": "ToolCEO"

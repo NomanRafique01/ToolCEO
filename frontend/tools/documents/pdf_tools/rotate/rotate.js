@@ -11,7 +11,7 @@ import { showProgress, updateProgress, showDownloadBlobCard, showError, resetZon
 import { buildConversionMeta } from '../../../../scripts/historyTracker.js';
 import { ensurePdfJs, loadPdfDocument } from '../../../shared/pdfRenderer.js';
 
-const BACKEND = 'http://127.0.0.1:8000';
+const BACKEND = 'http://127.0.0.1:8765';
 const THUMBNAIL_SCALE = 1.5; // High definition scale for crisp page previews
 
 let _fileInput = null;

@@ -604,21 +604,37 @@ async function registerFileAssociation() {
 
 // ─── BACKEND ──────────────────────────────────────────────────────────────────
 
+const BACKEND_PORT = process.env.TOOLCEO_PORT ? parseInt(process.env.TOOLCEO_PORT, 10) : 8765;
+const BACKEND_URL = `http://127.0.0.1:${BACKEND_PORT}`;
+
 function startBackend() {
   // ── Manual backend override ───────────────────────────────────────────────
   // Set TOOLCEO_MANUAL_BACKEND=1 to skip auto-spawn (e.g. you started uvicorn manually).
   if (process.env.TOOLCEO_MANUAL_BACKEND === '1') {
-    console.log('[backend] TOOLCEO_MANUAL_BACKEND=1 set — skipping auto-spawn, assuming backend on 127.0.0.1:8000');
+    console.log(`[backend] TOOLCEO_MANUAL_BACKEND=1 set — skipping auto-spawn, assuming backend on ${BACKEND_URL}`);
     return;
   }
 
-  // ── Check if backend already running on port 8000 ────────────────────────
+  // ── Check if backend already running on port BACKEND_PORT ───────────────────
   // Avoids spawning a duplicate process if the user started backend manually.
   const http = require('http');
   const checkAlreadyRunning = () => new Promise((resolve) => {
-    const req = http.get('http://127.0.0.1:8000/health', (res) => {
-      res.resume();
-      resolve(true);
+    const req = http.get(`${BACKEND_URL}/health`, (res) => {
+      if (res.statusCode !== 200) {
+        res.resume();
+        resolve(false);
+        return;
+      }
+      let body = '';
+      res.on('data', (chunk) => { body += chunk; });
+      res.on('end', () => {
+        try {
+          const json = JSON.parse(body);
+          resolve(Boolean(json && json.status === 'ok'));
+        } catch (_) {
+          resolve(false);
+        }
+      });
     });
     req.on('error', () => resolve(false));
     req.setTimeout(2000, () => { req.destroy(); resolve(false); });
@@ -626,7 +642,7 @@ function startBackend() {
 
   checkAlreadyRunning().then((alreadyUp) => {
     if (alreadyUp) {
-      console.log('[backend] Backend already running on port 8000 — skipping spawn.');
+      console.log(`[backend] Backend already running on port ${BACKEND_PORT} — skipping spawn.`);
       return;
     }
     _spawnBackend();
@@ -639,6 +655,11 @@ function _spawnBackend() {
     'engines', 'python', 'main_backend.exe'
   );
 
+  const env = {
+    ...process.env,
+    TOOLCEO_PORT: String(BACKEND_PORT),
+  };
+
   if (app.isPackaged && fs.existsSync(backendExePath)) {
     const enginesDir = path.join(process.resourcesPath, 'engines');
     console.log('[backend] Launching packaged backend from:', backendExePath);
@@ -647,7 +668,7 @@ function _spawnBackend() {
       detached: false,
       stdio: 'ignore',
       windowsHide: true,
-      env: { ...process.env, TOOLCEO_ENGINES_PATH: enginesDir },
+      env: { ...env, TOOLCEO_ENGINES_PATH: enginesDir },
     });
   } else {
     // Development mode
@@ -657,12 +678,19 @@ function _spawnBackend() {
       : (IS_WIN ? 'python.exe' : 'python3');
     const backendDir = path.join(__dirname, '..', 'backend');
 
-    console.log('[backend] Launching dev backend with:', pythonCmd);
+    console.log('[backend] Launching dev backend on port', BACKEND_PORT, 'with:', pythonCmd);
     backendProcess = spawn(
       pythonCmd,
-      ['-m', 'uvicorn', 'main:app', '--host', '127.0.0.1', '--port', '8000'],
-      { cwd: backendDir, stdio: 'ignore', windowsHide: true }
+      ['-m', 'uvicorn', 'main:app', '--host', '127.0.0.1', '--port', String(BACKEND_PORT)],
+      { cwd: backendDir, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true, env }
     );
+
+    backendProcess.stdout?.on('data', (d) => {
+      console.log('[backend]', d.toString().trim());
+    });
+    backendProcess.stderr?.on('data', (d) => {
+      console.error('[backend:err]', d.toString().trim());
+    });
   }
 
   backendProcess.on('error', (err) => {

@@ -306,7 +306,7 @@ To keep the initial ToolCEO download lightweight (~70 MB), heavy specialized pro
 
 ToolCEO operates using a decoupled local architecture:
 - **Frontend Shell:** Electron 35+ provides native window controls, dark-mode design system, and OS integration via a secure context bridge.
-- **Local Backend Daemon:** A lightweight local FastAPI service on `127.0.0.1:8000` manages worker thread queues and executes conversions completely offline.
+- **Local Backend Daemon:** A lightweight local FastAPI service on `127.0.0.1:8765` manages worker thread queues and executes conversions completely offline.
 - **Real-Time Progress:** Persistent Server-Sent Events (SSE) stream frame-accurate progress percentages (0% to 100%) to the UI.
 - **Local Privacy:** Zero cloud connectivity. Source documents and processed files are handled strictly within workstation storage.
 
@@ -357,7 +357,7 @@ ToolCEO operates using a decoupled local architecture:
 
 ## Local API Reference
 
-The local Python service exposes internal endpoints on `http://127.0.0.1:8000`:
+The local Python service exposes internal endpoints on `http://127.0.0.1:8765`:
 
 | Endpoint | Method | Input Parameters | Output |
 |---|---|---|---|

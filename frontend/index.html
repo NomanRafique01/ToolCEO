@@ -775,6 +775,10 @@
   <!-- Offline PDF.js Core Engine & Worker -->
   <script src="vendor/pdfjs/pdf.min.js"></script>
   <script src="vendor/pdfjs/pdf.worker.min.js"></script>
+  <script>
+    window.TOOLCEO_BACKEND_PORT = (window.toolceoConfig && window.toolceoConfig.backendPort) || 8765;
+    window.TOOLCEO_BACKEND_URL = (window.toolceoConfig && window.toolceoConfig.backendUrl) || ('http://127.0.0.1:' + window.TOOLCEO_BACKEND_PORT);
+  </script>
   <script type="module" src="scripts/main.js"></script>
 
 </body>

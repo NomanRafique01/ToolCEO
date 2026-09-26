@@ -35,7 +35,7 @@ import {
 } from '../../shared/progress.js';
 import { getPptxThumbnail } from '../../shared/pptxThumb.js';
 
-const BACKEND = 'http://127.0.0.1:8000';
+const BACKEND = 'http://127.0.0.1:8765';
 
 // ─── TARGET-FORMAT METADATA ───────────────────────────────────────────────────
 

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * scripts/build.js
  * Wrapper around electron-builder to ensure TEMP and TMP point to the user's
  * AppData\Local\Temp directory on Windows, preventing makensis failure
@@ -22,18 +22,17 @@ if (process.platform === 'win32') {
 const args = process.argv.slice(2);
 const builderArgs = args.length > 0 ? args : ['--win', '--x64'];
 
-const electronBuilderBin = path.join(
+const electronBuilderCli = path.join(
   __dirname,
   '..',
   'node_modules',
-  '.bin',
-  process.platform === 'win32' ? 'electron-builder.cmd' : 'electron-builder'
+  'electron-builder',
+  'cli.js'
 );
 
-const child = spawn(electronBuilderBin, builderArgs, {
+const child = spawn(process.execPath, [electronBuilderCli, ...builderArgs], {
   stdio: 'inherit',
   env: process.env,
-  shell: true
 });
 
 child.on('close', (code) => {

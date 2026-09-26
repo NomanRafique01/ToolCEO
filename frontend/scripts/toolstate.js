@@ -162,8 +162,8 @@ export function clearBgJob(jobIdOrSilent = null, maybeSilent = false) {
   // If the job was actively running or submitting, notify the backend to cancel it
   if (job && (job.state === 'running' || job.state === 'submitting')) {
     if (job.jobId) {
-      fetch(`http://127.0.0.1:8000/api/cancel/${job.jobId}`, { method: 'POST' }).catch(() => {});
-      fetch(`http://127.0.0.1:8000/api/archives/cancel/${job.jobId}`, { method: 'POST' }).catch(() => {});
+      fetch(`http://127.0.0.1:8765/api/cancel/${job.jobId}`, { method: 'POST' }).catch(() => {});
+      fetch(`http://127.0.0.1:8765/api/archives/cancel/${job.jobId}`, { method: 'POST' }).catch(() => {});
     }
     if (job.abortController) {
       try { job.abortController.abort(); } catch (_) {}
@@ -523,7 +523,7 @@ async function _saveBlobFile(blob, filename) {
 }
 
 async function _downloadJobFile(jobId, filename) {
-  const res = await fetch(`http://127.0.0.1:8000/api/download/${jobId}`);
+  const res = await fetch(`http://127.0.0.1:8765/api/download/${jobId}`);
   if (!res.ok) throw new Error(`Download failed (${res.status})`);
 
   const blob = await res.blob();

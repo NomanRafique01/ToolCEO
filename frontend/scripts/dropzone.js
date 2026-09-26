@@ -254,7 +254,7 @@ const _EBOOK_TOOLS = {
   'rtf-txt': { h: handleEbook_rtf_txt_FilePicked, r: removeEbook_rtf_txt_Panel },
 };
 
-const BACKEND = 'http://127.0.0.1:8000';
+const BACKEND = 'http://127.0.0.1:8765';
 let _renderedToolId = null;
 let _restoreNoticeContext = null;
 let _lastRestoreNoticeAt = 0;

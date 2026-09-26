@@ -24,7 +24,7 @@ import { clearBgJob, getActiveTool, getBgJob, getBgJobForTool, setBgJob } from '
 import { buildConversionMeta } from '../../scripts/historyTracker.js';
 import { captureToolDropZoneSnapshot, clearToolFileState, shouldSuppressRestoreScan } from '../../scripts/fileState.js';
 
-const BACKEND = 'http://127.0.0.1:8000';
+const BACKEND = 'http://127.0.0.1:8765';
 
 // ── ZIP Extract Router (injected by navigation.js to avoid circular import) ───
 let _zipExtractRouter = null;

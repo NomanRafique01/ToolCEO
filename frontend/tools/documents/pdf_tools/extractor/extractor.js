@@ -17,7 +17,7 @@ import {
 } from '../../../shared/progress.js';
 import { ensurePdfJs, loadPdfDocument, getOfflinePdfInfo } from '../../../shared/pdfRenderer.js';
 
-const BACKEND = 'http://127.0.0.1:8000';
+const BACKEND = 'http://127.0.0.1:8765';
 const THUMBNAIL_SCALE = 1.5;
 
 let _selectedFile = null;
@@ -469,6 +469,22 @@ function _showExtractorPanel(color) {
   panel.querySelector('.xip-primary-btn').addEventListener('click', () => _submitExtract());
 }
 
+function _hideExtractorInfoPanel() {
+  const panel = document.getElementById('extractor-info-panel');
+  if (panel) panel.remove();
+}
+
+function _isNoImagesError(error) {
+  const message = String(error || '').toLowerCase();
+  return (
+    message.startsWith('no_images:') ||
+    message.includes('no embedded images') ||
+    message.includes('no usable embedded images') ||
+    message.includes('only tiny embedded images') ||
+    message.includes('too blurry or low quality')
+  );
+}
+
 async function _loadPdfIntoViewer(container, file) {
   const tool = getActiveTool();
   const color = (tool && tool.color) || '#F472B6';
@@ -563,6 +579,7 @@ async function _submitExtract() {
   const shouldSendSelection = selectedPages.length !== _pageCount;
   const file = _selectedFile;
 
+  _hideExtractorInfoPanel();
   if (_activeContainer) _closeViewer(_activeContainer);
   document.getElementById('main-content')?.scrollTo({ top: 0, behavior: 'smooth' });
 
@@ -607,7 +624,7 @@ async function _submitExtract() {
     if (bg && bg.jobId === jobId) {
       bg.progress = Math.max(10, Math.min(100, pct));
       // Don't mark NO_IMAGES as 'error' — it will be silently cleared below.
-      const isNoImages = state === 'error' && error && error.startsWith('NO_IMAGES:');
+      const isNoImages = state === 'error' && _isNoImagesError(error);
       bg.state = state === 'done' ? 'done' : (state === 'error' && !isNoImages ? 'error' : 'running');
       if (data.filename) bg.filename = data.filename;
       syncBgJobBar();
@@ -645,7 +662,7 @@ async function _submitExtract() {
 
     if (state === 'error') {
       // ── "No images" is not a real failure — show graceful notification ──
-      if (error && error.startsWith('NO_IMAGES:')) {
+      if (_isNoImagesError(error)) {
         pushNotification({
           type: 'info',
           message: 'No images were found in the selected file.',
@@ -656,6 +673,7 @@ async function _submitExtract() {
         if (zone) resetZoneContent(zone);
         // Silently remove the bg-job so "Failed" badge never appears
         clearBgJob(jobId, true);
+        clearBgJob(clientJobKey, true);
         return;
       }
       if (zone) showError(zone, error || 'Processing failed. Please try again.', tool.id);

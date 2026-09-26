@@ -21,7 +21,7 @@ import {
 } from '../../../shared/progress.js';
 import { getOfflinePdfInfo } from '../../../shared/pdfRenderer.js';
 
-const BACKEND = 'http://127.0.0.1:8000';
+const BACKEND = 'http://127.0.0.1:8765';
 
 // ─── MODULE STATE ──────────────────────────────────────────────────────────────
 
