@@ -745,7 +745,12 @@ function _updateDropZone(tool) {
     }
   }
 
-  _restoreToolFiles(tool);
+  // Only auto-restore remembered files when re-rendering the SAME tool
+  // (in-place resets after save/clear). Clicking a different tool always
+  // loads a clean drop zone — nothing is carried over or re-submitted.
+  if (_renderedToolId === tool.id) {
+    _restoreToolFiles(tool);
+  }
   _renderedToolId = tool.id;
 }
 

@@ -64,7 +64,8 @@ def cleanup_stale_sessions():
 @router.post("/api/mobile/session/create")
 async def create_session(request: Request, tool: Optional[str] = "images-pdf", tool_name: Optional[str] = "Images to PDF"):
     cleanup_stale_sessions()
-    session_id = str(uuid.uuid4())[:10]
+    safe_tool = "".join(c for c in (tool or "tool") if c.isalnum() or c in "-_")[:10]
+    session_id = f"{safe_tool}_{uuid.uuid4().hex[:8]}"
     session_dir = os.path.join(MOBILE_TEMP_ROOT, session_id)
     os.makedirs(session_dir, exist_ok=True)
 
@@ -81,7 +82,7 @@ async def create_session(request: Request, tool: Optional[str] = "images-pdf", t
         "files": []
     }
 
-    url = f"http://{local_ip}:{port}/mobile-upload?session={session_id}&tool={tool}"
+    url = f"http://{local_ip}:{port}/mobile-upload?session={session_id}&tool={tool}&t={int(time.time()*1000)}"
 
     return {
         "session_id": session_id,

@@ -5,13 +5,18 @@
  * matching the native ToolCEO in-place morphing pattern (no separate overlay/window).
  */
 
-import { getActiveTool } from './toolstate.js';
+import { getActiveTool, onToolChange } from './toolstate.js';
 import { pushNotification } from './notificationStore.js';
 import { handleExternalFiles } from './dropzone.js';
 
 let _activeSessionId = null;
 let _pollTimer = null;
 let _activeMobileUrl = null;
+
+// Selecting another tool (or clearing the selection) must tear the QR panel
+// down: its dz-has-phone-transfer class hides the dropzone's default contents,
+// so a stale panel would block the newly selected tool from rendering.
+onToolChange(() => closeMobileTransferModal());
 
 /**
  * Opens the mobile transfer panel directly inside the dropzone.
@@ -32,6 +37,16 @@ export async function openMobileTransferModal() {
     return;
   }
 
+  const toolName = tool.label || tool.name || 'Tool';
+
+  // Theme the panel to the active tool's color
+  const toolColor = tool.color || '#00E5C0';
+  zone.style.setProperty('--tool-accent', toolColor);
+  zone.style.setProperty('--tool-accent-soft', _withAlpha(toolColor, 0.10));
+  zone.style.setProperty('--tool-accent-mid', _withAlpha(toolColor, 0.20));
+  zone.style.setProperty('--tool-accent-border', _withAlpha(toolColor, 0.35));
+  zone.style.setProperty('--tool-accent-glow', _withAlpha(toolColor, 0.15));
+
   // Set active class on dropzone
   zone.classList.add('dz-has-phone-transfer');
 
@@ -45,7 +60,16 @@ export async function openMobileTransferModal() {
         </svg>
       </button>
 
-      <!-- Left: QR Box -->
+      <!-- Header -->
+      <div class="dz-phone-header">
+        <div class="dz-phone-header-text">
+          <h3>Send from Phone</h3>
+          <p>Scan to transfer files directly to this tool</p>
+        </div>
+        <div class="dz-phone-tool-badge">${toolName}</div>
+      </div>
+
+      <!-- Center: QR Box -->
       <div class="dz-phone-qr-box">
         <div class="dz-phone-qr-card">
           <div class="dz-phone-qr-loader" id="dz-phone-qr-loader">
@@ -58,17 +82,8 @@ export async function openMobileTransferModal() {
         </div>
       </div>
 
-      <!-- Right: Details & Status -->
+      <!-- Details & Status -->
       <div class="dz-phone-details">
-        <div class="dz-phone-header">
-          <img src="assets/icon1.png" alt="ToolCEO" class="dz-phone-logo" onerror="this.src='assets/icon.png'">
-          <div class="dz-phone-header-text">
-            <h3>Send from Phone</h3>
-            <p>Scan to transfer files directly to this tool</p>
-          </div>
-          <div class="dz-phone-tool-badge">${tool.name}</div>
-        </div>
-
         <div class="dz-phone-status-pill" id="dz-phone-status-pill">
           <span class="dz-phone-status-dot"></span>
           <span id="dz-phone-status-text">Generating QR code…</span>
@@ -131,7 +146,7 @@ export async function openMobileTransferModal() {
   // Call backend to create pairing session
   try {
     const backendUrl = window.TOOLCEO_BACKEND_URL || 'http://127.0.0.1:8765';
-    const res = await fetch(`${backendUrl}/api/mobile/session/create?tool=${encodeURIComponent(tool.id)}&tool_name=${encodeURIComponent(tool.name)}`, {
+    const res = await fetch(`${backendUrl}/api/mobile/session/create?tool=${encodeURIComponent(tool.id)}&tool_name=${encodeURIComponent(toolName)}`, {
       method: 'POST'
     });
 
@@ -176,6 +191,17 @@ export async function openMobileTransferModal() {
 }
 
 /**
+ * Converts a #RRGGBB color to an rgba() string with the given alpha.
+ * Returns the input unchanged if it is not a hex color.
+ */
+function _withAlpha(hex, alpha) {
+  const m = /^#?([0-9a-f]{6})$/i.exec(String(hex).trim());
+  if (!m) return hex;
+  const n = parseInt(m[1], 16);
+  return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${alpha})`;
+}
+
+/**
  * Removes the in-dropzone panel and reverts dropzone to normal state.
  */
 export function closeMobileTransferModal() {
@@ -183,6 +209,11 @@ export function closeMobileTransferModal() {
   if (zone) {
     zone.querySelector('.dz-phone-panel')?.remove();
     zone.classList.remove('dz-has-phone-transfer');
+    zone.style.removeProperty('--tool-accent');
+    zone.style.removeProperty('--tool-accent-soft');
+    zone.style.removeProperty('--tool-accent-mid');
+    zone.style.removeProperty('--tool-accent-border');
+    zone.style.removeProperty('--tool-accent-glow');
   }
 
   if (_pollTimer) {
@@ -216,10 +247,10 @@ function _startPolling(backendUrl, sessionId) {
 
       if (data.status === 'connected') {
         if (statusPill) statusPill.className = 'dz-phone-status-pill is-connected';
-        if (statusText) statusText.textContent = '🟢 Phone connected! Select files on phone';
+        if (statusText) statusText.textContent = 'Phone connected! Select files on phone';
       } else if (data.status === 'uploading') {
         if (statusPill) statusPill.className = 'dz-phone-status-pill is-uploading';
-        if (statusText) statusText.textContent = '🚀 Receiving files from phone…';
+        if (statusText) statusText.textContent = 'Receiving files from phone…';
       } else if (data.status === 'completed' && data.files && data.files.length > 0) {
         clearInterval(_pollTimer);
         _pollTimer = null;
