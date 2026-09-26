@@ -23,7 +23,14 @@ export async function openMobileTransferModal() {
   // Clear previous panel if any
   closeMobileTransferModal();
 
-  const tool = getActiveTool() || { id: 'images-pdf', name: 'Images to PDF' };
+  const tool = getActiveTool();
+  if (!tool) {
+    pushNotification({
+      type: 'warning',
+      message: 'Please Select a Tool First',
+    });
+    return;
+  }
 
   // Set active class on dropzone
   zone.classList.add('dz-has-phone-transfer');

@@ -17,36 +17,52 @@
   margin-top: 0;
 }
 
-/* ── "From Phone" Button in Drop Zone ── */
+/* ── "From Phone" Button in Drop Zone — Perfectly Matches Paste Button ── */
 .dz-phone-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(0, 229, 192, 0.08);
-  border: 1px solid rgba(0, 229, 192, 0.25);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
-  color: #00E5C0;
+  color: rgba(255, 255, 255, 0.75);
   border-radius: 8px;
   padding: 6px 14px;
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
   transition: all 180ms ease;
-  box-shadow: 0 2px 8px rgba(0, 229, 192, 0.1);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   z-index: 2;
 }
 
 .dz-phone-btn:hover {
-  background: rgba(0, 229, 192, 0.16);
-  border-color: rgba(0, 229, 192, 0.45);
-  color: #55FFDE;
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.20);
+  color: rgba(255, 255, 255, 0.95);
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px rgba(0, 229, 192, 0.22);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .dz-phone-btn:active {
   transform: translateY(0);
+}
+
+/* ── Tool-Active State — Both buttons toggle identically ── */
+.drop-zone--tool-active .dz-paste-btn,
+.drop-zone--tool-active .dz-phone-btn {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  color: rgba(255, 255, 255, 0.85);
+}
+
+.drop-zone--tool-active .dz-paste-btn:hover,
+.drop-zone--tool-active .dz-phone-btn:hover {
+  background: rgba(255, 255, 255, 0.12);
+  border-color: rgba(255, 255, 255, 0.25);
+  color: #FFFFFF;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 /* Hide action buttons when files or processing are active */

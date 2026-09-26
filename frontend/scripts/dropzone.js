@@ -1999,6 +1999,11 @@ export function initDropZone() {
   if (phoneBtn) {
     phoneBtn.addEventListener('click', (e) => {
       e.stopPropagation();
+      const tool = getActiveTool();
+      if (!tool) {
+        showNoToolWarning();
+        return;
+      }
       import('./mobileTransferModal.js').then(({ openMobileTransferModal }) => {
         openMobileTransferModal();
       }).catch(err => console.error('[dropzone] Failed to open mobile transfer modal:', err));
