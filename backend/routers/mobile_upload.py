@@ -332,12 +332,14 @@ async def create_session(request: Request, tool: Optional[str] = "images-pdf", t
         "last_seen": None,
         "picking": False,
         "status": "waiting",  # waiting -> connected -> uploading -> completed
+        "disconnect_reason": None,
         "dir": session_dir,
         "files": [],
         "acked_until": 0,
         "pending_execution": None,
         "pending_clear": False,
         "pending_job_clear": False,
+        "job_clear_source": None,
         "transfer_progress": 0,
         "transfer_received": 0,
         "transfer_total": 0,
@@ -431,6 +433,7 @@ async def get_session_status(session_id: str):
     return {
         "session_id": session_id,
         "status": sess.get("status", "waiting"),
+        "disconnect_reason": sess.get("disconnect_reason"),
         "picking": bool(sess.get("picking")),
         "last_seen": sess.get("last_seen"),
         "files_count": len(pending),
@@ -439,6 +442,7 @@ async def get_session_status(session_id: str):
         "pending_execution": sess.get("pending_execution"),
         "pending_clear": bool(sess.get("pending_clear")),
         "pending_job_clear": bool(sess.get("pending_job_clear")),
+        "job_clear_source": sess.get("job_clear_source"),
         "transfer_progress": int(sess.get("transfer_progress") or 0),
         "transfer_received": int(sess.get("transfer_received") or 0),
         "transfer_total": int(sess.get("transfer_total") or 0),
@@ -627,9 +631,13 @@ async def set_session_job(request: Request, session_id: str):
         sess["job_id"] = job_id
         sess["job_filename"] = _safe_text(payload.get("filename"), "", 200)
         sess["pending_job_clear"] = False
+        sess["job_clear_source"] = None
     else:
         sess["job_id"] = None
         sess["job_filename"] = ""
+        # Tell the phone to close its mirrored progress/download view too.
+        sess["pending_job_clear"] = True
+        sess["job_clear_source"] = "desktop"
     return {"ok": True, "job_id": sess.get("job_id")}
 
 
@@ -642,6 +650,7 @@ async def dismiss_session_job(session_id: str):
     sess["job_id"] = None
     sess["job_filename"] = ""
     sess["pending_job_clear"] = True
+    sess["job_clear_source"] = "phone"
     return {"ok": True}
 
 
@@ -650,6 +659,7 @@ async def ack_session_job_dismiss(session_id: str):
     sess = SESSIONS.get(session_id)
     if sess:
         sess["pending_job_clear"] = False
+        sess["job_clear_source"] = None
     return {"ok": True}
 
 
@@ -814,6 +824,19 @@ async def phone_disconnect(session_id: str):
     return {"status": sess["status"]}
 
 
+@router.post("/api/mobile/session/{session_id}/offline")
+async def phone_offline(session_id: str):
+    """End the transfer immediately when the phone loses connectivity."""
+    sess = SESSIONS.get(session_id)
+    if not sess:
+        return {"status": "not_found"}
+    sess["status"] = "cancelled"
+    sess["picking"] = False
+    sess["disconnect_reason"] = "offline"
+    sess["last_seen"] = time.time()
+    return {"status": "cancelled", "reason": "offline"}
+
+
 @router.post("/api/mobile/upload/{session_id}")
 async def upload_files_from_mobile(
     session_id: str,
@@ -822,6 +845,12 @@ async def upload_files_from_mobile(
     sess = SESSIONS.get(session_id)
     if not sess:
         raise HTTPException(status_code=404, detail="Session expired or not found")
+
+    # Enforce the tool contract server-side as well as in the phone picker.
+    # A stale client or a manually crafted multipart request cannot send a
+    # second file to a single-file tool.
+    if not sess.get("supports_multi", False) and len(files) > 1:
+        files = files[:1]
 
     allowed_exts = [e.lower() for e in (sess.get("allowed_exts") or _resolve_format_meta(sess.get("tool"))["allowed_exts"])]
     if "*" not in allowed_exts:
@@ -1104,7 +1133,7 @@ async def serve_mobile_upload_page(session: str = "", tool: str = "images-pdf"):
         </button>
       </div>
 
-      <input type="file" id="file-input-gallery" multiple accept="image/*,application/pdf,application/*" />
+      <input type="file" id="file-input-gallery" accept="image/*,application/pdf,application/*" />
       <input type="file" id="file-input-camera" accept="image/*" capture="environment" />
 
       <!-- Sync Info Bar below Drop Zone -->
@@ -1137,7 +1166,7 @@ async def serve_mobile_upload_page(session: str = "", tool: str = "images-pdf"):
           <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
         </svg>
       </div>
-      <div class="disconnected-title">Session Ended</div>
+      <div class="disconnected-title" id="disconnected-title">Session Ended</div>
       <div class="disconnected-desc" id="disconnected-desc">The desktop closed this transfer session.<br>Scan a new QR code to start again.</div>
     </div>
   </main>

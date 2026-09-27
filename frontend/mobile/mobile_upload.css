@@ -75,8 +75,15 @@ body {
   color: var(--dz-color);
   font-size: 11px;
   font-weight: 600;
-  padding: 5px 10px;
-  border-radius: 20px;
+  min-height: 34px;
+  min-width: 108px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  box-shadow:
+    0 2px 12px rgba(0, 0, 0, 0.22),
+    0 0 16px color-mix(in srgb, var(--dz-color) 12%, transparent);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
 }
 
 .pulse-dot {
@@ -85,7 +92,7 @@ body {
   border-radius: 50%;
   background: var(--dz-color);
   box-shadow: 0 0 8px var(--dz-color);
-  animation: pulse 1.8s infinite;
+  flex: 0 0 7px;
 }
 
 @keyframes pulse {
@@ -304,8 +311,8 @@ body {
 
 .action-chips {
   display: flex;
-  gap: 8px;
-  margin-top: 4px;
+  gap: 10px;
+  margin-top: 12px;
   width: 100%;
 }
 
@@ -809,13 +816,13 @@ input[type="file"] {
   left: 10px;
   right: 10px;
   z-index: 999999;
-  background: rgba(15, 23, 42, 0.95);
+  background: transparent;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(239, 68, 68, 0.45);
+  border: 1px solid color-mix(in srgb, var(--dz-color, #00E5C0) 38%, transparent);
   box-shadow:
     0 16px 40px -6px rgba(0, 0, 0, 0.65),
-    0 0 24px rgba(239, 68, 68, 0.22);
+    0 0 24px color-mix(in srgb, var(--dz-color, #00E5C0) 14%, transparent);
   border-radius: 11px;
   padding: 9px 10px 8px;
   display: flex;
@@ -856,14 +863,14 @@ input[type="file"] {
   width: 28px;
   height: 28px;
   border-radius: 8px;
-  background: rgba(239, 68, 68, 0.15);
-  border: 1px solid rgba(239, 68, 68, 0.35);
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--dz-color, #00E5C0) 48%, transparent);
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #F87171;
+  color: var(--dz-color, #00E5C0);
   flex-shrink: 0;
-  box-shadow: 0 0 12px rgba(239, 68, 68, 0.2);
+  box-shadow: 0 0 12px color-mix(in srgb, var(--dz-color, #00E5C0) 18%, transparent);
 }
 
 .mobile-toast-title-group {
@@ -874,14 +881,14 @@ input[type="file"] {
 .mobile-toast-title {
   font-size: 12.5px;
   font-weight: 700;
-  color: #F87171;
+  color: var(--dz-color, #00E5C0);
   letter-spacing: -0.2px;
   line-height: 1.2;
 }
 
 .mobile-toast-subtitle {
   font-size: 10px;
-  color: var(--text-muted);
+  color: color-mix(in srgb, var(--dz-color, #00E5C0) 72%, transparent);
   margin-top: 2px;
   white-space: nowrap;
   overflow: hidden;
@@ -892,9 +899,9 @@ input[type="file"] {
   width: 24px;
   height: 24px;
   border-radius: 7px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: var(--text-muted);
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--dz-color, #00E5C0) 34%, transparent);
+  color: var(--dz-color, #00E5C0);
   font-size: 13px;
   display: flex;
   align-items: center;
@@ -906,13 +913,13 @@ input[type="file"] {
 }
 
 .mobile-toast-close:active {
-  background: rgba(255, 255, 255, 0.14);
+  background: color-mix(in srgb, var(--dz-color, #00E5C0) 12%, transparent);
   transform: scale(0.92);
 }
 
 .mobile-toast-body {
   font-size: 11.5px;
-  color: #E2E8F0;
+  color: color-mix(in srgb, var(--dz-color, #00E5C0) 84%, transparent);
   line-height: 1.35;
   word-break: break-word;
   display: -webkit-box;
@@ -925,16 +932,16 @@ input[type="file"] {
   display: flex;
   align-items: center;
   gap: 6px;
-  background: rgba(239, 68, 68, 0.10);
-  border: 1px dashed rgba(239, 68, 68, 0.38);
+  background: transparent;
+  border: 1px solid color-mix(in srgb, var(--dz-color, #00E5C0) 38%, transparent);
   border-radius: 7px;
   padding: 6px 8px;
   font-size: 10.5px;
-  color: #FECACA;
+  color: color-mix(in srgb, var(--dz-color, #00E5C0) 84%, transparent);
 }
 
 .mobile-toast-req-pill strong {
-  color: #FFF;
+  color: var(--dz-color, #00E5C0);
   font-weight: 700;
 }
 
@@ -1042,6 +1049,15 @@ input[type="file"] {
   overscroll-behavior: contain;
   scrollbar-width: thin;
   scrollbar-color: color-mix(in srgb, var(--dz-color, #FF6B6B) 55%, transparent) transparent;
+}
+
+/* A single-file tool gets a balanced, centered card instead of an empty
+   left-aligned grid row. Multi-file tools retain the normal grid layout. */
+.drop-zone.dz-single-file .dz-jpg-thumb-strip {
+  align-items: center;
+  justify-content: center;
+  flex: 1 1 auto;
+  min-height: 140px;
 }
 
 .mobile-toast--success {

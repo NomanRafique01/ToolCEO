@@ -96,6 +96,8 @@
       if (dropSlot) dropSlot.innerHTML = scaledIcon(theme.icon, color, 48, 'drop-icon');
     }
     _themeData = { ..._themeData, ...theme };
+    const galleryPicker = document.getElementById('file-input-gallery');
+    if (galleryPicker) galleryPicker.multiple = _themeData.supports_multi !== false;
     const saveCard = document.getElementById('mobile-save-card');
     if (saveCard) {
       saveCard.style.setProperty('--save-color', color);
@@ -219,6 +221,17 @@
   });
   window.addEventListener('pageshow', resumeIfIdle);
   window.addEventListener('focus', resumeIfIdle);
+
+  function endSessionForOffline() {
+    if (sessionEnded) return;
+    fetch(`/api/mobile/session/${sessionId}/offline`, {
+      method: 'POST',
+      keepalive: true,
+    }).catch(() => {});
+    showDisconnectedScreen('offline');
+  }
+
+  window.addEventListener('offline', endSessionForOffline);
 
   // Intentionally no pagehide/beforeunload disconnect handler. Mobile
   // browsers use those events for the native file picker as well.
@@ -502,7 +515,14 @@
       statusBadge.style.color       = '#F87171';
       statusBadge.innerHTML = '<span style="width:7px;height:7px;border-radius:50%;background:#EF4444;display:inline-block"></span> Disconnected';
     }
+    const titleEl = document.getElementById('disconnected-title');
     const descEl = document.getElementById('disconnected-desc');
+    if (reason === 'offline') {
+      if (titleEl) titleEl.textContent = `Phone Disconnected — ${_themeData.tool_name || 'Current Tool'}`;
+      if (descEl) {
+        descEl.innerHTML = 'You are offline.<br>The transfer session has ended. Reconnect and scan a new QR code to continue.';
+      }
+    }
     if (reason === 'cancelled' && descEl) {
       descEl.innerHTML = 'The desktop closed this transfer session.<br>Scan a new QR code to start again.';
     }
@@ -855,6 +875,9 @@
       const supportsMulti = _themeData.supports_multi !== false;
       if (!supportsMulti) {
         selectedItems = [];
+        // Single-file tools must never queue more than one item from a
+        // multi-select result returned by the phone picker.
+        valid.splice(1);
       }
 
       for (const file of valid) {
@@ -898,6 +921,7 @@
 
     if (selectedItems.length === 0) {
       dz.classList.remove('dz-has-thumbs');
+      dz.classList.remove('dz-single-file');
       if (syncBar) syncBar.style.display = 'none';
       strip.style.display = 'none';
       strip.innerHTML = '';
@@ -907,6 +931,7 @@
     }
 
     dz.classList.add('dz-has-thumbs');
+    dz.classList.toggle('dz-single-file', _themeData.supports_multi === false);
     if (chips) chips.style.display = 'none';
     if (syncBar) syncBar.style.display = (sendingFiles || selectedItems.some((item) => item.sent)) ? 'flex' : 'none';
     if (syncText) syncText.textContent = sendingFiles
@@ -926,7 +951,7 @@
 
     // Append "+ Add [Ext]" card button inside strip if multi-file is supported
     const supportsMulti = _themeData.supports_multi !== false;
-    if (supportsMulti) {
+    if (supportsMulti && !sendingFiles) {
       const ext = (_themeData.allowed_exts && _themeData.allowed_exts[0] !== '*')
         ? (_themeData.allowed_exts[0].replace('.', '').toUpperCase())
         : 'File';
@@ -1083,7 +1108,13 @@
       xhr.open('POST', `/api/mobile/upload/${sessionId}`, true);
       xhr.upload.onprogress = (e) => {
         if (e.lengthComputable && pBar) {
-          const progress = Math.round((e.loaded / e.total) * 100);
+          // 100% means the server has finished saving the files, not merely
+          // that the browser has sent the request body. Leave the final 1%
+          // for the upload response so the desktop cannot appear stuck at
+          // 100% while the backend is still ingesting the batch.
+          const progress = e.loaded >= e.total
+            ? 99
+            : Math.min(99, Math.round((e.loaded / e.total) * 100));
           pBar.style.width = `${progress}%`;
           fetch(`/api/mobile/session/${sessionId}/transfer-progress`, {
             method: 'POST',
@@ -1166,7 +1197,7 @@
 
     const dz = document.getElementById('mobile-dropzone');
     if (dz) {
-      dz.classList.remove('dz-has-thumbs', 'dz-state-processing', 'dz-state-done');
+      dz.classList.remove('dz-has-thumbs', 'dz-single-file', 'dz-state-processing', 'dz-state-done');
     }
 
     const progressWrap = document.getElementById('job-progress-view');

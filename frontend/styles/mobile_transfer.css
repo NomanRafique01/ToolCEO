@@ -115,26 +115,46 @@
   position: relative !important;
 }
 
+.drop-zone {
+  position: relative;
+}
+
 .drop-zone.dz-phone-paired {
   position: relative;
 }
 
+/* Keep the normal tool artwork out of execution progress overlays. */
+.drop-zone.dz-state-processing > .drop-icon,
+.drop-zone.dz-state-processing > .drop-main-text,
+.drop-zone.dz-state-processing > .drop-browse,
+.drop-zone.dz-state-processing > .drop-private,
+.drop-zone.dz-state-processing > .dz-actions-wrap {
+  display: none !important;
+}
+
+.drop-zone .dz-processing-hidden {
+  display: none !important;
+}
+
 .dz-phone-live-badge {
+  position: relative;
+  top: auto;
+  right: auto;
   display: inline-flex;
   align-items: center;
   gap: 10px;
-  min-width: 248px;
+  min-width: 224px;
+  min-height: 36px;
   background: color-mix(in srgb, var(--tool-accent, var(--dz-color, #00E5C0)) 14%, transparent);
   border: 1px solid color-mix(in srgb, var(--tool-accent, var(--dz-color, #00E5C0)) 36%, transparent);
   color: var(--tool-accent, var(--dz-color, #00E5C0));
-  padding: 7px 8px 7px 14px;
-  border-radius: 22px;
+  padding: 8px 9px 8px 12px;
+  border-radius: 8px;
   font-size: 12px;
   font-weight: 600;
   letter-spacing: 0.01em;
   z-index: 8;
   pointer-events: auto;
-  animation: dzPhoneFadeIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   backdrop-filter: blur(8px);
   -webkit-backdrop-filter: blur(8px);
   box-shadow:
@@ -172,8 +192,11 @@
 }
 
 .dz-phone-live-badge .dz-phone-status-dot {
-  background: #10B981;
-  box-shadow: 0 0 8px #10B981;
+  width: 8px;
+  height: 8px;
+  flex: 0 0 8px;
+  background: var(--tool-accent, var(--dz-color, #00E5C0));
+  box-shadow: 0 0 8px var(--tool-accent, var(--dz-color, #00E5C0));
 }
 
 .dz-phone-live-badge.is-uploading {
@@ -183,8 +206,8 @@
 }
 
 .dz-phone-live-badge.is-uploading .dz-phone-status-dot {
-  background: #10B981;
-  box-shadow: 0 0 8px #10B981;
+  background: var(--tool-accent, var(--dz-color, #00E5C0));
+  box-shadow: 0 0 8px var(--tool-accent, var(--dz-color, #00E5C0));
 }
 
 /* Receiving progress is informational; the phone controls the transfer. */
@@ -204,8 +227,8 @@
 }
 
 .dz-phone-live-badge.is-waiting .dz-phone-status-dot {
-  background: #10B981;
-  box-shadow: 0 0 8px #10B981;
+  background: var(--tool-accent, var(--dz-color, #00E5C0));
+  box-shadow: 0 0 8px var(--tool-accent, var(--dz-color, #00E5C0));
 }
 
 /* Hide default dropzone contents while phone transfer is active */

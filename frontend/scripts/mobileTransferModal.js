@@ -677,6 +677,7 @@ function _ensureConnectedBadge(mode = 'connected') {
       closeMobileTransferModal();
     });
   }
+  if (badge && badge.parentElement !== host) host.appendChild(badge);
 
   const tool = getActiveTool();
   if (tool?.color) _applyToolAccent(tool.color);
@@ -752,23 +753,31 @@ export function closeMobileTransferModal({ silent = false, notice, detail } = {}
 
 function _handleDesktopOffline() {
   if (!_activeSessionId) return;
+  closeMobileTransferModal({
+    notice: `Phone Disconnected — ${_activeToolLabel || getActiveTool()?.label || 'Current Tool'}`,
+    detail: 'You are offline. The transfer session has ended. Reconnect to continue.',
+  });
+}
 
-  if (_connectedNotified) {
-    closeMobileTransferModal({
-      notice: 'Phone disconnected',
-      detail: 'This computer went offline, so the phone transfer was ended. Reconnect to the internet to share files from your phone.',
-    });
+function _handleAppClosing() {
+  const sessionId = _activeSessionId;
+  if (!sessionId) {
+    window.toolceo?.acknowledgeAppClose?.();
     return;
   }
 
-  closeMobileTransferModal({
-    notice: 'You are currently offline',
-    detail: 'Connect to the internet to share files from your phone.',
+  const backendUrl = window.TOOLCEO_BACKEND_URL || 'http://127.0.0.1:8765';
+  fetch(`${backendUrl}/api/mobile/session/${sessionId}`, {
+    method: 'DELETE',
+    keepalive: true,
+  }).catch(() => {}).finally(() => {
+    window.toolceo?.acknowledgeAppClose?.();
   });
 }
 
 if (typeof window !== 'undefined') {
   window.addEventListener('offline', _handleDesktopOffline);
+  window.toolceo?.onAppClosing?.(_handleAppClosing);
 }
 
 function _endSessionFromPhone() {
@@ -808,7 +817,7 @@ function _startPolling(backendUrl, sessionId) {
 
       // The phone can close or download the mirrored result. Notify the
       // desktop result panel so both views disappear together.
-      if (data.pending_job_clear) {
+      if (data.pending_job_clear && data.job_clear_source !== 'desktop') {
         fetch(`${backendUrl}/api/mobile/session/${sessionId}/job_dismiss_ack`, { method: 'POST' }).catch(() => {});
         document.dispatchEvent(new CustomEvent('mobile-job-dismissed', {
           detail: { sessionId },
@@ -936,6 +945,13 @@ function _startPolling(backendUrl, sessionId) {
         }
       } else if (data.status === 'cancelled') {
         _phoneDisconnectCandidateAt = 0;
+        if (data.disconnect_reason === 'offline') {
+          closeMobileTransferModal({
+            notice: `Phone Disconnected — ${_activeToolLabel || getActiveTool()?.label || 'Current Tool'}`,
+            detail: 'The phone is offline. The transfer session has ended.',
+          });
+          return;
+        }
         _endSessionFromPhone();
       } else if (data.status === 'phone_disconnected') {
         // A multi-file upload can briefly report a stale phone disconnect

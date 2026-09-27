@@ -59,6 +59,8 @@ const LINUX_MIME_ICON_DEST = path.join(LINUX_MIME_ICON_DIR, 'application-x-tceo.
 
 let mainWindow     = null;
 let backendProcess = null;
+let _allowWindowClose = false;
+let _closeHandshakePending = false;
 
 /** .tceo path queued before the window was ready (cold-start or second-instance). */
 let _pendingVaultFile = null;
@@ -775,6 +777,35 @@ function createWindow() {
       // Small delay to let the renderer finish its DOMContentLoaded bootstrap
       setTimeout(() => sendVaultFileOpen(_pendingVaultFile), 600);
     }
+  });
+
+  // A real close must end any active phone transfer before Electron exits.
+  // Minimize does not emit this event, so it leaves the session untouched.
+  mainWindow.on('close', (event) => {
+    if (_allowWindowClose) return;
+
+    event.preventDefault();
+    if (_closeHandshakePending) return;
+    _closeHandshakePending = true;
+
+    const finishClose = () => {
+      if (_allowWindowClose) return;
+      _allowWindowClose = true;
+      _closeHandshakePending = false;
+      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.close();
+    };
+
+    ipcMain.once('app-close-session-complete', finishClose);
+    if (mainWindow.webContents && !mainWindow.webContents.isDestroyed()) {
+      mainWindow.webContents.send('app-closing');
+    }
+
+    // Never keep the native close button blocked if the renderer is already
+    // shutting down or the session endpoint cannot be reached.
+    setTimeout(() => {
+      ipcMain.removeListener('app-close-session-complete', finishClose);
+      finishClose();
+    }, 900);
   });
 
   mainWindow.on('closed', () => { mainWindow = null; });

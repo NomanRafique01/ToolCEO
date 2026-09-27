@@ -716,7 +716,7 @@ function _updateDropZone(tool) {
         ${_tagBadge(tag, color, bg)}
       </span>`;
   }
-  if (heroHintEl) { heroHintEl.textContent = 'Drop or click below'; heroHintEl.style.color = color; }
+  if (heroHintEl) { heroHintEl.textContent = ''; heroHintEl.style.color = ''; }
 
   // Fresh DOM query after _resetZoneContent
   const mainEl = zone.querySelector('.drop-main-text');
@@ -987,6 +987,21 @@ function _dlPanelReset(panel) {
 // The phone can dismiss the mirrored result after downloading or closing it.
 document.addEventListener('mobile-job-dismissed', () => {
   _dlPanelReset();
+
+  // The mobile result may mirror either the top download panel or the
+  // in-dropzone result card. Close both surfaces when one side dismisses it.
+  const zone = document.getElementById('drop-zone');
+  if (!zone) return;
+
+  const tool = getActiveTool();
+  const job = tool ? getBgJobForTool(tool.id) : null;
+  if (job) clearBgJob(job.jobId || job.clientId, true);
+
+  // Rebuild the active tool's idle drop zone instead of leaving the cleared
+  // result overlay's empty container behind.
+  _resetZoneContent(zone);
+  _removeAllPanels();
+  if (tool) _updateDropZone(tool);
 });
 
 /** Trigger the actual file save from the panel's Save button. */
@@ -1035,6 +1050,9 @@ async function _dlPanelSave(jobId, filename, color, panel) {
 
 /** Remove any progress / download / error overlay from inside the zone. */
 function _resetZoneContent(zone) {
+  zone.querySelectorAll('.dz-processing-hidden').forEach((el) => {
+    el.classList.remove('dz-processing-hidden');
+  });
   zone.querySelectorAll(
     '.dz-progress-wrap, .dz-download-wrap, .dz-error-wrap, .dz-pdf-thumb-wrap, ' +
     '.dz-compress-thumb-wrap, .dz-encrypt-thumb-wrap, .dz-merge-thumb-strip, .dz-queue-toolbar, ' +
@@ -1119,6 +1137,9 @@ function _showProgress(zone, pct, color, label, toolId) {
 
   captureToolDropZoneSnapshot(toolId || activeTool.id, zone);
   _resetZoneContent(zone);
+  zone.querySelectorAll(
+    '.drop-icon, .drop-main-text, .drop-browse, .drop-private, .dz-actions-wrap'
+  ).forEach((el) => el.classList.add('dz-processing-hidden'));
   zone.classList.add('dz-state-processing');
   const owner = toolId || activeTool?.id;
   const wrap = _buildRingWrap(color, pct, label || 'Processing', false, owner);
@@ -1185,6 +1206,9 @@ function _wireDzCancelBtn(wrap, zone) {
     e.stopPropagation();
     const tool = getActiveTool();
     const ownerToolId = wrap.dataset.toolId || tool?.id;
+    // Clear the mirrored phone job immediately so its progress/download view
+    // returns to a fresh drop zone at the same moment as the desktop.
+    unlinkMirrorJob(ownerToolId || null);
     clearBgJob();
     if (ownerToolId) clearToolFileState(ownerToolId);
     _resetZoneContent(zone);
