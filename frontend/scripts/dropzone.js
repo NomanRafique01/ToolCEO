@@ -301,6 +301,28 @@ export function showInvalidPdfWarning() {
   });
 }
 
+function _isPhonePairedZone(zone = document.getElementById('drop-zone')) {
+  return Boolean(zone?.classList.contains('dz-phone-paired'));
+}
+
+function _blockDesktopUploadWhilePhonePaired(zone) {
+  if (!_isPhonePairedZone(zone)) return false;
+  import('./mobileTransferModal.js').then(({ notifyPhoneSelectRequired }) => {
+    notifyPhoneSelectRequired();
+  }).catch(() => {});
+  return true;
+}
+
+const _PHONE_ADD_FILE_SELECTOR = [
+  '.dz-queue-add-btn',
+  '.dz-merge-add-btn',
+  '.dz-imgpdf-add-btn',
+  '.dz-jpg-add-btn',
+  '.dz-imgcmp-add-btn',
+  '.dz-archive-add-btn',
+  '.dz-arc-merge-add-card',
+].join(', ');
+
 function _isPdfFile(file) {
   if (!file) return false;
   const fname = (file.name || '').toLowerCase();
@@ -1360,12 +1382,13 @@ async function _downloadFile(jobId, filename, color, wrap) {
 // ─── GENERIC SUBMIT FILE ──────────────────────────────────────────────────────
 
 export function handleExternalFiles(files) {
-  return _submitFile(files);
+  return _submitFile(files, { fromPhone: true });
 }
 
-async function _submitFile(files) {
+async function _submitFile(files, { fromPhone = false } = {}) {
   const tool = getActiveTool();
   if (!tool) { showNoToolWarning(); return; }
+  if (!fromPhone && _blockDesktopUploadWhilePhonePaired()) return;
 
   const fileArray = Array.from(files);
   if (fileArray.length === 0) return;
@@ -1760,6 +1783,7 @@ async function _handlePasteFromClipboard() {
   }
 
   const dropZone = document.getElementById('drop-zone');
+  if (_blockDesktopUploadWhilePhonePaired(dropZone)) return;
   if (dropZone) {
     if (
       dropZone.classList.contains('dz-state-processing') ||
@@ -2024,6 +2048,7 @@ export function initDropZone() {
 
     const tool = getActiveTool();
     if (!tool) return;
+    if (_blockDesktopUploadWhilePhonePaired()) return;
 
     if (e.clipboardData && e.clipboardData.files && e.clipboardData.files.length > 0) {
       e.preventDefault();
@@ -2078,10 +2103,19 @@ export function initDropZone() {
 
   // ── Click ──────────────────────────────────────────────────────────────────
   dropZone.addEventListener('click', (e) => {
+    if (!_isPhonePairedZone(dropZone)) return;
+    const addEl = e.target.closest(_PHONE_ADD_FILE_SELECTOR);
+    if (!addEl) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    _blockDesktopUploadWhilePhonePaired(dropZone);
+  }, true);
+
+  dropZone.addEventListener('click', (e) => {
     if (e.target === fileInput) return;
     // Don't open file picker when clicking interactive elements from any tool panel
     if (e.target.closest(
-      '.dz-phone-panel, .dz-download-wrap, .dz-error-wrap, .dz-pdf-thumb-remove, ' +
+      '.dz-phone-panel, .dz-phone-live-badge, .dz-download-wrap, .dz-error-wrap, .dz-pdf-thumb-remove, ' +
       '.dz-merge-card-remove, .dz-merge-add-btn, .merge-queue-panel, .split-info-panel, ' +
       '.compress-settings-panel, .dz-compress-thumb-remove, .cmp-panel, ' +
       '.encrypt-settings-panel, .dz-encrypt-thumb-remove, .enc-panel, .extractor-info-panel, .dz-editor-thumb-remove, .dz-paste-btn, .dz-phone-btn, .dz-actions-wrap, ' +
@@ -2092,6 +2126,7 @@ export function initDropZone() {
     if (!getActiveTool()) { showNoToolWarning(); return; }
     // If already processing, scanning, done, or phone transfer active, do not open file window
     if (dropZone.classList.contains('dz-has-phone-transfer')) return;
+    if (_blockDesktopUploadWhilePhonePaired(dropZone)) return;
     if (dropZone.classList.contains('dz-state-processing')) return;
     if (dropZone.classList.contains('dz-state-scanning')) return;
     if (dropZone.classList.contains('dz-state-done')) return;
@@ -2263,6 +2298,7 @@ export function initDropZone() {
     // adding drag-active class and reflowing/expanding during PDF reordering.
     if (dropZone.dataset.cardDragging) { e.preventDefault(); return; }
     e.preventDefault();
+    if (_isPhonePairedZone(dropZone)) return;
     dropZone.classList.add('drag-active');
   });
 
@@ -2277,6 +2313,7 @@ export function initDropZone() {
     e.preventDefault();
     dropZone.classList.remove('drag-active');
     if (!getActiveTool()) { showNoToolWarning(); return; }
+    if (_blockDesktopUploadWhilePhonePaired(dropZone)) return;
     if (dropZone.classList.contains('dz-state-processing')) return;
     if (dropZone.classList.contains('dz-state-scanning')) return;
     if (dropZone.classList.contains('dz-state-done')) return;

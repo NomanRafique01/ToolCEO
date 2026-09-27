@@ -49,20 +49,22 @@
   transform: translateY(0);
 }
 
-/* ── Tool-Active State — Both buttons toggle identically ── */
+/* ── Tool-Active State — buttons follow the selected tool colour ── */
 .drop-zone--tool-active .dz-paste-btn,
 .drop-zone--tool-active .dz-phone-btn {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.14);
-  color: rgba(255, 255, 255, 0.85);
+  background: color-mix(in srgb, var(--dz-color, #00E5C0) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--dz-color, #00E5C0) 34%, transparent);
+  color: var(--dz-color, #00E5C0);
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--dz-color, #00E5C0) 14%, transparent);
 }
 
 .drop-zone--tool-active .dz-paste-btn:hover,
 .drop-zone--tool-active .dz-phone-btn:hover {
-  background: rgba(255, 255, 255, 0.12);
-  border-color: rgba(255, 255, 255, 0.25);
-  color: #FFFFFF;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+  background: color-mix(in srgb, var(--dz-color, #00E5C0) 20%, transparent);
+  border-color: color-mix(in srgb, var(--dz-color, #00E5C0) 52%, transparent);
+  color: var(--dz-color, #00E5C0);
+  transform: translateY(-1px);
+  box-shadow: 0 4px 14px color-mix(in srgb, var(--dz-color, #00E5C0) 22%, transparent);
 }
 
 /* Hide action buttons when files or processing are active */
@@ -77,7 +79,15 @@
 .drop-zone.dz-has-png-thumbs .dz-actions-wrap,
 .drop-zone.dz-has-webp-thumbs .dz-actions-wrap,
 .drop-zone.dz-has-svg-thumbs .dz-actions-wrap,
-.drop-zone.dz-has-archive-thumbs .dz-actions-wrap {
+.drop-zone.dz-has-archive-thumbs .dz-actions-wrap,
+.drop-zone.dz-phone-paired .dz-actions-wrap,
+.drop-zone.dz-phone-paired .dz-queue-add-btn,
+.drop-zone.dz-phone-paired .dz-merge-add-btn,
+.drop-zone.dz-phone-paired .dz-imgpdf-add-btn,
+.drop-zone.dz-phone-paired .dz-jpg-add-btn,
+.drop-zone.dz-phone-paired .dz-imgcmp-add-btn,
+.drop-zone.dz-phone-paired .dz-archive-add-btn,
+.drop-zone.dz-phone-paired .dz-arc-merge-add-card {
   display: none !important;
 }
 
@@ -103,6 +113,89 @@
     0 0 30px var(--tool-accent-glow, rgba(0, 229, 192, 0.12)),
     inset 0 0 40px var(--tool-accent-soft, rgba(0, 229, 192, 0.03)) !important;
   position: relative !important;
+}
+
+.drop-zone.dz-phone-paired {
+  position: relative;
+}
+
+.dz-phone-live-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 248px;
+  background: color-mix(in srgb, var(--tool-accent, var(--dz-color, #00E5C0)) 14%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tool-accent, var(--dz-color, #00E5C0)) 36%, transparent);
+  color: var(--tool-accent, var(--dz-color, #00E5C0));
+  padding: 7px 8px 7px 14px;
+  border-radius: 22px;
+  font-size: 12px;
+  font-weight: 600;
+  letter-spacing: 0.01em;
+  z-index: 8;
+  pointer-events: auto;
+  animation: dzPhoneFadeIn 0.28s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  box-shadow:
+    0 2px 12px rgba(0, 0, 0, 0.22),
+    0 0 16px color-mix(in srgb, var(--tool-accent, var(--dz-color, #00E5C0)) 12%, transparent);
+}
+
+.dz-phone-live-label {
+  flex: 1;
+  white-space: nowrap;
+}
+
+.dz-phone-live-disconnect {
+  flex-shrink: 0;
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: transparent;
+  color: inherit;
+  opacity: 0.72;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+}
+
+.dz-phone-live-disconnect:hover {
+  background: rgba(239, 68, 68, 0.22);
+  color: #EF4444;
+  opacity: 1;
+}
+
+.dz-phone-live-badge .dz-phone-status-dot {
+  background: #10B981;
+  box-shadow: 0 0 8px #10B981;
+}
+
+.dz-phone-live-badge.is-uploading {
+  background: color-mix(in srgb, var(--tool-accent, var(--dz-color, #00E5C0)) 16%, transparent);
+  border-color: color-mix(in srgb, var(--tool-accent, var(--dz-color, #00E5C0)) 40%, transparent);
+  color: var(--tool-accent, var(--dz-color, #00E5C0));
+}
+
+.dz-phone-live-badge.is-uploading .dz-phone-status-dot {
+  background: #10B981;
+  box-shadow: 0 0 8px #10B981;
+}
+
+.dz-phone-live-badge.is-waiting {
+  background: color-mix(in srgb, var(--tool-accent, var(--dz-color, #00E5C0)) 12%, transparent);
+  border-color: color-mix(in srgb, var(--tool-accent, var(--dz-color, #00E5C0)) 32%, transparent);
+  color: var(--tool-accent, var(--dz-color, #00E5C0));
+}
+
+.dz-phone-live-badge.is-waiting .dz-phone-status-dot {
+  background: #10B981;
+  box-shadow: 0 0 8px #10B981;
 }
 
 /* Hide default dropzone contents while phone transfer is active */

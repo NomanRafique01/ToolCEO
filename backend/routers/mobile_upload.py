@@ -1,20 +1,80 @@
 import os
+import re
+import json
 import time
 import socket
 import shutil
 import tempfile
 import uuid
 from typing import Dict, Any, List, Optional
+from html import escape as html_escape
 from fastapi import APIRouter, UploadFile, File, Form, HTTPException, Request, status
 from fastapi.responses import HTMLResponse, FileResponse, JSONResponse
+
+from jobs import get_job_snapshot
 
 router = APIRouter()
 
 # ── Session Storage (In-Memory with 15-min TTL) ──────────────────────────
 SESSIONS: Dict[str, Dict[str, Any]] = {}
 SESSION_TTL_SECONDS = 15 * 60  # 15 minutes
+PICKING_MAX_SECONDS = 5 * 60
+HEARTBEAT_STALE_SECONDS = 8
 MOBILE_TEMP_ROOT = os.path.join(tempfile.gettempdir(), "toolceo_mobile_uploads")
 os.makedirs(MOBILE_TEMP_ROOT, exist_ok=True)
+
+_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+_FRONTEND_MOBILE = os.path.join(_PROJECT_ROOT, "frontend", "mobile")
+
+_HEX_COLOR = re.compile(r"^#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})$")
+_SAFE_TEXT = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f]")
+
+
+def _safe_color(val: Any, fallback: str = "#00E5C0") -> str:
+    if isinstance(val, str) and _HEX_COLOR.match(val.strip()):
+        return val.strip()
+    return fallback
+
+
+def _safe_bg(val: Any, fallback: str = "rgba(0, 229, 192, 0.15)") -> str:
+    if not isinstance(val, str):
+        return fallback
+    s = val.strip()[:80]
+    if _HEX_COLOR.match(s) or s.startswith("rgba(") or s.startswith("rgb("):
+        return s
+    return fallback
+
+
+def _safe_icon(val: Any) -> Optional[str]:
+    if not isinstance(val, str):
+        return None
+    s = val.strip()
+    if len(s) > 20000 or not s.lower().startswith("<svg"):
+        return None
+    lower = s.lower()
+    if "<script" in lower or "javascript:" in lower or "onerror=" in lower:
+        return None
+    return s
+
+
+def _safe_text(val: Any, fallback: str = "", max_len: int = 160) -> str:
+    if not isinstance(val, str):
+        return fallback
+    s = _SAFE_TEXT.sub("", val).strip()
+    return s[:max_len] if s else fallback
+
+
+def _theme_payload(sess: Dict[str, Any]) -> Dict[str, Any]:
+    return {
+        "tool": sess.get("tool"),
+        "tool_name": sess.get("tool_name"),
+        "color": sess.get("color", "#00E5C0"),
+        "bg": sess.get("bg", "rgba(0, 229, 192, 0.15)"),
+        "icon": sess.get("icon") or "",
+        "mainText": sess.get("mainText") or "",
+        "subText": sess.get("subText") or "",
+        "tag": sess.get("tag") or "",
+    }
 
 
 def get_local_ip() -> str:
@@ -64,6 +124,26 @@ def cleanup_stale_sessions():
 @router.post("/api/mobile/session/create")
 async def create_session(request: Request, tool: Optional[str] = "images-pdf", tool_name: Optional[str] = "Images to PDF"):
     cleanup_stale_sessions()
+
+    payload: Dict[str, Any] = {}
+    try:
+        raw = await request.body()
+        if raw:
+            parsed = json.loads(raw.decode("utf-8"))
+            if isinstance(parsed, dict):
+                payload = parsed
+    except Exception:
+        payload = {}
+
+    tool = _safe_text(payload.get("tool") or tool, "images-pdf", 80)
+    tool_name = _safe_text(payload.get("tool_name") or tool_name, "ToolCEO File Transfer", 80)
+    color = _safe_color(payload.get("color"))
+    bg = _safe_bg(payload.get("bg"))
+    icon = _safe_icon(payload.get("icon"))
+    main_text = _safe_text(payload.get("mainText"), "", 200)
+    sub_text = _safe_text(payload.get("subText"), "", 200)
+    tag = _safe_text(payload.get("tag"), "", 40)
+
     safe_tool = "".join(c for c in (tool or "tool") if c.isalnum() or c in "-_")[:10]
     session_id = f"{safe_tool}_{uuid.uuid4().hex[:8]}"
     session_dir = os.path.join(MOBILE_TEMP_ROOT, session_id)
@@ -76,10 +156,22 @@ async def create_session(request: Request, tool: Optional[str] = "images-pdf", t
         "id": session_id,
         "tool": tool,
         "tool_name": tool_name,
+        "color": color,
+        "bg": bg,
+        "icon": icon,
+        "mainText": main_text,
+        "subText": sub_text,
+        "tag": tag,
         "created_at": time.time(),
+        "last_seen": None,
+        "picking": False,
         "status": "waiting",  # waiting -> connected -> uploading -> completed
         "dir": session_dir,
-        "files": []
+        "files": [],
+        "acked_until": 0,
+        # Active desktop conversion job the phone mirrors (progress/download)
+        "job_id": None,
+        "job_filename": "",
     }
 
     url = f"http://{local_ip}:{port}/mobile-upload?session={session_id}&tool={tool}&t={int(time.time()*1000)}"
@@ -89,9 +181,52 @@ async def create_session(request: Request, tool: Optional[str] = "images-pdf", t
         "url": url,
         "local_ip": local_ip,
         "port": port,
-        "tool": tool,
-        "tool_name": tool_name,
-        "status": "waiting"
+        "status": "waiting",
+        **_theme_payload(SESSIONS[session_id]),
+    }
+
+
+def _refresh_phone_liveness(sess: Dict[str, Any]) -> None:
+    """Expire a dead phone page. File picking is allowed to stay quiet."""
+    status = sess.get("status")
+    if status in ("completed", "cancelled", "waiting", "phone_disconnected"):
+        return
+    last_seen = sess.get("last_seen")
+    if not last_seen:
+        return
+    silent_for = time.time() - last_seen
+    if sess.get("picking"):
+        if silent_for > PICKING_MAX_SECONDS:
+            sess["picking"] = False
+            sess["status"] = "phone_disconnected"
+        return
+    if silent_for > HEARTBEAT_STALE_SECONDS:
+        sess["status"] = "phone_disconnected"
+
+
+def _session_job_payload(sess: Dict[str, Any]) -> Optional[Dict[str, Any]]:
+    """Live snapshot of the desktop conversion job linked to this session.
+
+    The desktop links a jobId when a tool execution starts and unlinks it when
+    the user cancels/closes the result card. Progress itself is read live from
+    the jobs store so the phone is always in sync with what the desktop ring
+    shows, without any desktop-side push loop.
+    """
+    job_id = sess.get("job_id")
+    if not job_id:
+        return None
+    snap = get_job_snapshot(str(job_id))
+    if not snap:
+        sess["job_id"] = None
+        return None
+    return {
+        "job_id": snap["id"],
+        "state": snap["state"],
+        "progress": snap["progress"],
+        "filename": snap.get("filename") or sess.get("job_filename") or "",
+        "media_type": snap.get("media_type"),
+        "cancelled": bool(snap.get("cancelled")),
+        "error": snap.get("error"),
     }
 
 
@@ -101,14 +236,54 @@ async def get_session_status(session_id: str):
     if not sess:
         raise HTTPException(status_code=404, detail="Session expired or not found")
 
+    _refresh_phone_liveness(sess)
+
+    files = sess.get("files", [])
+    acked = int(sess.get("acked_until") or 0)
+    pending = files[acked:]
+
     return {
         "session_id": session_id,
         "status": sess.get("status", "waiting"),
-        "tool": sess.get("tool"),
-        "tool_name": sess.get("tool_name"),
-        "files_count": len(sess.get("files", [])),
-        "files": sess.get("files", [])
+        "picking": bool(sess.get("picking")),
+        "last_seen": sess.get("last_seen"),
+        "files_count": len(pending),
+        "files": pending,
+        "job": _session_job_payload(sess),
+        **_theme_payload(sess),
     }
+
+
+@router.post("/api/mobile/session/{session_id}/job")
+async def set_session_job(request: Request, session_id: str):
+    """Desktop calls this to link/unlink the conversion job mirrored on the phone.
+
+    Body: {"job_id": "<uuid>"|"", "filename": "<display name>"}.
+    A null/empty job_id clears the mirror (user cancelled or closed the card).
+    """
+    sess = SESSIONS.get(session_id)
+    if not sess:
+        raise HTTPException(status_code=404, detail="Session expired or not found")
+
+    payload: Dict[str, Any] = {}
+    try:
+        raw = await request.body()
+        if raw:
+            parsed = json.loads(raw.decode("utf-8"))
+            if isinstance(parsed, dict):
+                payload = parsed
+    except Exception:
+        payload = {}
+
+    raw_job_id = payload.get("job_id")
+    job_id = re.sub(r"[^A-Za-z0-9_\-]", "", str(raw_job_id or ""))[:64]
+    if job_id:
+        sess["job_id"] = job_id
+        sess["job_filename"] = _safe_text(payload.get("filename"), "", 200)
+    else:
+        sess["job_id"] = None
+        sess["job_filename"] = ""
+    return {"ok": True, "job_id": sess.get("job_id")}
 
 
 @router.post("/api/mobile/session/{session_id}/ping")
@@ -117,8 +292,85 @@ async def ping_session(session_id: str):
     sess = SESSIONS.get(session_id)
     if not sess:
         raise HTTPException(status_code=404, detail="Session expired")
-    if sess["status"] == "waiting":
+    sess["last_seen"] = time.time()
+    sess["picking"] = False
+    if sess["status"] in ("waiting", "phone_disconnected"):
         sess["status"] = "connected"
+    return {"status": sess["status"], "picking": False}
+
+
+@router.post("/api/mobile/session/{session_id}/picking")
+async def phone_picking(session_id: str):
+    """Phone calls this right before opening the gallery or camera."""
+    sess = SESSIONS.get(session_id)
+    if not sess:
+        raise HTTPException(status_code=404, detail="Session expired")
+    if sess["status"] == "cancelled":
+        return {"status": sess["status"], "picking": False}
+    sess["picking"] = True
+    sess["last_seen"] = time.time()
+    if sess["status"] in ("waiting", "phone_disconnected"):
+        sess["status"] = "connected"
+    return {"status": sess["status"], "picking": True}
+
+
+@router.delete("/api/mobile/session/{session_id}")
+async def cancel_session(session_id: str):
+    """PC calls this when the panel is closed or the tool changes — tells the phone the session ended."""
+    sess = SESSIONS.get(session_id)
+    if not sess:
+        return {"status": "not_found"}
+    sess["status"] = "cancelled"
+    return {"status": "cancelled"}
+
+
+@router.post("/api/mobile/session/{session_id}/ack")
+async def ack_transferred_files(request: Request, session_id: str):
+    """Desktop calls this after ingesting a phone batch so the session stays live."""
+    sess = SESSIONS.get(session_id)
+    if not sess:
+        raise HTTPException(status_code=404, detail="Session expired")
+    if sess.get("status") == "cancelled":
+        return {"status": "cancelled"}
+
+    count = None
+    try:
+        raw = await request.body()
+        if raw:
+            parsed = json.loads(raw.decode("utf-8"))
+            if isinstance(parsed, dict) and parsed.get("count") is not None:
+                count = int(parsed.get("count"))
+    except Exception:
+        count = None
+
+    files = sess.get("files") or []
+    acked = int(sess.get("acked_until") or 0)
+    pending = max(0, len(files) - acked)
+    take = pending if count is None else max(0, min(count, pending))
+    sess["acked_until"] = acked + take
+
+    if sess["acked_until"] >= len(files):
+        sess["status"] = "connected"
+        sess["picking"] = False
+    else:
+        sess["status"] = "completed"
+
+    return {
+        "status": sess["status"],
+        "acked_until": sess["acked_until"],
+        "files_count": max(0, len(files) - sess["acked_until"]),
+    }
+
+
+@router.post("/api/mobile/session/{session_id}/disconnect")
+async def phone_disconnect(session_id: str):
+    """Phone calls this when the transfer page is actually closed, not when picking files."""
+    sess = SESSIONS.get(session_id)
+    if not sess:
+        return {"status": "not_found"}
+    sess["picking"] = False
+    if sess["status"] not in ("completed", "cancelled"):
+        sess["status"] = "phone_disconnected"
     return {"status": sess["status"]}
 
 
@@ -132,13 +384,16 @@ async def upload_files_from_mobile(
         raise HTTPException(status_code=404, detail="Session expired or not found")
 
     sess["status"] = "uploading"
+    sess["picking"] = False
+    sess["last_seen"] = time.time()
     target_dir = sess["dir"]
+    existing = sess.setdefault("files", [])
     saved_files = []
 
     for file in files:
         safe_filename = os.path.basename(file.filename or "upload.dat")
         destination_path = os.path.join(target_dir, safe_filename)
-        
+
         # Avoid filename collisions
         base, ext = os.path.splitext(safe_filename)
         counter = 1
@@ -150,7 +405,8 @@ async def upload_files_from_mobile(
             shutil.copyfileobj(file.file, buffer)
 
         file_size = os.path.getsize(destination_path)
-        file_url = f"/api/mobile/session/{session_id}/file/{len(saved_files)}"
+        file_index = len(existing) + len(saved_files)
+        file_url = f"/api/mobile/session/{session_id}/file/{file_index}"
 
         saved_files.append({
             "name": os.path.basename(destination_path),
@@ -160,7 +416,7 @@ async def upload_files_from_mobile(
             "url": file_url
         })
 
-    sess["files"] = saved_files
+    existing.extend(saved_files)
     sess["status"] = "completed"
 
     return {
@@ -195,13 +451,29 @@ async def get_session_file(session_id: str, file_index: int):
 @router.get("/mobile-logo.png")
 async def get_mobile_logo():
     """Serves the official ToolCEO logo."""
-    base_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-    logo_path = os.path.join(os.path.dirname(base_dir), "assets", "icon1.png")
+    logo_path = os.path.join(_PROJECT_ROOT, "assets", "icon1.png")
     if not os.path.exists(logo_path):
-        logo_path = os.path.join(os.path.dirname(base_dir), "assets", "icon.png")
+        logo_path = os.path.join(_PROJECT_ROOT, "assets", "icon.png")
     if os.path.exists(logo_path):
         return FileResponse(logo_path, media_type="image/png")
     raise HTTPException(status_code=404, detail="Logo not found")
+
+
+def _mobile_asset(filename: str, media_type: str) -> FileResponse:
+    path = os.path.join(_FRONTEND_MOBILE, filename)
+    if not os.path.isfile(path):
+        raise HTTPException(status_code=404, detail="Asset not found")
+    return FileResponse(path, media_type=media_type)
+
+
+@router.get("/mobile/mobile_upload.css")
+async def mobile_upload_css():
+    return _mobile_asset("mobile_upload.css", "text/css")
+
+
+@router.get("/mobile/mobile_upload.js")
+async def mobile_upload_js():
+    return _mobile_asset("mobile_upload.js", "text/javascript")
 
 
 # ── Branded Mobile Webpage ────────────────────────────────────────────────
@@ -213,10 +485,24 @@ async def serve_mobile_upload_page(session: str = "", tool: str = "images-pdf"):
     exact design tokens, brand logo, tool-matching theme, and dropzone.
     """
     sess = SESSIONS.get(session)
-    tool_name = sess.get("tool_name", "ToolCEO File Transfer") if sess else "ToolCEO File Transfer"
+    theme = _theme_payload(sess) if sess else {
+        "tool": tool,
+        "tool_name": "ToolCEO File Transfer",
+        "color": "#00E5C0",
+        "bg": "rgba(0, 229, 192, 0.15)",
+        "icon": "",
+        "mainText": "",
+        "subText": "",
+        "tag": "",
+    }
+    tool_name = html_escape(theme.get("tool_name") or "ToolCEO File Transfer")
+    color = html_escape(theme.get("color") or "#00E5C0")
+    bg = html_escape(theme.get("bg") or "rgba(0, 229, 192, 0.15)")
+    asset_v = int(time.time())
+    theme_json = json.dumps(theme).replace("<", "\\u003c")
 
     html_content = f"""<!DOCTYPE html>
-<html lang="en">
+<html lang="en" style="--dz-color:{color};--dz-bg:{bg};--accent:{color};--primary:{color}">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
@@ -224,392 +510,10 @@ async def serve_mobile_upload_page(session: str = "", tool: str = "images-pdf"):
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-  <style>
-    :root {{
-      --bg: #0B0F19;
-      --card-bg: rgba(22, 28, 45, 0.75);
-      --card-border: rgba(255, 255, 255, 0.08);
-      --primary: #00E5C0;
-      --primary-glow: rgba(0, 229, 192, 0.25);
-      --primary-hover: #00ffda;
-      --text: #F8FAFC;
-      --text-muted: #94A3B8;
-      --danger: #EF4444;
-      --success: #10B981;
-    }}
-
-    * {{
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
-      -webkit-tap-highlight-color: transparent;
-    }}
-
-    body {{
-      background: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 16px;
-      overflow-x: hidden;
-      background-image: 
-        radial-gradient(circle at 50% 0%, rgba(0, 229, 192, 0.12), transparent 45%),
-        radial-gradient(circle at 100% 100%, rgba(30, 58, 138, 0.15), transparent 40%);
-    }}
-
-    /* Header & Logo */
-    .header {{
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      width: 100%;
-      max-width: 480px;
-      padding: 12px 6px 20px;
-    }}
-
-    .logo-container {{
-      display: flex;
-      align-items: center;
-      gap: 10px;
-    }}
-
-    .logo-img {{
-      width: 38px;
-      height: 38px;
-      border-radius: 10px;
-      box-shadow: 0 4px 14px var(--primary-glow);
-      object-fit: cover;
-    }}
-
-    .logo-text {{
-      font-size: 20px;
-      font-weight: 800;
-      letter-spacing: -0.5px;
-      background: linear-gradient(135deg, #FFFFFF 40%, var(--primary) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }}
-
-    .status-badge {{
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: rgba(16, 185, 129, 0.12);
-      border: 1px solid rgba(16, 185, 129, 0.25);
-      color: #34D399;
-      font-size: 11px;
-      font-weight: 600;
-      padding: 5px 10px;
-      border-radius: 20px;
-    }}
-
-    .pulse-dot {{
-      width: 7px;
-      height: 7px;
-      border-radius: 50%;
-      background: #10B981;
-      box-shadow: 0 0 8px #10B981;
-      animation: pulse 1.8s infinite;
-    }}
-
-    @keyframes pulse {{
-      0% {{ transform: scale(0.95); opacity: 0.7; }}
-      50% {{ transform: scale(1.25); opacity: 1; }}
-      100% {{ transform: scale(0.95); opacity: 0.7; }}
-    }}
-
-    /* Main Container */
-    .main-card {{
-      width: 100%;
-      max-width: 480px;
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      border-radius: 20px;
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
-      padding: 22px;
-      box-shadow: 0 16px 36px rgba(0, 0, 0, 0.4);
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
-    }}
-
-    .tool-banner {{
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      padding-bottom: 14px;
-      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
-    }}
-
-    .tool-icon-box {{
-      width: 42px;
-      height: 42px;
-      border-radius: 12px;
-      background: rgba(0, 229, 192, 0.12);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: var(--primary);
-    }}
-
-    .tool-info h2 {{
-      font-size: 16px;
-      font-weight: 700;
-      color: var(--text);
-    }}
-
-    .tool-info p {{
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-top: 2px;
-    }}
-
-    /* Mobile Drop Zone */
-    .drop-zone {{
-      border: 2px dashed rgba(0, 229, 192, 0.35);
-      border-radius: 16px;
-      background: rgba(0, 229, 192, 0.03);
-      padding: 26px 16px;
-      text-align: center;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 12px;
-      cursor: pointer;
-      transition: all 0.25s ease;
-      position: relative;
-    }}
-
-    .drop-zone:active {{
-      background: rgba(0, 229, 192, 0.08);
-      border-color: var(--primary);
-      transform: scale(0.99);
-    }}
-
-    .drop-icon {{
-      width: 48px;
-      height: 48px;
-      color: var(--primary);
-      filter: drop-shadow(0 4px 10px var(--primary-glow));
-    }}
-
-    .drop-title {{
-      font-size: 15px;
-      font-weight: 700;
-      color: var(--text);
-    }}
-
-    .drop-subtitle {{
-      font-size: 12px;
-      color: var(--text-muted);
-    }}
-
-    .action-chips {{
-      display: flex;
-      gap: 8px;
-      margin-top: 4px;
-      width: 100%;
-    }}
-
-    .action-chip {{
-      flex: 1;
-      padding: 10px 8px;
-      border-radius: 10px;
-      background: rgba(255, 255, 255, 0.06);
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 6px;
-      cursor: pointer;
-    }}
-
-    .action-chip:active {{
-      background: rgba(255, 255, 255, 0.12);
-    }}
-
-    input[type="file"] {{
-      display: none;
-    }}
-
-    /* Preview Grid */
-    .preview-header {{
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-top: 6px;
-    }}
-
-    .preview-title {{
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--text);
-    }}
-
-    .file-count-badge {{
-      background: rgba(0, 229, 192, 0.15);
-      color: var(--primary);
-      font-size: 11px;
-      font-weight: 700;
-      padding: 2px 8px;
-      border-radius: 12px;
-    }}
-
-    .preview-grid {{
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 10px;
-      max-height: 240px;
-      overflow-y: auto;
-      padding-right: 4px;
-    }}
-
-    .preview-item {{
-      position: relative;
-      aspect-ratio: 1;
-      border-radius: 12px;
-      overflow: hidden;
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      background: rgba(0, 0, 0, 0.3);
-    }}
-
-    .preview-item img {{
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }}
-
-    .preview-item-doc {{
-      width: 100%;
-      height: 100%;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      padding: 6px;
-      text-align: center;
-      font-size: 10px;
-      color: var(--text-muted);
-    }}
-
-    .remove-btn {{
-      position: absolute;
-      top: 4px;
-      right: 4px;
-      width: 22px;
-      height: 22px;
-      border-radius: 50%;
-      background: rgba(0, 0, 0, 0.65);
-      color: #FFF;
-      border: none;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 14px;
-      font-weight: bold;
-      cursor: pointer;
-    }}
-
-    /* Upload Action Button */
-    .send-btn {{
-      width: 100%;
-      padding: 14px;
-      border-radius: 12px;
-      background: linear-gradient(135deg, var(--primary) 0%, #00B89C 100%);
-      color: #061A16;
-      border: none;
-      font-size: 15px;
-      font-weight: 700;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 8px;
-      box-shadow: 0 4px 18px var(--primary-glow);
-      cursor: pointer;
-      transition: all 0.2s ease;
-      margin-top: 6px;
-    }}
-
-    .send-btn:disabled {{
-      opacity: 0.4;
-      cursor: not-allowed;
-      box-shadow: none;
-    }}
-
-    .send-btn:not(:disabled):active {{
-      transform: scale(0.98);
-    }}
-
-    /* Progress & Success */
-    .progress-bar-container {{
-      width: 100%;
-      height: 8px;
-      background: rgba(255, 255, 255, 0.08);
-      border-radius: 10px;
-      overflow: hidden;
-      margin-top: 8px;
-      display: none;
-    }}
-
-    .progress-bar {{
-      height: 100%;
-      width: 0%;
-      background: var(--primary);
-      transition: width 0.2s ease;
-    }}
-
-    .success-view {{
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      text-align: center;
-      padding: 30px 10px;
-      gap: 16px;
-    }}
-
-    .success-icon {{
-      width: 64px;
-      height: 64px;
-      border-radius: 50%;
-      background: rgba(16, 185, 129, 0.15);
-      border: 2px solid var(--success);
-      color: var(--success);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      box-shadow: 0 0 20px rgba(16, 185, 129, 0.3);
-      animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-    }}
-
-    @keyframes popIn {{
-      0% {{ transform: scale(0.5); opacity: 0; }}
-      100% {{ transform: scale(1); opacity: 1; }}
-    }}
-
-    .success-title {{
-      font-size: 18px;
-      font-weight: 700;
-      color: var(--text);
-    }}
-
-    .success-desc {{
-      font-size: 13px;
-      color: var(--text-muted);
-      line-height: 1.5;
-    }}
-  </style>
+  <link rel="stylesheet" href="/mobile/mobile_upload.css?v={asset_v}">
 </head>
 <body>
 
-  <!-- Top Bar -->
   <header class="header">
     <div class="logo-container">
       <img src="/mobile-logo.png" alt="ToolCEO" class="logo-img" onerror="this.style.display='none'">
@@ -621,10 +525,9 @@ async def serve_mobile_upload_page(session: str = "", tool: str = "images-pdf"):
     </div>
   </header>
 
-  <!-- Main Upload Card -->
   <main class="main-card" id="main-card">
     <div class="tool-banner">
-      <div class="tool-icon-box">
+      <div class="tool-icon-box" id="tool-icon-box">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <rect x="3" y="3" width="18" height="18" rx="2" ry="2"/>
           <circle cx="8.5" cy="8.5" r="1.5"/>
@@ -632,23 +535,23 @@ async def serve_mobile_upload_page(session: str = "", tool: str = "images-pdf"):
         </svg>
       </div>
       <div class="tool-info">
-        <h2>{tool_name}</h2>
-        <p>Send files directly to your desktop workspace</p>
+        <h2 id="tool-name">{tool_name}</h2>
+        <p>Send files directly to your desktop workspace <span class="hero-tool-badge" id="tool-tag" hidden></span></p>
       </div>
     </div>
 
-    <!-- Active Form View -->
     <div id="form-view">
       <div class="drop-zone" id="mobile-dropzone">
-        <svg class="drop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-          <polyline points="17 8 12 3 7 8"/>
-          <line x1="12" y1="3" x2="12" y2="15"/>
-        </svg>
-        <div>
-          <div class="drop-title">Tap to choose files</div>
-          <div class="drop-subtitle">or take new photos with camera</div>
-        </div>
+        <span id="drop-icon-slot">
+          <svg class="drop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+            <polyline points="17 8 12 3 7 8"/>
+            <line x1="12" y1="3" x2="12" y2="15"/>
+          </svg>
+        </span>
+        <span class="drop-main-text" id="drop-main-text">Tap to choose files</span>
+        <span class="drop-browse" id="drop-sub-text">or click to pick your file</span>
+        <span class="drop-private">Your files never leave your device.</span>
       </div>
 
       <div class="action-chips">
@@ -665,7 +568,6 @@ async def serve_mobile_upload_page(session: str = "", tool: str = "images-pdf"):
       <input type="file" id="file-input-gallery" multiple accept="image/*,application/pdf,application/*" />
       <input type="file" id="file-input-camera" accept="image/*" capture="environment" />
 
-      <!-- Preview Header & Deck -->
       <div id="preview-section" style="display: none; margin-top: 14px;">
         <div class="preview-header">
           <span class="preview-title">Selected Files</span>
@@ -674,12 +576,10 @@ async def serve_mobile_upload_page(session: str = "", tool: str = "images-pdf"):
         <div class="preview-grid" id="preview-grid" style="margin-top: 10px;"></div>
       </div>
 
-      <!-- Upload Progress -->
       <div class="progress-bar-container" id="progress-container">
         <div class="progress-bar" id="progress-bar"></div>
       </div>
 
-      <!-- Action Button -->
       <button type="button" class="send-btn" id="send-btn" disabled>
         <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
           <line x1="22" y1="2" x2="11" y2="13"/>
@@ -689,7 +589,6 @@ async def serve_mobile_upload_page(session: str = "", tool: str = "images-pdf"):
       </button>
     </div>
 
-    <!-- Success View -->
     <div class="success-view" id="success-view">
       <div class="success-icon">
         <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
@@ -698,152 +597,57 @@ async def serve_mobile_upload_page(session: str = "", tool: str = "images-pdf"):
       </div>
       <div class="success-title">Files Transferred!</div>
       <div class="success-desc">Your files have been delivered to your desktop dropzone. You can now convert or edit them on your PC.</div>
-      <button type="button" class="action-chip" style="margin-top: 10px; width: 100%; padding: 12px;" onclick="window.location.reload()">
+      <button type="button" class="action-chip" id="send-more-btn" style="margin-top: 10px; width: 100%; padding: 12px;">
         Send More Files
       </button>
     </div>
+
+    <div class="disconnected-view" id="disconnected-view">
+      <div class="disconnected-icon">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+        </svg>
+      </div>
+      <div class="disconnected-title">Session Ended</div>
+      <div class="disconnected-desc" id="disconnected-desc">The desktop closed this transfer session.<br>Scan a new QR code to start again.</div>
+    </div>
+
+    <div class="job-progress-view" id="job-progress-view">
+      <div class="job-progress-ring-wrap">
+        <svg class="job-ring" viewBox="0 0 80 80">
+          <circle class="job-ring-track" cx="40" cy="40" r="34"/>
+          <circle class="job-ring-fill" id="job-ring-fill" cx="40" cy="40" r="34"/>
+        </svg>
+        <span class="job-ring-pct" id="job-ring-pct">0%</span>
+      </div>
+      <div class="job-progress-label" id="job-progress-label">Processing on Desktop…</div>
+      <div class="job-progress-filename" id="job-progress-filename"></div>
+      <button type="button" class="job-cancel-btn" id="job-cancel-btn">✕ Cancel</button>
+    </div>
+
+    <div class="job-done-view" id="job-done-view">
+      <div class="job-done-icon">
+        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="20 6 9 17 4 12"/>
+        </svg>
+      </div>
+      <div class="job-done-title">Ready to Download!</div>
+      <div class="job-done-filename" id="job-done-filename"></div>
+      <a class="job-download-btn" id="job-download-btn" download>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+        <span>Download File</span>
+      </a>
+      <button type="button" class="job-new-btn" id="job-new-btn">Send More Files</button>
+    </div>
   </main>
 
-  <script>
-    const sessionId = "{session}";
-    let selectedFiles = [];
-
-    // Notify backend that phone opened the page
-    if (sessionId) {{
-      fetch(`/api/mobile/session/${{sessionId}}/ping`, {{ method: 'POST' }}).catch(() => {{}});
-    }}
-
-    const dropzone = document.getElementById('mobile-dropzone');
-    const galleryInput = document.getElementById('file-input-gallery');
-    const cameraInput = document.getElementById('file-input-camera');
-    const previewSection = document.getElementById('preview-section');
-    const previewGrid = document.getElementById('preview-grid');
-    const fileCount = document.getElementById('file-count');
-    const sendBtn = document.getElementById('send-btn');
-    const sendBtnText = document.getElementById('send-btn-text');
-    const progressContainer = document.getElementById('progress-container');
-    const progressBar = document.getElementById('progress-bar');
-    const formView = document.getElementById('form-view');
-    const successView = document.getElementById('success-view');
-
-    dropzone.addEventListener('click', () => galleryInput.click());
-    document.getElementById('choose-gallery-btn').addEventListener('click', () => galleryInput.click());
-    document.getElementById('take-photo-btn').addEventListener('click', () => cameraInput.click());
-
-    function addFiles(newFiles) {{
-      for (const file of newFiles) {{
-        selectedFiles.push(file);
-      }}
-      renderPreviews();
-    }}
-
-    galleryInput.addEventListener('change', (e) => {{
-      if (e.target.files?.length) addFiles(e.target.files);
-      galleryInput.value = '';
-    }});
-
-    cameraInput.addEventListener('change', (e) => {{
-      if (e.target.files?.length) addFiles(e.target.files);
-      cameraInput.value = '';
-    }});
-
-    function renderPreviews() {{
-      previewGrid.innerHTML = '';
-      if (selectedFiles.length === 0) {{
-        previewSection.style.display = 'none';
-        sendBtn.disabled = true;
-        sendBtnText.textContent = 'Send to Desktop';
-        return;
-      }}
-
-      previewSection.style.display = 'block';
-      fileCount.textContent = `${{selectedFiles.length}} file${{selectedFiles.length > 1 ? 's' : ''}}`;
-      sendBtn.disabled = false;
-      sendBtnText.textContent = `Send ${{selectedFiles.length}} File${{selectedFiles.length > 1 ? 's' : ''}} to PC`;
-
-      selectedFiles.forEach((file, index) => {{
-        const item = document.createElement('div');
-        item.className = 'preview-item';
-
-        if (file.type.startsWith('image/')) {{
-          const img = document.createElement('img');
-          img.src = URL.createObjectURL(file);
-          item.appendChild(img);
-        }} else {{
-          const doc = document.createElement('div');
-          doc.className = 'preview-item-doc';
-          doc.innerHTML = `<strong>${{file.name.slice(0, 16)}}</strong><span>${{(file.size / 1024).toFixed(0)}} KB</span>`;
-          item.appendChild(doc);
-        }}
-
-        const removeBtn = document.createElement('button');
-        removeBtn.className = 'remove-btn';
-        removeBtn.innerHTML = '&times;';
-        removeBtn.onclick = (e) => {{
-          e.stopPropagation();
-          selectedFiles.splice(index, 1);
-          renderPreviews();
-        }};
-        item.appendChild(removeBtn);
-        previewGrid.appendChild(item);
-      }});
-    }}
-
-    sendBtn.addEventListener('click', async () => {{
-      if (selectedFiles.length === 0 || !sessionId) return;
-
-      sendBtn.disabled = true;
-      sendBtnText.textContent = 'Sending...';
-      progressContainer.style.display = 'block';
-      progressBar.style.width = '10%';
-
-      const formData = new FormData();
-      for (const file of selectedFiles) {{
-        formData.append('files', file);
-      }}
-
-      try {{
-        const xhr = new XMLHttpRequest();
-        xhr.open('POST', `/api/mobile/upload/${{sessionId}}`, true);
-
-        xhr.upload.onprogress = (e) => {{
-          if (e.lengthComputable) {{
-            const pct = Math.round((e.loaded / e.total) * 100);
-            progressBar.style.width = `${{pct}}%`;
-          }}
-        }};
-
-        xhr.onload = () => {{
-          if (xhr.status >= 200 && xhr.status < 300) {{
-            progressBar.style.width = '100%';
-            setTimeout(() => {{
-              formView.style.display = 'none';
-              successView.style.display = 'flex';
-            }}, 300);
-          }} else {{
-            alert('Upload failed. Please try again.');
-            sendBtn.disabled = false;
-            sendBtnText.textContent = 'Retry Sending';
-            progressContainer.style.display = 'none';
-          }}
-        }};
-
-        xhr.onerror = () => {{
-          alert('Network error. Ensure your phone and PC are connected to the same Wi-Fi.');
-          sendBtn.disabled = false;
-          sendBtnText.textContent = 'Retry Sending';
-          progressContainer.style.display = 'none';
-        }};
-
-        xhr.send(formData);
-      }} catch (err) {{
-        alert('Error: ' + err.message);
-        sendBtn.disabled = false;
-        sendBtnText.textContent = 'Retry Sending';
-        progressContainer.style.display = 'none';
-      }}
-    }});
-  </script>
+  <script id="mobile-theme" type="application/json">{theme_json}</script>
+  <script>window.MOBILE_SESSION_ID = {json.dumps(session)};</script>
+  <script src="/mobile/mobile_upload.js?v={asset_v}"></script>
 </body>
 </html>"""
     return HTMLResponse(content=html_content)

@@ -1,12 +1,28 @@
 import { pushNotification } from './notificationStore.js';
 import { consumeToolFileState } from './fileState.js';
+import { linkMirrorJob, unlinkMirrorJob } from './mobileJobMirror.js';
 
 let _activeTool = null;
 const _listeners = [];
+let _switchGuard = null;
+
+/**
+ * Optional gate for tool changes (e.g. block switching while a phone is paired).
+ * Return false to cancel the switch.
+ */
+export function setToolSwitchGuard(fn) {
+  _switchGuard = typeof fn === 'function' ? fn : null;
+}
 
 export function setActiveTool(tool) {
+  if (typeof _switchGuard === 'function') {
+    try {
+      if (_switchGuard(tool, _activeTool) === false) return false;
+    } catch (_) {}
+  }
   _activeTool = tool;
   _listeners.forEach((fn) => fn(tool));
+  return true;
 }
 
 export function getActiveTool() {
@@ -115,6 +131,12 @@ export function setBgJob(job) {
     pendingNotify,
   });
   syncBgJobBar();
+
+  // Mirror job progress to paired phone: link whenever a real jobId lands.
+  if (incoming.jobId) {
+    linkMirrorJob(incoming.jobId, incoming.filename || '', incoming.tool?.id || null);
+  }
+
   return key;
 }
 
@@ -168,6 +190,13 @@ export function clearBgJob(jobIdOrSilent = null, maybeSilent = false) {
     if (job.abortController) {
       try { job.abortController.abort(); } catch (_) {}
     }
+    // Unlink the mirrored job from the phone with a short delay so the phone's
+    // poll loop receives the cancelled=true snapshot first.
+    setTimeout(() => {
+      unlinkMirrorJob(job.tool?.id || null);
+    }, 4000);
+  } else if (job && job.state === 'done') {
+    unlinkMirrorJob(job.tool?.id || null);
   }
 
   if (key) _bgJobs.delete(key);
