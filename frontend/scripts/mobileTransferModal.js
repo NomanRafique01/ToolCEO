@@ -7,7 +7,7 @@
 
 import { getActiveTool, onToolChange, setToolSwitchGuard } from './toolstate.js';
 import { pushNotification } from './notificationStore.js';
-import { handleExternalFiles } from './dropzone.js';
+import { handleExternalFiles, showPhoneReceiveProgress, clearPhoneReceiveProgress } from './dropzone.js';
 import { bindMirrorSession, unbindMirrorSession } from './mobileJobMirror.js';
 
 let _activeSessionId = null;
@@ -18,6 +18,51 @@ let _activeToolLabel = null;
 let _pairedToolId = null;
 let _suppressDisconnectNotice = false;
 let _ingestingFiles = false;
+let _executingFromPhone = false;
+let _phoneDisconnectCandidateAt = 0;
+
+function _deriveToolOptions(tool) {
+  const tid = (tool?.id || '').toLowerCase();
+  const label = tool?.label || 'Convert';
+
+  let output_ext = 'pdf';
+  if (tid.includes('-')) {
+    const parts = tid.split('-');
+    output_ext = parts[parts.length - 1];
+  } else if (tid === 'image_compressor' || tid.startsWith('archive-')) {
+    output_ext = 'zip';
+  } else if (tid === 'compress' || tid === 'merge' || tid === 'split' || tid === 'encrypt') {
+    output_ext = 'pdf';
+  }
+
+  const isMulti = tid === 'images-pdf' || tid === 'image_compressor' || tid === 'merge' ||
+                  tid.endsWith('-pdf') || tid.startsWith('jpg-') || tid.startsWith('png-') ||
+                  tid.startsWith('webp-') || tid.startsWith('svg-') || tid.startsWith('archive-create') ||
+                  tid === 'archive-merge';
+
+  const isReorder = tid === 'images-pdf' || tid === 'merge' || tid === 'jpg-pdf' ||
+                    tid === 'png-pdf' || tid === 'webp-pdf' || tid === 'svg-pdf' ||
+                    tid === 'archive-merge';
+
+  const hasModeToggle = tid === 'jpg-pdf' || tid === 'png-pdf' || tid === 'webp-pdf' ||
+                        tid === 'svg-pdf' || tid === 'images-pdf';
+
+  let action_label = label;
+  if (tid === 'images-pdf') action_label = 'Convert to PDF';
+  else if (tid === 'image_compressor') action_label = 'Compress';
+  else if (tid === 'compress') action_label = 'Compress PDF';
+  else if (tid === 'split') action_label = 'Split PDF';
+  else if (tid === 'merge') action_label = 'Merge PDF';
+  else if (tid === 'encrypt') action_label = 'Encrypt PDF';
+
+  return {
+    action_label,
+    output_ext,
+    supports_multi: isMulti,
+    supports_reorder: isReorder,
+    has_mode_toggle: hasModeToggle,
+  };
+}
 
 function _isPhoneLive() {
   return Boolean(_activeSessionId && _connectedNotified);
@@ -198,6 +243,7 @@ export async function openMobileTransferModal() {
   try {
     const backendUrl = window.TOOLCEO_BACKEND_URL || 'http://127.0.0.1:8765';
     const formatMeta = getToolFormatMeta(tool);
+    const toolOpts = _deriveToolOptions(tool);
     const res = await fetch(`${backendUrl}/api/mobile/session/create`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -210,6 +256,11 @@ export async function openMobileTransferModal() {
         mainText: tool.mainText || '',
         subText: tool.subText || '',
         tag: tool.tag || '',
+        action_label: toolOpts.action_label,
+        output_ext: toolOpts.output_ext,
+        supports_multi: toolOpts.supports_multi,
+        supports_reorder: toolOpts.supports_reorder,
+        has_mode_toggle: toolOpts.has_mode_toggle,
         allowed_exts: formatMeta.allowed_exts,
         accept_attr: formatMeta.accept_attr,
         format_label: formatMeta.format_label,
@@ -431,7 +482,7 @@ export function getToolFormatMeta(tool) {
 
   // 6. Archives
   if (id.startsWith('archive-create-') || id.startsWith('archive-folder-') || id === 'archive-merge') {
-    return { allowed_exts: ['*'], accept_attr: '*/*', format_label: 'Any files', allows_camera: true };
+    return { allowed_exts: ['*'], accept_attr: '*/*', format_label: 'Any files', allows_camera: false };
   }
   if (id === 'archive-extract-zip' || id === 'arc-zip-to-7z' || id === 'arc-zip-to-tar' || id === 'arc-zip-to-tar-gz' || id === 'arc-zip-to-rar') {
     return { allowed_exts: ['.zip'], accept_attr: '.zip,application/zip', format_label: 'ZIP archives (.zip)', allows_camera: false };
@@ -462,7 +513,7 @@ export function getToolFormatMeta(tool) {
     allowed_exts: ['*'],
     accept_attr: '*/*',
     format_label: 'files',
-    allows_camera: true,
+    allows_camera: false,
   };
 }
 
@@ -634,7 +685,7 @@ function _ensureConnectedBadge(mode = 'connected') {
   const label = badge.querySelector('.dz-phone-live-label');
   if (mode === 'uploading') {
     badge.classList.add('is-uploading');
-    if (label) label.textContent = 'Receiving from Phone';
+    if (label) label.textContent = 'Sending Files to PC';
   } else if (mode === 'waiting') {
     badge.classList.add('is-waiting');
     if (label) label.textContent = 'Waiting for Phone';
@@ -755,10 +806,114 @@ function _startPolling(backendUrl, sessionId) {
       const data = await res.json();
       if (!_activeSessionId || _activeSessionId !== sessionId) return;
 
+      // The phone can close or download the mirrored result. Notify the
+      // desktop result panel so both views disappear together.
+      if (data.pending_job_clear) {
+        fetch(`${backendUrl}/api/mobile/session/${sessionId}/job_dismiss_ack`, { method: 'POST' }).catch(() => {});
+        document.dispatchEvent(new CustomEvent('mobile-job-dismissed', {
+          detail: { sessionId },
+        }));
+      }
+
+      // Handle pending clear from mobile
+      if (data.pending_clear) {
+        fetch(`${backendUrl}/api/mobile/session/${sessionId}/clear_ack`, { method: 'POST' }).catch(() => {});
+        const clearBtn = document.querySelector(
+          '#jpg-queue-clear, #png-queue-clear, #webp-queue-clear, #svg-queue-clear, ' +
+          '#imgpdf-queue-clear, #dz-imgpdf-toolbar-clear, .jpg-queue-clear-btn, .dz-queue-clear-btn'
+        );
+        if (clearBtn) {
+          clearBtn.click();
+        } else {
+          const zone = document.getElementById('drop-zone');
+          if (zone) {
+            import('./dropzone.js').then(({ resetZoneContent, _updateDropZoneForTool }) => {
+              resetZoneContent(zone);
+              const t = getActiveTool();
+              if (t && _updateDropZoneForTool) _updateDropZoneForTool(t);
+            }).catch(() => {});
+          }
+        }
+      }
+
+      // Handle pending reorder from mobile — re-ingest files in new order
+      if (data.pending_reorder && Array.isArray(data.pending_reorder)) {
+        fetch(`${backendUrl}/api/mobile/session/${sessionId}/reorder_ack`, { method: 'POST' }).catch(() => {});
+        if (!_ingestingFiles) {
+          _ingestingFiles = true;
+          try {
+            // Re-fetch all files in the new order from the backend
+            const statusRes = await fetch(`${backendUrl}/api/mobile/session/${sessionId}/status`);
+            if (statusRes.ok) {
+              const freshData = await statusRes.json();
+              const allFiles = freshData.all_files || [];
+              if (allFiles.length > 0) {
+                // Re-ingest all files in their new order (desktop tool will replace its queue)
+                await _processTransferredFiles(backendUrl, sessionId, allFiles, true);
+              }
+            }
+          } catch (_) {}
+          finally { _ingestingFiles = false; }
+        }
+      }
+
+      // Handle pending remove from mobile — remove one specific file from desktop queue
+      if (data.pending_remove) {
+        const removedFilename = data.pending_remove;
+        fetch(`${backendUrl}/api/mobile/session/${sessionId}/remove_ack`, { method: 'POST' }).catch(() => {});
+        _removeFileFromDesktopQueue(removedFilename);
+      }
+
+      // Handle pending execution from mobile
+      if (data.pending_execution && !_executingFromPhone) {
+        _executingFromPhone = true;
+        const exec = data.pending_execution;
+        try {
+          if (exec.output_filename) {
+            const fnInp = document.querySelector(
+              '#jpg-queue-filename, #png-queue-filename, #webp-queue-filename, ' +
+              '#svg-queue-filename, #imgpdf-queue-filename, [id$="-queue-filename"], ' +
+              'input.jpg-queue-filename, input[placeholder*="filename"]'
+            );
+            if (fnInp) {
+              fnInp.value = exec.output_filename;
+              fnInp.dispatchEvent(new Event('input', { bubbles: true }));
+            }
+          }
+
+          if (exec.mode) {
+            const modeBtn = document.querySelector(
+              `.jpg-pdf-mode-btn[data-mode="${exec.mode}"], [data-mode="${exec.mode}"]`
+            );
+            if (modeBtn && !modeBtn.classList.contains('jpg-pdf-mode-btn--active')) {
+              modeBtn.click();
+            }
+          }
+
+          const convertBtn = document.querySelector(
+            '#jpg-queue-convert, #png-queue-convert, #webp-queue-convert, #svg-queue-convert, ' +
+            '#imgpdf-convert-btn, #imgcmp-convert-btn, [id$="-queue-convert"], [id$="-convert-btn"], ' +
+            '[id$="-action-btn"], .jpg-queue-convert-btn, .imgpdf-convert-btn, .imgcmp-convert-btn, ' +
+            '#dz-compress-btn, #dz-split-btn, #dz-encrypt-btn, #dz-merge-btn, #archive-convert-btn, ' +
+            '#archive-create-btn, .dz-action-btn'
+          );
+          if (convertBtn) {
+            convertBtn.click();
+          }
+
+          await fetch(`${backendUrl}/api/mobile/session/${sessionId}/execute_ack`, { method: 'POST' });
+        } catch (eErr) {
+          console.warn('[mobile-transfer] Remote execution failed:', eErr);
+        } finally {
+          setTimeout(() => { _executingFromPhone = false; }, 2000);
+        }
+      }
+
       if (data.status === 'completed' && data.files && data.files.length > 0) {
         if (_ingestingFiles) return;
         _ingestingFiles = true;
-        _ensureConnectedBadge('uploading');
+        _ensureConnectedBadge('receiving');
+        showPhoneReceiveProgress(100, _mobileFormatLabel(getActiveTool()));
         try {
           await _processTransferredFiles(backendUrl, sessionId, data.files);
         } finally {
@@ -766,7 +921,9 @@ function _startPolling(backendUrl, sessionId) {
         }
       } else if (data.status === 'uploading') {
         _revealDropZoneWhilePaired('uploading');
+        showPhoneReceiveProgress(data.transfer_progress || 0, _mobileFormatLabel(getActiveTool()));
       } else if (data.status === 'connected' || data.picking) {
+        clearPhoneReceiveProgress();
         _revealDropZoneWhilePaired('connected');
         if (!_connectedNotified) {
           _connectedNotified = true;
@@ -777,8 +934,28 @@ function _startPolling(backendUrl, sessionId) {
             detail: 'Ready to receive files — select them on your phone',
           });
         }
-      } else if (data.status === 'phone_disconnected' || data.status === 'cancelled') {
+      } else if (data.status === 'cancelled') {
+        _phoneDisconnectCandidateAt = 0;
         _endSessionFromPhone();
+      } else if (data.status === 'phone_disconnected') {
+        // A multi-file upload can briefly report a stale phone disconnect
+        // while the desktop is fetching files. Never tear down an active
+        // ingestion, and give a file-bearing session time to recover.
+        const hasTransferWork = Boolean(
+          _ingestingFiles || data.picking || data.status === 'uploading' ||
+          Number(data.files_count || 0) > 0 || (data.all_files && data.all_files.length > 0)
+        );
+        if (hasTransferWork) {
+          _phoneDisconnectCandidateAt = 0;
+          _revealDropZoneWhilePaired('uploading');
+          return;
+        }
+        if (!_phoneDisconnectCandidateAt) _phoneDisconnectCandidateAt = Date.now();
+        if (Date.now() - _phoneDisconnectCandidateAt < 10000) return;
+        _phoneDisconnectCandidateAt = 0;
+        _endSessionFromPhone();
+      } else if (data.status === 'connected') {
+        _phoneDisconnectCandidateAt = 0;
       }
     } catch (err) {
       console.warn('[mobile-transfer] Poll failed:', err.message);
@@ -788,8 +965,9 @@ function _startPolling(backendUrl, sessionId) {
 
 /**
  * Fetches the uploaded files from backend and passes them into dropzone file handler.
+ * If `replace` is true, clears existing desktop queue first before ingesting.
  */
-async function _processTransferredFiles(backendUrl, sessionId, fileList) {
+async function _processTransferredFiles(backendUrl, sessionId, fileList, replace = false) {
   try {
     const fileObjects = [];
 
@@ -799,6 +977,14 @@ async function _processTransferredFiles(backendUrl, sessionId, fileList) {
       
       const fileRes = await fetch(fileUrl);
       const blob = await fileRes.blob();
+
+      // The upload can finish before the desktop has copied every file out
+      // of the session. Keep the shared receiving indicator honest during
+      // this final ingestion phase as well.
+      showPhoneReceiveProgress(
+        Math.round(((i + 1) / fileList.length) * 100),
+        _mobileFormatLabel(getActiveTool()),
+      );
       
       const fileObj = new File([blob], fInfo.name, { type: fInfo.type || blob.type });
       
@@ -814,22 +1000,44 @@ async function _processTransferredFiles(backendUrl, sessionId, fileList) {
       fileObjects.push(fileObj);
     }
 
-    pushNotification({
-      type: 'success',
-      message: 'Mobile Transfer Complete',
-      detail: `Loaded ${fileObjects.length} file(s) from your phone.`,
-    });
+    // If replace mode (reorder), clear existing desktop queue first
+    if (replace) {
+      const clearBtn = document.querySelector(
+        '#jpg-queue-clear, #png-queue-clear, #webp-queue-clear, #svg-queue-clear, ' +
+        '#imgpdf-queue-clear, #dz-imgpdf-toolbar-clear, .jpg-queue-clear-btn, .dz-queue-clear-btn, ' +
+        '#dz-merge-toolbar-clear'
+      );
+      if (clearBtn) {
+        clearBtn.click();
+        // Small delay for the clear to take effect before re-loading
+        await new Promise((r) => setTimeout(r, 80));
+      }
+      pushNotification({
+        type: 'info',
+        message: 'File Order Updated',
+        detail: `Files reloaded in new order (${fileObjects.length} file${fileObjects.length !== 1 ? 's' : ''}).`,
+      });
+    } else {
+      pushNotification({
+        type: 'success',
+        message: 'Files Received',
+        detail: `${fileObjects.length} file${fileObjects.length === 1 ? '' : 's'} received and ready in your workspace.`,
+      });
+    }
 
     await handleExternalFiles(fileObjects);
+    clearPhoneReceiveProgress();
 
-    try {
-      await fetch(`${backendUrl}/api/mobile/session/${sessionId}/ack`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ count: fileList.length }),
-      });
-    } catch (ackErr) {
-      console.warn('[mobile-transfer] Ack failed:', ackErr.message);
+    if (!replace) {
+      try {
+        await fetch(`${backendUrl}/api/mobile/session/${sessionId}/ack`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ count: fileList.length }),
+        });
+      } catch (ackErr) {
+        console.warn('[mobile-transfer] Ack failed:', ackErr.message);
+      }
     }
 
     if (_activeSessionId === sessionId) {
@@ -859,6 +1067,49 @@ function _requestedNameFromTarget(el) {
     || el.dataset.label
     || null
   );
+}
+
+/**
+ * Finds and clicks the remove button on the desktop file card matching
+ * the given filename, so a file removed on mobile is also removed on desktop.
+ * Works for JPG/PNG/WebP/ImagePDF strips AND the PDF Merger strip.
+ */
+function _removeFileFromDesktopQueue(filename) {
+  const removeInfo = typeof filename === 'string' ? { name: filename } : (filename || {});
+  const targetName = removeInfo.name || removeInfo.filename;
+  if (!targetName) return;
+
+  // Try to find a card by its displayed name or title attribute across all strip types
+  const allCards = document.querySelectorAll(
+    '.dz-jpg-card, .dz-merge-card, .dz-png-card, .dz-webp-card, .dz-svg-card, [class*="dz-"][class*="-card"]'
+  );
+
+  let matched = false;
+  allCards.forEach((card) => {
+    const nameEl = card.querySelector(
+      '.dz-jpg-card-name, .dz-merge-card-name, .dz-png-card-name, [class*="card-name"]'
+    );
+    const titleAttr = nameEl?.getAttribute('title') || '';
+    const displayText = nameEl?.textContent?.trim() || '';
+
+    const matches =
+      titleAttr === targetName ||
+      displayText === targetName ||
+      targetName.startsWith(displayText.replace('…', ''));
+
+    if (matches) {
+      const removeBtn = card.querySelector(
+        '.dz-jpg-card-remove, .dz-merge-card-remove, [class*="card-remove"]'
+      );
+      if (removeBtn) {
+        removeBtn.click();
+        matched = true;
+      }
+    }
+  });
+
+  // Never fall back to clearing the whole queue. A transiently unavailable
+  // card must leave every other transferred file untouched.
 }
 
 if (typeof document !== 'undefined') {

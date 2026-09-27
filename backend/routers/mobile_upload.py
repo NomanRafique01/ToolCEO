@@ -178,7 +178,7 @@ def _resolve_format_meta(tool_id: Optional[str]) -> Dict[str, Any]:
     if tid.startswith("rtf-") or tid == "rtf":
         return {"allowed_exts": [".rtf"], "accept_attr": ".rtf", "format_label": "RTF documents (.rtf)", "allows_camera": False}
     if tid.startswith("archive-create-") or tid.startswith("archive-folder-") or tid == "archive-merge":
-        return {"allowed_exts": ["*"], "accept_attr": "*/*", "format_label": "Any files", "allows_camera": True}
+        return {"allowed_exts": ["*"], "accept_attr": "*/*", "format_label": "Any files", "allows_camera": False}
     if "zip" in tid and "archive" in tid:
         return {"allowed_exts": [".zip"], "accept_attr": ".zip", "format_label": "ZIP archives (.zip)", "allows_camera": False}
     if "rar" in tid and "archive" in tid:
@@ -194,7 +194,7 @@ def _resolve_format_meta(tool_id: Optional[str]) -> Dict[str, Any]:
             "format_label": "Archive files (.zip, .7z, .rar, .tar...)",
             "allows_camera": False,
         }
-    return {"allowed_exts": ["*"], "accept_attr": "*/*", "format_label": "files", "allows_camera": True}
+    return {"allowed_exts": ["*"], "accept_attr": "*/*", "format_label": "files", "allows_camera": False}
 
 
 def _theme_payload(sess: Dict[str, Any]) -> Dict[str, Any]:
@@ -213,6 +213,11 @@ def _theme_payload(sess: Dict[str, Any]) -> Dict[str, Any]:
         "accept_attr": sess.get("accept_attr") or fmt["accept_attr"],
         "format_label": sess.get("format_label") or fmt["format_label"],
         "allows_camera": sess.get("allows_camera") if sess.get("allows_camera") is not None else fmt["allows_camera"],
+        "action_label": sess.get("action_label") or sess.get("tool_name") or "Execute",
+        "output_ext": sess.get("output_ext") or "pdf",
+        "supports_multi": bool(sess.get("supports_multi", False)),
+        "supports_reorder": bool(sess.get("supports_reorder", False)),
+        "has_mode_toggle": bool(sess.get("has_mode_toggle", False)),
     }
 
 
@@ -282,6 +287,11 @@ async def create_session(request: Request, tool: Optional[str] = "images-pdf", t
     main_text = _safe_text(payload.get("mainText"), "", 200)
     sub_text = _safe_text(payload.get("subText"), "", 200)
     tag = _safe_text(payload.get("tag"), "", 40)
+    action_label = _safe_text(payload.get("action_label"), tool_name, 80)
+    output_ext = _safe_text(payload.get("output_ext"), "pdf", 20)
+    supports_multi = bool(payload.get("supports_multi", False))
+    supports_reorder = bool(payload.get("supports_reorder", False))
+    has_mode_toggle = bool(payload.get("has_mode_toggle", False))
 
     safe_tool = "".join(c for c in (tool or "tool") if c.isalnum() or c in "-_")[:10]
     session_id = f"{safe_tool}_{uuid.uuid4().hex[:8]}"
@@ -295,7 +305,9 @@ async def create_session(request: Request, tool: Optional[str] = "images-pdf", t
     allowed_exts = payload.get("allowed_exts") or format_meta["allowed_exts"]
     accept_attr = payload.get("accept_attr") or format_meta["accept_attr"]
     format_label = payload.get("format_label") or format_meta["format_label"]
-    allows_camera = payload.get("allows_camera") if "allows_camera" in payload else format_meta["allows_camera"]
+    # Camera capture is reserved for image-input tools. Never trust a stale
+    # client flag to expose it for documents, PDFs, archives, or eBooks.
+    allows_camera = bool(payload.get("allows_camera", True)) and bool(format_meta["allows_camera"])
 
     SESSIONS[session_id] = {
         "id": session_id,
@@ -307,6 +319,11 @@ async def create_session(request: Request, tool: Optional[str] = "images-pdf", t
         "mainText": main_text,
         "subText": sub_text,
         "tag": tag,
+        "action_label": action_label,
+        "output_ext": output_ext,
+        "supports_multi": supports_multi,
+        "supports_reorder": supports_reorder,
+        "has_mode_toggle": has_mode_toggle,
         "allowed_exts": allowed_exts,
         "accept_attr": accept_attr,
         "format_label": format_label,
@@ -318,6 +335,15 @@ async def create_session(request: Request, tool: Optional[str] = "images-pdf", t
         "dir": session_dir,
         "files": [],
         "acked_until": 0,
+        "pending_execution": None,
+        "pending_clear": False,
+        "pending_job_clear": False,
+        "transfer_progress": 0,
+        "transfer_received": 0,
+        "transfer_total": 0,
+        "transfer_batch_id": None,
+        "pending_reorder": None,   # list of filenames in new order
+        "pending_remove": [],      # ordered file removals waiting for desktop
         # Active desktop conversion job the phone mirrors (progress/download)
         "job_id": None,
         "job_filename": "",
@@ -338,7 +364,11 @@ async def create_session(request: Request, tool: Optional[str] = "images-pdf", t
 def _refresh_phone_liveness(sess: Dict[str, Any]) -> None:
     """Expire a dead phone page. File picking is allowed to stay quiet."""
     status = sess.get("status")
-    if status in ("completed", "cancelled", "waiting", "phone_disconnected"):
+    if status in ("completed", "cancelled", "waiting", "phone_disconnected", "uploading"):
+        return
+    # Once files are present, the desktop may still be fetching/ingesting
+    # them. Do not let the phone page lifecycle expire that transfer.
+    if sess.get("files"):
         return
     last_seen = sess.get("last_seen")
     if not last_seen:
@@ -354,20 +384,24 @@ def _refresh_phone_liveness(sess: Dict[str, Any]) -> None:
 
 
 def _session_job_payload(sess: Dict[str, Any]) -> Optional[Dict[str, Any]]:
-    """Live snapshot of the desktop conversion job linked to this session.
-
-    The desktop links a jobId when a tool execution starts and unlinks it when
-    the user cancels/closes the result card. Progress itself is read live from
-    the jobs store so the phone is always in sync with what the desktop ring
-    shows, without any desktop-side push loop.
-    """
+    """Live snapshot of the desktop conversion job linked to this session."""
     job_id = sess.get("job_id")
     if not job_id:
         return None
     snap = get_job_snapshot(str(job_id))
     if not snap:
-        sess["job_id"] = None
-        return None
+        # The job registry can briefly lag the session poll while a job is
+        # being registered or replaced. Keep the mirror visible instead of
+        # making the phone drop its progress/download view prematurely.
+        return {
+            "job_id": str(job_id),
+            "state": "running",
+            "progress": 0,
+            "filename": sess.get("job_filename") or "",
+            "media_type": None,
+            "cancelled": False,
+            "error": None,
+        }
     return {
         "job_id": snap["id"],
         "state": snap["state"],
@@ -390,6 +424,9 @@ async def get_session_status(session_id: str):
     files = sess.get("files", [])
     acked = int(sess.get("acked_until") or 0)
     pending = files[acked:]
+    pending_removes = sess.get("pending_remove")
+    if isinstance(pending_removes, list):
+        pending_removes = pending_removes[0] if pending_removes else None
 
     return {
         "session_id": session_id,
@@ -398,9 +435,169 @@ async def get_session_status(session_id: str):
         "last_seen": sess.get("last_seen"),
         "files_count": len(pending),
         "files": pending,
+        "all_files": files,
+        "pending_execution": sess.get("pending_execution"),
+        "pending_clear": bool(sess.get("pending_clear")),
+        "pending_job_clear": bool(sess.get("pending_job_clear")),
+        "transfer_progress": int(sess.get("transfer_progress") or 0),
+        "transfer_received": int(sess.get("transfer_received") or 0),
+        "transfer_total": int(sess.get("transfer_total") or 0),
+        "pending_reorder": sess.get("pending_reorder"),
+        "pending_remove": pending_removes,
         "job": _session_job_payload(sess),
         **_theme_payload(sess),
     }
+
+
+@router.post("/api/mobile/session/{session_id}/execute")
+async def execute_session_tool(request: Request, session_id: str):
+    sess = SESSIONS.get(session_id)
+    if not sess:
+        raise HTTPException(status_code=404, detail="Session expired")
+
+    payload: Dict[str, Any] = {}
+    try:
+        raw = await request.body()
+        if raw:
+            payload = json.loads(raw.decode("utf-8"))
+    except Exception:
+        payload = {}
+
+    sess["pending_execution"] = {
+        "output_filename": _safe_text(payload.get("output_filename"), "", 120),
+        "mode": _safe_text(payload.get("mode"), "single", 20),
+        "order": payload.get("order", []),
+        "requested_at": time.time(),
+    }
+    return {"ok": True, "pending_execution": sess["pending_execution"]}
+
+
+@router.post("/api/mobile/session/{session_id}/execute_ack")
+async def ack_session_execute(session_id: str):
+    sess = SESSIONS.get(session_id)
+    if sess:
+        sess["pending_execution"] = None
+    return {"ok": True}
+
+
+@router.post("/api/mobile/session/{session_id}/clear")
+async def clear_session_files(session_id: str):
+    sess = SESSIONS.get(session_id)
+    if not sess:
+        raise HTTPException(status_code=404, detail="Session expired")
+    sess["files"] = []
+    sess["acked_until"] = 0
+    sess["pending_clear"] = True
+    sess["pending_remove"] = []
+    sess["pending_execution"] = None
+    return {"ok": True}
+
+
+@router.post("/api/mobile/session/{session_id}/clear_ack")
+async def ack_session_clear(session_id: str):
+    sess = SESSIONS.get(session_id)
+    if sess:
+        sess["pending_clear"] = False
+    return {"ok": True}
+
+
+@router.post("/api/mobile/session/{session_id}/reorder")
+async def reorder_session_files(request: Request, session_id: str):
+    """Phone calls this after the user drag-reorders cards.
+    Body: {"order": ["file1.pdf", "file2.pdf", ...]}
+    Re-sorts sess["files"] to match the given order so the desktop
+    re-ingests them in the correct sequence.
+    """
+    sess = SESSIONS.get(session_id)
+    if not sess:
+        raise HTTPException(status_code=404, detail="Session expired")
+
+    payload: Dict[str, Any] = {}
+    try:
+        raw = await request.body()
+        if raw:
+            payload = json.loads(raw.decode("utf-8"))
+    except Exception:
+        payload = {}
+
+    order: List[str] = payload.get("order") or []
+    if not isinstance(order, list):
+        raise HTTPException(status_code=400, detail="order must be a list of filenames")
+
+    existing_by_name = {f["name"]: f for f in sess.get("files", [])}
+    new_order = [existing_by_name[name] for name in order if name in existing_by_name]
+    # Append any files not mentioned in order list at the end
+    mentioned = set(order)
+    new_order += [f for f in sess.get("files", []) if f["name"] not in mentioned]
+
+    sess["files"] = new_order
+    sess["acked_until"] = 0  # force desktop to re-ingest in new order
+    sess["pending_reorder"] = list(order)  # signal desktop to re-apply order
+    return {"ok": True, "count": len(new_order)}
+
+
+@router.post("/api/mobile/session/{session_id}/reorder_ack")
+async def ack_session_reorder(session_id: str):
+    sess = SESSIONS.get(session_id)
+    if sess:
+        sess["pending_reorder"] = None
+    return {"ok": True}
+
+
+@router.post("/api/mobile/session/{session_id}/remove")
+async def remove_session_file(request: Request, session_id: str):
+    """Phone calls this when a single file card is removed.
+    Body: {"filename": "file1.pdf"}
+    Removes the file from the session list and signals the desktop.
+    """
+    sess = SESSIONS.get(session_id)
+    if not sess:
+        raise HTTPException(status_code=404, detail="Session expired")
+
+    payload: Dict[str, Any] = {}
+    try:
+        raw = await request.body()
+        if raw:
+            payload = json.loads(raw.decode("utf-8"))
+    except Exception:
+        payload = {}
+
+    file_id: str = _safe_text(payload.get("file_id"), "", 80)
+    filename: str = _safe_text(payload.get("filename"), "", 300)
+    if not file_id and not filename:
+        raise HTTPException(status_code=400, detail="file_id or filename required")
+
+    original_files = sess.get("files", [])
+    remove_index = next((i for i, f in enumerate(original_files)
+                         if (file_id and f.get("id") == file_id) or
+                            (not file_id and f.get("name") == filename)), -1)
+    if remove_index < 0:
+        return {"ok": True, "remaining": len(original_files), "removed": False}
+
+    removed = original_files[remove_index]
+    sess["files"] = original_files[:remove_index] + original_files[remove_index + 1:]
+    acked_until = int(sess.get("acked_until") or 0)
+    if remove_index < acked_until:
+        sess["acked_until"] = max(0, acked_until - 1)
+    pending_removes = sess.get("pending_remove")
+    if not isinstance(pending_removes, list):
+        pending_removes = [] if not pending_removes else [pending_removes]
+    pending_removes.append({"id": removed.get("id"), "name": removed.get("name")})
+    sess["pending_remove"] = pending_removes
+    return {"ok": True, "remaining": len(sess["files"]), "removed": True}
+
+
+@router.post("/api/mobile/session/{session_id}/remove_ack")
+async def ack_session_remove(session_id: str):
+    sess = SESSIONS.get(session_id)
+    if sess:
+        pending_removes = sess.get("pending_remove")
+        if isinstance(pending_removes, list):
+            if pending_removes:
+                pending_removes.pop(0)
+        else:
+            sess["pending_remove"] = None
+    return {"ok": True}
 
 
 @router.post("/api/mobile/session/{session_id}/job")
@@ -429,20 +626,102 @@ async def set_session_job(request: Request, session_id: str):
     if job_id:
         sess["job_id"] = job_id
         sess["job_filename"] = _safe_text(payload.get("filename"), "", 200)
+        sess["pending_job_clear"] = False
     else:
         sess["job_id"] = None
         sess["job_filename"] = ""
     return {"ok": True, "job_id": sess.get("job_id")}
 
 
+@router.post("/api/mobile/session/{session_id}/job_dismiss")
+async def dismiss_session_job(session_id: str):
+    """Clear a mirrored desktop job after the phone closes or downloads it."""
+    sess = SESSIONS.get(session_id)
+    if not sess:
+        raise HTTPException(status_code=404, detail="Session expired or not found")
+    sess["job_id"] = None
+    sess["job_filename"] = ""
+    sess["pending_job_clear"] = True
+    return {"ok": True}
+
+
+@router.post("/api/mobile/session/{session_id}/job_dismiss_ack")
+async def ack_session_job_dismiss(session_id: str):
+    sess = SESSIONS.get(session_id)
+    if sess:
+        sess["pending_job_clear"] = False
+    return {"ok": True}
+
+
+@router.post("/api/mobile/session/{session_id}/transfer-progress")
+async def update_transfer_progress(request: Request, session_id: str):
+    """Receive upload progress from the phone for the desktop mirror."""
+    sess = SESSIONS.get(session_id)
+    if not sess:
+        raise HTTPException(status_code=404, detail="Session expired")
+
+    payload: Dict[str, Any] = {}
+    try:
+        raw = await request.body()
+        if raw:
+            parsed = json.loads(raw.decode("utf-8"))
+            if isinstance(parsed, dict):
+                payload = parsed
+    except Exception:
+        payload = {}
+
+    total = max(0, int(payload.get("total") or 0))
+    received = max(0, int(payload.get("received") or 0))
+    progress = max(0, min(100, int(payload.get("progress") or 0)))
+    batch_id = str(payload.get("batch_id") or "")[:80]
+    reset_batch = bool(payload.get("reset"))
+    current_progress = int(sess.get("transfer_progress") or 0)
+    current_received = int(sess.get("transfer_received") or 0)
+    current_batch_id = str(sess.get("transfer_batch_id") or "")
+    batch_changed = False
+
+    # Each phone send gets its own batch ID. Late progress requests from an
+    # older send must never overwrite the progress of a newer send.
+    if batch_id and batch_id != current_batch_id:
+        if reset_batch or sess.get("status") != "uploading" or current_progress >= 100:
+            sess["transfer_batch_id"] = batch_id
+            current_batch_id = batch_id
+            current_progress = 0
+            current_received = 0
+            batch_changed = True
+        else:
+            return {"ok": True, "progress": current_progress}
+    # Progress updates are sent as independent fetches from the browser and
+    # can arrive out of order. Never let an older 0%/smaller update roll the
+    # desktop indicator backwards during the same upload. A completed prior
+    # transfer starts a fresh progress sequence.
+    is_new_transfer = reset_batch or batch_changed or (
+        not batch_id and (sess.get("status") != "uploading" or current_progress >= 100)
+    )
+    if is_new_transfer or progress >= current_progress or received >= current_received:
+        sess["transfer_total"] = total
+        sess["transfer_received"] = received
+        sess["transfer_progress"] = progress
+    sess["status"] = "uploading"
+    sess["picking"] = True
+    sess["last_seen"] = time.time()
+    # The phone's transfer-progress endpoint owns live byte progress. Do not
+    # reset it here because multipart parsing may begin after progress events.
+    sess["transfer_total"] = sess.get("transfer_total") or 0
+    return {"ok": True, "progress": progress}
+
+
 @router.post("/api/mobile/session/{session_id}/ping")
-async def ping_session(session_id: str):
+async def ping_session(session_id: str, resume: bool = False):
     """Phone calls this as soon as page loads to signal it has connected."""
     sess = SESSIONS.get(session_id)
     if not sess:
         raise HTTPException(status_code=404, detail="Session expired")
     sess["last_seen"] = time.time()
-    sess["picking"] = False
+    # A regular heartbeat must not win a race with the picker notification.
+    # Only the explicit resume ping sent after the picker closes clears it.
+    if resume:
+        sess["picking"] = False
     if sess["status"] in ("waiting", "phone_disconnected"):
         sess["status"] = "connected"
     return {"status": sess["status"], "picking": False}
@@ -501,6 +780,10 @@ async def ack_transferred_files(request: Request, session_id: str):
     if sess["acked_until"] >= len(files):
         sess["status"] = "connected"
         sess["picking"] = False
+        sess["transfer_progress"] = 0
+        sess["transfer_received"] = 0
+        sess["transfer_total"] = 0
+        sess["transfer_batch_id"] = None
     else:
         sess["status"] = "completed"
 
@@ -517,6 +800,14 @@ async def phone_disconnect(session_id: str):
     sess = SESSIONS.get(session_id)
     if not sess:
         return {"status": "not_found"}
+    # Opening a native gallery can emit a stale pagehide/beacon. Keep the
+    # session alive while the picker is active; liveness expiry handles a
+    # genuinely abandoned picker.
+    if sess.get("picking") or sess.get("files") or sess.get("status") in ("uploading", "completed"):
+        sess["last_seen"] = time.time()
+        if sess.get("status") == "phone_disconnected":
+            sess["status"] = "connected"
+        return {"status": sess.get("status", "connected"), "picking": bool(sess.get("picking"))}
     sess["picking"] = False
     if sess["status"] not in ("completed", "cancelled"):
         sess["status"] = "phone_disconnected"
@@ -531,13 +822,6 @@ async def upload_files_from_mobile(
     sess = SESSIONS.get(session_id)
     if not sess:
         raise HTTPException(status_code=404, detail="Session expired or not found")
-
-    sess["status"] = "uploading"
-    sess["picking"] = False
-    sess["last_seen"] = time.time()
-    target_dir = sess["dir"]
-    existing = sess.setdefault("files", [])
-    saved_files = []
 
     allowed_exts = [e.lower() for e in (sess.get("allowed_exts") or _resolve_format_meta(sess.get("tool"))["allowed_exts"])]
     if "*" not in allowed_exts:
@@ -560,6 +844,15 @@ async def upload_files_from_mobile(
                     detail=f"Invalid format: '{file.filename}' is not accepted. {tool_name} accepts {format_label}."
                 )
 
+    sess["status"] = "uploading"
+    # A large multi-file upload can outlive the normal heartbeat window while
+    # the phone is backgrounded. Treat the upload itself as picker activity.
+    sess["picking"] = True
+    sess["last_seen"] = time.time()
+    target_dir = sess["dir"]
+    existing = sess.setdefault("files", [])
+    saved_files = []
+
     for file in files:
         safe_filename = os.path.basename(file.filename or "upload.dat")
         destination_path = os.path.join(target_dir, safe_filename)
@@ -579,6 +872,7 @@ async def upload_files_from_mobile(
         file_url = f"/api/mobile/session/{session_id}/file/{file_index}"
 
         saved_files.append({
+            "id": uuid.uuid4().hex,
             "name": os.path.basename(destination_path),
             "size": file_size,
             "type": file.content_type or "application/octet-stream",
@@ -587,7 +881,10 @@ async def upload_files_from_mobile(
         })
 
     existing.extend(saved_files)
+    sess["transfer_progress"] = 100
+    sess["transfer_received"] = sess.get("transfer_total") or sum(int(f.get("size") or 0) for f in saved_files)
     sess["status"] = "completed"
+    sess["picking"] = False
 
     return {
         "success": True,
@@ -664,6 +961,7 @@ async def serve_mobile_upload_page(session: str = "", tool: str = "images-pdf"):
         "mainText": "",
         "subText": "",
         "tag": "",
+        "allows_camera": _resolve_format_meta(tool)["allows_camera"],
     }
     tool_name = html_escape(theme.get("tool_name") or "ToolCEO File Transfer")
     color = html_escape(theme.get("color") or "#00E5C0")
@@ -691,7 +989,7 @@ async def serve_mobile_upload_page(session: str = "", tool: str = "images-pdf"):
     </div>
     <div class="status-badge">
       <span class="pulse-dot"></span>
-      <span>PC Connected</span>
+      <span>Connected</span>
     </div>
   </header>
 
@@ -705,13 +1003,17 @@ async def serve_mobile_upload_page(session: str = "", tool: str = "images-pdf"):
         </svg>
       </div>
       <div class="tool-info">
-        <h2 id="tool-name">{tool_name}</h2>
-        <p>Send files directly to your desktop workspace <span class="hero-tool-badge" id="tool-tag" hidden></span></p>
+        <div class="tool-title-row">
+          <h2 id="tool-name">{tool_name}</h2>
+          <span class="hero-tool-badge" id="tool-tag" hidden></span>
+        </div>
+        <p>Send files directly to your desktop workspace</p>
       </div>
     </div>
 
     <div id="form-view">
       <div class="drop-zone" id="mobile-dropzone">
+        <!-- Empty State Elements -->
         <span id="drop-icon-slot">
           <svg class="drop-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
             <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
@@ -719,16 +1021,69 @@ async def serve_mobile_upload_page(session: str = "", tool: str = "images-pdf"):
             <line x1="12" y1="3" x2="12" y2="15"/>
           </svg>
         </span>
-        <span class="drop-main-text" id="drop-main-text">Tap to choose files</span>
-        <span class="drop-browse" id="drop-sub-text">or click to pick your file</span>
+        <span class="drop-main-text" id="drop-main-text">Select files to send</span>
+        <span class="drop-browse" id="drop-sub-text">Browse files from your phone</span>
         <span class="drop-format-hint" id="drop-format-hint" style="display:none"></span>
-        <span class="drop-private">Your files never leave your device.</span>
+        <span class="drop-private">Your files will be sent to your desktop ToolCEO.</span>
+
+        <!-- Loaded State: Thumbnail Strip inside Drop Zone (mirrors desktop) -->
+        <div class="dz-jpg-thumb-strip" id="mobile-thumb-strip" style="display: none;"></div>
+
+        <!-- In-Dropzone Circular Progress Ring (Matches Desktop dz-progress-wrap) -->
+        <div class="dz-progress-wrap" id="job-progress-view" style="display: none;">
+          <div class="dz-progress-content">
+            <svg class="dz-ring-svg" width="110" height="110" viewBox="0 0 110 110" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+              <circle class="dz-ring-glow" cx="55" cy="55" r="28"/>
+              <circle class="dz-ring-track" cx="55" cy="55" r="40"/>
+              <circle class="dz-ring-fill" id="job-ring-fill" cx="55" cy="55" r="40" stroke="{color}" stroke-dasharray="251.327 251.327" stroke-dashoffset="251.327" style="transform-origin:55px 55px"/>
+            </svg>
+            <div class="dz-ring-center">
+              <span class="dz-pct" id="job-ring-pct">0%</span>
+              <span class="dz-progress-label" id="job-progress-label">PROCESSING</span>
+            </div>
+          </div>
+        </div>
+
+        <!-- In-Dropzone Download Card (Matches Desktop dz-save-card) -->
+        <div class="dz-download-wrap" id="job-done-view" style="display: none;">
+          <div class="dz-save-card" id="mobile-save-card" style="--save-color:{color}">
+            <button class="dz-save-close" id="job-close-btn" type="button" title="Close download window" aria-label="Close download window">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                <line x1="18" y1="6" x2="6" y2="18"></line>
+                <line x1="6" y1="6" x2="18" y2="18"></line>
+              </svg>
+            </button>
+            <div class="dz-save-icon" aria-hidden="true">
+              <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+                <path d="M12 3v13M7 11l5 5 5-5" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M5 20h14" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+              </svg>
+            </div>
+            <div class="dz-save-info">
+              <span class="dz-save-name" id="job-done-filename" title=""></span>
+              <span class="dz-save-ext" id="job-done-ext">File ready to download</span>
+            </div>
+            <button class="dz-save-btn" id="job-download-btn" type="button">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" style="display:inline;vertical-align:middle;margin-right:5px" aria-hidden="true">
+                <path d="M12 3v13M7 11l5 5 5-5" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+                <path d="M5 20h14" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+              </svg>Download File
+            </button>
+            <div class="dz-save-done" id="job-save-done">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                <circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.7"/>
+                <path d="M8 12l3 3 5-5" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+              Downloaded successfully
+            </div>
+          </div>
+        </div>
       </div>
 
-      <div class="action-chips">
+      <div class="action-chips" id="action-chips">
         <button type="button" class="action-chip" id="choose-gallery-btn">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-          Gallery / Files
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h8M8 17h5"/></svg>
+          <span id="choose-gallery-label">Browse Files</span>
         </button>
         <button type="button" class="action-chip" id="take-photo-btn">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
@@ -736,28 +1091,31 @@ async def serve_mobile_upload_page(session: str = "", tool: str = "images-pdf"):
         </button>
       </div>
 
+      <div class="mobile-send-panel" id="mobile-send-panel" style="display: none;">
+        <div class="mobile-send-copy">
+          <span class="mobile-send-kicker">Ready to send</span>
+          <span class="mobile-send-count" id="mobile-send-count">0 files selected</span>
+        </div>
+        <button type="button" class="mobile-send-btn" id="mobile-send-btn">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <path d="M22 2 11 13"/><path d="m22 2-7 20-4-9-9-4Z"/>
+          </svg>
+          <span>Send to Desktop</span>
+        </button>
+      </div>
+
       <input type="file" id="file-input-gallery" multiple accept="image/*,application/pdf,application/*" />
       <input type="file" id="file-input-camera" accept="image/*" capture="environment" />
 
-      <div id="preview-section" style="display: none; margin-top: 14px;">
-        <div class="preview-header">
-          <span class="preview-title">Selected Files</span>
-          <span class="file-count-badge" id="file-count">0 files</span>
-        </div>
-        <div class="preview-grid" id="preview-grid" style="margin-top: 10px;"></div>
+      <!-- Sync Info Bar below Drop Zone -->
+      <div class="mobile-desktop-sync-bar" id="mobile-sync-bar" style="display: none; margin-top: 14px;">
+        <span class="pulse-dot"></span>
+        <span id="mobile-sync-text">Files sent to desktop &mdash; ready in workspace</span>
       </div>
 
       <div class="progress-bar-container" id="progress-container">
         <div class="progress-bar" id="progress-bar"></div>
       </div>
-
-      <button type="button" class="send-btn" id="send-btn" disabled>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-          <line x1="22" y1="2" x2="11" y2="13"/>
-          <polygon points="22 2 15 22 11 13 2 9 22 2"/>
-        </svg>
-        <span id="send-btn-text">Send to Desktop</span>
-      </button>
     </div>
 
     <div class="success-view" id="success-view">
@@ -781,38 +1139,6 @@ async def serve_mobile_upload_page(session: str = "", tool: str = "images-pdf"):
       </div>
       <div class="disconnected-title">Session Ended</div>
       <div class="disconnected-desc" id="disconnected-desc">The desktop closed this transfer session.<br>Scan a new QR code to start again.</div>
-    </div>
-
-    <div class="job-progress-view" id="job-progress-view">
-      <div class="job-progress-ring-wrap">
-        <svg class="job-ring" viewBox="0 0 80 80">
-          <circle class="job-ring-track" cx="40" cy="40" r="34"/>
-          <circle class="job-ring-fill" id="job-ring-fill" cx="40" cy="40" r="34"/>
-        </svg>
-        <span class="job-ring-pct" id="job-ring-pct">0%</span>
-      </div>
-      <div class="job-progress-label" id="job-progress-label">Processing on Desktop…</div>
-      <div class="job-progress-filename" id="job-progress-filename"></div>
-      <button type="button" class="job-cancel-btn" id="job-cancel-btn">✕ Cancel</button>
-    </div>
-
-    <div class="job-done-view" id="job-done-view">
-      <div class="job-done-icon">
-        <svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <polyline points="20 6 9 17 4 12"/>
-        </svg>
-      </div>
-      <div class="job-done-title">Ready to Download!</div>
-      <div class="job-done-filename" id="job-done-filename"></div>
-      <a class="job-download-btn" id="job-download-btn" download>
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
-          <polyline points="7 10 12 15 17 10"/>
-          <line x1="12" y1="15" x2="12" y2="3"/>
-        </svg>
-        <span>Download File</span>
-      </a>
-      <button type="button" class="job-new-btn" id="job-new-btn">Send More Files</button>
     </div>
   </main>
 

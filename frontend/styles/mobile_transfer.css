@@ -187,6 +187,16 @@
   box-shadow: 0 0 8px #10B981;
 }
 
+/* Receiving progress is informational; the phone controls the transfer. */
+.dz-phone-receiving .dz-progress-cancel {
+  display: none !important;
+}
+
+.dz-phone-receiving .dz-ring-glow {
+  animation: none !important;
+  opacity: 0.1;
+}
+
 .dz-phone-live-badge.is-waiting {
   background: color-mix(in srgb, var(--tool-accent, var(--dz-color, #00E5C0)) 12%, transparent);
   border-color: color-mix(in srgb, var(--tool-accent, var(--dz-color, #00E5C0)) 32%, transparent);

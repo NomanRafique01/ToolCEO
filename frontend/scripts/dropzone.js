@@ -19,6 +19,7 @@ import { handleArchiveDuplicateFilePicked, removeArchiveDuplicatePanel } from '.
  */
 
 import { getActiveTool, setActiveTool, onToolChange, setBgJob, getBgJob, getBgJobForTool, syncBgJobBar, clearBgJob } from './toolstate.js';
+import { unlinkMirrorJob } from './mobileJobMirror.js';
 import { applyToolDropZoneSnapshot, captureToolDropZoneSnapshot, clearToolFileState, getToolFileState, isRestoringToolFiles, saveToolFiles, setRestoringToolFiles, shouldSuppressRestoreScan } from './fileState.js';
 import { pushNotification } from './notificationStore.js';
 import { getToolFamily } from './toolFamily.js';
@@ -863,6 +864,7 @@ function _dlPanelActivate(tool) {
   // Wire Close button
   panel.querySelector('.dl-panel-close')?.addEventListener('click', (e) => {
     e.stopPropagation();
+    unlinkMirrorJob(getActiveTool()?.id || null);
     _dlPanelReset(panel);
   });
 
@@ -950,6 +952,7 @@ function _dlPanelReady(filename, jobId, color) {
   // Wire Close button
   panel.querySelector('.dl-panel-close')?.addEventListener('click', (e) => {
     e.stopPropagation();
+    unlinkMirrorJob(getActiveTool()?.id || null);
     _dlPanelReset(panel);
   });
 
@@ -981,6 +984,11 @@ function _dlPanelReset(panel) {
   _dlPanelJob = null;
 }
 
+// The phone can dismiss the mirrored result after downloading or closing it.
+document.addEventListener('mobile-job-dismissed', () => {
+  _dlPanelReset();
+});
+
 /** Trigger the actual file save from the panel's Save button. */
 async function _dlPanelSave(jobId, filename, color, panel) {
   const btn = panel && panel.querySelector('.dl-save-btn');
@@ -1004,8 +1012,8 @@ async function _dlPanelSave(jobId, filename, color, panel) {
       const meta = buildConversionMeta({ outputFilename: filename });
       const savedPath = await window.toolceo.saveFileAs(filename, base64, meta);
       if (savedPath) {
-        if (btn) { btn.disabled = false; btn.style.display = 'none'; }
-        panel.classList.add('dl-panel--saved');
+        unlinkMirrorJob(getActiveTool()?.id || null);
+        _dlPanelReset(panel);
       } else {
         // User cancelled
         if (btn) { btn.disabled = false; btn.textContent = 'Save As…'; }
@@ -1015,8 +1023,8 @@ async function _dlPanelSave(jobId, filename, color, panel) {
       const a = document.createElement('a');
       a.href = url; a.download = filename; a.click();
       URL.revokeObjectURL(url);
-      if (btn) { btn.disabled = false; btn.style.display = 'none'; }
-      panel.classList.add('dl-panel--saved');
+      unlinkMirrorJob(getActiveTool()?.id || null);
+      _dlPanelReset(panel);
     }
   } catch (err) {
     if (btn) { btn.disabled = false; btn.textContent = 'Save As…'; }
@@ -1116,6 +1124,39 @@ function _showProgress(zone, pct, color, label, toolId) {
   const wrap = _buildRingWrap(color, pct, label || 'Processing', false, owner);
   zone.appendChild(wrap);
   _wireDzCancelBtn(wrap, zone);
+}
+
+/** Show the same ring used by conversions while the paired phone uploads. */
+export function showPhoneReceiveProgress(progress = 0, formatLabel = 'files') {
+  const zone = document.getElementById('drop-zone');
+  const tool = getActiveTool();
+  if (!zone || !tool) return;
+  const pct = Math.max(0, Math.min(100, Number(progress) || 0));
+
+  // Polling happens once per second. Keep the same overlay alive so the
+  // progress ring does not restart its animation or visually vibrate.
+  const existing = zone.querySelector('.dz-progress-wrap.dz-phone-receiving');
+  if (existing && existing.dataset.toolId === tool.id) {
+    _updateProgress(zone, pct, tool.color || '#00E5C0', tool.id);
+    const label = existing.querySelector('.dz-progress-label');
+    if (label) label.textContent = `Receiving ${formatLabel}…`;
+    return;
+  }
+
+  _showProgress(zone, pct, tool.color || '#00E5C0', `Receiving ${formatLabel}…`, tool.id);
+  const wrap = zone.querySelector('.dz-progress-wrap');
+  if (wrap) {
+    wrap.classList.add('dz-phone-receiving');
+    wrap.querySelector('.dz-progress-cancel')?.remove();
+  }
+}
+
+/** Remove only the phone receive overlay after its files are in the queue. */
+export function clearPhoneReceiveProgress() {
+  const zone = document.getElementById('drop-zone');
+  if (!zone) return;
+  zone.querySelector('.dz-progress-wrap.dz-phone-receiving')?.remove();
+  zone.classList.remove('dz-state-processing');
 }
 
 /** Show an indeterminate scanning ring — spinning arc. */
@@ -1412,8 +1453,7 @@ async function _submitFile(files, { fromPhone = false } = {}) {
 
   // Merge tool has its own multi-file queue flow — delegated to the merger module
   if (tool.id === 'merge') {
-    handleMergeFilesPicked(files);
-    return;
+    return await handleMergeFilesPicked(files);
   }
 
   // Compress tool has its own settings-panel flow — delegated to the compressor module
@@ -1489,14 +1529,12 @@ async function _submitFile(files, { fromPhone = false } = {}) {
 
   // Images → PDF converter has its own multi-image queue flow
   if (tool.id === 'images-pdf') {
-    handleImagesPdfFilesPicked(files);
-    return;
+    return await handleImagesPdfFilesPicked(files);
   }
 
   // Archive create tools share the local multi-file queue flow.
   if (isArchiveCreateTool(tool.id)) {
-    handleArchiveFilesPicked(files);
-    return;
+    return await handleArchiveFilesPicked(files);
   }
 
   // Archive extract tools share the local extraction flow.
@@ -1519,8 +1557,7 @@ async function _submitFile(files, { fromPhone = false } = {}) {
 
   // Archive Merger — multi-part merge queue
   if (tool.id === 'archive-merge') {
-    handleArchiveMergerFilesPicked(files);
-    return;
+    return await handleArchiveMergerFilesPicked(files);
   }
 
   // Archive Protect — password-protect archive with AES-256
@@ -1599,42 +1636,41 @@ async function _submitFile(files, { fromPhone = false } = {}) {
   if (tool.id === 'csv-sql') { handleCsvSqlFilePicked(files[0]); return; }
 
   // JPG conversion tools — pass ALL files (multi-select supported; base handles dedup)
-  if (tool.id === 'jpg-png') { handleJpgPngFilePicked(files); return; }
-  if (tool.id === 'jpg-webp') { handleJpgWebpFilePicked(files); return; }
-  if (tool.id === 'jpg-pdf') { handleJpgPdfFilePicked(files); return; }
-  if (tool.id === 'jpg-bmp') { handleJpgBmpFilePicked(files); return; }
-  if (tool.id === 'jpg-tiff') { handleJpgTiffFilePicked(files); return; }
-  if (tool.id === 'jpg-ico') { handleJpgIcoFilePicked(files); return; }
-  if (tool.id === 'jpg-txt') { handleJpgTxtFilePicked(files); return; }
+  if (tool.id === 'jpg-png') return await handleJpgPngFilePicked(files);
+  if (tool.id === 'jpg-webp') return await handleJpgWebpFilePicked(files);
+  if (tool.id === 'jpg-pdf') return await handleJpgPdfFilePicked(files);
+  if (tool.id === 'jpg-bmp') return await handleJpgBmpFilePicked(files);
+  if (tool.id === 'jpg-tiff') return await handleJpgTiffFilePicked(files);
+  if (tool.id === 'jpg-ico') return await handleJpgIcoFilePicked(files);
+  if (tool.id === 'jpg-txt') return await handleJpgTxtFilePicked(files);
 
   // PNG conversion tools — dispatch by tool id
-  if (tool.id === 'png-jpg') { handlePngJpgFilePicked(files); return; }
-  if (tool.id === 'png-webp') { handlePngWebpFilePicked(files); return; }
-  if (tool.id === 'png-pdf') { handlePngPdfFilePicked(files); return; }
-  if (tool.id === 'png-bmp') { handlePngBmpFilePicked(files); return; }
-  if (tool.id === 'png-tiff') { handlePngTiffFilePicked(files); return; }
-  if (tool.id === 'png-ico') { handlePngIcoFilePicked(files); return; }
-  if (tool.id === 'png-txt') { handlePngTxtFilePicked(files); return; }
+  if (tool.id === 'png-jpg') return await handlePngJpgFilePicked(files);
+  if (tool.id === 'png-webp') return await handlePngWebpFilePicked(files);
+  if (tool.id === 'png-pdf') return await handlePngPdfFilePicked(files);
+  if (tool.id === 'png-bmp') return await handlePngBmpFilePicked(files);
+  if (tool.id === 'png-tiff') return await handlePngTiffFilePicked(files);
+  if (tool.id === 'png-ico') return await handlePngIcoFilePicked(files);
+  if (tool.id === 'png-txt') return await handlePngTxtFilePicked(files);
 
   // WEBP conversion tools — dispatch by tool id
-  if (tool.id === 'webp-jpg') { handleWebpJpgFilePicked(files); return; }
-  if (tool.id === 'webp-png') { handleWebpPngFilePicked(files); return; }
-  if (tool.id === 'webp-pdf') { handleWebpPdfFilePicked(files); return; }
-  if (tool.id === 'webp-bmp') { handleWebpBmpFilePicked(files); return; }
-  if (tool.id === 'webp-tiff') { handleWebpTiffFilePicked(files); return; }
-  if (tool.id === 'webp-ico') { handleWebpIcoFilePicked(files); return; }
-  if (tool.id === 'webp-txt') { handleWebpTxtFilePicked(files); return; }
+  if (tool.id === 'webp-jpg') return await handleWebpJpgFilePicked(files);
+  if (tool.id === 'webp-png') return await handleWebpPngFilePicked(files);
+  if (tool.id === 'webp-pdf') return await handleWebpPdfFilePicked(files);
+  if (tool.id === 'webp-bmp') return await handleWebpBmpFilePicked(files);
+  if (tool.id === 'webp-tiff') return await handleWebpTiffFilePicked(files);
+  if (tool.id === 'webp-ico') return await handleWebpIcoFilePicked(files);
+  if (tool.id === 'webp-txt') return await handleWebpTxtFilePicked(files);
 
   // SVG conversion tools — dispatch by tool id
-  if (tool.id === 'svg-png') { handleSvgPngFilePicked(files); return; }
-  if (tool.id === 'svg-jpg') { handleSvgJpgFilePicked(files); return; }
-  if (tool.id === 'svg-webp') { handleSvgWebpFilePicked(files); return; }
-  if (tool.id === 'svg-pdf') { handleSvgPdfFilePicked(files); return; }
+  if (tool.id === 'svg-png') return await handleSvgPngFilePicked(files);
+  if (tool.id === 'svg-jpg') return await handleSvgJpgFilePicked(files);
+  if (tool.id === 'svg-webp') return await handleSvgWebpFilePicked(files);
+  if (tool.id === 'svg-pdf') return await handleSvgPdfFilePicked(files);
 
   // Image Compressor — dispatch before generic preview fallback
   if (tool.id === 'image_compressor') {
-    handleImageCompressorFilesPicked(files);
-    return;
+    return await handleImageCompressorFilesPicked(files);
   }
 
   // Images category tools — dispatch to HD preview handler
