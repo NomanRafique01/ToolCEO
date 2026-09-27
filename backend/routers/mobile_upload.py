@@ -64,9 +64,144 @@ def _safe_text(val: Any, fallback: str = "", max_len: int = 160) -> str:
     return s[:max_len] if s else fallback
 
 
+def _resolve_format_meta(tool_id: Optional[str]) -> Dict[str, Any]:
+    tid = (tool_id or "").lower()
+
+    if tid == "images-pdf":
+        return {
+            "allowed_exts": [".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif", ".tiff", ".tif", ".svg", ".avif", ".heic", ".heif"],
+            "accept_attr": "image/*,.png,.jpg,.jpeg,.webp,.bmp,.gif,.tiff,.tif,.svg,.avif,.heic,.heif",
+            "format_label": "Image files (PNG, JPG, WebP, SVG...)",
+            "allows_camera": True,
+        }
+    if tid == "image_compressor":
+        return {
+            "allowed_exts": [".jpg", ".jpeg", ".png", ".webp", ".avif", ".gif", ".bmp", ".dib", ".tiff", ".tif", ".ico", ".heic", ".heif", ".svg"],
+            "accept_attr": "image/*,.jpg,.jpeg,.png,.webp,.avif,.gif,.bmp,.dib,.tiff,.tif,.ico,.heic,.heif,.svg",
+            "format_label": "Image files (JPG, PNG, WebP...)",
+            "allows_camera": True,
+        }
+    if tid == "jpg" or tid.startswith("jpg-"):
+        return {
+            "allowed_exts": [".jpg", ".jpeg"],
+            "accept_attr": "image/jpeg,.jpg,.jpeg",
+            "format_label": "JPG / JPEG images (.jpg, .jpeg)",
+            "allows_camera": True,
+        }
+    if tid == "png" or tid.startswith("png-"):
+        return {
+            "allowed_exts": [".png"],
+            "accept_attr": "image/png,.png",
+            "format_label": "PNG images (.png)",
+            "allows_camera": True,
+        }
+    if tid == "webp" or tid.startswith("webp-"):
+        return {
+            "allowed_exts": [".webp"],
+            "accept_attr": "image/webp,.webp",
+            "format_label": "WebP images (.webp)",
+            "allows_camera": True,
+        }
+    if tid == "svg" or tid.startswith("svg-"):
+        return {
+            "allowed_exts": [".svg"],
+            "accept_attr": "image/svg+xml,.svg",
+            "format_label": "SVG vector files (.svg)",
+            "allows_camera": False,
+        }
+    if tid in ("gif", "bmp", "tiff", "heic") or any(tid.startswith(f"{x}-") for x in ("gif", "bmp", "tiff", "heic")):
+        ext = f".{tid.split('-')[0]}"
+        return {
+            "allowed_exts": [ext],
+            "accept_attr": f"image/{tid.split('-')[0]},{ext}",
+            "format_label": f"{tid.split('-')[0].upper()} images ({ext})",
+            "allows_camera": True,
+        }
+    if tid == "merge" or tid.startswith("pdf-") or tid in ("split", "compress", "encrypt", "watermark", "edit-pdf", "editor", "extract-images", "extractor", "rotate") or tid.endswith("-pdf"):
+        is_enc = tid == "encrypt"
+        return {
+            "allowed_exts": [".pdf", ".tceo"] if is_enc else [".pdf"],
+            "accept_attr": ".pdf,.tceo,application/pdf" if is_enc else ".pdf,application/pdf",
+            "format_label": "PDF files (.pdf, .tceo)" if is_enc else "PDF documents (.pdf)",
+            "allows_camera": False,
+        }
+    if tid.startswith("docx-") or tid == "docx":
+        return {
+            "allowed_exts": [".docx"],
+            "accept_attr": ".docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "format_label": "Word documents (.docx)",
+            "allows_camera": False,
+        }
+    if tid.startswith("xlsx-") or tid == "xlsx":
+        return {
+            "allowed_exts": [".xlsx", ".xls"],
+            "accept_attr": ".xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "format_label": "Excel spreadsheets (.xlsx, .xls)",
+            "allows_camera": False,
+        }
+    if tid.startswith("pptx-") or tid == "pptx":
+        return {
+            "allowed_exts": [".pptx", ".ppt"],
+            "accept_attr": ".pptx,.ppt,application/vnd.openxmlformats-officedocument.presentationml.presentation",
+            "format_label": "PowerPoint presentations (.pptx, .ppt)",
+            "allows_camera": False,
+        }
+    if tid.startswith("txt-") or tid == "txt":
+        return {
+            "allowed_exts": [".txt"],
+            "accept_attr": ".txt,text/plain",
+            "format_label": "Plain text files (.txt)",
+            "allows_camera": False,
+        }
+    if tid.startswith("odt-") or tid == "odt":
+        return {
+            "allowed_exts": [".odt"],
+            "accept_attr": ".odt,application/vnd.oasis.opendocument.text",
+            "format_label": "OpenDocument text files (.odt)",
+            "allows_camera": False,
+        }
+    if tid.startswith("csv-") or tid == "csv":
+        return {
+            "allowed_exts": [".csv"],
+            "accept_attr": ".csv,text/csv",
+            "format_label": "CSV files (.csv)",
+            "allows_camera": False,
+        }
+    if tid.startswith("epub-") or tid == "epub":
+        return {"allowed_exts": [".epub"], "accept_attr": ".epub", "format_label": "EPUB eBooks (.epub)", "allows_camera": False}
+    if tid.startswith("mobi-") or tid == "mobi":
+        return {"allowed_exts": [".mobi"], "accept_attr": ".mobi", "format_label": "MOBI eBooks (.mobi)", "allows_camera": False}
+    if tid.startswith("azw3-") or tid == "azw3":
+        return {"allowed_exts": [".azw3"], "accept_attr": ".azw3", "format_label": "AZW3 eBooks (.azw3)", "allows_camera": False}
+    if tid.startswith("fb2-") or tid == "fb2":
+        return {"allowed_exts": [".fb2"], "accept_attr": ".fb2", "format_label": "FB2 eBooks (.fb2)", "allows_camera": False}
+    if tid.startswith("rtf-") or tid == "rtf":
+        return {"allowed_exts": [".rtf"], "accept_attr": ".rtf", "format_label": "RTF documents (.rtf)", "allows_camera": False}
+    if tid.startswith("archive-create-") or tid.startswith("archive-folder-") or tid == "archive-merge":
+        return {"allowed_exts": ["*"], "accept_attr": "*/*", "format_label": "Any files", "allows_camera": True}
+    if "zip" in tid and "archive" in tid:
+        return {"allowed_exts": [".zip"], "accept_attr": ".zip", "format_label": "ZIP archives (.zip)", "allows_camera": False}
+    if "rar" in tid and "archive" in tid:
+        return {"allowed_exts": [".rar"], "accept_attr": ".rar", "format_label": "RAR archives (.rar)", "allows_camera": False}
+    if "7z" in tid and "archive" in tid:
+        return {"allowed_exts": [".7z"], "accept_attr": ".7z", "format_label": "7Z archives (.7z)", "allows_camera": False}
+    if "tar" in tid and "archive" in tid:
+        return {"allowed_exts": [".tar", ".tar.gz", ".tgz"], "accept_attr": ".tar,.tar.gz,.tgz", "format_label": "TAR archives", "allows_camera": False}
+    if tid.startswith("archive-"):
+        return {
+            "allowed_exts": [".zip", ".7z", ".rar", ".tar", ".tar.gz", ".tgz", ".tar.bz2", ".tbz2", ".tar.xz", ".txz", ".gz", ".bz2", ".xz", ".wim", ".iso", ".cab"],
+            "accept_attr": ".zip,.7z,.rar,.tar,.tar.gz,.tgz,.tar.bz2,.tar.xz,.gz,.bz2,.xz,.wim,.iso,.cab",
+            "format_label": "Archive files (.zip, .7z, .rar, .tar...)",
+            "allows_camera": False,
+        }
+    return {"allowed_exts": ["*"], "accept_attr": "*/*", "format_label": "files", "allows_camera": True}
+
+
 def _theme_payload(sess: Dict[str, Any]) -> Dict[str, Any]:
+    tool_id = sess.get("tool")
+    fmt = _resolve_format_meta(tool_id)
     return {
-        "tool": sess.get("tool"),
+        "tool": tool_id,
         "tool_name": sess.get("tool_name"),
         "color": sess.get("color", "#00E5C0"),
         "bg": sess.get("bg", "rgba(0, 229, 192, 0.15)"),
@@ -74,6 +209,10 @@ def _theme_payload(sess: Dict[str, Any]) -> Dict[str, Any]:
         "mainText": sess.get("mainText") or "",
         "subText": sess.get("subText") or "",
         "tag": sess.get("tag") or "",
+        "allowed_exts": sess.get("allowed_exts") or fmt["allowed_exts"],
+        "accept_attr": sess.get("accept_attr") or fmt["accept_attr"],
+        "format_label": sess.get("format_label") or fmt["format_label"],
+        "allows_camera": sess.get("allows_camera") if sess.get("allows_camera") is not None else fmt["allows_camera"],
     }
 
 
@@ -152,6 +291,12 @@ async def create_session(request: Request, tool: Optional[str] = "images-pdf", t
     local_ip = get_local_ip()
     port = request.url.port or 8765
 
+    format_meta = _resolve_format_meta(tool)
+    allowed_exts = payload.get("allowed_exts") or format_meta["allowed_exts"]
+    accept_attr = payload.get("accept_attr") or format_meta["accept_attr"]
+    format_label = payload.get("format_label") or format_meta["format_label"]
+    allows_camera = payload.get("allows_camera") if "allows_camera" in payload else format_meta["allows_camera"]
+
     SESSIONS[session_id] = {
         "id": session_id,
         "tool": tool,
@@ -162,6 +307,10 @@ async def create_session(request: Request, tool: Optional[str] = "images-pdf", t
         "mainText": main_text,
         "subText": sub_text,
         "tag": tag,
+        "allowed_exts": allowed_exts,
+        "accept_attr": accept_attr,
+        "format_label": format_label,
+        "allows_camera": allows_camera,
         "created_at": time.time(),
         "last_seen": None,
         "picking": False,
@@ -390,6 +539,27 @@ async def upload_files_from_mobile(
     existing = sess.setdefault("files", [])
     saved_files = []
 
+    allowed_exts = [e.lower() for e in (sess.get("allowed_exts") or _resolve_format_meta(sess.get("tool"))["allowed_exts"])]
+    if "*" not in allowed_exts:
+        for file in files:
+            fname = (file.filename or "").lower()
+            match = False
+            for ext in allowed_exts:
+                if fname.endswith(ext.lower()):
+                    match = True
+                    break
+            if not match:
+                f_ext = os.path.splitext(fname)[1]
+                if f_ext in allowed_exts:
+                    match = True
+            if not match:
+                format_label = sess.get("format_label") or _resolve_format_meta(sess.get("tool"))["format_label"]
+                tool_name = sess.get("tool_name") or "Selected tool"
+                raise HTTPException(
+                    status_code=400,
+                    detail=f"Invalid format: '{file.filename}' is not accepted. {tool_name} accepts {format_label}."
+                )
+
     for file in files:
         safe_filename = os.path.basename(file.filename or "upload.dat")
         destination_path = os.path.join(target_dir, safe_filename)
@@ -551,6 +721,7 @@ async def serve_mobile_upload_page(session: str = "", tool: str = "images-pdf"):
         </span>
         <span class="drop-main-text" id="drop-main-text">Tap to choose files</span>
         <span class="drop-browse" id="drop-sub-text">or click to pick your file</span>
+        <span class="drop-format-hint" id="drop-format-hint" style="display:none"></span>
         <span class="drop-private">Your files never leave your device.</span>
       </div>
 

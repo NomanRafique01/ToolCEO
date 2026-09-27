@@ -604,3 +604,196 @@ input[type="file"] {
 .job-new-btn:active {
   background: rgba(255,255,255,0.05);
 }
+
+/* ── Invalid Format Toast Notification ─────────────────────────────────── */
+.mobile-toast {
+  position: fixed;
+  top: 14px;
+  left: 14px;
+  right: 14px;
+  z-index: 999999;
+  background: rgba(15, 23, 42, 0.95);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1.5px solid rgba(239, 68, 68, 0.45);
+  box-shadow:
+    0 16px 40px -6px rgba(0, 0, 0, 0.65),
+    0 0 24px rgba(239, 68, 68, 0.22);
+  border-radius: 16px;
+  padding: 14px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  transform: translateY(0);
+  opacity: 1;
+  transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+  animation: toastSlideDown 0.38s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  pointer-events: auto;
+  user-select: none;
+}
+
+.mobile-toast.is-dismissing {
+  transform: translateY(-20px);
+  opacity: 0;
+  pointer-events: none;
+}
+
+@keyframes toastSlideDown {
+  0% {
+    transform: translateY(-110%);
+    opacity: 0;
+  }
+  100% {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+.mobile-toast-header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.mobile-toast-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #F87171;
+  flex-shrink: 0;
+  box-shadow: 0 0 12px rgba(239, 68, 68, 0.2);
+}
+
+.mobile-toast-title-group {
+  flex: 1;
+  min-width: 0;
+}
+
+.mobile-toast-title {
+  font-size: 14.5px;
+  font-weight: 700;
+  color: #F87171;
+  letter-spacing: -0.2px;
+  line-height: 1.2;
+}
+
+.mobile-toast-subtitle {
+  font-size: 11.5px;
+  color: var(--text-muted);
+  margin-top: 2px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.mobile-toast-close {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--text-muted);
+  font-size: 15px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+  font-family: inherit;
+}
+
+.mobile-toast-close:active {
+  background: rgba(255, 255, 255, 0.14);
+  transform: scale(0.92);
+}
+
+.mobile-toast-body {
+  font-size: 13px;
+  color: #E2E8F0;
+  line-height: 1.45;
+  word-break: break-word;
+}
+
+.mobile-toast-req-pill {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  background: rgba(239, 68, 68, 0.10);
+  border: 1px dashed rgba(239, 68, 68, 0.38);
+  border-radius: 9px;
+  padding: 8px 11px;
+  font-size: 12px;
+  color: #FECACA;
+}
+
+.mobile-toast-req-pill strong {
+  color: #FFF;
+  font-weight: 700;
+}
+
+.mobile-toast-progress {
+  height: 3px;
+  width: 100%;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: 2px;
+}
+
+.mobile-toast-progress-fill {
+  height: 100%;
+  width: 100%;
+  background: linear-gradient(90deg, #F87171, #EF4444);
+  border-radius: 2px;
+  transform-origin: left;
+  animation: toastDrain 4.8s linear forwards;
+}
+
+@keyframes toastDrain {
+  from { transform: scaleX(1); }
+  to   { transform: scaleX(0); }
+}
+
+/* Shake feedback for dropzone on rejected selection */
+@keyframes dropzoneShake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-8px); }
+  40% { transform: translateX(8px); }
+  60% { transform: translateX(-5px); }
+  80% { transform: translateX(5px); }
+}
+
+.drop-zone.is-invalid-shake {
+  animation: dropzoneShake 0.45s ease;
+  border-color: rgba(239, 68, 68, 0.6) !important;
+  box-shadow: 0 0 24px rgba(239, 68, 68, 0.25) !important;
+}
+
+/* Dropzone format hint pill */
+.drop-format-hint {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-top: 6px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  background: var(--dz-bg);
+  border: 1px solid color-mix(in srgb, var(--dz-color) 35%, transparent);
+  color: var(--dz-color);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.2px;
+}
+
+/* Camera button disabled/camera-unsupported styling */
+.action-chip.is-camera-dimmed {
+  opacity: 0.65;
+  border-style: dashed;
+}
+

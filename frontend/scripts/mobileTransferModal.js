@@ -197,6 +197,7 @@ export async function openMobileTransferModal() {
   // Call backend to create pairing session
   try {
     const backendUrl = window.TOOLCEO_BACKEND_URL || 'http://127.0.0.1:8765';
+    const formatMeta = getToolFormatMeta(tool);
     const res = await fetch(`${backendUrl}/api/mobile/session/create`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -209,6 +210,10 @@ export async function openMobileTransferModal() {
         mainText: tool.mainText || '',
         subText: tool.subText || '',
         tag: tool.tag || '',
+        allowed_exts: formatMeta.allowed_exts,
+        accept_attr: formatMeta.accept_attr,
+        format_label: formatMeta.format_label,
+        allows_camera: formatMeta.allows_camera,
       }),
     });
 
@@ -253,6 +258,212 @@ export async function openMobileTransferModal() {
     const statusText = document.getElementById('dz-phone-status-text');
     if (statusText) statusText.textContent = 'Error: ' + err.message;
   }
+}
+
+/**
+ * Returns complete format metadata (allowed extensions, accept attribute, format label, camera allowed)
+ * for the given tool, used by the mobile upload page to validate and filter files.
+ */
+export function getToolFormatMeta(tool) {
+  const id = String(tool?.id || '').toLowerCase();
+
+  // 1. Images to PDF
+  if (id === 'images-pdf') {
+    return {
+      allowed_exts: ['.png', '.jpg', '.jpeg', '.webp', '.bmp', '.gif', '.tiff', '.tif', '.svg', '.avif', '.heic', '.heif'],
+      accept_attr: 'image/*,.png,.jpg,.jpeg,.webp,.bmp,.gif,.tiff,.tif,.svg,.avif,.heic,.heif',
+      format_label: 'Image files (PNG, JPG, WebP, SVG...)',
+      allows_camera: true,
+    };
+  }
+
+  // 2. Specific Image input tools
+  if (id === 'image_compressor') {
+    return {
+      allowed_exts: ['.jpg', '.jpeg', '.png', '.webp', '.avif', '.gif', '.bmp', '.dib', '.tiff', '.tif', '.ico', '.heic', '.heif', '.svg'],
+      accept_attr: 'image/*,.jpg,.jpeg,.png,.webp,.avif,.gif,.bmp,.dib,.tiff,.tif,.ico,.heic,.heif,.svg',
+      format_label: 'Image files (JPG, PNG, WebP...)',
+      allows_camera: true,
+    };
+  }
+  if (id === 'jpg' || id.startsWith('jpg-')) {
+    return {
+      allowed_exts: ['.jpg', '.jpeg'],
+      accept_attr: 'image/jpeg,.jpg,.jpeg',
+      format_label: 'JPG / JPEG images (.jpg, .jpeg)',
+      allows_camera: true,
+    };
+  }
+  if (id === 'png' || id.startsWith('png-')) {
+    return {
+      allowed_exts: ['.png'],
+      accept_attr: 'image/png,.png',
+      format_label: 'PNG images (.png)',
+      allows_camera: true,
+    };
+  }
+  if (id === 'webp' || id.startsWith('webp-')) {
+    return {
+      allowed_exts: ['.webp'],
+      accept_attr: 'image/webp,.webp',
+      format_label: 'WebP images (.webp)',
+      allows_camera: true,
+    };
+  }
+  if (id === 'svg' || id.startsWith('svg-')) {
+    return {
+      allowed_exts: ['.svg'],
+      accept_attr: 'image/svg+xml,.svg',
+      format_label: 'SVG vector files (.svg)',
+      allows_camera: false,
+    };
+  }
+  if (id === 'gif' || id.startsWith('gif-')) {
+    return {
+      allowed_exts: ['.gif'],
+      accept_attr: 'image/gif,.gif',
+      format_label: 'GIF images (.gif)',
+      allows_camera: true,
+    };
+  }
+  if (id === 'bmp' || id.startsWith('bmp-')) {
+    return {
+      allowed_exts: ['.bmp'],
+      accept_attr: 'image/bmp,.bmp',
+      format_label: 'BMP images (.bmp)',
+      allows_camera: true,
+    };
+  }
+  if (id === 'tiff' || id.startsWith('tiff-')) {
+    return {
+      allowed_exts: ['.tiff', '.tif'],
+      accept_attr: 'image/tiff,.tiff,.tif',
+      format_label: 'TIFF images (.tiff, .tif)',
+      allows_camera: true,
+    };
+  }
+  if (id === 'heic' || id.startsWith('heic-')) {
+    return {
+      allowed_exts: ['.heic', '.heif'],
+      accept_attr: '.heic,.heif,image/heic,image/heif',
+      format_label: 'HEIC images (.heic, .heif)',
+      allows_camera: true,
+    };
+  }
+
+  // 3. PDF tools
+  if (id === 'merge' || id.startsWith('pdf-') || id.match(/^(split|compress|encrypt|watermark|edit-pdf|editor|extract-images|extractor|rotate)$/) || id.endsWith('-pdf')) {
+    const isEncrypt = id === 'encrypt';
+    return {
+      allowed_exts: isEncrypt ? ['.pdf', '.tceo'] : ['.pdf'],
+      accept_attr: isEncrypt ? '.pdf,.tceo,application/pdf' : '.pdf,application/pdf',
+      format_label: isEncrypt ? 'PDF or TCEO files (.pdf, .tceo)' : 'PDF documents (.pdf)',
+      allows_camera: false,
+    };
+  }
+
+  // 4. Document tools
+  if (id.startsWith('docx-') || id === 'docx') {
+    return {
+      allowed_exts: ['.docx'],
+      accept_attr: '.docx,application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+      format_label: 'Word documents (.docx)',
+      allows_camera: false,
+    };
+  }
+  if (id.startsWith('xlsx-') || id === 'xlsx') {
+    return {
+      allowed_exts: ['.xlsx', '.xls'],
+      accept_attr: '.xlsx,.xls,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      format_label: 'Excel spreadsheets (.xlsx, .xls)',
+      allows_camera: false,
+    };
+  }
+  if (id.startsWith('pptx-') || id === 'pptx') {
+    return {
+      allowed_exts: ['.pptx', '.ppt'],
+      accept_attr: '.pptx,.ppt,application/vnd.openxmlformats-officedocument.presentationml.presentation',
+      format_label: 'PowerPoint presentations (.pptx, .ppt)',
+      allows_camera: false,
+    };
+  }
+  if (id.startsWith('txt-') || id === 'txt') {
+    return {
+      allowed_exts: ['.txt'],
+      accept_attr: '.txt,text/plain',
+      format_label: 'Plain text files (.txt)',
+      allows_camera: false,
+    };
+  }
+  if (id.startsWith('odt-') || id === 'odt') {
+    return {
+      allowed_exts: ['.odt'],
+      accept_attr: '.odt,application/vnd.oasis.opendocument.text',
+      format_label: 'OpenDocument text files (.odt)',
+      allows_camera: false,
+    };
+  }
+  if (id.startsWith('csv-') || id === 'csv') {
+    return {
+      allowed_exts: ['.csv'],
+      accept_attr: '.csv,text/csv',
+      format_label: 'CSV files (.csv)',
+      allows_camera: false,
+    };
+  }
+
+  // 5. Ebooks
+  if (id.startsWith('epub-') || id === 'epub') {
+    return { allowed_exts: ['.epub'], accept_attr: '.epub,application/epub+zip', format_label: 'EPUB eBooks (.epub)', allows_camera: false };
+  }
+  if (id.startsWith('mobi-') || id === 'mobi') {
+    return { allowed_exts: ['.mobi'], accept_attr: '.mobi,application/x-mobipocket-ebook', format_label: 'MOBI eBooks (.mobi)', allows_camera: false };
+  }
+  if (id.startsWith('azw3-') || id === 'azw3') {
+    return { allowed_exts: ['.azw3'], accept_attr: '.azw3', format_label: 'AZW3 eBooks (.azw3)', allows_camera: false };
+  }
+  if (id.startsWith('fb2-') || id === 'fb2') {
+    return { allowed_exts: ['.fb2'], accept_attr: '.fb2', format_label: 'FB2 eBooks (.fb2)', allows_camera: false };
+  }
+  if (id.startsWith('rtf-') || id === 'rtf') {
+    return { allowed_exts: ['.rtf'], accept_attr: '.rtf,application/rtf,text/rtf', format_label: 'RTF documents (.rtf)', allows_camera: false };
+  }
+
+  // 6. Archives
+  if (id.startsWith('archive-create-') || id.startsWith('archive-folder-') || id === 'archive-merge') {
+    return { allowed_exts: ['*'], accept_attr: '*/*', format_label: 'Any files', allows_camera: true };
+  }
+  if (id === 'archive-extract-zip' || id === 'arc-zip-to-7z' || id === 'arc-zip-to-tar' || id === 'arc-zip-to-tar-gz' || id === 'arc-zip-to-rar') {
+    return { allowed_exts: ['.zip'], accept_attr: '.zip,application/zip', format_label: 'ZIP archives (.zip)', allows_camera: false };
+  }
+  if (id === 'archive-extract-rar' || id === 'arc-rar-to-zip' || id === 'arc-rar-to-7z' || id === 'arc-rar-to-tar' || id === 'arc-rar-to-tar-gz') {
+    return { allowed_exts: ['.rar'], accept_attr: '.rar,application/x-rar-compressed', format_label: 'RAR archives (.rar)', allows_camera: false };
+  }
+  if (id === 'archive-extract-7z' || id === 'arc-7z-to-zip' || id === 'arc-7z-to-tar' || id === 'arc-7z-to-tar-gz' || id === 'arc-7z-to-rar') {
+    return { allowed_exts: ['.7z'], accept_attr: '.7z,application/x-7z-compressed', format_label: '7Z archives (.7z)', allows_camera: false };
+  }
+  if (id === 'archive-extract-tar' || id === 'arc-tar-to-zip' || id === 'arc-tar-to-7z' || id === 'arc-tar-to-gz' || id === 'arc-tar-to-rar') {
+    return { allowed_exts: ['.tar'], accept_attr: '.tar,application/x-tar', format_label: 'TAR archives (.tar)', allows_camera: false };
+  }
+  if (id === 'archive-extract-tar-gz' || id === 'arc-tar-gz-to-zip' || id === 'arc-tar-gz-to-7z' || id === 'arc-tar-gz-to-tar' || id === 'arc-tar-gz-to-rar') {
+    return { allowed_exts: ['.tar.gz', '.tgz'], accept_attr: '.tar.gz,.tgz,application/gzip', format_label: 'TAR.GZ archives (.tar.gz, .tgz)', allows_camera: false };
+  }
+  if (id.startsWith('archive-protect') || id.startsWith('archive-unlock') || id.startsWith('archive-duplicate') || id.startsWith('archive-inspector')) {
+    return {
+      allowed_exts: ['.zip', '.7z', '.rar', '.tar', '.tar.gz', '.tgz', '.tar.bz2', '.tbz2', '.tar.xz', '.txz', '.gz', '.bz2', '.xz', '.wim', '.iso', '.cab'],
+      accept_attr: '.zip,.7z,.rar,.tar,.tar.gz,.tgz,.tar.bz2,.tar.xz,.gz,.bz2,.xz,.wim,.iso,.cab',
+      format_label: 'Archive files (.zip, .7z, .rar, .tar...)',
+      allows_camera: false,
+    };
+  }
+
+  // Fallback
+  return {
+    allowed_exts: ['*'],
+    accept_attr: '*/*',
+    format_label: 'files',
+    allows_camera: true,
+  };
 }
 
 /**

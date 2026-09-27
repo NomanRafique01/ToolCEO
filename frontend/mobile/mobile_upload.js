@@ -92,9 +92,38 @@
       const dropSlot = document.getElementById('drop-icon-slot');
       if (dropSlot) dropSlot.innerHTML = scaledIcon(theme.icon, color, 48, 'drop-icon');
     }
+    _themeData = { ..._themeData, ...theme };
+
+    const formatLabel = theme.format_label || _themeData.format_label;
+    const hintEl = document.getElementById('drop-format-hint');
+    if (hintEl) {
+      if (formatLabel && formatLabel !== 'files') {
+        hintEl.innerHTML = `<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg> Accepts: <strong>${formatLabel}</strong>`;
+        hintEl.style.display = 'inline-flex';
+      } else {
+        hintEl.style.display = 'none';
+      }
+    }
+
+    const galleryInput = document.getElementById('file-input-gallery');
+    if (galleryInput && theme.accept_attr) {
+      galleryInput.accept = theme.accept_attr;
+    }
+
+    const cameraBtn = document.getElementById('take-photo-btn');
+    if (cameraBtn) {
+      if (theme.allows_camera === false) {
+        cameraBtn.classList.add('is-camera-dimmed');
+        cameraBtn.title = 'Camera capture not supported for this tool';
+      } else {
+        cameraBtn.classList.remove('is-camera-dimmed');
+        cameraBtn.title = '';
+      }
+    }
   }
 
-  applyTheme(readEmbeddedTheme());
+  let _themeData = readEmbeddedTheme() || {};
+  applyTheme(_themeData);
 
   let heartbeatTimer = null;
 
@@ -324,6 +353,96 @@
   const formView        = document.getElementById('form-view');
   const successView     = document.getElementById('success-view');
 
+  // ── Format Validation & Invalid Format Notification ────────────────────
+
+  let _activeToastTimeout = null;
+
+  function showInvalidFormatToast({ title, subtitle, message, formatLabel }) {
+    const existing = document.getElementById('mobile-invalid-toast');
+    if (existing) existing.remove();
+    if (_activeToastTimeout) clearTimeout(_activeToastTimeout);
+
+    const toast = document.createElement('div');
+    toast.className = 'mobile-toast';
+    toast.id = 'mobile-invalid-toast';
+    toast.setAttribute('role', 'alert');
+
+    toast.innerHTML = `
+      <div class="mobile-toast-header">
+        <div class="mobile-toast-icon">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
+        </div>
+        <div class="mobile-toast-title-group">
+          <div class="mobile-toast-title">${title || 'Invalid Format'}</div>
+          ${subtitle ? `<div class="mobile-toast-subtitle">${subtitle}</div>` : ''}
+        </div>
+        <button type="button" class="mobile-toast-close" id="mobile-toast-close" aria-label="Dismiss">✕</button>
+      </div>
+      <div class="mobile-toast-body">${message}</div>
+      <div class="mobile-toast-req-pill">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <polyline points="9 11 12 14 22 4"></polyline>
+          <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"></path>
+        </svg>
+        <span>Please select: <strong>${formatLabel || 'the right format'}</strong></span>
+      </div>
+      <div class="mobile-toast-progress">
+        <div class="mobile-toast-progress-fill"></div>
+      </div>
+    `;
+
+    document.body.appendChild(toast);
+
+    function dismissToast() {
+      if (_activeToastTimeout) clearTimeout(_activeToastTimeout);
+      toast.classList.add('is-dismissing');
+      setTimeout(() => toast.remove(), 260);
+    }
+
+    toast.querySelector('#mobile-toast-close')?.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dismissToast();
+    });
+
+    toast.addEventListener('click', dismissToast);
+
+    _activeToastTimeout = setTimeout(dismissToast, 4800);
+  }
+
+  function triggerShakeAndHaptic() {
+    try { navigator.vibrate?.([50, 70, 50]); } catch (_) {}
+    if (dropzone) {
+      dropzone.classList.remove('is-invalid-shake');
+      void dropzone.offsetWidth; // trigger reflow
+      dropzone.classList.add('is-invalid-shake');
+      setTimeout(() => dropzone.classList.remove('is-invalid-shake'), 500);
+    }
+  }
+
+  function isFileAccepted(file) {
+    const allowed = _themeData.allowed_exts;
+    if (!allowed || allowed.includes('*')) return true;
+
+    const fname = (file.name || '').toLowerCase();
+    for (const ext of allowed) {
+      if (fname.endsWith(ext.toLowerCase())) return true;
+    }
+    const ext = '.' + fname.split('.').pop();
+    if (allowed.includes(ext.toLowerCase())) return true;
+
+    // Camera image fallback if tool allows camera
+    if (_themeData.allows_camera && file.type && file.type.startsWith('image/')) {
+      const imgExts = ['.png', '.jpg', '.jpeg', '.webp', '.bmp', '.gif', '.tiff', '.tif', '.svg', '.avif', '.heic', '.heif'];
+      if (allowed.some((e) => imgExts.includes(e))) return true;
+    }
+
+    return false;
+  }
+
   dropzone?.addEventListener('click', () => {
     armFilePick();
     galleryInput?.click();
@@ -332,35 +451,115 @@
     armFilePick();
     galleryInput?.click();
   });
-  document.getElementById('take-photo-btn')?.addEventListener('click', () => {
+
+  const photoBtn = document.getElementById('take-photo-btn');
+  photoBtn?.addEventListener('click', (e) => {
+    if (_themeData.allows_camera === false) {
+      e.preventDefault();
+      e.stopPropagation();
+      triggerShakeAndHaptic();
+      const toolName = _themeData.tool_name || 'This tool';
+      const formatLabel = _themeData.format_label || 'documents';
+      showInvalidFormatToast({
+        title: 'Invalid Format',
+        subtitle: toolName,
+        message: `Camera capture is not supported for ${toolName}.`,
+        formatLabel: formatLabel,
+      });
+      return;
+    }
     armFilePick();
     cameraInput?.click();
   });
+
   ['pointerdown', 'touchstart'].forEach((evt) => {
     dropzone?.addEventListener(evt, armFilePick, { passive: true });
     document.getElementById('choose-gallery-btn')?.addEventListener(evt, armFilePick, { passive: true });
-    document.getElementById('take-photo-btn')?.addEventListener(evt, armFilePick, { passive: true });
+    photoBtn?.addEventListener(evt, (e) => {
+      if (_themeData.allows_camera === false) {
+        // Prevent default arming on touch if camera is not allowed
+        return;
+      }
+      armFilePick();
+    }, { passive: true });
   });
 
   galleryInput?.addEventListener('click', armFilePick);
-  cameraInput?.addEventListener('click', armFilePick);
+  cameraInput?.addEventListener('click', (e) => {
+    if (_themeData.allows_camera === false) {
+      e.preventDefault();
+      return;
+    }
+    armFilePick();
+  });
+
+  // ── Drag & Drop on Mobile/Tablet Dropzone ─────────────────────────────────
+  dropzone?.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    dropzone.classList.add('drag-active');
+  });
+  dropzone?.addEventListener('dragleave', () => {
+    dropzone.classList.remove('drag-active');
+  });
+  dropzone?.addEventListener('drop', (e) => {
+    e.preventDefault();
+    dropzone.classList.remove('drag-active');
+    if (e.dataTransfer?.files?.length) {
+      addFiles(Array.from(e.dataTransfer.files));
+    }
+  });
 
   function addFiles(newFiles) {
-    for (const file of newFiles) selectedFiles.push(file);
-    renderPreviews();
+    const valid = [];
+    const invalid = [];
+
+    for (const file of newFiles) {
+      if (isFileAccepted(file)) {
+        valid.push(file);
+      } else {
+        invalid.push(file);
+      }
+    }
+
+    if (invalid.length > 0) {
+      triggerShakeAndHaptic();
+
+      const toolName = _themeData.tool_name || 'This tool';
+      const formatLabel = _themeData.format_label || 'the required format';
+
+      let detailMsg;
+      if (invalid.length === 1) {
+        const rejected = invalid[0].name;
+        detailMsg = `"${rejected}" has an invalid format and cannot be loaded into ${toolName}.`;
+      } else {
+        detailMsg = `${invalid.length} files have an invalid format and cannot be loaded into ${toolName}.`;
+      }
+
+      showInvalidFormatToast({
+        title: 'Invalid Format',
+        subtitle: toolName,
+        message: detailMsg,
+        formatLabel: formatLabel,
+      });
+    }
+
+    if (valid.length > 0) {
+      for (const file of valid) selectedFiles.push(file);
+      renderPreviews();
+    }
   }
 
   galleryInput?.addEventListener('change', (e) => {
     pickingFiles = false;
     resumeSession();
-    if (e.target.files?.length) addFiles(e.target.files);
+    if (e.target.files?.length) addFiles(Array.from(e.target.files));
     galleryInput.value = '';
   });
 
   cameraInput?.addEventListener('change', (e) => {
     pickingFiles = false;
     resumeSession();
-    if (e.target.files?.length) addFiles(e.target.files);
+    if (e.target.files?.length) addFiles(Array.from(e.target.files));
     cameraInput.value = '';
   });
   galleryInput?.addEventListener('cancel', () => { pickingFiles = false; resumeSession(); });
