@@ -77,6 +77,27 @@ function _notifyDisconnectBeforeLoad(requestedName) {
   });
 }
 
+async function _fetchBackendWithRetry(url, options, attempts = 8) {
+  let lastError = null;
+
+  for (let attempt = 0; attempt < attempts; attempt += 1) {
+    try {
+      const response = await fetch(url, options);
+      if (response.ok || attempt === attempts - 1) return response;
+    } catch (error) {
+      lastError = error;
+      if (attempt === attempts - 1) throw error;
+    }
+
+    // Packaged Python startup can take a moment after the Electron window is
+    // visible. Retry both connection failures and an incompatible backend
+    // being replaced on the shared local port.
+    await new Promise((resolve) => setTimeout(resolve, 350));
+  }
+
+  throw lastError || new Error('Backend is unavailable');
+}
+
 function _guardToolSwitch(nextTool, currentTool) {
   if (!_isPhoneLive()) return true;
   // Clearing the active tool is how sidebar/category navigation resets the
@@ -244,7 +265,7 @@ export async function openMobileTransferModal() {
     const backendUrl = window.TOOLCEO_BACKEND_URL || 'http://127.0.0.1:8765';
     const formatMeta = getToolFormatMeta(tool);
     const toolOpts = _deriveToolOptions(tool);
-    const res = await fetch(`${backendUrl}/api/mobile/session/create`, {
+    const res = await _fetchBackendWithRetry(`${backendUrl}/api/mobile/session/create`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
@@ -268,7 +289,10 @@ export async function openMobileTransferModal() {
       }),
     });
 
-    if (!res.ok) throw new Error('Failed to create pairing session');
+    if (!res.ok) {
+      const failure = await res.json().catch(() => ({}));
+      throw new Error(failure.detail || `Pairing request failed (${res.status})`);
+    }
     const sessionData = await res.json();
     _activeSessionId = sessionData.session_id;
     _activeMobileUrl = sessionData.url;
@@ -284,7 +308,7 @@ export async function openMobileTransferModal() {
     }
 
     if (!qrDataUrl) {
-      qrDataUrl = `https://api.qrserver.com/v1/create-qr-code/?size=190x190&data=${encodeURIComponent(_activeMobileUrl)}`;
+      throw new Error('Could not generate the QR code. Please try again.');
     }
 
     const qrLoader = document.getElementById('dz-phone-qr-loader');
@@ -292,14 +316,21 @@ export async function openMobileTransferModal() {
     const statusText = document.getElementById('dz-phone-status-text');
 
     if (qrImg) {
-      qrImg.src = qrDataUrl;
       qrImg.onload = () => {
         if (qrLoader) qrLoader.style.display = 'none';
         qrImg.style.display = 'block';
+        if (statusText) statusText.textContent = 'Waiting for phone to scan…';
       };
+      qrImg.onerror = () => {
+        if (qrLoader) {
+          qrLoader.classList.add('is-error');
+          const label = qrLoader.querySelector('span');
+          if (label) label.textContent = 'QR code unavailable';
+        }
+        if (statusText) statusText.textContent = 'Could not load QR code. Please try again.';
+      };
+      qrImg.src = qrDataUrl;
     }
-
-    if (statusText) statusText.textContent = 'Waiting for phone to scan…';
 
     // Start polling
     _startPolling(backendUrl, _activeSessionId);
@@ -307,6 +338,12 @@ export async function openMobileTransferModal() {
   } catch (err) {
     console.error('[mobile-transfer]', err);
     const statusText = document.getElementById('dz-phone-status-text');
+    const qrLoader = document.getElementById('dz-phone-qr-loader');
+    if (qrLoader) {
+      qrLoader.classList.add('is-error');
+      const label = qrLoader.querySelector('span');
+      if (label) label.textContent = 'QR code unavailable';
+    }
     if (statusText) statusText.textContent = 'Error: ' + err.message;
   }
 }

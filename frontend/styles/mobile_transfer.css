@@ -330,6 +330,20 @@
 
 .dz-phone-qr-loader svg {
   stroke: var(--tool-accent, #00E5C0);
+  transform-origin: 50% 50%;
+  animation: dzPhoneQrSpin 0.9s linear infinite;
+}
+
+.dz-phone-qr-loader.is-error svg {
+  display: none;
+}
+
+.dz-phone-qr-loader.is-error {
+  color: #EF6B73;
+}
+
+@keyframes dzPhoneQrSpin {
+  to { transform: rotate(360deg); }
 }
 
 /* Status, Steps & Actions — centered under the QR */

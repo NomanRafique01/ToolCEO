@@ -4,6 +4,7 @@ import json
 import time
 import socket
 import shutil
+import sys
 import tempfile
 import uuid
 from typing import Dict, Any, List, Optional
@@ -23,8 +24,12 @@ HEARTBEAT_STALE_SECONDS = 8
 MOBILE_TEMP_ROOT = os.path.join(tempfile.gettempdir(), "toolceo_mobile_uploads")
 os.makedirs(MOBILE_TEMP_ROOT, exist_ok=True)
 
-_PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-_FRONTEND_MOBILE = os.path.join(_PROJECT_ROOT, "frontend", "mobile")
+if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+    _PROJECT_ROOT = sys._MEIPASS
+    _FRONTEND_MOBILE = os.path.join(_PROJECT_ROOT, "frontend", "mobile")
+else:
+    _PROJECT_ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+    _FRONTEND_MOBILE = os.path.join(_PROJECT_ROOT, "frontend", "mobile")
 
 _HEX_COLOR = re.compile(r"^#([0-9a-fA-F]{6}|[0-9a-fA-F]{3})$")
 _SAFE_TEXT = re.compile(r"[\x00-\x08\x0b\x0c\x0e-\x1f]")

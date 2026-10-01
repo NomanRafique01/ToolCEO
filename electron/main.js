@@ -609,6 +609,44 @@ async function registerFileAssociation() {
 const BACKEND_PORT = process.env.TOOLCEO_PORT ? parseInt(process.env.TOOLCEO_PORT, 10) : 8765;
 const BACKEND_URL = `http://127.0.0.1:${BACKEND_PORT}`;
 
+function stopIncompatibleWindowsBackend() {
+  if (!IS_WIN) return false;
+
+  try {
+    const netstat = execFileSync('netstat', ['-ano', '-p', 'tcp'], {
+      encoding: 'utf8',
+      windowsHide: true,
+    });
+    const listeningPids = new Set();
+
+    for (const line of netstat.split(/\r?\n/)) {
+      const match = line.trim().match(/^TCP\s+(\S+)\s+\S+\s+LISTENING\s+(\d+)$/i);
+      if (!match) continue;
+      const localAddress = match[1];
+      if (localAddress.endsWith(`:${BACKEND_PORT}`)) listeningPids.add(match[2]);
+    }
+
+    for (const pid of listeningPids) {
+      const task = execFileSync('tasklist', ['/fi', `PID eq ${pid}`, '/fo', 'csv', '/nh'], {
+        encoding: 'utf8',
+        windowsHide: true,
+      });
+      if (!/"main_backend\.exe"/i.test(task)) continue;
+
+      console.warn(`[backend] Replacing incompatible ToolCEO backend on port ${BACKEND_PORT} (pid ${pid}).`);
+      execFileSync('taskkill', ['/pid', pid, '/f', '/t'], {
+        stdio: 'ignore',
+        windowsHide: true,
+      });
+      return true;
+    }
+  } catch (err) {
+    console.warn('[backend] Could not inspect an incompatible backend:', err.message);
+  }
+
+  return false;
+}
+
 function startBackend() {
   // ── Manual backend override ───────────────────────────────────────────────
   // Set TOOLCEO_MANUAL_BACKEND=1 to skip auto-spawn (e.g. you started uvicorn manually).
@@ -632,7 +670,7 @@ function startBackend() {
       res.on('end', () => {
         try {
           const json = JSON.parse(body);
-          resolve(Boolean(json && json.status === 'ok'));
+          resolve(Boolean(json && json.status === 'ok' && json.mobile_transfer_api === true));
         } catch (_) {
           resolve(false);
         }
@@ -647,7 +685,14 @@ function startBackend() {
       console.log(`[backend] Backend already running on port ${BACKEND_PORT} — skipping spawn.`);
       return;
     }
-    _spawnBackend();
+    const replaced = stopIncompatibleWindowsBackend();
+    if (replaced) {
+      // Give Windows a moment to release the old listener before binding the
+      // same port with the current packaged backend.
+      setTimeout(_spawnBackend, 150);
+    } else {
+      _spawnBackend();
+    }
   });
 }
 

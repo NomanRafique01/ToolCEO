@@ -66,7 +66,9 @@ def root():
 
 @app.get("/health")
 def health():
-    return {"status": "ok"}
+    # The desktop uses this capability marker to avoid reusing an older
+    # ToolCEO backend that may still be running on the same local port.
+    return {"status": "ok", "mobile_transfer_api": True}
 
 
 app.include_router(encrypt_router, prefix="/api")
