@@ -10,9 +10,22 @@
  */
 
 import { setBreadcrumb }          from './navigation.js';
-import { setActiveTool }          from './toolstate.js';
+import { setActiveTool, onToolChange } from './toolstate.js';
 import { getLockedModuleId } from './modulelock.js';
 import { isFavourite as _isFavourite } from './favourites.js';
+
+// Sync card selection highlight in the explore-section grid whenever active tool changes
+onToolChange((tool) => {
+  const container = document.getElementById('explore-section');
+  if (!container) return;
+  container.querySelectorAll('.fmt-card').forEach((card) => {
+    if (tool && card.dataset.id === tool.id) {
+      card.classList.add('selected');
+    } else {
+      card.classList.remove('selected');
+    }
+  });
+});
 
 // ─── MODULE-LOCK NAVIGATION HOOK ──────────────────────────────────────────────
 let _navigateToModule = null;
@@ -859,7 +872,7 @@ function _scrollToDropZone() {
 
 // ─── SUB-PANEL: conversions for one ebook format ──────────────────────────────
 
-function renderEbookConversions(container, activateNav, fmtKey) {
+export function renderEbookConversions(container, activateNav, fmtKey) {
   const fmt   = EBOOK_FORMATS.find((f) => f.fmt === fmtKey);
   const cards = CONVERSIONS[fmtKey] || [];
   const theme = FORMAT_THEME[fmtKey];
@@ -1009,5 +1022,27 @@ export function getAllEbookTools() {
     }
   }
   return result;
+}
+
+/**
+ * Renders the specific eBook conversion format panel that contains the given tool.
+ * Used when activating a tool from universal search or quick launcher.
+ * @param {HTMLElement} container
+ * @param {Function} activateNav
+ * @param {string} toolId
+ */
+export function renderEbookToolView(container, activateNav, toolId) {
+  const fmtKey = toolId ? toolId.split('-')[0] : null;
+  if (fmtKey && EBOOK_FORMATS.some((f) => f.fmt === fmtKey) && CONVERSIONS[fmtKey]) {
+    renderEbookConversions(container, activateNav, fmtKey);
+    return;
+  }
+  for (const k of Object.keys(CONVERSIONS)) {
+    if (CONVERSIONS[k]?.some((c) => c.id === toolId)) {
+      renderEbookConversions(container, activateNav, k);
+      return;
+    }
+  }
+  renderEbookFormats(container, activateNav);
 }
 

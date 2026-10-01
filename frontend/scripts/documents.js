@@ -1820,3 +1820,35 @@ export function getAllDocumentTools() {
   return result;
 }
 
+/**
+ * Renders the specific document format panel that contains the given tool.
+ * Used when activating a tool from universal search or quick launcher.
+ * @param {HTMLElement} container
+ * @param {Function} activateNav
+ * @param {string} toolId
+ */
+export function renderDocumentToolView(container, activateNav, toolId) {
+  if (
+    PDF_TOOLS.some((t) => t.id === toolId) ||
+    PDF_CONVERSIONS.some((t) => t.id === toolId) ||
+    toolId.startsWith('pdf-') ||
+    ['merge', 'split', 'compress', 'encrypt', 'rotate', 'extractor', 'watermark', 'editor', 'images-pdf'].includes(toolId)
+  ) {
+    renderPdfTools(container, activateNav);
+  } else if (DOCX_CONVERSIONS.some((t) => t.id === toolId) || toolId.startsWith('docx-')) {
+    renderDocxTools(container, activateNav);
+  } else if (XLSX_CONVERSIONS.some((t) => t.id === toolId) || toolId.startsWith('xlsx-')) {
+    renderXlsxTools(container, activateNav);
+  } else if (PPTX_CONVERSIONS.some((t) => t.id === toolId) || toolId.startsWith('pptx-')) {
+    renderPptxTools(container, activateNav);
+  } else if (TXT_CONVERSIONS.some((t) => t.id === toolId) || toolId.startsWith('txt-')) {
+    renderTxtTools(container, activateNav);
+  } else if (ODT_CONVERSIONS.some((t) => t.id === toolId) || toolId.startsWith('odt-')) {
+    renderOdtTools(container, activateNav);
+  } else if (CSV_CONVERSIONS.some((t) => t.id === toolId) || toolId.startsWith('csv-')) {
+    renderCsvTools(container, activateNav);
+  } else {
+    renderDocumentFormats(container, activateNav);
+  }
+}
+

@@ -19,9 +19,10 @@ import { getLockedModuleId }                         from './modulelock.js';
 import { setPendingLockContext }                     from './modules.js';
 import { initSearchEngine, searchTools, getSuggestedTools, getToolById } from './searchEngine.js';
 
-let _activateNav  = null;
-let activeFilter  = 'all';
-let selectedIndex = -1;
+let _activateNav    = null;
+let _navigateToTool = null;
+let activeFilter    = 'all';
+let selectedIndex   = -1;
 
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 
@@ -43,8 +44,9 @@ function escapeHTML(str) {
 
 // ─── Init ────────────────────────────────────────────────────────────────────
 
-export function initHeaderSearch({ activateNav } = {}) {
-  _activateNav = activateNav;
+export function initHeaderSearch({ activateNav, navigateToTool } = {}) {
+  _activateNav    = activateNav;
+  _navigateToTool = navigateToTool;
 
   // Pre-warm the search engine immediately (non-blocking, fast)
   try { initSearchEngine(); } catch (_) {}
@@ -171,50 +173,37 @@ export function initHeaderSearch({ activateNav } = {}) {
       return;
     }
 
-    // ── Exit any conflicting dashboard states ──────────────────────────────
-    const dashPanel = document.getElementById('dashboard-panel');
-    if (dashPanel) {
-      const inModules = dashPanel.classList.contains('modules-active');
-      const inRecent  = dashPanel.classList.contains('recent-active');
-      if (inModules || inRecent) {
-        dashPanel.classList.remove('modules-active', 'recent-active');
-        // Switch sidebar highlight back to Dashboard without losing the tool
-        if (typeof _activateNav === 'function') {
-          // We only need the nav highlight update; we must NOT let activateNav
-          // call setActiveTool(null) or replace the explore grid.
-          // So we patch sidebar highlight directly here instead:
-          document.querySelectorAll('.nav-item, [data-label]').forEach((n) => {
-            n.classList.remove('active');
-            if (n.dataset && n.dataset.label === 'Dashboard') n.classList.add('active');
-          });
-        }
+    // Navigate directly into the tool's dedicated category & format panel
+    // (e.g. Documents → PDF Tools, Images → PNG Conversions, etc.)
+    // where all its sibling tool cards live, clear any conflicting panel states
+    // (Modules, Recent, About), update sidebar highlight, and activate the tool.
+    if (typeof _navigateToTool === 'function') {
+      _navigateToTool(tool);
+    } else {
+      // Fallback if navigation router is not provided
+      const dashPanel = document.getElementById('dashboard-panel');
+      if (dashPanel) {
+        dashPanel.classList.remove('modules-active', 'recent-active', 'about-active');
+      }
+      document.body.classList.remove('about-active');
+
+      setActiveTool({
+        id      : tool.id,
+        label   : tool.label,
+        mainText: tool.mainText,
+        subText : tool.subText,
+        icon    : tool.icon    || null,
+        color   : tool.color   || '#00E5C0',
+        bg      : tool.bg      || 'rgba(0,229,192,0.12)',
+        tag     : tool.tag     || tool.familyLabel || 'Tool',
+      });
+
+      const mainContent = document.getElementById('main-content');
+      if (mainContent) {
+        mainContent.scrollTop = 0;
+        requestAnimationFrame(() => { mainContent.scrollTop = 0; });
       }
     }
-
-    // ── Activate the tool via the full object (not just ID) ────────────────
-    // Pass the complete spec so _updateDropZone gets label, mainText, subText,
-    // icon, color, bg, tag — exactly as card clicks do in documents.js / images.js.
-    setActiveTool({
-      id      : tool.id,
-      label   : tool.label,
-      mainText: tool.mainText,
-      subText : tool.subText,
-      icon    : tool.icon    || null,
-      color   : tool.color   || '#00E5C0',
-      bg      : tool.bg      || 'rgba(0,229,192,0.12)',
-      tag     : tool.tag     || tool.familyLabel || 'Tool',
-    });
-
-    // ── Scroll to top so the drop zone is immediately visible ──────────────
-    // Force #main-content (the fixed scroll root) to top: 0.
-    // We do it immediately AND in the next animation frame to win any race
-    // with the drop zone re-render triggered by setActiveTool / onToolChange.
-    const mainContent = document.getElementById('main-content');
-    function _scrollToTop() {
-      if (mainContent) mainContent.scrollTop = 0;
-    }
-    _scrollToTop();
-    requestAnimationFrame(_scrollToTop);
   }
 
   // ── Event Listeners ────────────────────────────────────────────────────────

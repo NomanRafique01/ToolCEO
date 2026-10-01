@@ -9,9 +9,22 @@
  *   • renderImageFormats() — top-level grid shown when "Images" nav is clicked
  */
 
-import { setActiveTool } from './toolstate.js';
+import { setActiveTool, onToolChange } from './toolstate.js';
 import { getLockedModuleId } from './modulelock.js';
 import { isFavourite as _isFavourite } from './favourites.js';
+
+// Sync card selection highlight in the explore-section grid whenever active tool changes
+onToolChange((tool) => {
+  const container = document.getElementById('explore-section');
+  if (!container) return;
+  container.querySelectorAll('.fmt-card').forEach((card) => {
+    if (tool && card.dataset.id === tool.id) {
+      card.classList.add('selected');
+    } else {
+      card.classList.remove('selected');
+    }
+  });
+});
 
 // ─── MODULE-LOCK NAVIGATION HOOK ──────────────────────────────────────────────
 let _navigateToModule = null;
@@ -949,5 +962,34 @@ export function getAllImageTools() {
     }
   }
   return result;
+}
+
+/**
+ * Renders the specific image format panel that contains the given tool.
+ * Used when activating a tool from universal search or quick launcher.
+ * @param {HTMLElement} container
+ * @param {Function} activateNav
+ * @param {string} toolId
+ */
+export function renderImageToolView(container, activateNav, toolId) {
+  if (toolId === 'image_compressor') {
+    renderImageFormats(container, activateNav);
+  } else if (JPG_CONVERSIONS.some((t) => t.id === toolId) || toolId.startsWith('jpg-')) {
+    renderJpgTools(container, activateNav);
+  } else if (PNG_CONVERSIONS.some((t) => t.id === toolId) || toolId.startsWith('png-')) {
+    renderPngTools(container, activateNav);
+  } else if (WEBP_CONVERSIONS.some((t) => t.id === toolId) || toolId.startsWith('webp-')) {
+    renderWebpTools(container, activateNav);
+  } else if (SVG_CONVERSIONS.some((t) => t.id === toolId) || toolId.startsWith('svg-')) {
+    renderSvgTools(container, activateNav);
+  } else if (toolId.startsWith('gif-')) {
+    renderGifTools(container, activateNav);
+  } else if (toolId.startsWith('bmp-')) {
+    renderBmpTools(container, activateNav);
+  } else if (toolId.startsWith('tiff-')) {
+    renderTiffTools(container, activateNav);
+  } else {
+    renderImageFormats(container, activateNav);
+  }
 }
 

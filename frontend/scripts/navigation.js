@@ -12,16 +12,16 @@
  * inner content changes.
  */
 
-import { renderDocumentFormats, setNavigateToModule as setDocNav } from './documents.js';
-import { renderEbookFormats,    setNavigateToModule as setEbookNav } from './ebooks.js';
+import { renderDocumentFormats, renderDocumentToolView, setNavigateToModule as setDocNav } from './documents.js';
+import { renderEbookFormats,    renderEbookToolView,    setNavigateToModule as setEbookNav } from './ebooks.js';
 import { renderAudioFormats,    setNavigateToModule as setAudioNav } from './audio.js';
 import { renderVideoFormats,    setNavigateToModule as setVideoNav } from './video.js';
 import { renderDataFormats,     setNavigateToModule as setDataNav } from './data.js';
-import { renderImageFormats,    setNavigateToModule as setImgNav } from './images.js';
+import { renderImageFormats,    renderImageToolView,    setNavigateToModule as setImgNav } from './images.js';
 import { renderModules, setPendingLockContext } from './modules.js';
 import { renderFavourites, setNavigateToModule as setFavNav } from './favourites.js';
 import { renderRecent } from './recent.js';
-import { renderArchives, setNavigateToModule as setArchiveNav, setActivateNavForArchives, routeZipToExtractor } from './archives.js';
+import { renderArchives, renderArchiveToolView, setNavigateToModule as setArchiveNav, setActivateNavForArchives, routeZipToExtractor } from './archives.js';
 import { renderAllTools, setNavigateToModule as setAllToolsNav } from './allTools.js';
 import { renderAbout }           from './about.js';
 import { setActiveTool }         from './toolstate.js';
@@ -217,7 +217,102 @@ export function initNavigation() {
   // Bind tool-card clicks on the default grid
   bindToolCardClicks(activateNav);
 
-  return { activateNav };
+  /**
+   * Navigates directly to a tool's dedicated category & format panel,
+   * clearing any conflicting states (Modules, Recent, About, etc.),
+   * activating the tool in the hero dropzone, and selecting its card.
+   * @param {object} tool  The enriched tool spec from searchEngine / toolstate
+   */
+  function navigateToTool(tool) {
+    if (!tool) return;
+
+    // 1. Resolve family and category navigation label
+    const family = (tool.family || '').toLowerCase();
+    let navLabel = 'Documents';
+    if (family === 'document') navLabel = 'Documents';
+    else if (family === 'image') navLabel = 'Images';
+    else if (family === 'ebook') navLabel = 'Ebooks';
+    else if (family === 'archive') navLabel = 'Archives';
+    else if (family === 'audio') navLabel = 'Audio';
+    else if (family === 'video') navLabel = 'Video';
+    else if (family === 'data') navLabel = 'Data';
+    else if (tool.familyLabel) {
+      const fl = tool.familyLabel.toLowerCase();
+      if (fl.includes('doc')) navLabel = 'Documents';
+      else if (fl.includes('img') || fl.includes('image')) navLabel = 'Images';
+      else if (fl.includes('ebook') || fl.includes('book')) navLabel = 'Ebooks';
+      else if (fl.includes('archive') || fl.includes('zip')) navLabel = 'Archives';
+    }
+
+    // 2. Clear any conflicting panel states (modules-active, recent-active, about-active)
+    const dashPanel = document.getElementById('dashboard-panel');
+    if (dashPanel) {
+      dashPanel.classList.remove('modules-active', 'recent-active', 'about-active');
+    }
+    document.body.classList.remove('about-active');
+
+    const searchArea = document.querySelector('.topbar-search-area');
+    if (searchArea) searchArea.style.display = '';
+
+    // 3. Update sidebar nav items highlight to the target category
+    navItems.forEach((n) => {
+      n.classList.remove('active');
+      if (n.dataset && n.dataset.label === navLabel) {
+        n.classList.add('active');
+      }
+    });
+
+    if (pageTitle) pageTitle.textContent = navLabel;
+
+    // 4. Render the specific category tool view into exploreSection
+    if (exploreSection) {
+      if (navLabel === 'Documents') {
+        renderDocumentToolView(exploreSection, activateNav, tool.id);
+      } else if (navLabel === 'Images') {
+        renderImageToolView(exploreSection, activateNav, tool.id);
+      } else if (navLabel === 'Ebooks') {
+        renderEbookToolView(exploreSection, activateNav, tool.id);
+      } else if (navLabel === 'Archives') {
+        renderArchiveToolView(exploreSection, activateNav, tool.id);
+      } else if (CATEGORY_RENDERERS[navLabel]) {
+        CATEGORY_RENDERERS[navLabel](exploreSection, activateNav);
+      }
+
+      exploreSection.classList.remove('explore-swap-fade');
+      void exploreSection.offsetWidth;
+      exploreSection.classList.add('explore-swap-fade');
+    }
+
+    // 5. Activate the tool in toolstate (this updates the hero dropzone)
+    setActiveTool({
+      id      : tool.id,
+      label   : tool.label,
+      mainText: tool.mainText,
+      subText : tool.subText,
+      icon    : tool.icon    || null,
+      color   : tool.color   || '#00E5C0',
+      bg      : tool.bg      || 'rgba(0,229,192,0.12)',
+      tag     : tool.tag     || tool.familyLabel || 'Tool',
+    });
+
+    // 6. Highlight the card in the explore grid
+    if (exploreSection) {
+      const card = exploreSection.querySelector(`.fmt-card[data-id="${tool.id}"]`);
+      if (card) {
+        exploreSection.querySelectorAll('.fmt-card').forEach((c) => c.classList.remove('selected'));
+        card.classList.add('selected');
+      }
+    }
+
+    // 7. Scroll to top so hero dropzone with the selected tool is immediately visible
+    const mainContent = document.getElementById('main-content');
+    if (mainContent) {
+      mainContent.scrollTop = 0;
+      requestAnimationFrame(() => { mainContent.scrollTop = 0; });
+    }
+  }
+
+  return { activateNav, navigateToTool };
 }
 
 // Called after restoring the original grid so tool-card clicks keep working

@@ -19,11 +19,11 @@ import { initSearchEngine }         from './searchEngine.js';
 const loadingStartedAt = performance.now();
 
 document.addEventListener('DOMContentLoaded', () => {
-  const { activateNav } = initNavigation();
+  const { activateNav, navigateToTool } = initNavigation();
   // Pre-warm the offline Fuse.js search index immediately so it is ready
   // before the user types anything. This is fast (<5 ms) and non-blocking.
   try { initSearchEngine(); } catch (_) {}
-  initHeaderSearch({ activateNav });
+  initHeaderSearch({ activateNav, navigateToTool });
   initDropZone();
   initQuickConvert();
   initNotificationBanner();

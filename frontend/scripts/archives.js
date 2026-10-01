@@ -773,3 +773,28 @@ export function getAllArchiveTools() {
   return result;
 }
 
+/**
+ * Renders the specific archive category panel that contains the given tool.
+ * Used when activating a tool from universal search or quick launcher.
+ * @param {HTMLElement} container
+ * @param {Function} activateNav
+ * @param {string} toolId
+ */
+export function renderArchiveToolView(container, activateNav, toolId) {
+  for (const cat of CATEGORIES) {
+    if (cat.id === 'convert') continue;
+    const tools = toolRecords(cat);
+    if (tools.some((t) => t.id === toolId)) {
+      renderCategory(container, activateNav, cat);
+      return;
+    }
+  }
+  for (const convCat of CONVERT_CATEGORIES) {
+    if (convCat.tools.some((t) => t.id === toolId)) {
+      renderConvertSubTools(container, activateNav, convCat);
+      return;
+    }
+  }
+  renderLanding(container, activateNav);
+}
+
