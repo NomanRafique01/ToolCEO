@@ -319,12 +319,12 @@ const DEFAULT_ICON_SVG = `
     <line x1="30" y1="40" x2="24" y2="34" stroke="#00E5C0" stroke-width="1.5" stroke-linecap="round"/>
   </svg>`;
 
-const DEFAULT_MAIN = 'Drop files anywhere to convert';
+const DEFAULT_MAIN = 'Select or drop a file to begin';
 const DEFAULT_SUB = 'or click to browse';
 const DEFAULT_PRIV = 'Your files never leave your device.';
 const DEFAULT_TITLE = 'Your workspace is ready';
-const DEFAULT_HINT = 'Drag anywhere';
-const DEFAULT_SUBT = 'Professional-grade offline conversion — fully private, zero cloud dependency.';
+const DEFAULT_HINT = '';
+const DEFAULT_SUBT = 'High-performance offline conversion engine. Fully private, zero cloud dependency.';
 
 // ─── HERO + DROP ZONE MORPH ───────────────────────────────────────────────────
 
@@ -607,7 +607,7 @@ function _updateDropZone(tool) {
 
     if (heroTitleEl) { heroTitleEl.textContent = DEFAULT_TITLE; heroTitleEl.style.color = ''; }
     if (heroSubEl) { heroSubEl.innerHTML = DEFAULT_SUBT; }
-    if (heroHintEl) { heroHintEl.textContent = DEFAULT_HINT; heroHintEl.style.color = ''; }
+    if (heroHintEl) { heroHintEl.textContent = DEFAULT_HINT; heroHintEl.style.display = DEFAULT_HINT ? '' : 'none'; heroHintEl.style.color = ''; }
     _renderedToolId = null;
     return;
   }
@@ -693,7 +693,7 @@ function _updateDropZone(tool) {
         ${_tagBadge(tag, color, bg)}
       </span>`;
   }
-  if (heroHintEl) { heroHintEl.textContent = 'Drop or click below'; heroHintEl.style.color = color; }
+  if (heroHintEl) { heroHintEl.textContent = 'Drop or click below'; heroHintEl.style.display = ''; heroHintEl.style.color = color; }
 
   // Fresh DOM query after _resetZoneContent
   const mainEl = zone.querySelector('.drop-main-text');

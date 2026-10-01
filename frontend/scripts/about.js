@@ -39,12 +39,10 @@ function svgIcon(path, size = 16, stroke = 'currentColor') {
 
 // --- Format coverage data ----------------------------------------------------
 const FORMAT_COVERAGE = [
-  { label: 'Documents', tools: 55,  color: '#FF6B6B', pct: 32 },
-  { label: 'eBooks',    tools: 42,  color: '#FBBF24', pct: 24 },
-  { label: 'Archives',  tools: 48,  color: '#84CC16', pct: 28 },
-  { label: 'Images',    tools: 27,  color: '#A78BFA', pct: 16 },
-  { label: 'Audio',     tools: 0,   color: '#FB923C', pct: 0, soon: true },
-  { label: 'Video',     tools: 0,   color: '#38BDF8', pct: 0, soon: true },
+  { label: 'Documents', tools: 55, color: '#FF6B6B', pct: 32 },
+  { label: 'eBooks',    tools: 42, color: '#FBBF24', pct: 24 },
+  { label: 'Archives',  tools: 48, color: '#84CC16', pct: 28 },
+  { label: 'Images',    tools: 27, color: '#A78BFA', pct: 16 },
 ];
 
 // --- Key features ------------------------------------------------------------
@@ -74,8 +72,8 @@ const FEATURES = [
     icon: svgIcon('<rect x="2" y="2" width="7" height="7" rx="1.5"/><rect x="15" y="2" width="7" height="7" rx="1.5"/><rect x="2" y="15" width="7" height="7" rx="1.5"/><rect x="15" y="15" width="7" height="7" rx="1.5"/>'),
     color: '#A78BFA', bg: 'rgba(167,139,250,0.12)',
     name: '172+ Tools',
-    desc: 'Documents, eBooks, Archives, Images, Audio, and Video in one unified workspace.',
-    detail: 'Covering 172 specialized tools across seven major categories, ToolCEO unifies PDF management, eBook format conversion, archive utilities, and multimedia processing within a single coherent desktop environment.',
+    desc: 'Documents, eBooks, Archives, and Images in one unified offline workspace.',
+    detail: 'Covering 172 specialized tools across four major categories, ToolCEO unifies PDF management, eBook format conversion, archive utilities, and image processing within a single coherent desktop environment.',
   },
   {
     icon: svgIcon('<circle cx="12" cy="12" r="3"/><path d="M19.1 5.9A9 9 0 1 0 21 12"/><polyline points="21 3 21 9 15 9"/>'),
@@ -174,7 +172,7 @@ export async function renderAbout(container) {
           <div class="about-stat-label">File Formats</div>
         </div>
         <div class="about-stat">
-          <div class="about-stat-value">7</div>
+          <div class="about-stat-value">4</div>
           <div class="about-stat-label">Categories</div>
         </div>
         <div class="about-stat">
@@ -198,7 +196,7 @@ export async function renderAbout(container) {
             </div>
             <div class="about-section-body">
               <p class="about-desc">
-                <strong style="color:var(--text-primary)">ToolCEO</strong> is a high-performance, privacy-focused desktop application designed to provide comprehensive control over your file conversions entirely offline. Whether converting PDF documents, eBooks, archives, audio, video, or images, ToolCEO delivers precision, efficiency, and speed.
+                <strong style="color:var(--text-primary)">ToolCEO</strong> is a high-performance, privacy-focused desktop application designed to provide comprehensive control over your file conversions entirely offline. Whether converting PDF documents, eBooks, archives, or images, ToolCEO delivers precision, efficiency, and speed.
               </p>
               <p class="about-desc">
                 Engineered for privacy-conscious professionals and power users, ToolCEO executes natively on your workstation without transmitting data to external servers. Your source and converted files remain strictly confidential on your local storage at all times.

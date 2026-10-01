@@ -14,9 +14,6 @@
 
 import { renderDocumentFormats, renderDocumentToolView, setNavigateToModule as setDocNav } from './documents.js';
 import { renderEbookFormats,    renderEbookToolView,    setNavigateToModule as setEbookNav } from './ebooks.js';
-import { renderAudioFormats,    setNavigateToModule as setAudioNav } from './audio.js';
-import { renderVideoFormats,    setNavigateToModule as setVideoNav } from './video.js';
-import { renderDataFormats,     setNavigateToModule as setDataNav } from './data.js';
 import { renderImageFormats,    renderImageToolView,    setNavigateToModule as setImgNav } from './images.js';
 import { renderModules, setPendingLockContext } from './modules.js';
 import { renderFavourites, setNavigateToModule as setFavNav } from './favourites.js';
@@ -32,9 +29,6 @@ import { setZipExtractRouter }   from '../tools/shared/progress.js';
 // Add future categories here.  Value is a function(container) that fills it.
 const CATEGORY_RENDERERS = {
   Documents  : renderDocumentFormats,
-  Audio      : renderAudioFormats,
-  Video      : renderVideoFormats,
-  Data       : renderDataFormats,
   Ebooks     : renderEbookFormats,
   Images     : renderImageFormats,
   Modules    : renderModules,
@@ -99,9 +93,6 @@ export function initNavigation() {
   }
   setDocNav(navigateToModule);
   setEbookNav(navigateToModule);
-  setAudioNav(navigateToModule);
-  setVideoNav(navigateToModule);
-  setDataNav(navigateToModule);
   setImgNav(navigateToModule);
   setArchiveNav(navigateToModule);
   setFavNav(navigateToModule);
@@ -233,9 +224,6 @@ export function initNavigation() {
     else if (family === 'image') navLabel = 'Images';
     else if (family === 'ebook') navLabel = 'Ebooks';
     else if (family === 'archive') navLabel = 'Archives';
-    else if (family === 'audio') navLabel = 'Audio';
-    else if (family === 'video') navLabel = 'Video';
-    else if (family === 'data') navLabel = 'Data';
     else if (tool.familyLabel) {
       const fl = tool.familyLabel.toLowerCase();
       if (fl.includes('doc')) navLabel = 'Documents';

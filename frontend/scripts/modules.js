@@ -143,11 +143,18 @@ const MODULES = [
     bg: 'rgba(251,146,60,0.15)',
     downloadUrl: 'https://github.com/NomanRafique01/ToolCEO_Modules/releases/download/v1.0.0/media-module.zip',
     icon: `<svg width="28" height="28" viewBox="0 0 16 16" fill="none">
-      <rect x="1" y="3" width="10" height="10" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
-      <path d="M11 6.5l4-2v7l-4-2V6.5Z" stroke="currentColor" stroke-width="1.3" stroke-linejoin="round"/>
-      <line x1="1" y1="6" x2="11" y2="6" stroke="currentColor" stroke-width="1.1"/>
-      <line x1="4" y1="3" x2="4"  y2="6" stroke="currentColor" stroke-width="1.1"/>
-      <line x1="7" y1="3" x2="7"  y2="6" stroke="currentColor" stroke-width="1.1"/>
+      <rect x="1" y="3" width="14" height="10" rx="1.5" stroke="currentColor" stroke-width="1.3"/>
+      <rect x="2" y="4.5" width="2" height="1.5" rx="0.4" stroke="currentColor" stroke-width="0.9"/>
+      <rect x="2" y="10" width="2" height="1.5" rx="0.4" stroke="currentColor" stroke-width="0.9"/>
+      <rect x="12" y="4.5" width="2" height="1.5" rx="0.4" stroke="currentColor" stroke-width="0.9"/>
+      <rect x="12" y="10" width="2" height="1.5" rx="0.4" stroke="currentColor" stroke-width="0.9"/>
+      <line x1="4.5" y1="3" x2="4.5" y2="13" stroke="currentColor" stroke-width="0.8" stroke-linecap="round" stroke-opacity="0.4"/>
+      <line x1="11.5" y1="3" x2="11.5" y2="13" stroke="currentColor" stroke-width="0.8" stroke-linecap="round" stroke-opacity="0.4"/>
+      <line x1="6"  y1="8"   x2="6"  y2="8"    stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
+      <line x1="7"  y1="6.5" x2="7"  y2="9.5"  stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+      <line x1="8"  y1="5.5" x2="8"  y2="10.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+      <line x1="9"  y1="6.5" x2="9"  y2="9.5"  stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
+      <line x1="10" y1="8"   x2="10" y2="8"    stroke="currentColor" stroke-width="1.3" stroke-linecap="round"/>
     </svg>`,
     unlocks: [
       'MP4 → MKV, AVI, MOV, WEBM',
