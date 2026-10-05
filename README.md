@@ -14,7 +14,6 @@
   </a>
   <img src="https://img.shields.io/badge/Shell-Electron%2035-47848f?style=flat-square&logo=electron&logoColor=white&labelColor=1a1a24" alt="Electron"/>
   <img src="https://img.shields.io/badge/Privacy-100%25%20Offline%20Local-10b981?style=flat-square&logo=shield&logoColor=white&labelColor=1a1a24" alt="Offline & Local"/>
-  <img src="https://img.shields.io/badge/License-Proprietary-64748b?style=flat-square&labelColor=1a1a24" alt="License"/>
 </p>
 
 <div align="center">
