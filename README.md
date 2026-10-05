@@ -10,14 +10,28 @@
   <a href="https://github.com/NomanRafique01/ToolCEO/releases/latest">
     <img src="https://img.shields.io/github/v/release/NomanRafique01/ToolCEO?style=flat-square&color=00f5d4" alt="Latest release"/>
   </a>
-  <img src="https://img.shields.io/badge/platform-Windows%20x64-0078d4?style=flat-square" alt="Platform: Windows x64"/>
-  <img src="https://img.shields.io/badge/Electron-35-47848f?style=flat-square&logo=electron&logoColor=white" alt="Electron 35"/>
+  <img src="https://img.shields.io/badge/platform-Windows%20x64-0078d4?style=flat-square&logo=windows&logoColor=white" alt="Platform: Windows x64"/>
+  <img src="https://img.shields.io/badge/Electron-43-47848f?style=flat-square&logo=electron&logoColor=white" alt="Electron 43"/>
   <img src="https://img.shields.io/badge/FastAPI-backend-009688?style=flat-square&logo=fastapi&logoColor=white" alt="FastAPI"/>
-  <img src="https://img.shields.io/badge/tools-98%20offline-10b981?style=flat-square" alt="98 offline tools"/>
-  <img src="https://img.shields.io/badge/license-proprietary-64748b?style=flat-square" alt="Proprietary license"/>
+  <img src="https://img.shields.io/badge/tools-172%20offline-10b981?style=flat-square" alt="172 offline tools"/>
+  <img src="https://img.shields.io/github/license/NomanRafique01/ToolCEO?style=flat-square" alt="MIT license"/>
+  <img src="https://hits.sh/github.com/NomanRafique01/ToolCEO.svg?style=flat-square&label=Visitors&color=00E5C0&labelColor=1a1a24" alt="Repository visitor counter"/>
 </p>
 
 ToolCEO converts, compresses, and transforms files entirely on your own machine. There are no uploads, no cloud services, and no telemetry. Your files never leave your computer.
+
+## Download
+
+<p align="center">
+  <a href="https://github.com/NomanRafique01/ToolCEO/releases/latest/download/ToolCEO.Setup.1.0.0.exe">
+    <img src="https://img.shields.io/badge/Download-Windows%20x64%20Installer-00f5d4?style=for-the-badge&logo=windows&logoColor=white&labelColor=1a1a24" alt="Download Windows installer"/>
+  </a>
+  <a href="https://github.com/NomanRafique01/ToolCEO/releases/latest">
+    <img src="https://img.shields.io/badge/All%20Releases-GitHub-64748b?style=for-the-badge&logo=github&logoColor=white&labelColor=1a1a24" alt="All releases"/>
+  </a>
+</p>
+
+The latest version is always available on the [releases page](https://github.com/NomanRafique01/ToolCEO/releases/latest). The Windows installer (`ToolCEO.Setup.*.exe`, ~206 MB) includes the full app with all 172 tools; optional conversion engines download on demand from inside the app.
 
 ## Table of Contents
 
@@ -33,11 +47,11 @@ ToolCEO converts, compresses, and transforms files entirely on your own machine.
 
 ## Features
 
-- **98 offline tools** covering PDF, Office, image, eBook, and archive workflows
+- **172 offline tools** covering PDF, Office, image, eBook, and archive workflows
 - **Fully local processing**: source files and outputs stay on your workstation
 - **Live progress**: Server-Sent Events stream frame-accurate progress to the interface
 - **Background job queue**: conversions run in a worker pool, so the UI stays responsive during batch jobs
-- **On-demand engines**: heavy processing modules install only when needed, keeping the core download around 70 MB
+- **On-demand engines**: heavy processing modules install only when needed, keeping the base installer around 206 MB
 
 ## Installation
 
@@ -45,8 +59,7 @@ Pre-built packages are available for 64-bit Windows.
 
 | Package | Description | Download |
 |---|---|---|
-| **Installer** (`.exe`) | Setup wizard with Start Menu entry, desktop shortcut, and uninstaller | [Download](https://github.com/NomanRafique01/ToolCEO/releases/latest/download/ToolCEO-Setup-1.0.0.exe) |
-| **Portable** (`.zip`) | Extract and run without administrator rights | [Download](https://github.com/NomanRafique01/ToolCEO/releases/latest/download/ToolCEO-Setup-1.0.0.zip) |
+| **Installer** (`.exe`) | Setup wizard with Start Menu entry, desktop shortcut, and uninstaller | [Download](https://github.com/NomanRafique01/ToolCEO/releases/latest/download/ToolCEO.Setup.1.0.0.exe) |
 
 ### System Requirements
 
@@ -55,37 +68,32 @@ Pre-built packages are available for 64-bit Windows.
 | OS | Windows 10 (x64) | Windows 11 (x64) |
 | Processor | Intel Core i3 / AMD Ryzen 3 | Any modern quad-core |
 | Memory | 4 GB RAM | 8 GB RAM for large batches |
-| Storage | 600 MB free | 2 GB free with optional modules |
+| Storage | 1 GB free | 3 GB free with all optional modules |
 | Network | Not required | Not required |
 
 ## Tool Catalog
 
-| Category | Tools | Highlights |
+| Category | Tools | Breakdown |
 |---|:---:|---|
-| **PDF utilities** | 12 | Merge, split, compress, rotate, protect, unlock, OCR, watermark, flatten, reorder, edit metadata |
-| **PDF conversions** | 8 | Word, Excel, PowerPoint, HTML, plain text, PNG, JPG, EPUB |
-| **Word** | 6 | PDF, plain text, HTML, ODT, Markdown, EPUB |
-| **PowerPoint** | 4 | PDF, ODP, slide images, HTML |
-| **Excel & CSV** | 9 | PDF, CSV, HTML, ODS, JSON, XML, and CSV to Excel, PDF, JSON, XML |
-| **Text & OpenDocument** | 10 | Markdown, RTF, plain text, ODT, ODS, and ODP to PDF, Word, HTML, Excel, PowerPoint |
-| **Images** | 26 | JPG, PNG, WebP, SVG, ICO, AVIF, TIFF, BMP, GIF conversions; batch compressor and resizer |
-| **eBooks** | 16 | EPUB, MOBI, AZW3, FB2 conversions to PDF, TXT, RTF, and each other |
-| **Archives** | 7 | ZIP, 7z, TAR, extraction of common formats, multi-part split and merge, AES-256 encryption |
-| **Total available** | **98** | |
+| **Documents** | 55 | PDF Tools (8), PDF Conversions (7), Word (6), Excel (6), PowerPoint (6), Text (7), OpenDocument (7), CSV (8) |
+| **Images** | 27 | JPG (8), PNG (7), WebP (7), SVG (4), Smart Compressor (1) |
+| **eBooks** | 42 | PDF, EPUB, MOBI, AZW3, FB2, TXT, RTF — 6 tools each |
+| **Archives** | 48 | Create (10), Extract (12), ZIP / TAR / 7Z / TAR.GZ / RAR convert (4 each), Utilities (6) |
+| **Total available** | **172** | |
 
-**Coming soon (11 tools):** data conversions (CSV, JSON, XML, YAML, SQL) and audio and video transcoding.
+**Coming soon:** Audio conversions (MP3, WAV, FLAC, AAC, OGG, WMA, M4A, OPUS), Video tools, and Data conversions.
 
 ## Modular Engines
 
 Heavy processing engines are downloaded from the in-app **Modules** panel and cached locally for offline use.
 
-| Module | Purpose | Size |
+| Module | Purpose | Download size |
 |---|---|---|
-| **Office** | Advanced DOC/DOCX, XLS/XLSX, and PPT/PPTX conversion | ~180 MB |
-| **OCR** | Text recognition for scanned PDFs and images | ~45 MB |
-| **Document** | Pandoc-based Markdown, LaTeX, RTF, and EPUB compilation | ~65 MB |
-| **eBook** | Calibre-based eBook transformation | ~90 MB |
-| **Media** | Audio and video transcoding (coming soon) | ~85 MB |
+| **Office** | Advanced DOC/DOCX, XLS/XLSX, and PPT/PPTX conversion | ~318 MB |
+| **OCR** | Text recognition for scanned PDFs and images | ~46 MB |
+| **Document** | Pandoc-based Markdown, LaTeX, RTF, and EPUB compilation | ~43 MB |
+| **eBook** | Calibre-based eBook transformation | ~281 MB |
+| **Media** | Audio and video transcoding (coming soon) | ~43 MB |
 
 ## Architecture
 
@@ -97,7 +105,7 @@ flowchart LR
     Engines --> Files[("Local storage")]
 ```
 
-- **Frontend:** Electron 35 provides the native window, dark-mode interface, and a secure context bridge to the OS.
+- **Frontend:** Electron 43 provides the native window, dark-mode interface, and a secure context bridge to the OS.
 - **Backend:** A local FastAPI service bound to `127.0.0.1` manages the worker queue and runs every conversion offline.
 - **Progress:** A persistent SSE connection streams job progress from 0% to 100%.
 
@@ -106,7 +114,7 @@ flowchart LR
 ### Prerequisites
 
 - Node.js 18.0 or later
-- Python 3.10 to 3.13
+- Python 3.10 or later
 - npm and pip
 
 ### Setup
@@ -137,7 +145,7 @@ The backend exposes the following endpoints on `http://127.0.0.1:8765`. Long-run
 | `/health` | `GET` | None | `{ "status": "ok" }` |
 | `/api/pdf/merger/merge` | `POST` | `files: UploadFile[]` | `{ "job_id": "<uuid>" }` |
 | `/api/pdf/split` | `POST` | `file: UploadFile`, `ranges: string` | `{ "job_id": "<uuid>" }` |
-| `/api/pdf/compressor/compress` | `POST` | `file: UploadFile`, `quality: string` | `{ "job_id": "<uuid>" }` |
+| `/api/pdf/compress` | `POST` | `file: UploadFile`, `quality: string` | `{ "job_id": "<uuid>" }` |
 | `/api/progress/{job_id}` | `GET` | `job_id` (path) | `text/event-stream` |
 | `/api/download/{job_id}` | `GET` | `job_id` (path) | Binary file stream |
 
@@ -158,7 +166,7 @@ Found a bug or have a feature request? Please open an issue on the [GitHub repos
 
 ## License
 
-ToolCEO is proprietary software. All rights reserved. See [LICENSE](LICENSE) for details.
+ToolCEO is released under the MIT License. See [LICENSE](LICENSE) for details.
 
 ---
 
