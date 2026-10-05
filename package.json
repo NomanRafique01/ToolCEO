@@ -28,7 +28,7 @@
         "nsis",
         "appx"
       ],
-      "icon": "assets/icon.ico"
+      "icon": "assets/icon1.ico"
     },
     "nsis": {
       "oneClick": false,
@@ -36,9 +36,9 @@
       "allowToChangeInstallationDirectory": true,
       "differentialPackage": false,
       "deleteAppDataOnUninstall": true,
-      "installerIcon": "assets/icon.ico",
-      "uninstallerIcon": "assets/icon.ico",
-      "installerHeaderIcon": "assets/icon.ico",
+      "installerIcon": "assets/icon1.ico",
+      "uninstallerIcon": "assets/icon1.ico",
+      "installerHeaderIcon": "assets/icon1.ico",
       "include": "assets/installer.nsh",
       "uninstallDisplayName": "ToolCEO",
       "createDesktopShortcut": true,

@@ -1,404 +1,167 @@
 <p align="center">
-  <img src="https://capsule-render.vercel.app/api?type=waving&color=0:00f5d4,50:7209b7,100:f77f00&height=200&section=header&text=ToolCEO&fontSize=90&fontColor=ffffff&fontAlignY=65&animation=fadeIn&fontAlign=50" width="100%"/>
+  <img src="https://capsule-render.vercel.app/api?type=waving&color=0:00f5d4,50:7209b7,100:f77f00&height=180&section=header&text=ToolCEO&fontSize=80&fontColor=ffffff&fontAlignY=65" width="100%"/>
+</p>
+
+<p align="center">
+  <strong>An offline, privacy-first desktop toolkit for documents, images, eBooks, and archives.</strong>
 </p>
 
 <p align="center">
   <a href="https://github.com/NomanRafique01/ToolCEO/releases/latest">
-    <img src="https://img.shields.io/badge/Release-v1.0.0-00f5d4?style=flat-square&labelColor=1a1a24" alt="Release Version"/>
+    <img src="https://img.shields.io/github/v/release/NomanRafique01/ToolCEO?style=flat-square&color=00f5d4" alt="Latest release"/>
   </a>
-  <a href="https://github.com/NomanRafique01/ToolCEO/releases/latest">
-    <img src="https://img.shields.io/badge/Tools-172%20Offline%20Available-10b981?style=flat-square&logo=shield&logoColor=white&labelColor=1a1a24" alt="172 Offline Tools"/>
-  </a>
-  <a href="https://github.com/NomanRafique01/ToolCEO/releases/latest">
-    <img src="https://img.shields.io/badge/Platform-Windows%20x64-0078d4?style=flat-square&logo=windows&logoColor=white&labelColor=1a1a24" alt="Platform Windows"/>
-  </a>
-  <img src="https://img.shields.io/badge/Shell-Electron%2035-47848f?style=flat-square&logo=electron&logoColor=white&labelColor=1a1a24" alt="Electron"/>
-  <img src="https://img.shields.io/badge/Privacy-100%25%20Offline%20Local-10b981?style=flat-square&logo=shield&logoColor=white&labelColor=1a1a24" alt="Offline & Local"/>
+  <img src="https://img.shields.io/badge/platform-Windows%20x64-0078d4?style=flat-square" alt="Platform: Windows x64"/>
+  <img src="https://img.shields.io/badge/Electron-35-47848f?style=flat-square&logo=electron&logoColor=white" alt="Electron 35"/>
+  <img src="https://img.shields.io/badge/FastAPI-backend-009688?style=flat-square&logo=fastapi&logoColor=white" alt="FastAPI"/>
+  <img src="https://img.shields.io/badge/tools-98%20offline-10b981?style=flat-square" alt="98 offline tools"/>
+  <img src="https://img.shields.io/badge/license-proprietary-64748b?style=flat-square" alt="Proprietary license"/>
 </p>
 
-<div align="center">
-  <h3>172 Production Tools Available 100% Offline</h3>
-  <p><strong>A privacy-first desktop utility suite for document manipulation, office conversions, image processing, and format transformations.</strong></p>
-  <p><em>Zero cloud connectivity • Zero external telemetries • Zero file size limits • Everything executes locally on your hardware.</em></p>
-</div>
-
-<br/>
-
-<div align="center">
-  <table>
-    <tr>
-      <td align="center" width="25%">
-        <b>100% Offline & Private</b><br/>
-        <sub>Zero network telemetry. Source files and outputs never leave the local workstation.</sub>
-      </td>
-      <td align="center" width="25%">
-        <b>172 Offline Tools</b><br/>
-        <sub>Comprehensive utility suite covering Documents, Images, eBooks, and Archives.</sub>
-      </td>
-      <td align="center" width="25%">
-        <b>Real-Time Event Stream</b><br/>
-        <sub>Server-Sent Events provide frame-accurate progress metrics to the desktop interface.</sub>
-      </td>
-      <td align="center" width="25%">
-        <b>Asynchronous Worker Queue</b><br/>
-        <sub>Background processing pool allows continuous multitasking without UI lag.</sub>
-      </td>
-    </tr>
-  </table>
-</div>
-
-<br/>
-
----
+ToolCEO converts, compresses, and transforms files entirely on your own machine. There are no uploads, no cloud services, and no telemetry. Your files never leave your computer.
 
 ## Table of Contents
 
-- [Overview](#overview)
-- [Downloads & Installation](#downloads--installation)
-- [Tool Directory (172 Offline Tools)](#tool-directory-172-offline-tools)
-  - [Document Tools](#document-tools)
-    - [PDF Tools & Utilities](#pdf-tools--utilities)
-    - [PDF Conversions](#pdf-conversions)
-    - [Word Conversions](#word-conversions)
-    - [PowerPoint Conversions](#powerpoint-conversions)
-    - [Excel & Spreadsheet Conversions](#excel--spreadsheet-conversions)
-    - [Text & OpenDocument Conversions](#text--opendocument-conversions)
-  - [Image Tools](#image-tools)
-  - [eBook Tools](#ebook-tools)
-  - [Archive Tools](#archive-tools)
-  - [Data Tools (Coming Soon)](#data-tools-coming-soon)
-  - [Audio & Video Tools (Coming Soon)](#audio--video-tools-coming-soon)
-- [Modular Engine Addons](#modular-engine-addons)
-- [System Architecture](#system-architecture)
-- [Getting Started & Development](#getting-started--development)
-- [Local API Reference](#local-api-reference)
-- [Project Roadmap](#project-roadmap)
+- [Features](#features)
+- [Installation](#installation)
+- [Tool Catalog](#tool-catalog)
+- [Modular Engines](#modular-engines)
+- [Architecture](#architecture)
+- [Development](#development)
+- [Local API](#local-api)
+- [Roadmap](#roadmap)
+- [License](#license)
 
----
+## Features
 
-## Overview
+- **98 offline tools** covering PDF, Office, image, eBook, and archive workflows
+- **Fully local processing**: source files and outputs stay on your workstation
+- **Live progress**: Server-Sent Events stream frame-accurate progress to the interface
+- **Background job queue**: conversions run in a worker pool, so the UI stays responsive during batch jobs
+- **On-demand engines**: heavy processing modules install only when needed, keeping the core download around 70 MB
 
-ToolCEO is an enterprise-grade desktop utility suite designed to eliminate the security, privacy, and bandwidth liabilities associated with cloud-hosted file conversion portals. Packaging high-throughput native processing libraries into an intuitive dark-mode desktop interface, ToolCEO handles all operations directly on your workstation.
+## Installation
 
-With **172 tools available 100% offline**, ToolCEO processes confidential documents, spreadsheets, slides, and media strictly in memory and local storage.
+Pre-built packages are available for 64-bit Windows.
 
----
-
-## Downloads & Installation
-
-Pre-compiled binary packages are available for 64-bit Windows environments:
-
-| Distribution Package | Target Architecture | Description | Download Link |
-|---|---|---|---|
-| **Windows Installer** (`.exe`) | Windows 10 / 11 (x64) | Full setup wizard with desktop shortcut, Start Menu entry, and uninstaller. | [Download Setup (.exe)](https://github.com/NomanRafique01/ToolCEO/releases/latest/download/ToolCEO-Setup-1.0.0.exe) |
-| **Portable Archive** (`.zip`) | Windows 10 / 11 (x64) | Standalone portable executable. Extract and run without administrative privileges. | [Download Portable (.zip)](https://github.com/NomanRafique01/ToolCEO/releases/latest/download/ToolCEO-Setup-1.0.0.zip) |
+| Package | Description | Download |
+|---|---|---|
+| **Installer** (`.exe`) | Setup wizard with Start Menu entry, desktop shortcut, and uninstaller | [Download](https://github.com/NomanRafique01/ToolCEO/releases/latest/download/ToolCEO-Setup-1.0.0.exe) |
+| **Portable** (`.zip`) | Extract and run without administrator rights | [Download](https://github.com/NomanRafique01/ToolCEO/releases/latest/download/ToolCEO-Setup-1.0.0.zip) |
 
 ### System Requirements
 
-- **Operating System:** Windows 10 or Windows 11 (64-bit)
-- **Processor:** Intel Core i3 / AMD Ryzen 3 or equivalent
-- **Memory (RAM):** 4 GB minimum (8 GB recommended for large batch processing)
-- **Disk Space:** 600 MB free storage for core application and runtime dependencies
-- **Network:** None required. Operates completely disconnected from the internet
-
----
-
-## Tool Directory (172 Offline Tools)
-
----
-
-### Document Tools
-
-#### PDF Tools & Utilities
-
-| Tool Name | Description | Output |
+| Component | Minimum | Recommended |
 |---|---|---|
-| **Merge PDFs** | Combine multiple PDF files into a single unified document with custom order | `.pdf` |
-| **Split PDF** | Extract page ranges, single pages, or burst all pages into individual files | `.pdf` / `.zip` |
-| **Compress PDF** | Reduce PDF file size with adjustable compression levels | `.pdf` |
-| **Rotate Pages** | Rotate specific pages or entire documents by 90°, 180°, or 270° | `.pdf` |
-| **Protect PDF** | Encrypt PDF files with 128/256-bit AES password security | `.pdf` |
-| **Unlock PDF** | Remove password protection and document security restrictions | `.pdf` |
-| **OCR PDF** | Extract searchable text layers from scanned documents and images | `.pdf` / `.txt` |
-| **Extract Images** | Isolate and extract all embedded graphics from PDF pages | Images / `.zip` |
-| **Watermark PDF** | Stamp custom text or image watermarks across document pages | `.pdf` |
-| **Flatten PDF** | Merge form fields, annotations, and comments into permanent document layers | `.pdf` |
-| **Reorder Pages** | Organize, resequence, or delete pages visually | `.pdf` |
-| **Edit Metadata** | Inspect and update title, author, subject, and keyword metadata | `.pdf` |
+| OS | Windows 10 (x64) | Windows 11 (x64) |
+| Processor | Intel Core i3 / AMD Ryzen 3 | Any modern quad-core |
+| Memory | 4 GB RAM | 8 GB RAM for large batches |
+| Storage | 600 MB free | 2 GB free with optional modules |
+| Network | Not required | Not required |
 
-#### PDF Conversions
+## Tool Catalog
 
-| Conversion Name | Description | Output Format |
+| Category | Tools | Highlights |
+|---|:---:|---|
+| **PDF utilities** | 12 | Merge, split, compress, rotate, protect, unlock, OCR, watermark, flatten, reorder, edit metadata |
+| **PDF conversions** | 8 | Word, Excel, PowerPoint, HTML, plain text, PNG, JPG, EPUB |
+| **Word** | 6 | PDF, plain text, HTML, ODT, Markdown, EPUB |
+| **PowerPoint** | 4 | PDF, ODP, slide images, HTML |
+| **Excel & CSV** | 9 | PDF, CSV, HTML, ODS, JSON, XML, and CSV to Excel, PDF, JSON, XML |
+| **Text & OpenDocument** | 10 | Markdown, RTF, plain text, ODT, ODS, and ODP to PDF, Word, HTML, Excel, PowerPoint |
+| **Images** | 26 | JPG, PNG, WebP, SVG, ICO, AVIF, TIFF, BMP, GIF conversions; batch compressor and resizer |
+| **eBooks** | 16 | EPUB, MOBI, AZW3, FB2 conversions to PDF, TXT, RTF, and each other |
+| **Archives** | 7 | ZIP, 7z, TAR, extraction of common formats, multi-part split and merge, AES-256 encryption |
+| **Total available** | **98** | |
+
+**Coming soon (11 tools):** data conversions (CSV, JSON, XML, YAML, SQL) and audio and video transcoding.
+
+## Modular Engines
+
+Heavy processing engines are downloaded from the in-app **Modules** panel and cached locally for offline use.
+
+| Module | Purpose | Size |
 |---|---|---|
-| **PDF to Word** | Convert PDF documents to editable Microsoft Word documents | `.docx` |
-| **PDF to Excel** | Extract tables and spreadsheet data into Microsoft Excel workbooks | `.xlsx` |
-| **PDF to PowerPoint** | Transform presentation PDFs into editable slide decks | `.pptx` |
-| **PDF to Plain Text** | Extract clean textual content with structure preservation | `.txt` |
-| **PDF to HTML** | Convert PDF pages into responsive web pages | `.html` |
-| **PDF to PNG** | Render PDF pages as high-resolution PNG image files | `.png` |
-| **PDF to JPG** | Export PDF pages as standard JPEG image files | `.jpg` |
-| **PDF to EPUB** | Convert document content into reflowable digital eBook format | `.epub` |
+| **Office** | Advanced DOC/DOCX, XLS/XLSX, and PPT/PPTX conversion | ~180 MB |
+| **OCR** | Text recognition for scanned PDFs and images | ~45 MB |
+| **Document** | Pandoc-based Markdown, LaTeX, RTF, and EPUB compilation | ~65 MB |
+| **eBook** | Calibre-based eBook transformation | ~90 MB |
+| **Media** | Audio and video transcoding (coming soon) | ~85 MB |
 
-#### Word Conversions
+## Architecture
 
-| Conversion Name | Description | Output Format |
-|---|---|---|
-| **Word to PDF** | Convert Microsoft Word documents to standardized PDF | `.pdf` |
-| **Word to Plain Text** | Extract pure text without layout formatting | `.txt` |
-| **Word to HTML** | Convert Word documents into semantic HTML5 web articles | `.html` |
-| **Word to OpenDocument** | Export to standard open office format | `.odt` |
-| **Word to Markdown** | Convert Word documents into clean Markdown documentation | `.md` |
-| **Word to EPUB** | Transform documents into digital eBook publication format | `.epub` |
+```mermaid
+flowchart LR
+    UI["Electron UI<br/>(desktop shell)"] -- "HTTP + SSE" --> API["FastAPI daemon<br/>127.0.0.1:8765"]
+    API --> Queue["Worker queue"]
+    Queue --> Engines["Conversion engines"]
+    Engines --> Files[("Local storage")]
+```
 
-#### PowerPoint Conversions
+- **Frontend:** Electron 35 provides the native window, dark-mode interface, and a secure context bridge to the OS.
+- **Backend:** A local FastAPI service bound to `127.0.0.1` manages the worker queue and runs every conversion offline.
+- **Progress:** A persistent SSE connection streams job progress from 0% to 100%.
 
-| Conversion Name | Description | Output Format |
-|---|---|---|
-| **PowerPoint to PDF** | Convert presentations into standard viewable PDF slide decks | `.pdf` |
-| **PowerPoint to OpenDocument** | Convert to open presentation interchange format | `.odp` |
-| **PowerPoint to Slide Images** | Batch export every presentation slide as high-resolution images | `.png` / `.jpg` |
-| **PowerPoint to HTML** | Export slide deck to interactive web presentation viewer | `.html` |
-
-#### Excel & Spreadsheet Conversions
-
-| Conversion Name | Description | Output Format |
-|---|---|---|
-| **Excel to PDF** | Convert workbooks and sheets to printable formatted PDF | `.pdf` |
-| **Excel to CSV** | Export tabular spreadsheet data to comma-separated values | `.csv` |
-| **Excel to HTML** | Convert spreadsheet ranges into styled HTML web tables | `.html` |
-| **Excel to OpenDocument** | Export workbooks to standard OpenDocument spreadsheet format | `.ods` |
-| **Excel to JSON** | Serialize structured table data to JSON objects for developers | `.json` |
-| **CSV to Excel** | Convert plain text CSV files into formatted Excel workbooks | `.xlsx` |
-| **CSV to PDF** | Generate styled and readable PDF tables from CSV data | `.pdf` |
-| **CSV to JSON** | Convert delimited rows to structured JSON arrays | `.json` |
-| **CSV to XML** | Convert tabular records into structured XML format | `.xml` |
-
-#### Text & OpenDocument Conversions
-
-| Conversion Name | Description | Output Format |
-|---|---|---|
-| **Markdown to PDF** | Compile Markdown documents with typography and styling to PDF | `.pdf` |
-| **Markdown to Word** | Convert Markdown notes into editable Microsoft Word documents | `.docx` |
-| **Markdown to HTML** | Render Markdown files into standalone styled HTML pages | `.html` |
-| **ODT to PDF** | Convert OpenDocument Text files into standardized PDF | `.pdf` |
-| **ODT to Word** | Convert OpenDocument Text to Microsoft Word documents | `.docx` |
-| **ODS to Excel** | Convert OpenDocument Spreadsheets to Microsoft Excel | `.xlsx` |
-| **ODP to PowerPoint** | Convert OpenDocument Presentations to Microsoft PowerPoint | `.pptx` |
-| **RTF to PDF** | Modernize legacy Rich Text Format documents to PDF | `.pdf` |
-| **RTF to Word** | Convert Rich Text Format files to editable DOCX | `.docx` |
-| **Text to PDF** | Convert plain text files into clean, readable PDF documents | `.pdf` |
-
----
-
-### Image Tools
-
-| Conversion Name | Description | Output Format |
-|---|---|---|
-| **Image Compressor** | Batch optimize and compress images with lossless or lossy quality controls | `.jpg`, `.png`, `.webp` |
-| **JPG to PNG** | Convert JPEG images to lossless PNG format with transparency support | `.png` |
-| **JPG to WEBP** | Convert JPEG images to modern lightweight WebP format | `.webp` |
-| **JPG to PDF** | Bundle single or multiple JPEG images into a unified PDF document | `.pdf` |
-| **JPG to SVG** | Vectorize and convert raster JPEG images into SVG vectors | `.svg` |
-| **JPG to BMP** | Convert JPEG files into uncompressed Windows Bitmap graphics | `.bmp` |
-| **JPG to TIFF** | Convert JPEG images to high-resolution archival TIFF format | `.tiff` |
-| **JPG to AVIF** | Convert to next-generation AVIF image format | `.avif` |
-| **JPG to ICO** | Generate application icons and website favicons | `.ico` |
-| **PNG to JPG** | Convert PNG graphics to compressed JPEG format | `.jpg` |
-| **PNG to WEBP** | Convert PNG images to modern WebP format | `.webp` |
-| **PNG to PDF** | Assemble PNG images into high-resolution multi-page PDF files | `.pdf` |
-| **PNG to SVG** | Trace and vectorize PNG images to scalable vector format | `.svg` |
-| **PNG to ICO** | Convert PNG images into multi-size Windows icon files | `.ico` |
-| **PNG to BMP** | Convert PNG files to standard Bitmap format | `.bmp` |
-| **PNG to TIFF** | Convert PNG images to professional printing TIFF format | `.tiff` |
-| **PNG to AVIF** | Convert PNG images to ultra-compressed AVIF format | `.avif` |
-| **WEBP to PNG** | Convert modern WebP images to lossless PNG format | `.png` |
-| **WEBP to JPG** | Convert WebP graphics to standard JPEG format | `.jpg` |
-| **WEBP to PDF** | Package WebP graphics into standard PDF format | `.pdf` |
-| **WEBP to GIF** | Convert animated or static WebP images to GIF format | `.gif` |
-| **SVG to PNG** | Render scalable vector graphics into crisp raster PNG images | `.png` |
-| **SVG to JPG** | Export vector SVG graphics to standard JPEG files | `.jpg` |
-| **SVG to PDF** | Export vector graphics to vector-preserving PDF documents | `.pdf` |
-| **SVG to WEBP** | Render SVG vector assets directly to WebP format | `.webp` |
-| **Image Resizer** | Batch resize dimensions with custom width, height, and aspect ratio controls | Multi-format |
-
----
-
-### eBook Tools
-
-| Conversion Name | Description | Output Format |
-|---|---|---|
-| **EPUB to PDF** | Convert EPUB digital books into printable PDF documents | `.pdf` |
-| **EPUB to MOBI** | Convert EPUB books to legacy Amazon Kindle format | `.mobi` |
-| **EPUB to AZW3** | Convert EPUB books to modern Kindle KF8 format | `.azw3` |
-| **EPUB to TXT** | Extract raw text content from digital books | `.txt` |
-| **EPUB to RTF** | Convert eBook contents to Rich Text Format | `.rtf` |
-| **MOBI to EPUB** | Convert legacy Kindle MOBI books to open standard EPUB | `.epub` |
-| **MOBI to PDF** | Convert MOBI digital books into standardized PDF | `.pdf` |
-| **MOBI to AZW3** | Upgrade MOBI files to modern Kindle AZW3 format | `.azw3` |
-| **MOBI to TXT** | Extract text from MOBI eBooks | `.txt` |
-| **AZW3 to EPUB** | Convert Kindle AZW3 books to universal EPUB format | `.epub` |
-| **AZW3 to PDF** | Export Kindle books to readable PDF format | `.pdf` |
-| **AZW3 to MOBI** | Convert AZW3 books to legacy MOBI format | `.mobi` |
-| **AZW3 to TXT** | Extract text content from Kindle AZW3 publications | `.txt` |
-| **FB2 to EPUB** | Convert FictionBook2 eBooks to EPUB format | `.epub` |
-| **FB2 to PDF** | Convert FB2 books into standardized PDF format | `.pdf` |
-| **FB2 to MOBI** | Convert FictionBook2 titles to Kindle MOBI format | `.mobi` |
-
----
-
-### Archive Tools
-
-| Conversion Name | Description | Output Format |
-|---|---|---|
-| **Create ZIP Archive** | Compress multiple files and directories into a standard ZIP package | `.zip` |
-| **Create 7-Zip Archive** | High-ratio compression with optional AES-256 encryption | `.7z` |
-| **Create TAR Archive** | Bundle files into uncompressed or compressed UNIX TAR format | `.tar` / `.tar.gz` |
-| **Extract Archive** | Extract files from ZIP, RAR, 7Z, TAR, GZ, BZ2, XZ, and ZST archives | Files / Folder |
-| **Split Archive** | Segment large archives and files into numbered multi-volume parts | Multi-part |
-| **Merge Archive** | Reassemble segmented multi-volume archive parts into original file | Single archive |
-| **Encrypt Archive** | Password-protect archives with AES-256 encryption | `.zip` / `.7z` |
-
----
-
-### Data Tools (Coming Soon)
-
-| Conversion Name | Description | Status |
-|---|---|---|
-| **CSV to JSON** | Transform flat tabular records into structured JSON objects | Coming Soon |
-| **JSON to CSV** | Flatten nested JSON datasets into tabular spreadsheet format | Coming Soon |
-| **CSV to XML** | Convert delimited rows to XML schema documents | Coming Soon |
-| **XML to JSON** | Convert hierarchical XML trees to JSON objects | Coming Soon |
-| **CSV to SQL** | Generate automated `INSERT` queries with typed table structures | Coming Soon |
-| **YAML to JSON** | Convert configuration files between YAML and JSON | Coming Soon |
-| **JSON to YAML** | Format JSON data models into human-readable YAML | Coming Soon |
-
----
-
-### Audio & Video Tools (Coming Soon)
-
-| Conversion Name | Description | Status |
-|---|---|---|
-| **Audio Transcoder** | Convert audio across MP3, WAV, FLAC, AAC, OGG, WMA, M4A, and OPUS | Coming Soon |
-| **Extract Audio from Video** | Demux and extract clean audio tracks from MP4, MKV, AVI, MOV, and WEBM | Coming Soon |
-| **Video Format Converter** | Transcode video streams across modern containers | Coming Soon |
-| **Audio Bitrate Optimizer** | Re-encode audio bitrates and sample rates for smaller sizes | Coming Soon |
-
----
-
-## Modular Engine Addons
-
-To keep the initial ToolCEO download lightweight (~70 MB), heavy specialized processing engines can be installed on-demand from the built-in **Modules** interface:
-
-| Module Name | Purpose | Download Size | Status |
-|---|---|---|---|
-| **Office Module** | Advanced DOC/DOCX, XLS/XLSX, and PPT/PPTX conversions | ~180 MB | Available |
-| **OCR Module** | Optical character recognition for scanned PDFs and image text | ~45 MB | Available |
-| **Document Module** | Advanced Pandoc Markdown, LaTeX, RTF, and EPUB compilers | ~65 MB | Available |
-| **eBook Module** | Calibre digital book transformation engines | ~90 MB | Available |
-| **Media Module** | Multimedia transcoding and demuxing toolchain | ~85 MB | Coming Soon |
-
-*Installed modules are downloaded once and cached locally for permanent offline operation.*
-
----
-
-## System Architecture
-
-ToolCEO operates using a decoupled local architecture:
-- **Frontend Shell:** Electron 35+ provides native window controls, dark-mode design system, and OS integration via a secure context bridge.
-- **Local Backend Daemon:** A lightweight local FastAPI service on `127.0.0.1:8765` manages worker thread queues and executes conversions completely offline.
-- **Real-Time Progress:** Persistent Server-Sent Events (SSE) stream frame-accurate progress percentages (0% to 100%) to the UI.
-- **Local Privacy:** Zero cloud connectivity. Source documents and processed files are handled strictly within workstation storage.
-
----
-
-## Getting Started & Development
+## Development
 
 ### Prerequisites
 
-- **Node.js:** v18.0.0 or higher
-- **Python:** v3.10 to v3.13
-- **Package Managers:** `npm` and `pip`
+- Node.js 18.0 or later
+- Python 3.10 to 3.13
+- npm and pip
 
-### Installation & Local Setup
+### Setup
 
-1. **Clone the Repository**
-   ```bash
-   git clone https://github.com/NomanRafique01/ToolCEO.git
-   cd ToolCEO
-   ```
+```bash
+# Clone and install frontend dependencies
+git clone https://github.com/NomanRafique01/ToolCEO.git
+cd ToolCEO
+npm install
 
-2. **Install Node Dependencies**
-   ```bash
-   npm install
-   ```
+# Set up the Python backend
+cd backend
+python -m venv venv
+source venv/bin/activate        # Windows: .\venv\Scripts\activate
+pip install -r requirements.txt
+cd ..
 
-3. **Configure Python Virtual Environment**
-   ```bash
-   cd backend
-   python -m venv venv
-   
-   # Windows
-   .\venv\Scripts\activate
-   
-   # macOS / Linux
-   source venv/bin/activate
-   
-   pip install -r requirements.txt
-   cd ..
-   ```
+# Launch the app
+npm start
+```
 
-4. **Launch Application**
-   ```bash
-   npm start
-   ```
+## Local API
 
----
+The backend exposes the following endpoints on `http://127.0.0.1:8765`. Long-running operations return a `job_id`, which you can poll through the progress stream and then download.
 
-## Local API Reference
-
-The local Python service exposes internal endpoints on `http://127.0.0.1:8765`:
-
-| Endpoint | Method | Input Parameters | Output |
+| Endpoint | Method | Input | Output |
 |---|---|---|---|
 | `/health` | `GET` | None | `{ "status": "ok" }` |
 | `/api/pdf/merger/merge` | `POST` | `files: UploadFile[]` | `{ "job_id": "<uuid>" }` |
 | `/api/pdf/split` | `POST` | `file: UploadFile`, `ranges: string` | `{ "job_id": "<uuid>" }` |
 | `/api/pdf/compressor/compress` | `POST` | `file: UploadFile`, `quality: string` | `{ "job_id": "<uuid>" }` |
-| `/api/progress/{job_id}` | `GET` | Path parameter `job_id` | `text/event-stream` progress feed |
-| `/api/download/{job_id}` | `GET` | Path parameter `job_id` | Binary file attachment stream |
+| `/api/progress/{job_id}` | `GET` | `job_id` (path) | `text/event-stream` |
+| `/api/download/{job_id}` | `GET` | `job_id` (path) | Binary file stream |
+
+## Roadmap
+
+| Phase | Milestone | Status |
+|---|---|---|
+| 1 | Core architecture: Electron shell, FastAPI daemon, SSE progress, base UI | ✅ Completed |
+| 2 | Professional PDF suite: split, merge, compress, rotate, encrypt/decrypt, OCR | ✅ Completed |
+| 3 | Document and Office conversions: PDF, Word, Excel, PowerPoint, HTML, text | ✅ Completed |
+| 4 | Image tools: multi-format conversion, batch compression, resizing | ✅ Completed |
+| 5 | On-demand modular engine runtime: download, extraction, and caching | ✅ Completed |
+| 6 | Audio, video, and data tools | 🚧 Coming soon |
+
+## Feedback
+
+Found a bug or have a feature request? Please open an issue on the [GitHub repository](https://github.com/NomanRafique01/ToolCEO/issues).
+
+## License
+
+ToolCEO is proprietary software. All rights reserved. See [LICENSE](LICENSE) for details.
 
 ---
 
-## Project Roadmap
-
-| Phase | Milestone | Scope & Deliverables | Status |
-|---|---|---|---|
-| **Phase 1** | Core Architecture & Baseline Daemon | Electron shell, FastAPI local service, SSE progress streaming, and base UI integration | Completed |
-| **Phase 2** | Professional PDF Suite | Split, Merge, Compress, Rotate, Encrypt/Decrypt, and OCR scanning baseline | Completed |
-| **Phase 3** | Document & Office Conversions | PDF to Word, Excel, PowerPoint, HTML, Text, and LibreOffice compilation | Completed |
-| **Phase 4** | Image & Raster Tools | Multi-format image conversion (JPG, PNG, WEBP, SVG), batch compression, and resizing | Completed |
-| **Phase 5** | On-Demand Modular Engine Runtime | Automated module download, dynamic extraction, and offline caching (Office, OCR, Calibre) | Completed |
-| **Phase 6** | Audio, Video & Data Tools | Local multimedia transcoding, audio demuxing, and tabular data serialization | Coming Soon |
-
----
-
-<div align="center">
-
-<img src="https://capsule-render.vercel.app/api?type=waving&color=0:00E5C0,50:7209b7,100:ff6b00&height=100&section=footer&text=&fontSize=0" width="100%"/>
-
-<p><strong>ToolCEO Desktop Application</strong></p>
-<p><em>Engineered for complete local privacy, zero cloud footprint, and uncompromised performance.</em></p>
-
 <p align="center">
-  <img src="https://img.shields.io/badge/Status-Stable-10b981?style=flat-square&labelColor=1a1a24" alt="Status Stable"/>
-  <img src="https://img.shields.io/badge/Tools-172%20Offline-00E5C0?style=flat-square&labelColor=1a1a24" alt="172 Tools"/>
-  <img src="https://img.shields.io/badge/Architecture-x64-3b82f6?style=flat-square&labelColor=1a1a24" alt="Arch x64"/>
-  <img src="https://img.shields.io/badge/Local%20Port-8000-6366f1?style=flat-square&labelColor=1a1a24" alt="Port 8000"/>
+  <sub>Built by <a href="https://github.com/NomanRafique01">Noman Rafique</a></sub>
 </p>
-
-<p align="center">
-  <strong>Repository Visitors</strong><br/>
-  <img src="https://hits.sh/github.com/NomanRafique01/ToolCEO.svg?style=flat-square&label=Visitors&color=00E5C0&labelColor=1a1a24" alt="Repository visitor counter"/>
-</p>
-
-</div>
