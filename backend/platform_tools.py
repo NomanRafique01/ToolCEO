@@ -98,29 +98,14 @@ def find_ghostscript() -> str | None:
 
 def get_engine_path(engine_name: str) -> str | None:
     """
-    Resolve external engine path relative to application root or frozen PyInstaller bundle.
-    Supports both direct engine names (e.g. tesseract/tesseract.exe) and module-prefixed
-    directories (e.g. ocr/tesseract/tesseract.exe).
+    Resolve external engine path dynamically across all environments:
+    1. ToolCEO User Engines: TOOLCEO_USER_ENGINES_PATH, %APPDATA%/ToolCEO/engines, %LOCALAPPDATA%/ToolCEO/engines
+    2. Bundled Engines: TOOLCEO_ENGINES_PATH, frozen resources/engines
+    3. Development Engines: backend/../engines or backend/engines
+    4. Automatically resolves flat engine names ('libreoffice/program/soffice.exe')
+       and module-prefixed names ('office/libreoffice/program/soffice.exe').
     """
     engine_norm = engine_name.replace("/", os.sep).replace("\\", os.sep)
-
-    # ── Environment-variable override (set by Electron at backend spawn time) ──
-    # When running as a packaged Electron app, the main process sets
-    # TOOLCEO_ENGINES_PATH to the absolute path of the engines/ directory so
-    # we can skip all guesswork and return the exact path immediately.
-    env_engines = os.environ.get("TOOLCEO_ENGINES_PATH", "").strip()
-    if env_engines:
-        candidate = os.path.abspath(os.path.join(env_engines, engine_norm))
-        if os.path.exists(candidate):
-            return candidate
-        # Also try stripping any module-prefix subfolder from the variant
-        # e.g. "media/7zip/7z.exe" → try env_engines/7zip/7z.exe
-        parts = engine_norm.split(os.sep)
-        if len(parts) >= 2:
-            short_variant = os.path.join(*parts[-2:])  # last two components
-            candidate2 = os.path.abspath(os.path.join(env_engines, short_variant))
-            if os.path.exists(candidate2):
-                return candidate2
 
     MODULE_PREFIX_MAP = {
         "tesseract": "ocr",
@@ -131,41 +116,74 @@ def get_engine_path(engine_name: str) -> str | None:
         "ffmpeg": "media",
     }
 
-    variants = [engine_norm]
-    first_part = engine_norm.split(os.sep)[0].lower()
+    variants: list[str] = [engine_norm]
+    parts = engine_norm.split(os.sep)
+    first_part = parts[0].lower()
+
     if first_part in MODULE_PREFIX_MAP:
         mod_prefix = MODULE_PREFIX_MAP[first_part]
         variants.append(os.path.join(mod_prefix, engine_norm))
 
-    for variant in variants:
-        if getattr(sys, "frozen", False):
-            # Running as PyInstaller bundle.
-            # Layout: resources/engines/python/main_backend.exe
-            #         resources/engines/7zip/7z.exe
-            #         resources/engines/rar/rar.exe
-            # exe_dir = resources/engines/python/
-            exe_dir = os.path.dirname(sys.executable)
-            candidates = [
-                os.path.join(exe_dir, "..", variant),            # resources/engines/7zip/7z.exe ✓
-                os.path.join(exe_dir, variant),                  # resources/engines/python/7zip/7z.exe (fallback)
-                # Note: the old candidate os.path.join(exe_dir, "..", "engines", variant)
-                # resolved to resources/engines/engines/... (double-engines) and is REMOVED.
-            ]
-            if hasattr(sys, "_MEIPASS"):
-                candidates.append(os.path.join(sys._MEIPASS, "engines", variant))
-                candidates.append(os.path.join(sys._MEIPASS, variant))
-        else:
-            # Running in development from repo root or backend dir
-            base = os.path.dirname(os.path.abspath(__file__))
-            candidates = [
-                os.path.join(base, "..", "engines", variant),
-                os.path.join(base, "engines", variant),
-            ]
+    reverse_prefix_map = {v: k for k, v in MODULE_PREFIX_MAP.items()}
+    if first_part in reverse_prefix_map and len(parts) > 1:
+        variants.append(os.path.join(*parts[1:]))
 
-        for candidate in candidates:
-            norm = os.path.abspath(candidate)
-            if os.path.exists(norm):
-                return norm
+    if len(parts) >= 2:
+        short_variant = os.path.join(*parts[-2:])
+        if short_variant not in variants:
+            variants.append(short_variant)
+
+    search_roots: list[str] = []
+
+    # 1. Environment-variable override for user-downloaded engines (set by Electron)
+    env_user_engines = os.environ.get("TOOLCEO_USER_ENGINES_PATH", "").strip()
+    if env_user_engines:
+        search_roots.append(env_user_engines)
+
+    # 2. Standard user data locations (always checked even if env var was not forwarded)
+    if IS_WIN:
+        appdata = os.environ.get("APPDATA", "").strip()
+        if appdata:
+            search_roots.append(os.path.join(appdata, "ToolCEO", "engines"))
+        localappdata = os.environ.get("LOCALAPPDATA", "").strip()
+        if localappdata:
+            search_roots.append(os.path.join(localappdata, "ToolCEO", "engines"))
+            search_roots.append(os.path.join(localappdata, "Programs", "ToolCEO", "engines"))
+            search_roots.append(os.path.join(localappdata, "Programs", "ToolCEO", "resources", "engines"))
+    elif IS_MAC:
+        search_roots.append(os.path.expanduser("~/Library/Application Support/ToolCEO/engines"))
+    else:
+        search_roots.append(os.path.expanduser("~/.config/ToolCEO/engines"))
+
+    # 3. Bundled engines environment variable (set by Electron)
+    env_engines = os.environ.get("TOOLCEO_ENGINES_PATH", "").strip()
+    if env_engines:
+        search_roots.append(env_engines)
+
+    # 4. Packaged/Frozen PyInstaller bundle directory
+    if getattr(sys, "frozen", False):
+        exe_dir = os.path.dirname(sys.executable)
+        search_roots.append(os.path.join(exe_dir, ".."))                   # resources/engines
+        search_roots.append(os.path.join(exe_dir, "..", "..", "engines"))   # AppInstallDir/engines
+        search_roots.append(os.path.join(exe_dir, "engines"))
+        search_roots.append(exe_dir)
+        if hasattr(sys, "_MEIPASS"):
+            search_roots.append(os.path.join(sys._MEIPASS, "engines"))
+            search_roots.append(sys._MEIPASS)
+    else:
+        # 5. Development mode
+        base = os.path.dirname(os.path.abspath(__file__))
+        search_roots.append(os.path.join(base, "..", "engines"))
+        search_roots.append(os.path.join(base, "engines"))
+
+    for root in search_roots:
+        if not root or not os.path.exists(root):
+            continue
+        for variant in variants:
+            candidate = os.path.abspath(os.path.join(root, variant))
+            if os.path.exists(candidate):
+                return candidate
+
     return None
 
 

@@ -655,20 +655,27 @@ function _spawnBackend() {
     'engines', 'python', 'main_backend.exe'
   );
 
+  const userEnginesDir = _getUserEnginesDir();
+  const enginesDir = app.isPackaged
+    ? path.join(process.resourcesPath, 'engines')
+    : path.join(__dirname, '..', 'engines');
+
   const env = {
     ...process.env,
     TOOLCEO_PORT: String(BACKEND_PORT),
+    TOOLCEO_ENGINES_PATH: enginesDir,
+    TOOLCEO_USER_ENGINES_PATH: userEnginesDir,
   };
 
   if (app.isPackaged && fs.existsSync(backendExePath)) {
-    const enginesDir = path.join(process.resourcesPath, 'engines');
     console.log('[backend] Launching packaged backend from:', backendExePath);
-    console.log('[backend] Engines dir:', enginesDir);
+    console.log('[backend] Bundled engines dir:', enginesDir);
+    console.log('[backend] User engines dir:', userEnginesDir);
     backendProcess = spawn(backendExePath, [], {
       detached: false,
       stdio: 'ignore',
       windowsHide: true,
-      env: { ...env, TOOLCEO_ENGINES_PATH: enginesDir },
+      env,
     });
   } else {
     // Development mode
@@ -679,6 +686,7 @@ function _spawnBackend() {
     const backendDir = path.join(__dirname, '..', 'backend');
 
     console.log('[backend] Launching dev backend on port', BACKEND_PORT, 'with:', pythonCmd);
+    console.log('[backend] User engines dir:', userEnginesDir);
     backendProcess = spawn(
       pythonCmd,
       ['-m', 'uvicorn', 'main:app', '--host', '127.0.0.1', '--port', String(BACKEND_PORT)],
@@ -797,20 +805,40 @@ let _activeDownload = null;
  */
 let _activeInstall = null;
 
-/** Returns the engines root directory: dev → project root/engines, packaged → resources/../engines */
-function _getEnginesDir() {
-  if (app.isPackaged) {
-    return path.join(process.resourcesPath, '..', 'engines');
+/** Returns the dedicated user engines directory inside userData (always writable across all systems) */
+function _getUserEnginesDir() {
+  const dir = path.join(app.getPath('userData'), 'engines');
+  if (!fs.existsSync(dir)) {
+    try { fs.mkdirSync(dir, { recursive: true }); } catch (_) {}
   }
-  return path.join(__dirname, '..', 'engines');
+  return dir;
 }
 
-/** Returns the path to modules.json */
+/**
+ * Returns the destination directory where downloaded modules are extracted.
+ * userData is guaranteed to be writable on all Windows systems (standard non-admin users, NSIS, AppX).
+ */
+function _getEnginesDir() {
+  return _getUserEnginesDir();
+}
+
+/** Returns the path to modules.json (stored in writable userData with seed from bundle/dev) */
 function _getModulesJsonPath() {
-  if (app.isPackaged) {
-    return path.join(process.resourcesPath, '..', 'modules.json');
+  const userJson = path.join(app.getPath('userData'), 'modules.json');
+  if (fs.existsSync(userJson)) {
+    return userJson;
   }
-  return path.join(__dirname, '..', 'modules.json');
+  const seedJson = app.isPackaged
+    ? path.join(process.resourcesPath, '..', 'modules.json')
+    : path.join(__dirname, '..', 'modules.json');
+
+  if (fs.existsSync(seedJson)) {
+    try {
+      fs.copyFileSync(seedJson, userJson);
+      return userJson;
+    } catch (_) {}
+  }
+  return userJson;
 }
 
 /**
@@ -862,50 +890,63 @@ function _getModuleDisplayName(moduleId) {
 
 /**
  * Map of engine executables to verify whether a module is actually installed on disk.
+ * Supports both flat layout (from GitHub zip releases) and module-prefixed subfolders across dev & packaged builds.
  */
 const MODULE_ENGINE_EXES = {
   office: [
+    path.join('libreoffice', 'program', IS_WIN ? 'soffice.exe' : 'soffice'),
     path.join('office', 'libreoffice', 'program', IS_WIN ? 'soffice.exe' : 'soffice'),
-    ...(!app.isPackaged ? [path.join('libreoffice', 'program', IS_WIN ? 'soffice.exe' : 'soffice')] : []),
+    path.join('libreoffice', IS_WIN ? 'soffice.exe' : 'soffice'),
+    path.join('office', 'libreoffice', IS_WIN ? 'soffice.exe' : 'soffice'),
+    IS_WIN ? 'soffice.exe' : 'soffice',
   ],
   ocr: [
+    path.join('tesseract', IS_WIN ? 'tesseract.exe' : 'tesseract'),
     path.join('ocr', 'tesseract', IS_WIN ? 'tesseract.exe' : 'tesseract'),
-    ...(!app.isPackaged ? [path.join('tesseract', IS_WIN ? 'tesseract.exe' : 'tesseract')] : []),
+    IS_WIN ? 'tesseract.exe' : 'tesseract',
   ],
   document: [
+    path.join('pandoc', IS_WIN ? 'pandoc.exe' : 'pandoc'),
     path.join('document', 'pandoc', IS_WIN ? 'pandoc.exe' : 'pandoc'),
-    ...(!app.isPackaged ? [path.join('pandoc', IS_WIN ? 'pandoc.exe' : 'pandoc')] : []),
+    IS_WIN ? 'pandoc.exe' : 'pandoc',
   ],
   ebook: [
+    path.join('calibre', IS_WIN ? 'ebook-convert.exe' : 'ebook-convert'),
     path.join('ebook', 'calibre', IS_WIN ? 'ebook-convert.exe' : 'ebook-convert'),
-    ...(!app.isPackaged ? [
-      path.join('calibre', IS_WIN ? 'ebook-convert.exe' : 'ebook-convert'),
-      path.join('calibre', 'app', 'bin', IS_WIN ? 'ebook-convert.exe' : 'ebook-convert'),
-    ] : []),
+    path.join('calibre', 'app', 'bin', IS_WIN ? 'ebook-convert.exe' : 'ebook-convert'),
+    path.join('ebook', 'calibre', 'app', 'bin', IS_WIN ? 'ebook-convert.exe' : 'ebook-convert'),
+    IS_WIN ? 'ebook-convert.exe' : 'ebook-convert',
   ],
   media: [
-    // Module-prefixed paths (engines/media/7zip/7z.exe) — installed via module download
+    path.join('7zip', IS_WIN ? '7z.exe' : '7z'),
     path.join('media', '7zip', IS_WIN ? '7z.exe' : '7z'),
+    path.join('ffmpeg', IS_WIN ? 'ffmpeg.exe' : 'ffmpeg'),
+    path.join('ffmpeg', 'bin', IS_WIN ? 'ffmpeg.exe' : 'ffmpeg'),
     path.join('media', 'ffmpeg', IS_WIN ? 'ffmpeg.exe' : 'ffmpeg'),
     path.join('media', 'ffmpeg', 'bin', IS_WIN ? 'ffmpeg.exe' : 'ffmpeg'),
-    // Dev direct paths (engines/7zip/7z.exe, engines/ffmpeg/...) only in dev mode
-    ...(!app.isPackaged ? [
-      path.join('7zip', IS_WIN ? '7z.exe' : '7z'),
-      path.join('ffmpeg', IS_WIN ? 'ffmpeg.exe' : 'ffmpeg'),
-      path.join('ffmpeg', 'bin', IS_WIN ? 'ffmpeg.exe' : 'ffmpeg'),
-    ] : []),
   ],
 };
 
 /**
  * Returns true if the module's engine binary exists on disk.
+ * Searches:
+ *  1. userData/engines (where modules are extracted on all systems)
+ *  2. Bundled engines (resources/engines in packaged app, engines/ in dev)
+ *  3. Legacy packaged directory (resources/../engines)
  */
 function _isModuleInstalled(moduleId) {
-  const enginesDir = _getEnginesDir();
+  const searchDirs = [
+    _getUserEnginesDir(),
+    app.isPackaged ? path.join(process.resourcesPath, 'engines') : path.join(__dirname, '..', 'engines'),
+    app.isPackaged ? path.join(process.resourcesPath, '..', 'engines') : null,
+  ].filter(Boolean);
+
   const candidates = MODULE_ENGINE_EXES[moduleId] || [];
-  for (const relPath of candidates) {
-    if (fs.existsSync(path.join(enginesDir, relPath))) {
-      return true;
+  for (const baseDir of searchDirs) {
+    for (const relPath of candidates) {
+      if (fs.existsSync(path.join(baseDir, relPath))) {
+        return true;
+      }
     }
   }
   return false;
@@ -922,14 +963,12 @@ function _isModuleDownloaded(moduleId) {
       if (st.size > 1024 * 1024) return true;
     } catch (_) {}
   }
-  if (!app.isPackaged) {
-    const devZip = path.join(_getEnginesDir(), `${moduleId}-module.zip`);
-    if (fs.existsSync(devZip)) {
-      try {
-        const st = fs.statSync(devZip);
-        if (st.size > 1024 * 1024) return true;
-      } catch (_) {}
-    }
+  const devZip = path.join(__dirname, '..', 'engines', `${moduleId}-module.zip`);
+  if (!app.isPackaged && fs.existsSync(devZip)) {
+    try {
+      const st = fs.statSync(devZip);
+      if (st.size > 1024 * 1024) return true;
+    } catch (_) {}
   }
   return false;
 }
@@ -940,10 +979,8 @@ function _isModuleDownloaded(moduleId) {
 function _resolveModuleZip(moduleId) {
   const userZip = _getModuleZipPath(moduleId);
   if (fs.existsSync(userZip)) return userZip;
-  if (!app.isPackaged) {
-    const devZip = path.join(_getEnginesDir(), `${moduleId}-module.zip`);
-    if (fs.existsSync(devZip)) return devZip;
-  }
+  const devZip = path.join(__dirname, '..', 'engines', `${moduleId}-module.zip`);
+  if (!app.isPackaged && fs.existsSync(devZip)) return devZip;
   return userZip;
 }
 
@@ -1233,6 +1270,10 @@ async function _extractZip(zipPath, enginesDir, moduleId, onProgress = () => {},
   if (!extracted && !isCancelled()) {
     const sevenZipCandidates = [
       path.join(enginesDir, '7zip', IS_WIN ? '7z.exe' : '7z'),
+      path.join(enginesDir, 'media', '7zip', IS_WIN ? '7z.exe' : '7z'),
+      path.join(process.resourcesPath, 'engines', '7zip', IS_WIN ? '7z.exe' : '7z'),
+      path.join(__dirname, '..', 'engines', '7zip', IS_WIN ? '7z.exe' : '7z'),
+      path.join(__dirname, '..', 'engines', 'media', '7zip', IS_WIN ? '7z.exe' : '7z'),
       path.join(RESOURCES_DIR, 'bin', IS_WIN ? '7z.exe' : '7z'),
     ];
     for (const sevenZipExe of sevenZipCandidates) {
@@ -2332,9 +2373,13 @@ app.whenReady().then(async () => {
     const engines = MODULE_ENGINE_MAP[moduleId] || [];
     for (const eng of engines) {
       const engDir = path.join(enginesDir, eng);
+      const modEngDir = path.join(enginesDir, moduleId, eng);
       try {
         if (fs.existsSync(engDir)) {
           fs.rmSync(engDir, { recursive: true, force: true });
+        }
+        if (fs.existsSync(modEngDir)) {
+          fs.rmSync(modEngDir, { recursive: true, force: true });
         }
       } catch (_) {}
     }
