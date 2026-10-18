@@ -267,6 +267,131 @@ export async function renderAbout(container) {
             </div><!-- /about-section-body -->
           </div><!-- /about-section -->
 
+          <!-- Developer Section: Noman Rafique -->
+          <div class="about-section about-dev-section">
+            <div class="about-section-header">
+              <div class="about-section-icon" style="background:rgba(0,229,192,0.12);color:#00E5C0;">
+                ${svgIcon('<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>', 15)}
+              </div>
+              <span class="about-section-title">Developer &amp; Architecture</span>
+              <div class="about-dev-pill-badge">
+                <span class="about-dev-pulse-dot"></span>
+                Sole Developer
+              </div>
+            </div>
+            
+            <div class="about-section-body about-dev-showcase">
+              <!-- Top identity row -->
+              <div class="about-dev-profile-bar">
+                <div class="about-dev-avatar-wrap">
+                  <div class="about-dev-avatar-glow"></div>
+                  <div class="about-dev-avatar">
+                    <span>NR</span>
+                  </div>
+                  <div class="about-dev-status-indicator" title="Creator &amp; Sole Maintainer">
+                    ${svgIcon('<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>', 10, '#00E5C0')}
+                  </div>
+                </div>
+
+                <div class="about-dev-main-info">
+                  <div class="about-dev-name-wrap">
+                    <h3 class="about-dev-name">Noman Rafique</h3>
+                  </div>
+
+                  <p class="about-dev-tagline">
+                    Creator and sole architect of <strong>ToolCEO</strong>. Engineered the offline conversion pipelines, modular binary engine orchestration, and reactive desktop user experience from scratch.
+                  </p>
+
+                  <div class="about-dev-chips">
+                    <span class="about-dev-chip">
+                      ${svgIcon('<path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/>', 12)}
+                      BSAI · NFC IET Multan
+                    </span>
+                    <span class="about-dev-chip about-dev-chip--roll">
+                      ${svgIcon('<rect x="3" y="4" width="18" height="16" rx="2"/><line x1="7" y1="8" x2="17" y2="8"/><line x1="7" y1="12" x2="13" y2="12"/><line x1="7" y1="16" x2="11" y2="16"/>', 12)}
+                      Roll # <strong>2k25-BSAI-06</strong>
+                    </span>
+                    <span class="about-dev-chip about-dev-chip--accent">
+                      ${svgIcon('<circle cx="12" cy="12" r="9"/><polyline points="12 6 12 12 14 14"/>', 12)}
+                      Batch 2k25
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Academic & ID cards grid -->
+              <div class="about-dev-grid">
+                <!-- Academic Card -->
+                <div class="about-dev-meta-card">
+                  <div class="about-dev-meta-icon" style="background:rgba(167,139,250,0.12);color:#A78BFA;">
+                    ${svgIcon('<path d="M22 10v6M2 10l10-5 10 5-10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5"/>', 16)}
+                  </div>
+                  <div class="about-dev-meta-content">
+                    <div class="about-dev-meta-label">Academic Program</div>
+                    <div class="about-dev-meta-title">Bachelor of Science in Artificial Intelligence</div>
+                    <div class="about-dev-meta-sub">NFC Institute of Engineering and Technology, Multan</div>
+                  </div>
+                </div>
+
+                <!-- Roll Number Card -->
+                <div class="about-dev-meta-card">
+                  <div class="about-dev-meta-icon" style="background:rgba(251,191,36,0.12);color:#FBBF24;">
+                    ${svgIcon('<rect x="3" y="4" width="18" height="16" rx="2"/><circle cx="9" cy="10" r="2"/><line x1="15" y1="8" x2="17" y2="8"/><line x1="15" y1="12" x2="17" y2="12"/><path d="M6 17c0-1.5 1.5-2.5 3-2.5s3 1 3 2.5"/>', 16)}
+                  </div>
+                  <div class="about-dev-meta-content">
+                    <div class="about-dev-meta-label">Student Identification</div>
+                    <div class="about-dev-meta-title about-dev-roll-text">
+                      <span id="about-roll-number-val">2k25-BSAI-06</span>
+                    </div>
+                    <div class="about-dev-meta-sub">Department of Computer Science &amp; AI</div>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Hot Links Action Row -->
+              <div class="about-dev-hotlinks">
+                <div class="about-hotlinks-title">
+                  <span>Connect &amp; Profiles</span>
+                </div>
+                <div class="about-hotlinks-grid">
+                  <!-- GitHub Hot Link -->
+                  <a href="https://github.com/NomanRafique01" target="_blank" rel="noopener noreferrer" class="about-hotlink-card about-hotlink--github" data-url="https://github.com/NomanRafique01">
+                    <div class="about-hotlink-icon">
+                      ${svgIcon('<path d="M9 19c-5 1.5-5-2.5-7-3m14 6v-3.87a3.37 3.37 0 0 0-.94-2.61c3.14-.35 6.44-1.54 6.44-7A5.44 5.44 0 0 0 20 4.77 5.07 5.07 0 0 0 19.91 1S18.73.65 16 2.48a13.38 13.38 0 0 0-7 0C6.27.65 5.09 1 5.09 1A5.07 5.07 0 0 0 5 4.77a5.44 5.44 0 0 0-1.5 3.78c0 5.42 3.3 6.61 6.44 7A3.37 3.37 0 0 0 9 18.13V22"/>', 20)}
+                    </div>
+                    <div class="about-hotlink-body">
+                      <div class="about-hotlink-heading">
+                        <span class="about-hotlink-name">GitHub</span>
+                        <span class="about-hotlink-tag">Code &amp; Repos</span>
+                      </div>
+                      <div class="about-hotlink-handle">github.com/NomanRafique01</div>
+                    </div>
+                    <div class="about-hotlink-arrow">
+                      ${svgIcon('<line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/>', 15)}
+                    </div>
+                  </a>
+
+                  <!-- LinkedIn Hot Link -->
+                  <a href="https://www.linkedin.com/in/noman-rafique-5892ab398" target="_blank" rel="noopener noreferrer" class="about-hotlink-card about-hotlink--linkedin" data-url="https://www.linkedin.com/in/noman-rafique-5892ab398">
+                    <div class="about-hotlink-icon">
+                      ${svgIcon('<path d="M16 8a6 6 0 0 1 6 6v7h-4v-7a2 2 0 0 0-2-2 2 2 0 0 0-2 2v7h-4v-7a6 6 0 0 1 6-6z"/><rect x="2" y="9" width="4" height="12"/><circle cx="4" cy="4" r="2"/>', 20)}
+                    </div>
+                    <div class="about-hotlink-body">
+                      <div class="about-hotlink-heading">
+                        <span class="about-hotlink-name">LinkedIn</span>
+                        <span class="about-hotlink-tag">Professional</span>
+                      </div>
+                      <div class="about-hotlink-handle">in/noman-rafique-5892ab398</div>
+                    </div>
+                    <div class="about-hotlink-arrow">
+                      ${svgIcon('<line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/>', 15)}
+                    </div>
+                  </a>
+                </div>
+              </div>
+            </div>
+          </div>
+
           <!-- Privacy Guarantee (Bottom Full Width) -->
           <div class="about-privacy-card">
             <div class="about-privacy-header">
@@ -337,6 +462,28 @@ export async function renderAbout(container) {
           card.classList.add('about-feature--open');
           detail.style.maxHeight = detail.scrollHeight + 'px';
           if (chevron) chevron.style.transform = 'rotate(180deg)';
+        }
+      });
+    });
+  });
+
+  // --- External Hot Links: open directly in system default browser ----------
+  requestAnimationFrame(() => {
+    const hotlinks = document.querySelectorAll('.about-hotlink-card');
+    hotlinks.forEach((link) => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const url = link.getAttribute('data-url') || link.href;
+        if (!url) return;
+
+        if (window.electronAPI && typeof window.electronAPI.openExternal === 'function') {
+          window.electronAPI.openExternal(url);
+        } else if (window.toolceo && typeof window.toolceo.openExternal === 'function') {
+          window.toolceo.openExternal(url);
+        } else if (window.toolceo && typeof window.toolceo.invoke === 'function') {
+          window.toolceo.invoke('shell:openExternal', url);
+        } else {
+          window.open(url, '_blank', 'noopener,noreferrer');
         }
       });
     });
