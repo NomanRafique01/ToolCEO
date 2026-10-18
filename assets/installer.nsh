@@ -3,7 +3,6 @@
   ShowInstDetails nevershow
   ShowUninstDetails nevershow
 
-  !define MUI_INSTFILESPAGE_PROGRESSBAR "smooth"
   !define MUI_ABORTWARNING
   !define MUI_UNABORTWARNING
   !define MUI_WELCOMEPAGE_TITLE "Install ToolCEO"
