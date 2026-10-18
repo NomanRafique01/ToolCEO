@@ -177,6 +177,11 @@ try {
       fs.writeFileSync(distModulesPath, raw, 'utf8');
       console.log('[prebuild] ✓ Synced reset modules.json to dist/win-unpacked/modules.json');
     } catch (_) {}
+  }
+} catch (modErr) {
+  console.error('[prebuild] ⚠ Error cleaning modules:', modErr.message);
+}
+
 // 5. Ensure main_backend.exe exists (rebuild if missing or if REBUILD_BACKEND=1)
 try {
   const backendExe = path.join(rootDir, 'engines', 'python', 'main_backend.exe');
