@@ -1,7 +1,8 @@
-<h1 align="center">
-  <img src="assets/New%20Icon.png" width="150" height="150" alt="ToolCEO logo"/><br/>
-  ToolCEO
-</h1>
+<p align="center">
+  <img src="assets/icon.png" width="150" height="150" alt="ToolCEO logo"/>
+</p>
+
+<h1 align="center">ToolCEO</h1>
 
 <p align="center">
   <strong>The all-in-one offline file conversion powerhouse for Windows.</strong><br/>
