@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/icon.png" width="150" height="150" alt="ToolCEO logo"/>
+  <img src="assets/icon-readme.png" width="150" height="150" alt="ToolCEO logo"/>
 </p>
 
 <h1 align="center">ToolCEO</h1>
