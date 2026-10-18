@@ -784,6 +784,14 @@ function createWindow() {
   mainWindow.maximize();
   mainWindow.loadFile(path.join(__dirname, '..', 'frontend', 'index.html'));
 
+  // Open external links securely in the user's default web browser
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    if (url.startsWith('https://') || url.startsWith('http://') || url.startsWith('mailto:')) {
+      shell.openExternal(url);
+    }
+    return { action: 'deny' };
+  });
+
   if (!app.isPackaged) {
     mainWindow.webContents.session.clearCache();
   }
@@ -1676,6 +1684,17 @@ app.whenReady().then(async () => {
     if (!filePath || !fs.existsSync(filePath)) return { ok: false, error: 'File not found' };
     const err = await shell.openPath(filePath);
     return { ok: !err, error: err || null };
+  });
+
+  ipcMain.handle('shell:openExternal', async (_event, url) => {
+    if (!url || typeof url !== 'string') return false;
+    try {
+      await shell.openExternal(url);
+      return true;
+    } catch (err) {
+      console.warn('[main] openExternal failed:', err.message);
+      return false;
+    }
   });
 
   ipcMain.handle('shell:showItemInFolder', (_event, filePath) => {
