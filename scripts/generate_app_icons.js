@@ -26,12 +26,16 @@ const SOURCE = path.join(ROOT, 'assets', 'New Icon.png');
 
 const DESTINATIONS_PNG = [
   path.join(ROOT, 'assets', 'icon.png'),
+  path.join(ROOT, 'assets', 'New Icon.png'),
   path.join(ROOT, 'assets', 'icon1.png'),
   path.join(ROOT, 'frontend', 'assets', 'icon.png'),
   path.join(ROOT, 'frontend', 'assets', 'icon1.png'),
 ];
 
-const TARGET_ICO = path.join(ROOT, 'assets', 'icon.ico');
+const TARGET_ICOS = [
+  path.join(ROOT, 'assets', 'icon.ico'),
+  path.join(ROOT, 'assets', 'icon1.ico'),
+];
 const ICO_SIZES = [16, 24, 32, 48, 64, 128, 256];
 
 /**
@@ -136,6 +140,51 @@ function makeTransparent(sourceImg) {
   return out;
 }
 
+/**
+ * Trim transparent borders and center graphic with standard Windows optical margins (~94% fill).
+ * Ensures desktop shortcut and taskbar icon appear equal in size to standard Windows icons.
+ */
+function normalizeAndTrim(img, fillRatio = 0.94) {
+  const w = img.bitmap.width;
+  const h = img.bitmap.height;
+  let minX = w, maxX = 0, minY = h, maxY = 0;
+
+  for (let y = 0; y < h; y++) {
+    for (let x = 0; x < w; x++) {
+      const a = img.getPixelColor(x, y) & 0xff;
+      if (a > 10) {
+        if (x < minX) minX = x;
+        if (x > maxX) maxX = x;
+        if (y < minY) minY = y;
+        if (y > maxY) maxY = y;
+      }
+    }
+  }
+
+  if (minX > maxX || minY > maxY) {
+    return img;
+  }
+
+  const cropW = maxX - minX + 1;
+  const cropH = maxY - minY + 1;
+  const cropped = img.clone().crop({ x: minX, y: minY, w: cropW, h: cropH });
+
+  const targetSize = 1024;
+  const maxDim = Math.round(targetSize * fillRatio);
+  const scale = maxDim / Math.max(cropW, cropH);
+  const newW = Math.max(1, Math.round(cropW * scale));
+  const newH = Math.max(1, Math.round(cropH * scale));
+
+  cropped.resize({ w: newW, h: newH });
+
+  const canvas = new Jimp({ width: targetSize, height: targetSize, color: 0x00000000 });
+  const offsetX = Math.floor((targetSize - newW) / 2);
+  const offsetY = Math.floor((targetSize - newH) / 2);
+  canvas.composite(cropped, offsetX, offsetY);
+
+  return canvas;
+}
+
 async function generateIco(sourceImg, outPath) {
   const images = [];
   for (const size of ICO_SIZES) {
@@ -172,12 +221,15 @@ async function generateIco(sourceImg, outPath) {
 }
 
 async function main() {
-  const srcToUse = fs.existsSync(path.join(ROOT, 'test_transparent.png'))
-    ? path.join(ROOT, 'test_transparent.png')
-    : SOURCE;
+  const candidates = [
+    path.join(ROOT, 'test_transparent.png'),
+    SOURCE,
+    path.join(ROOT, 'assets', 'icon.png'),
+  ];
+  const srcToUse = candidates.find((p) => fs.existsSync(p));
 
-  if (!fs.existsSync(srcToUse)) {
-    throw new Error(`Source icon not found at: ${srcToUse}`);
+  if (!srcToUse) {
+    throw new Error(`Source icon not found at any candidate path: ${candidates.join(', ')}`);
   }
 
   console.log(`[icons] Loading source icon: ${path.relative(ROOT, srcToUse)}...`);
@@ -198,7 +250,10 @@ async function main() {
     transparentImg = makeTransparent(rawImg);
   }
 
-  const pngBuffer = await transparentImg.getBuffer('image/png');
+  // Optimize sizing & optical margins so taskbar and desktop icons match standard proportions
+  console.log(`[icons] Normalizing optical margins for desktop & taskbar standard sizing (~94% fill)...`);
+  const finalImg = normalizeAndTrim(transparentImg, 0.94);
+  const pngBuffer = await finalImg.getBuffer('image/png');
 
   // 1. Write clean transparent PNG to all targets
   for (const dest of DESTINATIONS_PNG) {
@@ -207,8 +262,16 @@ async function main() {
     console.log(`[icons] ✓ Updated transparent PNG: ${path.relative(ROOT, dest)}`);
   }
 
-  // 2. Generate multi-resolution Windows ICO
-  await generateIco(transparentImg, TARGET_ICO);
+  // Also update README icon at 256x256
+  const readmeImg = finalImg.clone().resize({ w: 256, h: 256 });
+  const readmeBuf = await readmeImg.getBuffer('image/png');
+  fs.writeFileSync(path.join(ROOT, 'assets', 'icon-readme.png'), readmeBuf);
+  console.log(`[icons] ✓ Updated README preview PNG: assets/icon-readme.png`);
+
+  // 2. Generate multi-resolution Windows ICO (both icon.ico and icon1.ico)
+  for (const icoPath of TARGET_ICOS) {
+    await generateIco(finalImg, icoPath);
+  }
 
   // 3. Generate Microsoft Store / MSIX / AppX visual assets
   console.log('[icons] Generating Microsoft Store / AppX visual assets from transparent icon...');
@@ -223,7 +286,7 @@ async function main() {
     throw new Error(`Store icons generation exited with code ${storeResult.status}`);
   }
 
-  console.log('[icons] ✓ All icons generated with 100% transparent background.');
+  console.log('[icons] ✓ All icons generated and synchronized with optimal desktop/taskbar sizing.');
 }
 
 main().catch((err) => {

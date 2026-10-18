@@ -19,6 +19,15 @@
   SetDetailsView hide
 !macroend
 
+!macro customInstall
+  SetDetailsPrint none
+  SetDetailsView hide
+  # Pre-authorize ToolCEO's offline local backend with Windows Firewall.
+  # This completely prevents Windows Defender Firewall from popping up the
+  # "Do you want to allow public and private networks to access this app" prompt.
+  nsExec::Exec 'netsh advfirewall firewall add rule name="ToolCEO Backend" dir=in action=allow program="$INSTDIR\resources\engines\python\main_backend.exe" enable=yes'
+!macroend
+
 !macro customUnInit
   SetDetailsPrint none
   SetDetailsView hide
@@ -28,4 +37,6 @@
   SetDetailsPrint none
   SetDetailsView hide
   DetailPrint "Removing ToolCEO..."
+  # Clean up the firewall rule on uninstall
+  nsExec::Exec 'netsh advfirewall firewall delete rule name="ToolCEO Backend"'
 !macroend

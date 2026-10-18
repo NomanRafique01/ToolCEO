@@ -16,9 +16,9 @@ const buildInfoFrontendPath = path.join(rootDir, 'frontend', 'build-info.json');
 
 console.log('[prebuild] Preparing clean build environment...');
 
-// 0. Regenerate branded Microsoft Store / MSIX tile assets.
+// 0. Regenerate all application icons, multi-res ICOs, and Microsoft Store / MSIX tile assets.
 try {
-  const iconScript = path.join(rootDir, 'scripts', 'generate_store_icons.js');
+  const iconScript = path.join(rootDir, 'scripts', 'generate_app_icons.js');
   const result = spawnSync(process.execPath, [iconScript], {
     cwd: rootDir,
     stdio: 'inherit',
@@ -29,7 +29,7 @@ try {
     process.exit(result.status || 1);
   }
 } catch (err) {
-  console.error('[prebuild] Error generating Microsoft Store icons:', err.message);
+  console.error('[prebuild] Error generating application icons:', err.message);
   process.exit(1);
 }
 
@@ -177,9 +177,19 @@ try {
       fs.writeFileSync(distModulesPath, raw, 'utf8');
       console.log('[prebuild] ✓ Synced reset modules.json to dist/win-unpacked/modules.json');
     } catch (_) {}
+// 5. Ensure main_backend.exe exists (rebuild if missing or if REBUILD_BACKEND=1)
+try {
+  const backendExe = path.join(rootDir, 'engines', 'python', 'main_backend.exe');
+  if (!fs.existsSync(backendExe) || process.env.REBUILD_BACKEND === '1') {
+    console.log('[prebuild] Building main_backend.exe...');
+    const buildBackendScript = path.join(rootDir, 'scripts', 'build_backend.js');
+    const bRes = spawnSync(process.execPath, [buildBackendScript], { stdio: 'inherit' });
+    if (bRes.status !== 0) {
+      console.error('[prebuild] ⚠ Error building main_backend.exe');
+    }
   }
-} catch (modErr) {
-  console.error('[prebuild] ⚠ Error cleaning modules:', modErr.message);
+} catch (bErr) {
+  console.warn('[prebuild] ⚠ Could not build backend:', bErr.message);
 }
 
 console.log('[prebuild] Ready for packaging.');

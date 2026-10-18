@@ -8,6 +8,7 @@
   "scripts": {
     "start": "node start.js",
     "generate:icons": "node scripts/generate_app_icons.js",
+    "build:backend": "node scripts/build_backend.js",
     "prebuild": "node scripts/prebuild.js",
     "build": "node scripts/build.js --win --x64",
     "prebuild:store": "node scripts/prebuild.js",
@@ -29,7 +30,7 @@
         "nsis",
         "appx"
       ],
-      "icon": "assets/icon1.ico"
+      "icon": "assets/icon.ico"
     },
     "nsis": {
       "oneClick": false,
@@ -37,9 +38,9 @@
       "allowToChangeInstallationDirectory": true,
       "differentialPackage": false,
       "deleteAppDataOnUninstall": true,
-      "installerIcon": "assets/icon1.ico",
-      "uninstallerIcon": "assets/icon1.ico",
-      "installerHeaderIcon": "assets/icon1.ico",
+      "installerIcon": "assets/icon.ico",
+      "uninstallerIcon": "assets/icon.ico",
+      "installerHeaderIcon": "assets/icon.ico",
       "include": "assets/installer.nsh",
       "uninstallDisplayName": "ToolCEO",
       "createDesktopShortcut": true,
