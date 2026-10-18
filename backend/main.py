@@ -1,3 +1,36 @@
+import sys
+if sys.platform == "win32":
+    import socket
+    try:
+        from asyncio.proactor_events import _ProactorBasePipeTransport
+
+        def _fixed_call_connection_lost(self, exc):
+            if self._called_connection_lost:
+                return
+            try:
+                self._protocol.connection_lost(exc)
+            finally:
+                if hasattr(self._sock, "shutdown") and self._sock.fileno() != -1:
+                    try:
+                        self._sock.shutdown(socket.SHUT_RDWR)
+                    except (OSError, ConnectionResetError):
+                        pass
+                if self._sock is not None:
+                    try:
+                        self._sock.close()
+                    except (OSError, ConnectionResetError):
+                        pass
+                    self._sock = None
+                server = self._server
+                if server is not None:
+                    server._detach(self)
+                    self._server = None
+                self._called_connection_lost = True
+
+        _ProactorBasePipeTransport._call_connection_lost = _fixed_call_connection_lost
+    except Exception:
+        pass
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -56,6 +89,32 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+@app.on_event("startup")
+async def setup_event_loop_exception_handler():
+    import asyncio
+    try:
+        loop = asyncio.get_running_loop()
+        orig_handler = loop.get_exception_handler()
+
+        def custom_handler(loop, context):
+            exc = context.get("exception")
+            if isinstance(exc, (ConnectionResetError, ConnectionAbortedError)):
+                return
+            if exc and getattr(exc, "winerror", None) in (10053, 10054):
+                return
+            msg = str(context.get("message", ""))
+            if "WinError 10054" in msg or "ConnectionResetError" in msg:
+                return
+            if orig_handler:
+                orig_handler(loop, context)
+            else:
+                loop.default_exception_handler(context)
+
+        loop.set_exception_handler(custom_handler)
+    except Exception:
+        pass
 
 
 @app.get("/")
