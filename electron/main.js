@@ -26,6 +26,73 @@ const AdmZip    = require('adm-zip');
 const historyDb = require('./database');
 const { spawn, execFile, execFileSync } = require('child_process');
 
+// ─── SQUIRREL WINDOWS INSTALL/UPDATE EVENTS ────────────────────────────────────
+// MUST be the very first thing after imports.
+// electron-builder NSIS fires these events on install / update / uninstall so that
+// the app can create/remove its own Start Menu + Desktop shortcuts.
+// Without this handler the shortcuts are never written and Windows shows nothing.
+if (process.platform === 'win32') {
+  const squirrelCmd = process.argv[1];
+  if (squirrelCmd === '--squirrel-install' || squirrelCmd === '--squirrel-updated') {
+    // Use electron's built-in helper to create shortcuts.
+    try {
+      const { updateElectronApp } = require('update-electron-app'); // optional, may not exist
+    } catch (_) {}
+    // Minimal shell-shortcut creation via native electron API
+    app.setAppUserModelId('com.nythris.toolceo');
+    const target  = process.execPath;
+    const appName = 'ToolCEO';
+    const iconPath = path.join(path.dirname(target), 'resources', 'assets', 'icon.ico');
+    // Create Start Menu shortcut
+    const startMenuDir = path.join(
+      process.env.APPDATA || '',
+      'Microsoft', 'Windows', 'Start Menu', 'Programs'
+    );
+    const desktopDir = path.join(os.homedir(), 'Desktop');
+    [startMenuDir, desktopDir].forEach(dir => {
+      try {
+        const lnk = path.join(dir, `${appName}.lnk`);
+        // Use WSH to create shortcut (no extra deps needed)
+        const vbs = [
+          `Set oShell = WScript.CreateObject("WScript.Shell")`,
+          `Set oShortcut = oShell.CreateShortcut("${lnk.replace(/\\/g, '\\\\')}")`,
+          `oShortcut.TargetPath = "${target.replace(/\\/g, '\\\\')}"`,
+          `oShortcut.WorkingDirectory = "${path.dirname(target).replace(/\\/g, '\\\\')}"`,
+          `oShortcut.Description = "ToolCEO – All-in-one offline file toolkit"`,
+          fs.existsSync(iconPath)
+            ? `oShortcut.IconLocation = "${iconPath.replace(/\\/g, '\\\\')}, 0"`
+            : '',
+          `oShortcut.Save`,
+        ].join('\r\n');
+        const vbsPath = path.join(os.tmpdir(), `toolceo_shortcut_${Date.now()}.vbs`);
+        fs.writeFileSync(vbsPath, vbs);
+        execFileSync('cscript', ['//Nologo', vbsPath], { stdio: 'ignore' });
+        try { fs.unlinkSync(vbsPath); } catch (_) {}
+      } catch (_) {}
+    });
+    app.quit();
+    process.exit(0);
+  }
+  if (squirrelCmd === '--squirrel-uninstall') {
+    // Remove shortcuts on uninstall
+    const appName = 'ToolCEO';
+    const startMenuDir = path.join(
+      process.env.APPDATA || '',
+      'Microsoft', 'Windows', 'Start Menu', 'Programs'
+    );
+    const desktopDir = path.join(os.homedir(), 'Desktop');
+    [startMenuDir, desktopDir].forEach(dir => {
+      try { fs.unlinkSync(path.join(dir, `${appName}.lnk`)); } catch (_) {}
+    });
+    app.quit();
+    process.exit(0);
+  }
+  if (squirrelCmd === '--squirrel-obsolete') {
+    app.quit();
+    process.exit(0);
+  }
+}
+
 // ─── CONSTANTS ─────────────────────────────────────────────────────────────────
 
 const TCEO_EXT          = '.tceo';
