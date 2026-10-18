@@ -6,6 +6,7 @@
   "main": "electron/main.js",
   "scripts": {
     "start": "node start.js",
+    "generate:icons": "node scripts/generate_app_icons.js",
     "prebuild": "node scripts/prebuild.js",
     "build": "node scripts/build.js --win --x64",
     "prebuild:store": "node scripts/prebuild.js",
