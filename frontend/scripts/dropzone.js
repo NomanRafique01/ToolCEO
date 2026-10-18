@@ -1883,29 +1883,9 @@ export function initDropZone() {
     if (tool) _restoreToolFiles(tool, { resetToolUi: true, showScan: reason === 'progress-cancel' });
   });
 
-  // Handle clicking the background progress bar / card or "View Tool" button:
-  // switch back to the tool that was executing in the background and auto-scroll
-  // up to the top so the drop zone view is immediately visible.
-  document.addEventListener('bg-job-switch', (e) => {
-    const tool = e.detail && e.detail.tool;
-    if (tool) setActiveTool(tool);
-
-    const dashPanel = document.getElementById('dashboard-panel');
-    if (dashPanel) {
-      dashPanel.classList.remove('modules-active', 'recent-active');
-    }
-
-    const mainContent = document.getElementById('main-content');
-    if (mainContent) {
-      mainContent.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-    const dropZone = document.getElementById('drop-zone');
-    if (dropZone && typeof dropZone.scrollIntoView === 'function') {
-      try {
-        dropZone.scrollIntoView({ behavior: 'smooth', block: 'start' });
-      } catch (_) { }
-    }
-  });
+  // Note: 'bg-job-switch' (clicking the background progress bar / card or "View Tool")
+  // is handled centrally in navigation.js via navigateToTool() to guarantee
+  // that the tool loads in its actual parent category & format card page.
 
   // When a background job is cleared or dismissed:
   // 1. NEVER touch the active tool's drop zone or loaded files if the cleared job

@@ -27,6 +27,7 @@ import { renderAbout }           from './about.js';
 import { setActiveTool }         from './toolstate.js';
 import { loadModuleStatuses }    from './modulelock.js';
 import { setZipExtractRouter }   from '../tools/shared/progress.js';
+import { getToolById }           from './searchEngine.js';
 
 // ── Category → renderer map ──────────────────────────────────────────────────
 // Add future categories here.  Value is a function(container) that fills it.
@@ -225,6 +226,67 @@ export function initNavigation() {
   bindToolCardClicks(activateNav);
 
   /**
+   * Resolves the parent category navigation label for a tool based on
+   * its family, familyLabel, or well-known tool ID prefixes.
+   * @param {object} tool
+   * @returns {string} One of: 'Documents', 'Images', 'Ebooks', 'Archives', 'Audio', 'Video', 'Data'
+   */
+  function resolveToolNavLabel(tool) {
+    if (!tool) return 'Documents';
+    const fam = (tool.family || '').toLowerCase();
+    if (fam === 'document') return 'Documents';
+    if (fam === 'image') return 'Images';
+    if (fam === 'ebook') return 'Ebooks';
+    if (fam === 'archive') return 'Archives';
+    if (fam === 'audio') return 'Audio';
+    if (fam === 'video') return 'Video';
+    if (fam === 'data') return 'Data';
+
+    if (tool.familyLabel) {
+      const fl = tool.familyLabel.toLowerCase();
+      if (fl.includes('doc')) return 'Documents';
+      if (fl.includes('img') || fl.includes('image')) return 'Images';
+      if (fl.includes('ebook') || fl.includes('book')) return 'Ebooks';
+      if (fl.includes('archive') || fl.includes('zip')) return 'Archives';
+      if (fl.includes('audio')) return 'Audio';
+      if (fl.includes('video')) return 'Video';
+      if (fl.includes('data')) return 'Data';
+    }
+
+    const id = (tool.id || '').toLowerCase();
+    if (
+      ['merge', 'split', 'compress', 'encrypt', 'rotate', 'extractor', 'watermark', 'editor', 'images-pdf'].includes(id) ||
+      id.startsWith('pdf-') || id.startsWith('docx-') || id.startsWith('xlsx-') ||
+      id.startsWith('pptx-') || id.startsWith('txt-') || id.startsWith('odt-') || id.startsWith('csv-')
+    ) {
+      return 'Documents';
+    }
+    if (
+      id === 'image_compressor' || id.startsWith('jpg-') || id.startsWith('png-') ||
+      id.startsWith('webp-') || id.startsWith('svg-') || id.startsWith('gif-') ||
+      id.startsWith('bmp-') || id.startsWith('tiff-') || id.startsWith('ico-')
+    ) {
+      return 'Images';
+    }
+    if (id.startsWith('epub-') || id.startsWith('mobi-') || id.startsWith('azw3-') || id.startsWith('fb2-')) {
+      return 'Ebooks';
+    }
+    if (
+      id.startsWith('archive-') || id.startsWith('zip-') || id.startsWith('rar-') ||
+      id.startsWith('7z-') || id.startsWith('tar-') || id.startsWith('gz-')
+    ) {
+      return 'Archives';
+    }
+    if (id.startsWith('audio-') || ['mp3', 'wav', 'flac', 'aac', 'ogg', 'wma', 'm4a'].includes(id)) {
+      return 'Audio';
+    }
+    if (id.startsWith('video-') || ['mp4', 'webm', 'mkv', 'avi', 'mov', 'flv'].includes(id)) {
+      return 'Video';
+    }
+    return 'Documents';
+  }
+
+  /**
    * Navigates directly to a tool's dedicated category & format panel,
    * clearing any conflicting states (Modules, Recent, About, etc.),
    * activating the tool in the hero dropzone, and selecting its card.
@@ -233,23 +295,12 @@ export function initNavigation() {
   function navigateToTool(tool) {
     if (!tool) return;
 
+    // Enrich tool if we have its registered metadata (family, label, etc.)
+    const enriched = (tool && tool.id) ? getToolById(tool.id) : null;
+    const fullTool = enriched ? { ...enriched, ...tool } : tool;
+
     // 1. Resolve family and category navigation label
-    const family = (tool.family || '').toLowerCase();
-    let navLabel = 'Documents';
-    if (family === 'document') navLabel = 'Documents';
-    else if (family === 'image') navLabel = 'Images';
-    else if (family === 'ebook') navLabel = 'Ebooks';
-    else if (family === 'archive') navLabel = 'Archives';
-    else if (family === 'audio') navLabel = 'Audio';
-    else if (family === 'video') navLabel = 'Video';
-    else if (family === 'data') navLabel = 'Data';
-    else if (tool.familyLabel) {
-      const fl = tool.familyLabel.toLowerCase();
-      if (fl.includes('doc')) navLabel = 'Documents';
-      else if (fl.includes('img') || fl.includes('image')) navLabel = 'Images';
-      else if (fl.includes('ebook') || fl.includes('book')) navLabel = 'Ebooks';
-      else if (fl.includes('archive') || fl.includes('zip')) navLabel = 'Archives';
-    }
+    const navLabel = resolveToolNavLabel(fullTool);
 
     // 2. Clear any conflicting panel states (modules-active, recent-active, about-active)
     const dashPanel = document.getElementById('dashboard-panel');
@@ -286,13 +337,13 @@ export function initNavigation() {
     // 4. Render the specific category tool view into exploreSection
     if (exploreSection) {
       if (navLabel === 'Documents') {
-        renderDocumentToolView(exploreSection, activateNav, tool.id);
+        renderDocumentToolView(exploreSection, activateNav, fullTool.id);
       } else if (navLabel === 'Images') {
-        renderImageToolView(exploreSection, activateNav, tool.id);
+        renderImageToolView(exploreSection, activateNav, fullTool.id);
       } else if (navLabel === 'Ebooks') {
-        renderEbookToolView(exploreSection, activateNav, tool.id);
+        renderEbookToolView(exploreSection, activateNav, fullTool.id);
       } else if (navLabel === 'Archives') {
-        renderArchiveToolView(exploreSection, activateNav, tool.id);
+        renderArchiveToolView(exploreSection, activateNav, fullTool.id);
       } else if (CATEGORY_RENDERERS[navLabel]) {
         CATEGORY_RENDERERS[navLabel](exploreSection, activateNav);
       }
@@ -303,24 +354,38 @@ export function initNavigation() {
     }
 
     // 5. Activate the tool in toolstate (this updates the hero dropzone)
+    const isConvert = fullTool.tag === 'Convert' || (fullTool.label && (fullTool.label.includes('→') || fullTool.label.includes('to')));
+    const mainText = fullTool.mainText || (isConvert
+      ? `Drop file to Convert ${fullTool.label}`
+      : `Select File to ${fullTool.label}`);
+    const subText = fullTool.subText || (isConvert
+      ? `or click to select a file for ${fullTool.label}`
+      : `or click to pick your file`);
+
     setActiveTool({
-      id      : tool.id,
-      label   : tool.label,
-      mainText: tool.mainText,
-      subText : tool.subText,
-      icon    : tool.icon    || null,
-      color   : tool.color   || '#00E5C0',
-      bg      : tool.bg      || 'rgba(0,229,192,0.12)',
-      tag     : tool.tag     || tool.familyLabel || 'Tool',
+      id         : fullTool.id,
+      label      : fullTool.label,
+      mainText   : mainText,
+      subText    : subText,
+      icon       : fullTool.icon       || null,
+      color      : fullTool.color      || '#00E5C0',
+      bg         : fullTool.bg         || 'rgba(0,229,192,0.12)',
+      tag        : fullTool.tag        || fullTool.familyLabel || (isConvert ? 'Convert' : 'Tool'),
+      family     : fullTool.family     || navLabel.toLowerCase(),
+      familyLabel: fullTool.familyLabel || navLabel,
     });
 
     // 6. Highlight the card in the explore grid
     if (exploreSection) {
-      const card = exploreSection.querySelector(`.fmt-card[data-id="${tool.id}"]`);
-      if (card) {
-        exploreSection.querySelectorAll('.fmt-card').forEach((c) => c.classList.remove('selected'));
-        card.classList.add('selected');
-      }
+      const highlightCard = () => {
+        const card = exploreSection.querySelector(`.fmt-card[data-id="${fullTool.id}"]`);
+        if (card) {
+          exploreSection.querySelectorAll('.fmt-card').forEach((c) => c.classList.remove('selected'));
+          card.classList.add('selected');
+        }
+      };
+      highlightCard();
+      setTimeout(highlightCard, 60);
     }
 
     // 7. Scroll to top so hero dropzone with the selected tool is immediately visible
@@ -330,6 +395,15 @@ export function initNavigation() {
       requestAnimationFrame(() => { mainContent.scrollTop = 0; });
     }
   }
+
+  // ── Handle clicking the background progress bar / card or "View Tool" button ──
+  // Navigates directly back to the tool's actual parent card page and selects its card.
+  document.addEventListener('bg-job-switch', (e) => {
+    const tool = e.detail && e.detail.tool;
+    if (tool) {
+      navigateToTool(tool);
+    }
+  });
 
   return { activateNav, navigateToTool };
 }
