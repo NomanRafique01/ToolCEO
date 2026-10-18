@@ -1,4 +1,4 @@
-!macro customHeader
+﻿!macro customHeader
   BrandingText "ToolCEO Desktop Toolkit"
   ShowInstDetails nevershow
   ShowUninstDetails nevershow
@@ -26,6 +26,16 @@
   # This completely prevents Windows Defender Firewall from popping up the
   # "Do you want to allow public and private networks to access this app" prompt.
   nsExec::Exec 'netsh advfirewall firewall add rule name="ToolCEO Backend" dir=in action=allow program="$INSTDIR\resources\engines\python\main_backend.exe" enable=yes'
+
+  # Re-create Start Menu and Desktop shortcuts with an explicit .ico path.
+  # Electron embeds the app icon as a transparent PNG inside the ICO container;
+  # Windows cannot always extract it from the EXE PE resources for Start Menu tiles,
+  # resulting in a blank icon in "Recently added" and the taskbar.
+  # Pointing shortcuts at the standalone icon.ico (copied as an extraResource)
+  # bypasses PE extraction and fixes the blank-icon issue reliably.
+  SetOutPath "$INSTDIR"
+  CreateShortCut "$SMPROGRAMS\ToolCEO.lnk" "$INSTDIR\ToolCEO.exe" "" "$INSTDIR\icon.ico" 0 SW_SHOWNORMAL "" "ToolCEO - All-in-one offline file toolkit"
+  CreateShortCut "$DESKTOP\ToolCEO.lnk"   "$INSTDIR\ToolCEO.exe" "" "$INSTDIR\icon.ico" 0 SW_SHOWNORMAL "" "ToolCEO - All-in-one offline file toolkit"
 !macroend
 
 !macro customUnInit
