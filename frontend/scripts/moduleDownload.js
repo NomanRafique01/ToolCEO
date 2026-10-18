@@ -8,6 +8,7 @@
 
 import { pushNotification } from './notificationStore.js';
 import { invalidateModuleCache, loadModuleStatuses } from './modulelock.js';
+import { makeDraggable, syncFloatingPanelsStack } from './panelDrag.js';
 
 // ─── STATE ────────────────────────────────────────────────────────────────────
 
@@ -18,6 +19,8 @@ let _currentModuleName = null;
 let _currentPhase = 'downloading'; // 'downloading' | 'installing'
 let _cancelRequested = false;
 let _maxInstallPercent = 0;   // strictly monotonic tracker to prevent installation progress from moving backward
+let _dragApi = null;          // { resetPosition, restorePosition } from shared drag utility
+let _installFailsafeTimer = null; // prevents installation panel from ever staying stuck on 100%
 
 const MODULE_NAMES = {
   office: 'Office Module',
@@ -187,7 +190,9 @@ export function startModuleInstall(mod) {
   window.electronAPI.startModuleInstall({ moduleId: mod.id })
     .then((result) => {
       if (_cancelRequested) return;
-      if (!result || !result.ok) {
+      if (result && result.ok) {
+        _handleInstallComplete({ moduleId: mod.id, name: mod.name });
+      } else if (!result || !result.ok) {
         const failedModId = mod.id;
         if (result && result.reason === 'busy') {
           pushNotification({ type: 'warning', message: 'Another operation is already in progress.' });
@@ -227,6 +232,7 @@ export function cancelActiveOperation(moduleId = null) {
   if (!targetId) return;
 
   _cancelRequested = true;
+  if (_dragApi) _dragApi.resetPosition(); // Reset drag position so next panel appears at default location
   if (_currentPhase === 'installing') {
     if (window.electronAPI && window.electronAPI.cancelModuleInstall) {
       window.electronAPI.cancelModuleInstall();
@@ -273,6 +279,14 @@ export function initModuleDownloadPanel() {
         </svg>
       </span>
       <span class="mod-dl-title" id="mod-dl-title">Downloading <strong>…</strong></span>
+      <span class="mod-dl-drag-grip" aria-hidden="true">
+        <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor">
+          <circle cx="2" cy="2" r="1.2"/><circle cx="8" cy="2" r="1.2"/>
+          <circle cx="2" cy="6" r="1.2"/><circle cx="8" cy="6" r="1.2"/>
+          <circle cx="2" cy="10" r="1.2"/><circle cx="8" cy="10" r="1.2"/>
+          <circle cx="2" cy="14" r="1.2"/><circle cx="8" cy="14" r="1.2"/>
+        </svg>
+      </span>
     </div>
     <div id="mod-dl-status-msg" class="mod-dl-status-msg" style="display:none"></div>
     <div class="mod-dl-bar-row">
@@ -295,12 +309,20 @@ export function initModuleDownloadPanel() {
     cancelActiveOperation();
   });
 
+  // ── Draggable window behaviour ──────────────────────────────────────────────
+  _dragApi = makeDraggable(panel, panel, {
+    dragClass: 'mod-dl-panel--dragging',
+    resetOnHide: true,
+    getOtherPanel: () => document.getElementById('bg-job-bar'),
+  });
+
   if (!window.electronAPI) return;
 
   // ── Download events ─────────────────────────────────────────────────────────
 
   // Download progress
   window.electronAPI.onModuleDownloadProgress((payload) => {
+    if (_cancelRequested) return; // Ignore events after cancel
     if ((!_active || !_currentModuleId) && payload && payload.moduleId) {
       _active = true;
       _currentPhase = 'downloading';
@@ -315,6 +337,7 @@ export function initModuleDownloadPanel() {
 
   // Download complete — cleanly completes download phase and triggers installation
   window.electronAPI.onModuleDownloadComplete(async (payload) => {
+    if (_cancelRequested) return; // Ignore if user already cancelled
     const completedModuleId = payload?.moduleId || _currentModuleId;
     const completedModuleName = _currentModuleName || (completedModuleId ? (MODULE_NAMES[completedModuleId] || completedModuleId.toUpperCase() + ' Module') : 'Module');
 
@@ -343,6 +366,7 @@ export function initModuleDownloadPanel() {
     });
 
     setTimeout(() => {
+      if (_cancelRequested) return; // Don't auto-start install if cancelled during transition
       startModuleInstall({ id: completedModuleId, name: completedModuleName });
     }, 450);
   });
@@ -365,6 +389,7 @@ export function initModuleDownloadPanel() {
   // Install progress
   if (window.electronAPI.onModuleInstallProgress) {
     window.electronAPI.onModuleInstallProgress((payload) => {
+      if (_cancelRequested) return; // Ignore progress events after cancel
       if ((!_active || !_currentModuleId) && payload && payload.moduleId) {
         _active = true;
         _currentPhase = 'installing';
@@ -382,38 +407,52 @@ export function initModuleDownloadPanel() {
     });
   }
 
+  let _installCompletedModule = null;
+
+  async function _handleInstallComplete(payload = {}) {
+    if (_installFailsafeTimer) {
+      clearTimeout(_installFailsafeTimer);
+      _installFailsafeTimer = null;
+    }
+
+    const completedModuleId = payload?.moduleId || _currentModuleId;
+    const completedModuleName = payload?.name || _currentModuleName || (completedModuleId ? (MODULE_NAMES[completedModuleId] || completedModuleId.toUpperCase() + ' Module') : 'Module');
+
+    if (!completedModuleId) return;
+    if (_installCompletedModule === completedModuleId && !_active) return;
+    _installCompletedModule = completedModuleId;
+
+    _updateProgress({ percent: 100, phase: 'installing', message: 'Installation complete' });
+    setTimeout(() => _hidePanel(), 400);
+    _active = false;
+    _paused = false;
+    _currentModuleId = null;
+    _currentModuleName = null;
+
+    // Invalidate lock cache and refresh
+    invalidateModuleCache();
+    await loadModuleStatuses();
+
+    pushNotification({
+      type: 'success',
+      message: `All tools related to the ${completedModuleName} are now unlocked and ready to use.`,
+    });
+
+    notifyModuleState(completedModuleId, 'installed');
+
+    // Real-time tool unlock in the dashboard
+    document.querySelectorAll(`[data-locked-module="${completedModuleId}"]`).forEach((card) => {
+      card.classList.remove('fmt-card--locked');
+      card.removeAttribute('data-locked-module');
+      const lockIcon = card.querySelector('.fmt-lock-badge, .lock-icon');
+      if (lockIcon) lockIcon.remove();
+    });
+  }
+
   // Install complete
   if (window.electronAPI.onModuleInstallComplete) {
     window.electronAPI.onModuleInstallComplete(async (payload) => {
-      _updateProgress({ percent: 100, phase: 'installing', message: 'Installation complete' });
-      setTimeout(() => _hidePanel(), 400);
-      _active = false;
-      _paused = false;
-      const completedModuleId = payload?.moduleId || _currentModuleId;
-      const completedModuleName = _currentModuleName || (completedModuleId ? (MODULE_NAMES[completedModuleId] || completedModuleId.toUpperCase() + ' Module') : 'Module');
-      _currentModuleId = null;
-      _currentModuleName = null;
-
-      // Invalidate lock cache and refresh
-      invalidateModuleCache();
-      await loadModuleStatuses();
-
-      pushNotification({
-        type: 'success',
-        message: `All tools related to the ${completedModuleName} are now unlocked and ready to use.`,
-      });
-
-      notifyModuleState(completedModuleId, 'installed');
-
-      // Real-time tool unlock in the dashboard
-      if (completedModuleId) {
-        document.querySelectorAll(`[data-locked-module="${completedModuleId}"]`).forEach((card) => {
-          card.classList.remove('fmt-card--locked');
-          card.removeAttribute('data-locked-module');
-          const lockIcon = card.querySelector('.fmt-lock-badge, .lock-icon');
-          if (lockIcon) lockIcon.remove();
-        });
-      }
+      await _handleInstallComplete(payload);
     });
   }
 
@@ -512,12 +551,18 @@ export function initModuleDownloadPanel() {
   });
 }
 
+
 // ─── PANEL HELPERS ────────────────────────────────────────────────────────────
 
 function _showPanel(moduleName, expectedSize, phase = 'downloading') {
   _currentPhase = phase;
   const panel = document.getElementById('mod-dl-panel');
   if (!panel) return;
+
+  if (_installFailsafeTimer) {
+    clearTimeout(_installFailsafeTimer);
+    _installFailsafeTimer = null;
+  }
 
   const iconEl = panel.querySelector('.mod-dl-icon');
   const dlBar = _el('mod-dl-bar-download');
@@ -582,12 +627,20 @@ function _showPanel(moduleName, expectedSize, phase = 'downloading') {
   _el('mod-dl-percent').textContent = '0%';
   _hideStatusMsg();
   _showCancelOnly();
+  if (_dragApi) _dragApi.restorePosition();
   panel.classList.add('mod-dl-panel--visible');
+  syncFloatingPanelsStack();
 }
 
 function _hidePanel() {
+  if (_installFailsafeTimer) {
+    clearTimeout(_installFailsafeTimer);
+    _installFailsafeTimer = null;
+  }
+  _maxInstallPercent = 0;
   const panel = document.getElementById('mod-dl-panel');
   if (panel) panel.classList.remove('mod-dl-panel--visible');
+  syncFloatingPanelsStack();
   const dlBar = _el('mod-dl-bar-download');
   if (dlBar) {
     dlBar.style.transition = 'none';
@@ -634,6 +687,20 @@ function _updateProgress({ percent = 0, receivedBytes = 0, totalBytes = 0, phase
     const sizeEl = _el('mod-dl-size');
     if (sizeEl) {
       sizeEl.textContent = message || 'Installing module files — this may take a few minutes…';
+    }
+
+    // FAILSAFE: If 100% is reached during installation, auto-finalize so the UI is NEVER stuck on 100
+    if (cleanPercent >= 100) {
+      if (!_installFailsafeTimer) {
+        _installFailsafeTimer = setTimeout(() => {
+          _installFailsafeTimer = null;
+          const panel = document.getElementById('mod-dl-panel');
+          if (_active || (panel && panel.classList.contains('mod-dl-panel--visible'))) {
+            console.log('[moduleDownload] Failsafe: 100% reached, auto-finalizing install panel...');
+            _handleInstallComplete({ moduleId: _currentModuleId, name: _currentModuleName });
+          }
+        }, 1200);
+      }
     }
     return;
   }

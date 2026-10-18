@@ -19,6 +19,20 @@
   padding: 18px 20px 16px;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6), 0 2px 8px rgba(0, 0, 0, 0.3);
   display: none; /* shown by JS when a download starts */
+  transition: box-shadow 0.2s ease;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  touch-action: none;
+}
+
+#mod-dl-panel:active {
+  cursor: grabbing;
+}
+
+#mod-dl-panel button,
+#mod-dl-panel a {
+  cursor: pointer;
 }
 
 #mod-dl-panel.mod-dl-panel--visible {
@@ -26,18 +40,61 @@
   animation: mod-dl-fade-in 0.25s ease forwards;
 }
 
+/* While being dragged — elevated shadow, no transitions that fight repositioning */
+#mod-dl-panel.panel-dragging,
+#mod-dl-panel.mod-dl-panel--dragging {
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7), 0 4px 16px rgba(0, 0, 0, 0.4);
+  opacity: 0.95;
+  user-select: none;
+}
+
 @keyframes mod-dl-fade-in {
   from { opacity: 0; transform: translateY(20px); }
   to   { opacity: 1; transform: translateY(0); }
 }
 
-/* ── Header row: icon + title ─────────────────────────────────────────────── */
+/* ── Header row: icon + title (also drag handle) ─────────────────────────── */
 
 .mod-dl-header {
   display: flex;
   align-items: center;
   gap: 9px;
   margin-bottom: 14px;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+  border-radius: 6px;
+  padding: 2px 4px;
+  margin: -2px -4px 14px;
+  transition: background 0.15s ease;
+}
+
+.mod-dl-header:hover {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.mod-dl-header:active,
+#mod-dl-panel.panel-dragging .mod-dl-header,
+#mod-dl-panel.mod-dl-panel--dragging .mod-dl-header {
+  cursor: grabbing;
+}
+
+/* Drag grip dots — shown to the right of the title as a visual affordance */
+.mod-dl-drag-grip {
+  display: flex;
+  align-items: center;
+  flex-shrink: 0;
+  margin-left: auto;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  color: var(--text-muted);
+  pointer-events: none;
+}
+
+.mod-dl-header:hover .mod-dl-drag-grip,
+#mod-dl-panel.panel-dragging .mod-dl-drag-grip,
+#mod-dl-panel.mod-dl-panel--dragging .mod-dl-drag-grip {
+  opacity: 0.5;
 }
 
 .mod-dl-icon {

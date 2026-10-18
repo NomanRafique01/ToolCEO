@@ -1849,6 +1849,8 @@
   overflow-x: hidden;
   padding: 4px;
   scrollbar-width: none;
+  touch-action: none;
+  transition: bottom 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, opacity 0.2s ease;
 }
 
 .bg-job-bar::-webkit-scrollbar {
@@ -1863,17 +1865,36 @@
   display: flex;
   flex-direction: column;
   gap: 8px;
-  box-shadow: 0 10px 32px rgba(0, 0, 0, 0.55), 0 2px 8px rgba(0, 0, 0, 0.28),
-    0 0 20px color-mix(in srgb, var(--bg-job-color) 12%, transparent);
+  box-shadow: 0 0 20px color-mix(in srgb, var(--bg-job-color) 12%, transparent);
   animation: bgJobCardFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
   transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
   backdrop-filter: blur(12px);
-  cursor: pointer;
+  cursor: grab;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.bg-job-card:active {
+  cursor: grabbing;
 }
 
 .bg-job-card:hover {
   border-color: color-mix(in srgb, var(--bg-job-color) 60%, var(--border, rgba(255, 255, 255, 0.2)));
-  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.65), 0 0 24px color-mix(in srgb, var(--bg-job-color) 20%, transparent);
+  box-shadow: 0 0 24px color-mix(in srgb, var(--bg-job-color) 20%, transparent);
+}
+
+/* While dragging */
+.bg-job-bar.panel-dragging {
+  user-select: none;
+  -webkit-user-select: none;
+  cursor: grabbing !important;
+  opacity: 0.96;
+}
+
+.bg-job-bar.panel-dragging .bg-job-card {
+  cursor: grabbing !important;
+  box-shadow: 0 0 28px color-mix(in srgb, var(--bg-job-color) 25%, transparent);
+  transform: scale(1.01);
 }
 
 @keyframes bgJobCardFadeIn {
@@ -2091,4 +2112,36 @@
 
 .bg-job-close-x:active {
   transform: scale(0.92);
+}
+
+/* Drag grip dots affordance */
+.bg-job-drag-grip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 22px;
+  color: #64748b;
+  opacity: 0.35;
+  transition: opacity 0.15s ease, color 0.15s ease;
+  cursor: grab;
+  flex-shrink: 0;
+  user-select: none;
+}
+
+.bg-job-card:hover .bg-job-drag-grip {
+  opacity: 0.8;
+  color: var(--text-secondary, #cbd5e1);
+}
+
+.bg-job-bar.panel-dragging .bg-job-drag-grip {
+  opacity: 1;
+  color: var(--bg-job-color);
+  cursor: grabbing;
+}
+
+.bg-job-card button,
+.bg-job-btn,
+.bg-job-close-x {
+  cursor: pointer;
 }

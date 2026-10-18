@@ -1,5 +1,6 @@
 import { pushNotification } from './notificationStore.js';
 import { consumeToolFileState } from './fileState.js';
+import { makeDraggable, syncFloatingPanelsStack } from './panelDrag.js';
 
 let _activeTool = null;
 const _listeners = [];
@@ -20,6 +21,21 @@ export function onToolChange(fn) {
 const _bgJobs = new Map();
 let _bgSeq = 0;
 let _renderScheduled = false;
+let _bgJobDragApi = null;
+
+function _ensureBgJobDraggable(bar) {
+  if (!_bgJobDragApi && bar) {
+    _bgJobDragApi = makeDraggable(bar, bar, {
+      resetOnHide: true,
+      dragClass: 'panel-dragging',
+      getOtherPanel: () => document.getElementById('mod-dl-panel'),
+    });
+  }
+}
+
+export function resetBgJobBarPosition() {
+  if (_bgJobDragApi) _bgJobDragApi.resetPosition();
+}
 
 function _makeClientId() {
   _bgSeq += 1;
@@ -172,6 +188,11 @@ export function clearBgJob(jobIdOrSilent = null, maybeSilent = false) {
 
   if (key) _bgJobs.delete(key);
 
+  if (_bgJobs.size === 0 || _visibleJobs().length === 0) {
+    if (_bgJobDragApi) _bgJobDragApi.resetPosition();
+    syncFloatingPanelsStack();
+  }
+
   syncBgJobBar();
   if (!silent && job) {
     document.dispatchEvent(new CustomEvent('bg-job-cleared', {
@@ -211,10 +232,14 @@ function _renderBgJobBar() {
   const bar = document.getElementById('bg-job-bar');
   if (!bar) return;
 
+  _ensureBgJobDraggable(bar);
+
   const jobs = _visibleJobs();
   if (jobs.length === 0) {
     bar.style.display = 'none';
     bar.innerHTML = '';
+    if (_bgJobDragApi) _bgJobDragApi.resetPosition();
+    syncFloatingPanelsStack();
     return;
   }
 
@@ -311,6 +336,8 @@ function _renderBgJobBar() {
       card.remove();
     }
   });
+
+  syncFloatingPanelsStack();
 }
 
 // Coalesce rapid SSE progress events into one DOM update per paint frame.
@@ -467,6 +494,16 @@ function _renderBgJob(job) {
         <div class="bg-job-right">
           <span class="bg-job-pct">${state === 'error' ? 'Err' : `${pct}%`}</span>
           <span class="bg-job-action-container">${_renderActionBtn(state, jobId, job.blob, key, job.noSave)}</span>
+          <span class="bg-job-drag-grip" title="Drag to reposition" aria-hidden="true">
+            <svg width="8" height="14" viewBox="0 0 8 14" fill="currentColor">
+              <circle cx="2" cy="2" r="1.1"/>
+              <circle cx="6" cy="2" r="1.1"/>
+              <circle cx="2" cy="7" r="1.1"/>
+              <circle cx="6" cy="7" r="1.1"/>
+              <circle cx="2" cy="12" r="1.1"/>
+              <circle cx="6" cy="12" r="1.1"/>
+            </svg>
+          </span>
           <button type="button" class="bg-job-close-x" data-bg-close="${key}" title="${state === 'running' || state === 'submitting' ? 'Cancel task' : 'Dismiss'}" aria-label="${state === 'running' || state === 'submitting' ? 'Cancel task' : 'Dismiss background job'}">
             <svg width="12" height="12" viewBox="0 0 12 12" fill="none">
               <line x1="1" y1="1" x2="11" y2="11" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
