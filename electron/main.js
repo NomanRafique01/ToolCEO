@@ -941,6 +941,19 @@ function _isModuleInstalled(moduleId) {
     app.isPackaged ? path.join(process.resourcesPath, '..', 'engines') : null,
   ].filter(Boolean);
 
+  if (IS_WIN && process.env.LOCALAPPDATA) {
+    try {
+      const pkgDir = path.join(process.env.LOCALAPPDATA, 'Packages');
+      if (fs.existsSync(pkgDir)) {
+        const matches = fs.readdirSync(pkgDir).filter(p => p.includes('ToolCEO'));
+        for (const m of matches) {
+          searchDirs.push(path.join(pkgDir, m, 'LocalCache', 'Roaming', 'ToolCEO', 'engines'));
+          searchDirs.push(path.join(pkgDir, m, 'LocalCache', 'Local', 'ToolCEO', 'engines'));
+        }
+      }
+    } catch (_) {}
+  }
+
   const candidates = MODULE_ENGINE_EXES[moduleId] || [];
   for (const baseDir of searchDirs) {
     for (const relPath of candidates) {
@@ -1175,6 +1188,12 @@ async function _extractZip(zipPath, enginesDir, moduleId, onProgress = () => {},
     } catch (_) {
       admZipPath = path.join(__dirname, '..', 'node_modules', 'adm-zip', 'adm-zip.js');
     }
+    if (admZipPath && admZipPath.includes('app.asar') && !admZipPath.includes('app.asar.unpacked')) {
+      const unpackedCandidate = admZipPath.replace('app.asar', 'app.asar.unpacked');
+      if (fs.existsSync(unpackedCandidate)) {
+        admZipPath = unpackedCandidate;
+      }
+    }
 
     const workerCode = `
       const { workerData, parentPort } = require('worker_threads');
@@ -1259,14 +1278,50 @@ async function _extractZip(zipPath, enginesDir, moduleId, onProgress = () => {},
       });
 
       if (isCancelled()) return;
-      extracted = true;
+      if (_isModuleInstalled(moduleId)) {
+        extracted = true;
+      }
     } catch (err) {
-      console.warn('[extract] AdmZip worker failed, falling back to native tools:', err.message);
+      console.warn('[extract] AdmZip worker failed, trying in-process and native fallbacks:', err.message);
+    }
+  }
+
+  // ─── Tier 1B: In-Process AdmZip Extraction Fallback ────────────────────────
+  if (!extracted && !isCancelled()) {
+    try {
+      console.log(`[extract] Attempting in-process AdmZip extraction for ${moduleId}...`);
+      const AdmZip = require('adm-zip');
+      const zip = new AdmZip(zipPath);
+      const entries = zip.getEntries();
+      const total = entries.length;
+      let lastSent = 0;
+
+      for (let i = 0; i < total; i++) {
+        if (isCancelled()) break;
+        const entry = entries[i];
+        if (!entry.isDirectory) {
+          zip.extractEntryTo(entry, enginesDir, true, true);
+        }
+
+        const now = Date.now();
+        if (now - lastSent >= 200 || i === total - 1) {
+          lastSent = now;
+          const pct = Math.min(99, Math.floor(((i + 1) / total) * 100));
+          onProgress(pct, 'Installing module files…');
+          await new Promise((r) => setImmediate(r));
+        }
+      }
+
+      if (!isCancelled() && _isModuleInstalled(moduleId)) {
+        extracted = true;
+      }
+    } catch (err) {
+      console.warn('[extract] In-process AdmZip extraction failed:', err.message);
     }
   }
 
   // ─── Tier 2: Bundled 7-Zip fallback ───────────────────────────────────────
-  // Only reached if AdmZip worker throws (e.g. corrupted zip, missing module).
+  // Only reached if AdmZip throws (e.g. corrupted zip, memory constraints).
   if (!extracted && !isCancelled()) {
     const sevenZipCandidates = [
       path.join(enginesDir, '7zip', IS_WIN ? '7z.exe' : '7z'),
@@ -1335,34 +1390,8 @@ async function _extractZip(zipPath, enginesDir, moduleId, onProgress = () => {},
     if (tarAvailable) {
       try {
         await new Promise((resolve, reject) => {
-          const child = spawn(tarExe, ['-vxf', zipPath, '-C', enginesDir], { windowsHide: true });
+          const child = spawn(tarExe, ['-xf', zipPath, '-C', enginesDir], { windowsHide: true });
           if (_activeInstall) _activeInstall.child = child;
-
-          let count = 0;
-          let lastPct = 0;
-          let buffer = '';
-          let lastEmit = 0;
-
-          const handleData = (chunk) => {
-            if (isCancelled()) return;
-            buffer += chunk.toString();
-            const lines = buffer.split(/\r?\n/);
-            buffer = lines.pop() || '';
-            count += lines.filter(Boolean).length;
-
-            const now = Date.now();
-            if (now - lastEmit >= 100) {
-              lastEmit = now;
-              const pct = Math.min(99, Math.floor(count / 150));
-              if (pct >= lastPct) {
-                lastPct = pct;
-                onProgress(pct, 'Installing module files…');
-              }
-            }
-          };
-
-          if (child.stderr) child.stderr.on('data', handleData);
-          if (child.stdout) child.stdout.on('data', handleData);
 
           child.on('close', (code) => {
             if (isCancelled()) return resolve();
@@ -1385,30 +1414,69 @@ async function _extractZip(zipPath, enginesDir, moduleId, onProgress = () => {},
     }
   }
 
+  // ─── Tier 4: PowerShell Expand-Archive fallback (Windows) ─────────────────
+  if (!extracted && !isCancelled() && IS_WIN) {
+    try {
+      console.log(`[extract] Attempting PowerShell Expand-Archive fallback for ${moduleId}...`);
+      await new Promise((resolve, reject) => {
+        const psArgs = [
+          '-NoProfile',
+          '-NonInteractive',
+          '-ExecutionPolicy', 'Bypass',
+          '-Command',
+          `Expand-Archive -LiteralPath '${zipPath.replace(/'/g, "''")}' -DestinationPath '${enginesDir.replace(/'/g, "''")}' -Force`
+        ];
+        const child = spawn('powershell.exe', psArgs, { windowsHide: true });
+        if (_activeInstall) _activeInstall.child = child;
+
+        child.on('close', (code) => {
+          if (isCancelled()) return resolve();
+          if (code === 0 || _isModuleInstalled(moduleId)) resolve();
+          else reject(new Error(`PowerShell Expand-Archive failed with code ${code}`));
+        });
+        child.on('error', reject);
+      });
+
+      if (!isCancelled() && _isModuleInstalled(moduleId)) {
+        extracted = true;
+      }
+    } catch (err) {
+      console.warn('[extract] PowerShell Expand-Archive fallback failed:', err.message);
+    }
+  }
+
   if (isCancelled()) return;
 
+  // ─── MANDATORY VERIFICATION GATE ──────────────────────────────────────────
+  if (!_isModuleInstalled(moduleId)) {
+    throw new Error(`Engine verification failed: executables for module "${moduleId}" were not found after extraction.`);
+  }
+
+  extracted = true;
   onProgress(100, 'Finishing installation…');
 
-  // Compatibility links / junctions
+  // Compatibility links / junctions (safe cleanup & recreate)
   for (const eng of expectedEngines) {
     const sourceEngPath = path.join(enginesDir, eng);
     const nestedModPath = path.join(enginesDir, moduleId, eng);
     const modDirPath    = path.join(enginesDir, moduleId);
 
-    if (fs.existsSync(sourceEngPath) && !fs.existsSync(nestedModPath)) {
-      try {
-        fs.mkdirSync(modDirPath, { recursive: true });
-        if (IS_WIN) {
-          try { fs.symlinkSync(sourceEngPath, nestedModPath, 'junction'); } catch (_) {}
+    try {
+      if (fs.existsSync(sourceEngPath)) {
+        if (!fs.existsSync(nestedModPath)) {
+          fs.mkdirSync(modDirPath, { recursive: true });
+          if (IS_WIN) {
+            try { fs.symlinkSync(sourceEngPath, nestedModPath, 'junction'); } catch (_) {}
+          }
         }
-      } catch (_) {}
-    } else if (!fs.existsSync(sourceEngPath) && fs.existsSync(nestedModPath)) {
-      try {
-        if (IS_WIN) {
-          try { fs.symlinkSync(nestedModPath, sourceEngPath, 'junction'); } catch (_) {}
+      } else if (fs.existsSync(nestedModPath)) {
+        if (!fs.existsSync(sourceEngPath)) {
+          if (IS_WIN) {
+            try { fs.symlinkSync(nestedModPath, sourceEngPath, 'junction'); } catch (_) {}
+          }
         }
-      } catch (_) {}
-    }
+      }
+    } catch (_) {}
   }
 }
 
@@ -2328,13 +2396,27 @@ app.whenReady().then(async () => {
       return { ok: false, reason: 'cancelled' };
     }
 
+    const modName = _getModuleDisplayName(moduleId);
+
+    // Verify engine binary exists on disk before marking installed
+    if (!_isModuleInstalled(moduleId)) {
+      _writeModuleStatus(moduleId, 'downloaded');
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.webContents.send('module-install-error', {
+          moduleId,
+          reason: 'verification-failed',
+          error: `Installation verification failed: ${modName} binary was not found on disk after extraction.`,
+        });
+      }
+      _activeInstall = null;
+      return { ok: false, reason: 'verification-failed' };
+    }
+
     // Explicitly send 100% completion step
     sendInstallProgress(100, 'Installation complete');
 
     // Update status to installed
     _writeModuleStatus(moduleId, 'installed');
-
-    const modName = _getModuleDisplayName(moduleId);
     _notify(`${modName} Installed`, `All tools related to the ${modName} are now unlocked and ready to use.`);
 
     if (mainWindow && !mainWindow.isDestroyed()) {

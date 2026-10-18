@@ -157,14 +157,21 @@ export function initNavigation() {
       if (searchArea) {
         if (label === 'About') {
           searchArea.style.display = 'none';
-          const searchInput = document.getElementById('header-search-input');
-          if (searchInput) searchInput.blur();
-          const searchDropdown = document.getElementById('header-search-dropdown');
-          if (searchDropdown) searchDropdown.style.display = 'none';
         } else {
           searchArea.style.display = '';
         }
       }
+      const searchInput = document.getElementById('header-search-input');
+      if (searchInput) {
+        searchInput.value = '';
+        searchInput.blur();
+      }
+      const searchClear = document.getElementById('header-search-clear');
+      if (searchClear) searchClear.style.display = 'none';
+      const searchDropdown = document.getElementById('header-search-dropdown');
+      if (searchDropdown) searchDropdown.style.display = 'none';
+      const searchWrap = document.getElementById('header-search-wrap');
+      if (searchWrap) searchWrap.classList.remove('is-focused');
     }
 
     // ── Explore-section swap ─────────────────────────────────────────────
@@ -253,6 +260,18 @@ export function initNavigation() {
 
     const searchArea = document.querySelector('.topbar-search-area');
     if (searchArea) searchArea.style.display = '';
+
+    const searchInput = document.getElementById('header-search-input');
+    if (searchInput) {
+      searchInput.value = '';
+      searchInput.blur();
+    }
+    const searchClear = document.getElementById('header-search-clear');
+    if (searchClear) searchClear.style.display = 'none';
+    const searchDropdown = document.getElementById('header-search-dropdown');
+    if (searchDropdown) searchDropdown.style.display = 'none';
+    const searchWrap = document.getElementById('header-search-wrap');
+    if (searchWrap) searchWrap.classList.remove('is-focused');
 
     // 3. Update sidebar nav items highlight to the target category
     navItems.forEach((n) => {

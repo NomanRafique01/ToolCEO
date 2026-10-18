@@ -14,7 +14,7 @@
  * ─────────────────────────────────────────────────────────────────────────────
  */
 
-import { setActiveTool }                             from './toolstate.js';
+import { setActiveTool, onToolChange }               from './toolstate.js';
 import { getLockedModuleId }                         from './modulelock.js';
 import { setPendingLockContext }                     from './modules.js';
 import { initSearchEngine, searchTools, getSuggestedTools, getToolById } from './searchEngine.js';
@@ -78,6 +78,18 @@ export function initHeaderSearch({ activateNav, navigateToTool } = {}) {
     searchDropdown.style.display = 'none';
     searchWrap.classList.remove('is-focused');
     selectedIndex = -1;
+  }
+
+  function clearSearch() {
+    searchInput.value = '';
+    if (searchClear) {
+      searchClear.style.display = 'none';
+    }
+    selectedIndex = -1;
+    activeFilter  = 'all';
+    filterChips.forEach((chip) => {
+      chip.classList.toggle('active', (chip.dataset.filter || 'all') === 'all');
+    });
   }
 
   // ── Results rendering ──────────────────────────────────────────────────────
@@ -158,12 +170,13 @@ export function initHeaderSearch({ activateNav, navigateToTool } = {}) {
   // ── Tool Selection Logic ───────────────────────────────────────────────────
 
   function selectToolById(toolId) {
+    clearSearch();
+    closeDropdown();
+    searchInput.blur();
+
     // Resolve the full enriched tool spec from the search engine
     const tool = getToolById(toolId);
     if (!tool) return;
-
-    closeDropdown();
-    searchInput.blur();
 
     // Module lock guard
     const lockedMod = getLockedModuleId(tool.id);
@@ -291,6 +304,15 @@ export function initHeaderSearch({ activateNav, navigateToTool } = {}) {
       searchInput.focus();
       searchInput.select();
       openDropdown();
+    }
+  });
+
+  // Auto-clear search bar whenever any tool is loaded or switched into
+  onToolChange((tool) => {
+    if (tool) {
+      clearSearch();
+      closeDropdown();
+      searchInput.blur();
     }
   });
 }

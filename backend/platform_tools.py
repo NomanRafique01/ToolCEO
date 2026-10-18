@@ -26,25 +26,25 @@ INSTALL_HINTS = {
         "name": "Ghostscript",
         "mac": "brew install ghostscript",
         "linux": "sudo apt install ghostscript",
-        "windows": "Install Ghostscript from https://ghostscript.com/releases/gsdnld.html",
+        "windows": "Please install Ghostscript from https://ghostscript.com/releases/gsdnld.html",
     },
     "libreoffice": {
-        "name": "LibreOffice",
-        "mac": "brew install --cask libreoffice",
-        "linux": "sudo apt install libreoffice",
-        "windows": "Install LibreOffice from https://www.libreoffice.org/download/download-libreoffice/",
+        "name": "LibreOffice (Office Module)",
+        "mac": "brew install --cask libreoffice, or install the Office Module in ToolCEO.",
+        "linux": "sudo apt install libreoffice, or install the Office Module in ToolCEO.",
+        "windows": "Please open the Modules section in ToolCEO and install the Office Module.",
     },
     "pandoc": {
-        "name": "Pandoc",
-        "mac": "brew install pandoc",
-        "linux": "sudo apt install pandoc",
-        "windows": "Install Pandoc from https://pandoc.org/installing.html",
+        "name": "Pandoc (Document Module)",
+        "mac": "brew install pandoc, or install the Document Module in ToolCEO.",
+        "linux": "sudo apt install pandoc, or install the Document Module in ToolCEO.",
+        "windows": "Please open the Modules section in ToolCEO and install the Document Module.",
     },
     "tesseract": {
-        "name": "Tesseract OCR",
-        "mac": "brew install tesseract",
-        "linux": "sudo apt install tesseract-ocr",
-        "windows": "Install Tesseract OCR and add tesseract.exe to PATH",
+        "name": "Tesseract (OCR Module)",
+        "mac": "brew install tesseract, or install the OCR Module in ToolCEO.",
+        "linux": "sudo apt install tesseract-ocr, or install the OCR Module in ToolCEO.",
+        "windows": "Please open the Modules section in ToolCEO and install the OCR Module.",
     },
 }
 
@@ -66,14 +66,19 @@ def _first_glob(patterns: Iterable[str]) -> str | None:
 
 
 def install_message(tool_key: str) -> str:
-    hint = INSTALL_HINTS[tool_key]
+    hint = INSTALL_HINTS.get(tool_key, {
+        "name": tool_key,
+        "windows": "Please install the required module in ToolCEO.",
+        "mac": "Please install the required module in ToolCEO.",
+        "linux": "Please install the required module in ToolCEO.",
+    })
     if IS_WIN:
         install = hint["windows"]
     elif IS_MAC:
         install = hint["mac"]
     else:
         install = hint["linux"]
-    return f"Please install {hint['name']} to use this tool. {install}"
+    return f"{hint['name']} is required for this operation. {install}"
 
 
 def require_binary(tool_key: str, binary_path: str | None) -> str:
@@ -132,6 +137,10 @@ def get_engine_path(engine_name: str) -> str | None:
         short_variant = os.path.join(*parts[-2:])
         if short_variant not in variants:
             variants.append(short_variant)
+    if parts:
+        basename = parts[-1]
+        if basename not in variants:
+            variants.append(basename)
 
     search_roots: list[str] = []
 
@@ -150,6 +159,11 @@ def get_engine_path(engine_name: str) -> str | None:
             search_roots.append(os.path.join(localappdata, "ToolCEO", "engines"))
             search_roots.append(os.path.join(localappdata, "Programs", "ToolCEO", "engines"))
             search_roots.append(os.path.join(localappdata, "Programs", "ToolCEO", "resources", "engines"))
+            # AppX / MSIX package store redirection roots:
+            for p in glob.glob(os.path.join(localappdata, "Packages", "*ToolCEO*", "LocalCache", "Roaming", "ToolCEO", "engines")):
+                search_roots.append(p)
+            for p in glob.glob(os.path.join(localappdata, "Packages", "*ToolCEO*", "LocalCache", "Local", "ToolCEO", "engines")):
+                search_roots.append(p)
     elif IS_MAC:
         search_roots.append(os.path.expanduser("~/Library/Application Support/ToolCEO/engines"))
     else:
