@@ -63,6 +63,13 @@ let backendProcess = null;
 /** .tceo path queued before the window was ready (cold-start or second-instance). */
 let _pendingVaultFile = null;
 
+// ─── WINDOWS APP USER MODEL ID ───────────────────────────────────────────────
+if (IS_WIN) {
+  try {
+    app.setAppUserModelId('com.nythris.toolceo');
+  } catch (_) {}
+}
+
 // ─── SINGLE-INSTANCE LOCK ─────────────────────────────────────────────────────
 
 const gotLock = app.requestSingleInstanceLock();
@@ -754,13 +761,15 @@ function waitForBackend(url, retries, delay, callback) {
 function createWindow() {
   const appIconIco = getBundledAssetPath(path.join('assets', 'icon.ico'));
   const appIconPng = getBundledAssetPath(APP_ICON_PNG_RELATIVE);
-  const appIcon = (IS_WIN && fs.existsSync(appIconIco)) ? appIconIco : appIconPng;
+  const appIconPath = (IS_WIN && fs.existsSync(appIconIco)) ? appIconIco : appIconPng;
+  const iconImage = nativeImage.createFromPath(appIconPath);
+
   mainWindow = new BrowserWindow({
     width: 1200,
     height: 750,
     minWidth: 1000,
     minHeight: 650,
-    icon: appIcon,
+    icon: !iconImage.isEmpty() ? iconImage : appIconPath,
     show: false,
     backgroundColor: '#0A1F1C',
     frame: false,
@@ -778,6 +787,23 @@ function createWindow() {
       paintWhenInitiallyHidden: false,
     },
   });
+
+  if (!iconImage.isEmpty()) {
+    mainWindow.setIcon(iconImage);
+  } else if (fs.existsSync(appIconPath)) {
+    mainWindow.setIcon(appIconPath);
+  }
+
+  if (IS_WIN) {
+    try {
+      mainWindow.setAppDetails({
+        appId: 'com.nythris.toolceo',
+        appIconPath: fs.existsSync(appIconIco) ? appIconIco : appIconPng,
+        appIconIndex: 0,
+        relaunchDisplayName: 'ToolCEO',
+      });
+    } catch (_) {}
+  }
 
   // Size the hidden window before the first paint so the desktop cannot show
   // beside it while Windows completes the maximize transition.
