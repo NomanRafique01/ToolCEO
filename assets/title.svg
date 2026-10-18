@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 340 64" width="340" height="64">
+  <defs>
+    <linearGradient id="toolceo-grad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00E5C0"/>
+      <stop offset="60%" stop-color="#00D2B4"/>
+      <stop offset="100%" stop-color="#00B4D8"/>
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="2" stdDeviation="4" flood-color="#00E5C0" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+  <text x="50%" y="46" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Inter, Roboto, 'Helvetica Neue', Arial, sans-serif" font-size="44" font-weight="900" letter-spacing="2.5" fill="url(#toolceo-grad)" filter="url(#glow)">ToolCEO</text>
+</svg>

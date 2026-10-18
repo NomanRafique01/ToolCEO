@@ -1,8 +1,10 @@
 <p align="center">
-  <img src="assets/icon-readme.png" width="150" height="150" alt="ToolCEO logo"/>
+  <img src="assets/icon-readme.png" width="190" height="190" alt="ToolCEO logo"/>
 </p>
 
-<h1 align="center">ToolCEO</h1>
+<h1 align="center">
+  <img src="assets/title.svg" alt="ToolCEO" width="280"/>
+</h1>
 
 <p align="center">
   <strong>The all-in-one offline file conversion powerhouse for Windows.</strong><br/>
