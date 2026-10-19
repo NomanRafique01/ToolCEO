@@ -842,6 +842,16 @@ function _spawnBackend() {
           `program=${backendExePath}`,
           'enable=yes'
         ], { windowsHide: true }, () => {});
+
+        execFile('netsh', [
+          'advfirewall', 'firewall', 'add', 'rule',
+          'name=ToolCEO Mobile Port',
+          'dir=in',
+          'action=allow',
+          'protocol=TCP',
+          `localport=${BACKEND_PORT}`,
+          'enable=yes'
+        ], { windowsHide: true }, () => {});
       } catch (_) {}
     }
 
@@ -852,19 +862,45 @@ function _spawnBackend() {
       env,
     });
   } else {
-    // Development mode — prefer pythonw.exe (windowless) so child processes
-    // like pandoc.exe / soffice.exe can NEVER inherit a visible console.
-    const venvPythonW = path.join(__dirname, '..', 'backend', 'venv', 'Scripts', 'pythonw.exe');
+    // Development mode — use python.exe because Windows Firewall has an active
+    // 'Allow' rule for python.exe on Public networks (pythonw.exe has an explicit
+    // 'Block' rule in Windows Defender on Public Wi-Fi profiles).
+    // windowsHide: true guarantees no terminal window is ever visible.
     const venvPython  = path.join(__dirname, '..', 'backend', 'venv', 'Scripts', 'python.exe');
+    const venvPythonW = path.join(__dirname, '..', 'backend', 'venv', 'Scripts', 'pythonw.exe');
     let pythonCmd;
-    if (IS_WIN && fs.existsSync(venvPythonW)) {
-      pythonCmd = venvPythonW;
-    } else if (fs.existsSync(venvPython)) {
+    if (IS_WIN && fs.existsSync(venvPython)) {
       pythonCmd = venvPython;
+    } else if (fs.existsSync(venvPythonW)) {
+      pythonCmd = venvPythonW;
     } else {
       pythonCmd = IS_WIN ? 'python.exe' : 'python3';
     }
     const backendDir = path.join(__dirname, '..', 'backend');
+
+    // Pre-authorize firewall rule for dev python and mobile port
+    if (IS_WIN) {
+      try {
+        execFile('netsh', [
+          'advfirewall', 'firewall', 'add', 'rule',
+          'name=ToolCEO Dev Backend',
+          'dir=in',
+          'action=allow',
+          `program=${pythonCmd}`,
+          'enable=yes'
+        ], { windowsHide: true }, () => {});
+
+        execFile('netsh', [
+          'advfirewall', 'firewall', 'add', 'rule',
+          'name=ToolCEO Mobile Port',
+          'dir=in',
+          'action=allow',
+          'protocol=TCP',
+          `localport=${BACKEND_PORT}`,
+          'enable=yes'
+        ], { windowsHide: true }, () => {});
+      } catch (_) {}
+    }
 
     console.log('[backend] Launching dev backend on port', BACKEND_PORT, 'with:', pythonCmd);
     console.log('[backend] User engines dir:', userEnginesDir);
@@ -2239,15 +2275,42 @@ app.whenReady().then(async () => {
   ipcMain.handle('get-network-ip', () => {
     try {
       const interfaces = os.networkInterfaces();
-      for (const name of Object.keys(interfaces)) {
-        for (const iface of interfaces[name]) {
+      const preferred = [];
+      const fallback = [];
+
+      for (const [name, addrs] of Object.entries(interfaces)) {
+        const isVirtual = /vethernet|virtualbox|vmware|hyper-v|wsl|docker|hamachi|tailscale|loopback/i.test(name);
+        for (const iface of addrs) {
           if (iface.family === 'IPv4' && !iface.internal && !iface.address.startsWith('169.254.')) {
-            return iface.address;
+            if (!isVirtual) {
+              preferred.push(iface.address);
+            } else {
+              fallback.push(iface.address);
+            }
           }
         }
       }
+
+      if (preferred.length > 0) return preferred[0];
+      if (fallback.length > 0) return fallback[0];
     } catch (_) {}
     return '127.0.0.1';
+  });
+
+  // ── IPC: Request Windows Firewall access for mobile transfer ─────────────────
+  ipcMain.handle('request-firewall-access', async () => {
+    if (!IS_WIN) return { ok: true };
+    try {
+      const batPath = path.join(__dirname, '..', 'scripts', 'allow-firewall.bat');
+      if (fs.existsSync(batPath)) {
+        exec(`powershell -Command "Start-Process cmd -ArgumentList '/c \\"${batPath}\\"' -Verb RunAs"`);
+        return { ok: true };
+      }
+      exec(`powershell -Command "Start-Process netsh -ArgumentList 'advfirewall firewall add rule name=\\\"ToolCEO Mobile Transfer\\\" dir=in action=allow protocol=TCP localport=${BACKEND_PORT} profile=any' -Verb RunAs"`);
+      return { ok: true };
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
   });
 
   // ── IPC: Read modules.json — returns dynamic status for all modules ───────

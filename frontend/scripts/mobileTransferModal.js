@@ -225,6 +225,9 @@ export async function openMobileTransferModal() {
           <button type="button" class="dz-phone-cancel-btn" id="dz-phone-cancel-btn">← Back to Dropzone</button>
           <button type="button" class="dz-phone-copy-btn" id="dz-phone-copy-btn">Copy Link</button>
         </div>
+        <div class="dz-phone-troubleshoot" style="margin-top: 10px; text-align: center;">
+          <button type="button" id="dz-phone-firewall-btn" style="background: none; border: none; font-size: 11px; color: var(--text-muted, #8faaa6); text-decoration: underline; cursor: pointer; padding: 2px 6px;">Can't open page on phone? Allow in Windows Firewall</button>
+        </div>
       </div>
     </div>
   `;
@@ -252,6 +255,26 @@ export async function openMobileTransferModal() {
           setTimeout(() => { btn.textContent = 'Copy Link'; }, 2000);
         }
       });
+    }
+  });
+
+  document.getElementById('dz-phone-firewall-btn')?.addEventListener('click', async (e) => {
+    e.stopPropagation();
+    if (window.toolceo?.requestFirewallAccess) {
+      const res = await window.toolceo.requestFirewallAccess();
+      if (res?.ok) {
+        pushNotification({
+          type: 'success',
+          message: 'Firewall Request Sent',
+          detail: 'If a Windows security prompt appeared, please click "Yes" to allow.',
+        });
+      } else {
+        pushNotification({
+          type: 'warning',
+          message: 'Firewall Configuration',
+          detail: res?.error || 'Could not configure firewall automatically.',
+        });
+      }
     }
   });
 
@@ -687,7 +710,15 @@ export function notifyPhoneSelectRequired() {
 }
 
 function _ensureConnectedBadge(mode = 'connected') {
-  const host = document.querySelector('.hero-header-right') || document.getElementById('drop-zone');
+  let host = document.querySelector('.hero-header-right');
+  if (!host) {
+    const header = document.querySelector('.hero-card-header');
+    if (header) {
+      host = document.createElement('div');
+      host.className = 'hero-header-right';
+      header.appendChild(host);
+    }
+  }
   if (!host) return;
 
   document.getElementById('drop-zone')?.querySelector('#dz-phone-live-badge')?.remove();
@@ -721,7 +752,7 @@ function _ensureConnectedBadge(mode = 'connected') {
 
   badge.classList.remove('is-uploading', 'is-waiting');
   const label = badge.querySelector('.dz-phone-live-label');
-  if (mode === 'uploading') {
+  if (mode === 'uploading' || mode === 'receiving') {
     badge.classList.add('is-uploading');
     if (label) label.textContent = 'Sending Files to PC';
   } else if (mode === 'waiting') {

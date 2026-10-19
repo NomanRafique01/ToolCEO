@@ -46,6 +46,9 @@ contextBridge.exposeInMainWorld('toolceo', {
   getNetworkIp: () =>
     ipcRenderer.invoke('get-network-ip'),
 
+  requestFirewallAccess: () =>
+    ipcRenderer.invoke('request-firewall-access'),
+
   // ── Vault file: subscribe to vault-file-open events from main process ────────
   // callback: (filePath: string) => void
   // Returns an unsubscribe function.

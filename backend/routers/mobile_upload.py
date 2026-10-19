@@ -69,6 +69,48 @@ def _safe_text(val: Any, fallback: str = "", max_len: int = 160) -> str:
     return s[:max_len] if s else fallback
 
 
+RASTER_IMAGE_EXTS = {".jpg", ".jpeg", ".png", ".webp", ".heic", ".heif", ".bmp", ".tiff", ".tif", ".avif", ".gif"}
+
+
+def detect_image_support(
+    tool_id: Optional[str],
+    allowed_exts: Optional[List[str]] = None,
+    accept_attr: Optional[str] = None
+) -> bool:
+    """Mini filter to determine if a tool accepts image uploads (and therefore allows camera/photo capture)."""
+    tid = (tool_id or "").lower()
+
+    # Explicit non-image tool domains (PDFs, Word, Excel, PowerPoint, Text, eBooks, Archives)
+    is_doc_pdf = (
+        tid == "merge"
+        or tid.startswith("pdf-")
+        or tid in ("split", "compress", "encrypt", "watermark", "edit-pdf", "editor", "extract-images", "extractor", "rotate")
+        or (tid.endswith("-pdf") and tid != "images-pdf" and not any(tid.startswith(p) for p in ("jpg-", "png-", "webp-", "bmp-", "tiff-", "heic-", "gif-")))
+    )
+    is_office = any(tid.startswith(p) for p in ("docx", "xlsx", "pptx", "txt", "odt", "csv"))
+    is_ebook = any(tid.startswith(p) for p in ("epub", "mobi", "azw3", "fb2", "rtf"))
+    is_archive = tid.startswith("archive") or tid.startswith("arc-")
+
+    if is_doc_pdf or is_office or is_ebook or is_archive:
+        return False
+
+    if tid in ("images-pdf", "image_compressor") or any(tid.startswith(p) for p in ("jpg", "png", "webp", "bmp", "tiff", "heic", "gif")):
+        return True
+
+    if allowed_exts:
+        for ext in allowed_exts:
+            e = str(ext).lower().strip()
+            if e in RASTER_IMAGE_EXTS or e == "image/*":
+                return True
+
+    if accept_attr:
+        acc = str(accept_attr).lower()
+        if any(x in acc for x in ("image/*", "image/jpeg", "image/png", "image/webp")):
+            return True
+
+    return False
+
+
 def _resolve_format_meta(tool_id: Optional[str]) -> Dict[str, Any]:
     tid = (tool_id or "").lower()
 
@@ -228,24 +270,32 @@ def _theme_payload(sess: Dict[str, Any]) -> Dict[str, Any]:
 
 def get_local_ip() -> str:
     """Find the best local LAN IPv4 address for mobile devices to connect to."""
-    # First try connecting a dummy UDP socket to a public IP
-    try:
-        s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        s.settimeout(0.2)
-        s.connect(("8.8.8.8", 80))
-        ip = s.getsockname()[0]
-        s.close()
-        if ip and not ip.startswith("127."):
-            return ip
-    except Exception:
-        pass
+    # First try connecting dummy UDP socket to known endpoints.
+    # Note: connect() on UDP does not send packets over the network;
+    # it only causes the OS kernel to select the optimal outbound interface.
+    for target in [("8.8.8.8", 80), ("1.1.1.1", 80), ("192.168.1.1", 80), ("192.168.0.1", 80), ("10.0.0.1", 80)]:
+        try:
+            s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+            s.settimeout(0.15)
+            s.connect(target)
+            ip = s.getsockname()[0]
+            s.close()
+            if ip and not ip.startswith("127.") and not ip.startswith("169.254."):
+                return ip
+        except Exception:
+            pass
 
-    # Fallback: inspect network interfaces
+    # Fallback: inspect network interfaces from hostname
     try:
         hostname = socket.gethostname()
-        for ip in socket.gethostbyname_ex(hostname)[2]:
-            if not ip.startswith("127.") and not ip.startswith("169.254."):
-                return ip
+        ips = socket.gethostbyname_ex(hostname)[2]
+        # Prioritize standard home/office LAN subnets (192.168.x.x, 10.x.x.x)
+        preferred = [ip for ip in ips if ip.startswith("192.168.") or ip.startswith("10.")]
+        if preferred:
+            return preferred[0]
+        valid = [ip for ip in ips if not ip.startswith("127.") and not ip.startswith("169.254.")]
+        if valid:
+            return valid[0]
     except Exception:
         pass
 
@@ -1000,6 +1050,22 @@ async def serve_mobile_upload_page(session: str = "", tool: str = "images-pdf"):
     tool_name = html_escape(theme.get("tool_name") or "ToolCEO File Transfer")
     color = html_escape(theme.get("color") or "#00E5C0")
     bg = html_escape(theme.get("bg") or "rgba(0, 229, 192, 0.15)")
+    allows_camera = bool(theme.get("allows_camera", False))
+    take_photo_btn_html = (
+        """<button type="button" class="action-chip" id="take-photo-btn">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
+          Take Photo
+        </button>"""
+        if allows_camera
+        else ""
+    )
+    gallery_chip_class = "action-chip is-single-action" if not allows_camera else "action-chip"
+    camera_input_html = (
+        '<input type="file" id="file-input-camera" accept="image/*" capture="environment" />'
+        if allows_camera
+        else '<input type="file" id="file-input-camera" accept="image/*" capture="environment" disabled style="display:none;" />'
+    )
+    gallery_accept = html_escape(theme.get("accept_attr") or "*/*")
     asset_v = int(time.time())
     theme_json = json.dumps(theme).replace("<", "\\u003c")
 
@@ -1008,10 +1074,25 @@ async def serve_mobile_upload_page(session: str = "", tool: str = "images-pdf"):
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#0A1F1C">
   <title>ToolCEO - Mobile Transfer</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" media="print" onload="this.media='all'">
+  <noscript><link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap"></noscript>
+  <style>
+    :root {{
+      --bg-primary: #0A1F1C;
+      --bg-surface: #0F2D29;
+      --text: #F0EDE4;
+      --dz-color: {color};
+      --dz-bg: {bg};
+      --accent: {color};
+      --primary: {color};
+    }}
+    * {{ box-sizing: border-box; margin: 0; padding: 0; font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; }}
+    body {{ background: #0A1F1C; color: #F0EDE4; min-height: 100vh; display: flex; flex-direction: column; align-items: center; padding: 16px; overflow-x: hidden; }}
+  </style>
   <link rel="stylesheet" href="/mobile/mobile_upload.css?v={asset_v}">
 </head>
 <body>
@@ -1021,9 +1102,9 @@ async def serve_mobile_upload_page(session: str = "", tool: str = "images-pdf"):
       <img src="/mobile-logo.png" alt="ToolCEO" class="logo-img" onerror="this.style.display='none'">
       <span class="logo-text">ToolCEO</span>
     </div>
-    <div class="status-badge">
-      <span class="pulse-dot"></span>
-      <span>Connected</span>
+    <div class="status-badge" id="status-badge">
+      <span class="pulse-dot" id="status-dot"></span>
+      <span id="status-badge-text">Connected</span>
     </div>
   </header>
 
@@ -1115,14 +1196,11 @@ async def serve_mobile_upload_page(session: str = "", tool: str = "images-pdf"):
       </div>
 
       <div class="action-chips" id="action-chips">
-        <button type="button" class="action-chip" id="choose-gallery-btn">
+        <button type="button" class="{gallery_chip_class}" id="choose-gallery-btn">
           <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><path d="M8 13h8M8 17h5"/></svg>
           <span id="choose-gallery-label">Browse Files</span>
         </button>
-        <button type="button" class="action-chip" id="take-photo-btn">
-          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"/><circle cx="12" cy="13" r="4"/></svg>
-          Take Photo
-        </button>
+        {take_photo_btn_html}
       </div>
 
       <div class="mobile-send-panel" id="mobile-send-panel" style="display: none;">
@@ -1138,8 +1216,8 @@ async def serve_mobile_upload_page(session: str = "", tool: str = "images-pdf"):
         </button>
       </div>
 
-      <input type="file" id="file-input-gallery" accept="image/*,application/pdf,application/*" />
-      <input type="file" id="file-input-camera" accept="image/*" capture="environment" />
+      <input type="file" id="file-input-gallery" accept="{gallery_accept}" />
+      {camera_input_html}
 
       <!-- Sync Info Bar below Drop Zone -->
       <div class="mobile-desktop-sync-bar" id="mobile-sync-bar" style="display: none; margin-top: 14px;">

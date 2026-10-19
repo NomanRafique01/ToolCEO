@@ -56,6 +56,54 @@
       .replace(/fill="currentColor"/g, `fill="${color}"`);
   }
 
+  const RASTER_IMAGE_EXTS = ['.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif', '.bmp', '.tiff', '.tif', '.avif', '.gif'];
+
+  /**
+   * Mini filter to detect whether the active tool supports image uploads.
+   * If false, camera capture option is removed from the mobile page.
+   */
+  function detectImageSupport(theme) {
+    if (!theme) return false;
+    if (theme.allows_camera === false) return false;
+
+    const tid = (theme.tool || '').toLowerCase();
+
+    // Explicit non-image tool domains (PDFs, Word, Excel, PowerPoint, Text, eBooks, Archives)
+    const isDocPdf = (
+      tid === 'merge' ||
+      tid.startsWith('pdf-') ||
+      /^(split|compress|encrypt|watermark|edit-pdf|editor|extract-images|extractor|rotate)$/.test(tid) ||
+      (tid.endsWith('-pdf') && tid !== 'images-pdf' && !/^(jpg|png|webp|bmp|tiff|heic|gif)-/.test(tid))
+    );
+    const isOffice = /^(docx|xlsx|pptx|txt|odt|csv)/.test(tid);
+    const isEbook = /^(epub|mobi|azw3|fb2|rtf)/.test(tid);
+    const isArchive = tid.startsWith('archive') || tid.startsWith('arc-');
+
+    if (isDocPdf || isOffice || isEbook || isArchive) return false;
+
+    // Known image tool IDs
+    if (tid === 'images-pdf' || tid === 'image_compressor' || /^(jpg|png|webp|bmp|tiff|heic|gif)/.test(tid)) {
+      return true;
+    }
+
+    // Allowed extensions check
+    if (Array.isArray(theme.allowed_exts)) {
+      const hasImageExt = theme.allowed_exts.some(ext => {
+        const e = (ext || '').toLowerCase().trim();
+        return RASTER_IMAGE_EXTS.includes(e) || e === 'image/*';
+      });
+      if (hasImageExt) return true;
+    }
+
+    // Accept attribute check
+    const accept = (theme.accept_attr || '').toLowerCase();
+    if (accept.includes('image/*') || accept.includes('image/jpeg') || accept.includes('image/png') || accept.includes('image/webp')) {
+      return true;
+    }
+
+    return Boolean(theme.allows_camera);
+  }
+
   function applyTheme(theme) {
     if (!theme) return;
     const color = theme.color || DEFAULT_COLOR;
@@ -124,22 +172,31 @@
       galleryInput.accept = theme.accept_attr;
     }
 
+    const hasImageSupport = detectImageSupport(theme);
     const cameraBtn = document.getElementById('take-photo-btn');
     const galleryBtn = document.getElementById('choose-gallery-btn');
     const galleryLabel = document.getElementById('choose-gallery-label');
+    const cameraInput = document.getElementById('file-input-camera');
+
     if (cameraBtn) {
-      if (theme.allows_camera === false) {
-        cameraBtn.hidden = true;
-        cameraBtn.classList.add('is-camera-dimmed');
-        cameraBtn.title = 'Camera capture not supported for this tool';
+      if (!hasImageSupport) {
+        cameraBtn.remove();
         galleryBtn?.classList.add('is-single-action');
         if (galleryLabel) galleryLabel.textContent = 'Browse Files';
+        if (cameraInput) cameraInput.disabled = true;
       } else {
+        cameraBtn.style.display = '';
         cameraBtn.hidden = false;
         cameraBtn.classList.remove('is-camera-dimmed');
-        cameraBtn.title = '';
         galleryBtn?.classList.remove('is-single-action');
         if (galleryLabel) galleryLabel.textContent = 'Browse Files';
+        if (cameraInput) cameraInput.disabled = false;
+      }
+    } else {
+      if (!hasImageSupport) {
+        galleryBtn?.classList.add('is-single-action');
+        if (galleryLabel) galleryLabel.textContent = 'Browse Files';
+        if (cameraInput) cameraInput.disabled = true;
       }
     }
 
@@ -195,6 +252,72 @@
     fetch(`/api/mobile/session/${sessionId}/picking`, { method: 'POST', keepalive: true }).catch(() => {});
   }
 
+  function setConnectionBadge(state) {
+    const badge = document.getElementById('status-badge') || document.querySelector('.status-badge');
+    const dot = document.getElementById('status-dot') || badge?.querySelector('.pulse-dot');
+    const text = document.getElementById('status-badge-text') || badge?.querySelector('span:not(.pulse-dot)');
+    if (!badge) return;
+
+    if (state === 'sending') {
+      badge.style.borderColor = 'rgba(234, 179, 8, 0.4)';
+      badge.style.background = 'rgba(234, 179, 8, 0.12)';
+      badge.style.color = '#EAB308';
+      if (dot) {
+        dot.style.background = '#EAB308';
+        dot.style.boxShadow = '0 0 8px #EAB308';
+      }
+      if (text) text.textContent = 'Sending…';
+    } else if (state === 'offline' || state === 'disconnected') {
+      badge.style.borderColor = 'rgba(239, 68, 68, 0.4)';
+      badge.style.background = 'rgba(239, 68, 68, 0.12)';
+      badge.style.color = '#EF4444';
+      if (dot) {
+        dot.style.background = '#EF4444';
+        dot.style.boxShadow = '0 0 8px #EF4444';
+      }
+      if (text) text.textContent = state === 'offline' ? 'Offline' : 'Disconnected';
+    } else if (state === 'reconnecting') {
+      badge.style.borderColor = 'rgba(234, 179, 8, 0.4)';
+      badge.style.background = 'rgba(234, 179, 8, 0.12)';
+      badge.style.color = '#EAB308';
+      if (dot) {
+        dot.style.background = '#EAB308';
+        dot.style.boxShadow = '0 0 8px #EAB308';
+      }
+      if (text) text.textContent = 'Reconnecting…';
+    } else {
+      const color = _themeData.color || DEFAULT_COLOR;
+      badge.style.borderColor = '';
+      badge.style.background = '';
+      badge.style.color = color;
+      if (dot) {
+        dot.style.background = color;
+        dot.style.boxShadow = `0 0 8px ${color}`;
+      }
+      if (text) text.textContent = 'Connected';
+    }
+  }
+
+  function showDisconnectedScreen(reason) {
+    sessionEnded = true;
+    if (heartbeatTimer) clearInterval(heartbeatTimer);
+    if (statusPollTimer) clearInterval(statusPollTimer);
+    setConnectionBadge(reason === 'offline' ? 'offline' : 'disconnected');
+    _switchToView('disconnected-view');
+    const titleEl = document.getElementById('disconnected-title');
+    const descEl = document.getElementById('disconnected-desc');
+    if (reason === 'offline') {
+      if (titleEl) titleEl.textContent = 'Connection Lost';
+      if (descEl) descEl.innerHTML = 'You are currently offline.<br>Check your Wi-Fi or mobile data.';
+    } else if (reason === 'not_found' || reason === 'expired') {
+      if (titleEl) titleEl.textContent = 'Session Expired';
+      if (descEl) descEl.innerHTML = 'This transfer session has expired.<br>Scan a new QR code from your desktop.';
+    } else {
+      if (titleEl) titleEl.textContent = 'Session Ended';
+      if (descEl) descEl.innerHTML = 'The desktop closed this transfer session.<br>Scan a new QR code to start again.';
+    }
+  }
+
   function startHeartbeat() {
     if (heartbeatTimer || !sessionId) return;
     heartbeatTimer = setInterval(() => {
@@ -204,13 +327,75 @@
     }, 2000);
   }
 
+  function startStatusPolling() {
+    if (statusPollTimer || !sessionId) return;
+    statusPollTimer = setInterval(() => {
+      if (sessionEnded || pickingFiles) return;
+      if (document.visibilityState !== 'visible') return;
+
+      fetch(`/api/mobile/session/${sessionId}/status`)
+        .then((res) => {
+          if (res.status === 404) {
+            showDisconnectedScreen('not_found');
+            return null;
+          }
+          if (!res.ok) throw new Error('Status poll failed');
+          return res.json();
+        })
+        .then((data) => {
+          if (!data) return;
+          if (data.status === 'not_found' || data.status === 'expired') {
+            showDisconnectedScreen('expired');
+            return;
+          }
+          if (data.status === 'cancelled' || data.status === 'closed' || data.status === 'phone_disconnected') {
+            showDisconnectedScreen('closed');
+            return;
+          }
+          if (data.job) {
+            if (data.job.status === 'processing') {
+              showJobProgress(data.job.progress || 0, data.job.filename || '');
+            } else if (data.job.status === 'completed') {
+              showJobDone(data.job.id, data.job.filename || '');
+            }
+          }
+          if (data.color && data.color !== _themeData.color) {
+            applyTheme(data);
+          }
+          if (!uploadingFiles && !sendingFiles) {
+            setConnectionBadge('connected');
+          }
+        })
+        .catch(() => {
+          // Temporary network glitch — keep badge marked if repeated
+        });
+    }, 2000);
+  }
+
   if (sessionId) {
     fetch(`/api/mobile/session/${sessionId}/ping`, { method: 'POST' }).catch(() => {});
     fetch(`/api/mobile/session/${sessionId}/status`)
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => { if (data) applyTheme(data); })
-      .catch(() => {});
+      .then((res) => {
+        if (res.status === 404) {
+          showDisconnectedScreen('not_found');
+          return null;
+        }
+        return res.ok ? res.json() : null;
+      })
+      .then((data) => {
+        if (!data) return;
+        if (data.status === 'not_found' || data.status === 'expired') {
+          showDisconnectedScreen('expired');
+          return;
+        }
+        applyTheme(data);
+        setConnectionBadge('connected');
+      })
+      .catch(() => {
+        setConnectionBadge('reconnecting');
+      });
     startHeartbeat();
+    startStatusPolling();
   }
 
   // File pickers hide this tab on mobile. Do not send a disconnect beacon here:
@@ -232,6 +417,12 @@
   }
 
   window.addEventListener('offline', endSessionForOffline);
+  window.addEventListener('online', () => {
+    if (!sessionEnded) {
+      setConnectionBadge('connected');
+      resumeSession();
+    }
+  });
 
   // Intentionally no pagehide/beforeunload disconnect handler. Mobile
   // browsers use those events for the native file picker as well.
@@ -782,7 +973,7 @@
 
   const photoBtn = document.getElementById('take-photo-btn');
   photoBtn?.addEventListener('click', (e) => {
-    if (_themeData.allows_camera === false) {
+    if (!detectImageSupport(_themeData)) {
       e.preventDefault();
       e.stopPropagation();
       triggerShakeAndHaptic();
@@ -808,14 +999,14 @@
     }, { passive: true });
     document.getElementById('choose-gallery-btn')?.addEventListener(evt, armFilePick, { passive: true });
     photoBtn?.addEventListener(evt, (e) => {
-      if (_themeData.allows_camera === false) return;
+      if (!detectImageSupport(_themeData)) return;
       armFilePick();
     }, { passive: true });
   });
 
   galleryInput?.addEventListener('click', armFilePick);
   cameraInput?.addEventListener('click', (e) => {
-    if (_themeData.allows_camera === false) {
+    if (!detectImageSupport(_themeData)) {
       e.preventDefault();
       return;
     }

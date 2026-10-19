@@ -40,7 +40,7 @@
 
 .hero-card-header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: 16px;
   margin-bottom: 20px;
@@ -51,7 +51,7 @@
   align-items: center;
   justify-content: flex-end;
   flex-shrink: 0;
-  min-height: 28px;
+  min-height: 38px;
 }
 
 .hero-header-right:has(.dz-phone-live-badge) .hero-hint {
