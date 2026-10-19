@@ -66,7 +66,7 @@ if (process.platform === 'win32') {
         ].join('\r\n');
         const vbsPath = path.join(os.tmpdir(), `toolceo_shortcut_${Date.now()}.vbs`);
         fs.writeFileSync(vbsPath, vbs);
-        execFileSync('cscript', ['//Nologo', vbsPath], { stdio: 'ignore' });
+        execFileSync('cscript', ['//Nologo', vbsPath], { stdio: 'ignore', windowsHide: true });
         try { fs.unlinkSync(vbsPath); } catch (_) {}
       } catch (_) {}
     });
@@ -348,6 +348,44 @@ function getBundledAssetPath(relativePath) {
   const appAsset = path.join(appPath, relativePath);
   if (fs.existsSync(appAsset)) return appAsset;
   return path.join(__dirname, '..', relativePath);
+}
+
+function resolveAppIconPath() {
+  const candidates = [
+    // In packaged app, icon.ico is copied to the root of the app directory (next to ToolCEO.exe)
+    path.join(path.dirname(process.execPath), 'icon.ico'),
+    path.join(process.resourcesPath, '..', 'icon.ico'),
+    // In dev mode
+    path.join(__dirname, '..', 'assets', 'icon.ico'),
+    path.join(app.getAppPath(), 'assets', 'icon.ico'),
+    path.join(__dirname, '..', 'assets', 'icon.png'),
+  ];
+  for (const c of candidates) {
+    if (fs.existsSync(c)) return c;
+  }
+  return path.join(__dirname, '..', 'assets', 'icon.ico');
+}
+
+function syncWindowsStartMenuShortcut() {
+  if (!IS_WIN) return;
+  try {
+    const iconPath = resolveAppIconPath();
+    const startMenuLnk = path.join(
+      app.getPath('appData'),
+      'Microsoft', 'Windows', 'Start Menu', 'Programs', 'ToolCEO.lnk'
+    );
+    shell.writeShortcutLink(startMenuLnk, 'create', {
+      target: process.execPath,
+      args: app.isPackaged ? '' : `"${path.join(__dirname, '..')}"`,
+      appUserModelId: 'com.nythris.toolceo',
+      description: 'ToolCEO Desktop Application',
+      icon: iconPath,
+      iconIndex: 0,
+      workingDirectory: path.dirname(process.execPath),
+    });
+  } catch (err) {
+    console.warn('[main] Could not synchronize Start Menu shortcut:', err.message);
+  }
 }
 
 function getTceoRasterIconPath() {
@@ -645,7 +683,7 @@ function ensureDir(dirPath) {
  */
 function runCmd(cmd, args) {
   return new Promise((resolve, reject) => {
-    execFile(cmd, args, { timeout: 10_000 }, (err, stdout, stderr) => {
+    execFile(cmd, args, { timeout: 10_000, windowsHide: true }, (err, stdout, stderr) => {
       if (err) {
         if (err.code === 'ENOENT') {
           reject(err);   // command not found — let caller decide
@@ -767,11 +805,18 @@ function _spawnBackend() {
       env,
     });
   } else {
-    // Development mode
-    const venvPython = path.join(__dirname, '..', 'backend', 'venv', 'Scripts', 'python.exe');
-    const pythonCmd = fs.existsSync(venvPython)
-      ? venvPython
-      : (IS_WIN ? 'python.exe' : 'python3');
+    // Development mode — prefer pythonw.exe (windowless) so child processes
+    // like pandoc.exe / soffice.exe can NEVER inherit a visible console.
+    const venvPythonW = path.join(__dirname, '..', 'backend', 'venv', 'Scripts', 'pythonw.exe');
+    const venvPython  = path.join(__dirname, '..', 'backend', 'venv', 'Scripts', 'python.exe');
+    let pythonCmd;
+    if (IS_WIN && fs.existsSync(venvPythonW)) {
+      pythonCmd = venvPythonW;
+    } else if (fs.existsSync(venvPython)) {
+      pythonCmd = venvPython;
+    } else {
+      pythonCmd = IS_WIN ? 'python.exe' : 'python3';
+    }
     const backendDir = path.join(__dirname, '..', 'backend');
 
     console.log('[backend] Launching dev backend on port', BACKEND_PORT, 'with:', pythonCmd);
@@ -826,9 +871,7 @@ function waitForBackend(url, retries, delay, callback) {
 // ─── WINDOW CREATION ──────────────────────────────────────────────────────────
 
 function createWindow() {
-  const appIconIco = getBundledAssetPath(path.join('assets', 'icon.ico'));
-  const appIconPng = getBundledAssetPath(APP_ICON_PNG_RELATIVE);
-  const appIconPath = (IS_WIN && fs.existsSync(appIconIco)) ? appIconIco : appIconPng;
+  const appIconPath = resolveAppIconPath();
   const iconImage = nativeImage.createFromPath(appIconPath);
 
   mainWindow = new BrowserWindow({
@@ -836,7 +879,7 @@ function createWindow() {
     height: 750,
     minWidth: 1000,
     minHeight: 650,
-    icon: !iconImage.isEmpty() ? iconImage : appIconPath,
+    icon: appIconPath,
     show: false,
     backgroundColor: '#0A1F1C',
     frame: false,
@@ -855,17 +898,19 @@ function createWindow() {
     },
   });
 
-  if (!iconImage.isEmpty()) {
-    mainWindow.setIcon(iconImage);
-  } else if (fs.existsSync(appIconPath)) {
-    mainWindow.setIcon(appIconPath);
+  if (fs.existsSync(appIconPath)) {
+    try {
+      mainWindow.setIcon(appIconPath);
+    } catch (_) {
+      if (!iconImage.isEmpty()) mainWindow.setIcon(iconImage);
+    }
   }
 
   if (IS_WIN) {
     try {
       mainWindow.setAppDetails({
         appId: 'com.nythris.toolceo',
-        appIconPath: fs.existsSync(appIconIco) ? appIconIco : appIconPng,
+        appIconPath: appIconPath,
         appIconIndex: 0,
         relaunchDisplayName: 'ToolCEO',
       });
@@ -1335,38 +1380,69 @@ async function _extractZip(zipPath, enginesDir, moduleId, onProgress = () => {},
   const hasTar = IS_WIN ? fs.existsSync(tarExe) : true;
 
   const sevenZipCandidates = [
+    // 1. Dedicated bundled standalone bin/ in dev and production
+    path.join(__dirname, '..', 'bin', IS_WIN ? '7z.exe' : '7z'),
+    path.join(__dirname, '..', '..', 'bin', IS_WIN ? '7z.exe' : '7z'),
+    app.isPackaged ? path.join(process.resourcesPath, 'bin', IS_WIN ? '7z.exe' : '7z') : null,
+    app.isPackaged ? path.join(process.resourcesPath, '..', 'bin', IS_WIN ? '7z.exe' : '7z') : null,
+    // 2. Engines directory candidates (if media module or dev engines installed)
     path.join(enginesDir, '7zip', IS_WIN ? '7z.exe' : '7z'),
     path.join(enginesDir, 'media', '7zip', IS_WIN ? '7z.exe' : '7z'),
-    path.join(process.resourcesPath, 'engines', '7zip', IS_WIN ? '7z.exe' : '7z'),
+    app.isPackaged ? path.join(process.resourcesPath, 'engines', '7zip', IS_WIN ? '7z.exe' : '7z') : null,
     path.join(__dirname, '..', 'engines', '7zip', IS_WIN ? '7z.exe' : '7z'),
     path.join(__dirname, '..', 'engines', 'media', '7zip', IS_WIN ? '7z.exe' : '7z'),
-    path.join(RESOURCES_DIR, 'bin', IS_WIN ? '7z.exe' : '7z'),
-  ];
+    // 3. Dev node_modules vendor fallback
+    path.join(__dirname, '..', 'node_modules', 'electron-winstaller', 'vendor', IS_WIN ? '7z.exe' : '7z'),
+  ].filter(Boolean);
+
   let found7z = null;
   for (const c of sevenZipCandidates) {
     if (fs.existsSync(c)) { found7z = c; break; }
   }
 
-  // Smooth simulated progress ticker for native extraction processes
-  const startProgressTicker = (startPct = 10, endPct = 94, intervalMs = 250) => {
+  // Smooth simulated progress ticker for native extraction processes (tar, PowerShell)
+  const startProgressTicker = (startPct = 8, endPct = 94) => {
     let current = startPct;
     onProgress(current, 'Installing module files…');
+    // Calibrate extraction pace to module archive size
+    const isLarge = moduleId === 'office' || moduleId === 'ebook';
+    const estDurationMs = isLarge ? 24000 : 8000;
+    const intervalMs = 250;
+    const totalTicks = estDurationMs / intervalMs;
+    const baseIncrement = (endPct - startPct) / totalTicks;
+
     const timer = setInterval(() => {
       if (current < endPct) {
-        current += Math.max(1, Math.floor((endPct - current) * 0.12));
-        onProgress(current, 'Installing module files — this may take a moment…');
+        const remaining = endPct - current;
+        const step = current < 75
+          ? baseIncrement
+          : Math.max(0.08, remaining * 0.04);
+        current = Math.min(endPct, current + step);
+        onProgress(Math.round(current), 'Installing module files…');
       }
     }, intervalMs);
     return () => clearInterval(timer);
   };
 
-  // ─── Tier 1: Bundled 7-Zip (if available) ──────────────────────────────────
+  // Helper to throttle child process priority so UI stays 100% responsive and system never lags
+  const throttleChildPriority = (child) => {
+    if (!child || !child.pid) return;
+    try {
+      if (os.constants && os.constants.priority && typeof os.setPriority === 'function') {
+        os.setPriority(child.pid, os.constants.priority.PRIORITY_BELOW_NORMAL);
+      }
+    } catch (_) {}
+  };
+
+  // ─── Tier 1: Bundled 7-Zip (High-speed, zero-lag, stream-based) ───────────
   if (!extracted && !isCancelled() && found7z) {
     try {
-      console.log(`[extract] Attempting 7-Zip extraction for ${moduleId}...`);
+      console.log(`[extract] Attempting 7-Zip extraction for ${moduleId} using: ${found7z}`);
       await new Promise((resolve, reject) => {
-        const child = spawn(found7z, ['x', zipPath, `-o${enginesDir}`, '-y', '-aoa', '-bsp1'], { windowsHide: true });
+        // -mmt=2 limits worker threads so system CPU never spikes to 100%
+        const child = spawn(found7z, ['x', zipPath, `-o${enginesDir}`, '-y', '-aoa', '-bsp1', '-mmt=2'], { windowsHide: true });
         if (_activeInstall) _activeInstall.child = child;
+        throttleChildPriority(child);
 
         let lastPct = 0;
         let lastEmit = 0;
@@ -1378,10 +1454,10 @@ async function _extractZip(zipPath, enginesDir, moduleId, onProgress = () => {},
           if (matches && matches.length > 0) {
             const p = parseInt(matches[matches.length - 1], 10);
             const now = Date.now();
-            if (!isNaN(p) && p >= lastPct && (now - lastEmit >= 100 || p >= 98)) {
+            if (!isNaN(p) && p >= lastPct && (now - lastEmit >= 100 || p >= 96)) {
               lastPct = p;
               lastEmit = now;
-              onProgress(Math.min(98, Math.max(5, p)), 'Installing module files…');
+              onProgress(Math.min(96, Math.max(5, p)), 'Installing module files…');
             }
           }
         };
@@ -1391,14 +1467,19 @@ async function _extractZip(zipPath, enginesDir, moduleId, onProgress = () => {},
 
         child.on('close', (code) => {
           if (isCancelled()) return resolve();
-          if (code === 0 || _isModuleInstalled(moduleId)) resolve();
-          else reject(new Error(`7-Zip extraction exited with code ${code}`));
+          // Code 0: OK, Code 1: Minor non-fatal warnings (e.g. minor NTFS metadata warnings)
+          if (code === 0 || code === 1 || _isModuleInstalled(moduleId)) {
+            resolve();
+          } else {
+            reject(new Error(`7-Zip extraction exited with code ${code}`));
+          }
         });
         child.on('error', reject);
       });
 
       if (!isCancelled() && _isModuleInstalled(moduleId)) {
         extracted = true;
+        onProgress(97, 'Verifying extracted files…');
       }
     } catch (err) {
       console.warn('[extract] 7-Zip extraction skipped or failed:', err.message);
@@ -1414,10 +1495,11 @@ async function _extractZip(zipPath, enginesDir, moduleId, onProgress = () => {},
         await new Promise((resolve, reject) => {
           const child = spawn(tarExe, ['-xf', zipPath, '-C', enginesDir], { windowsHide: true });
           if (_activeInstall) _activeInstall.child = child;
+          throttleChildPriority(child);
 
           child.on('close', (code) => {
             if (isCancelled()) return resolve();
-            if (code === 0 || _isModuleInstalled(moduleId)) resolve();
+            if (code === 0 || code === 1 || _isModuleInstalled(moduleId)) resolve();
             else reject(new Error(`tar extraction exited with code ${code}`));
           });
           child.on('error', reject);
@@ -1450,6 +1532,7 @@ async function _extractZip(zipPath, enginesDir, moduleId, onProgress = () => {},
           ];
           const child = spawn('powershell.exe', psArgs, { windowsHide: true });
           if (_activeInstall) _activeInstall.child = child;
+          throttleChildPriority(child);
 
           child.on('close', (code) => {
             if (isCancelled()) return resolve();
@@ -1509,7 +1592,7 @@ async function _extractZip(zipPath, enginesDir, moduleId, onProgress = () => {},
 
               const fileSizeMb = (entry.header && entry.header.size ? entry.header.size : 0) / (1024 * 1024);
               const yieldEvery = fileSizeMb > 10 ? 2 : fileSizeMb > 1 ? 8 : 25;
-              const yieldDelay = fileSizeMb > 10 ? 15 : fileSizeMb > 1 ? 8 : 4;
+              const yieldDelay = fileSizeMb > 10 ? 20 : fileSizeMb > 1 ? 10 : 5;
 
               if (batchCount >= yieldEvery) {
                 batchCount = 0;
@@ -1551,8 +1634,9 @@ async function _extractZip(zipPath, enginesDir, moduleId, onProgress = () => {},
 
         let lastActivity = Date.now();
         let stallTimer = setInterval(() => {
-          if (Date.now() - lastActivity > 45000) {
-            console.warn('[extract] AdmZip worker stalled for 45s, terminating...');
+          // Allow up to 120 seconds of sustained extraction before watchdog triggers
+          if (Date.now() - lastActivity > 120000) {
+            console.warn('[extract] AdmZip worker stalled for 120s, terminating...');
             try { worker.terminate(); } catch (_) {}
             settle(reject, new Error('AdmZip worker stalled'));
           }
@@ -1589,19 +1673,21 @@ async function _extractZip(zipPath, enginesDir, moduleId, onProgress = () => {},
   if (isCancelled()) return;
 
   // ─── MANDATORY VERIFICATION GATE ──────────────────────────────────────────
-  onProgress(99, 'Verifying installation…');
-  await new Promise((r) => setTimeout(r, 80));
+  onProgress(98, 'Verifying installation…');
 
-  if (!_isModuleInstalled(moduleId)) {
-    // Retry verification after a brief disk sync delay (NTFS cache flush)
-    await new Promise((r) => setTimeout(r, 400));
-    if (!_isModuleInstalled(moduleId)) {
-      throw new Error(`Engine verification failed: executables for module "${moduleId}" were not found after extraction.`);
-    }
+  // Multi-pass verification with NTFS cache flush & Defender scan debounce
+  let isInstalled = _isModuleInstalled(moduleId);
+  for (let attempt = 1; !isInstalled && attempt <= 5; attempt++) {
+    await new Promise((r) => setTimeout(r, attempt * 300));
+    isInstalled = _isModuleInstalled(moduleId);
+  }
+
+  if (!isInstalled) {
+    throw new Error(`Engine verification failed: executables for module "${moduleId}" were not found after extraction.`);
   }
 
   extracted = true;
-  onProgress(100, 'Finishing installation…');
+  onProgress(99, 'Configuring module links…');
 
   // Compatibility links / junctions (safe cleanup & recreate)
   for (const eng of expectedEngines) {
@@ -1612,13 +1698,11 @@ async function _extractZip(zipPath, enginesDir, moduleId, onProgress = () => {},
     try {
       if (fs.existsSync(sourceEngPath)) {
         fs.mkdirSync(modDirPath, { recursive: true });
-        if (IS_WIN) {
-          try { fs.rmSync(nestedModPath, { recursive: true, force: true }); } catch (_) {}
+        if (IS_WIN && !fs.existsSync(nestedModPath)) {
           try { fs.symlinkSync(sourceEngPath, nestedModPath, 'junction'); } catch (_) {}
         }
       } else if (fs.existsSync(nestedModPath)) {
-        if (IS_WIN) {
-          try { fs.rmSync(sourceEngPath, { recursive: true, force: true }); } catch (_) {}
+        if (IS_WIN && !fs.existsSync(sourceEngPath)) {
           try { fs.symlinkSync(nestedModPath, sourceEngPath, 'junction'); } catch (_) {}
         }
       }
@@ -1690,6 +1774,7 @@ app.commandLine.appendSwitch('disable-http-cache');
 app.whenReady().then(async () => {
   if (IS_WIN) {
     app.setAppUserModelId('com.nythris.toolceo');
+    syncWindowsStartMenuShortcut();
   }
   // ── Initialize SQLite History Database ─────────────────────────────────────
   try {
