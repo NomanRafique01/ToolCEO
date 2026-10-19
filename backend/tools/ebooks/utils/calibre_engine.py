@@ -74,6 +74,8 @@ from typing import Generator, Optional
 from urllib.parse import unquote
 from xml.sax.saxutils import escape as _xml_escape
 
+from platform_tools import get_subprocess_kwargs
+
 # ---------------------------------------------------------------------------
 # Sentinel object returned by run_conversion for the PDF→EPUB fast-path
 # ---------------------------------------------------------------------------
@@ -499,6 +501,7 @@ def run_conversion(
                 errors="replace",
                 env=_calibre_env(output_path),
                 timeout=_CALIBRE_TIMEOUT,
+                **get_subprocess_kwargs(),
             )
             if result.returncode != 0:
                 _log.debug("calibre output:\n%s", result.stdout)
@@ -572,6 +575,7 @@ def run_conversion(
                 errors="replace",
                 env=_calibre_env(output_path),
                 timeout=_CALIBRE_TIMEOUT,
+                **get_subprocess_kwargs(),
             )
             if result.returncode != 0:
                 _log.debug("calibre output:\n%s", result.stdout)
@@ -638,6 +642,7 @@ def run_conversion(
         encoding="utf-8",
         errors="replace",
         env=_calibre_env(output_path),
+        **get_subprocess_kwargs(),
     )
     # Attach context so stream_progress can perform post-processing and cleanup
     # after conversion completes, without changing the public function signature.

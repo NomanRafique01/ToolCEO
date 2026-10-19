@@ -32,7 +32,7 @@ import tempfile
 from pathlib import Path
 from typing import Optional
 
-from platform_tools import find_libreoffice, install_message
+from platform_tools import find_libreoffice, install_message, get_subprocess_kwargs
 
 _log = logging.getLogger(__name__)
 
@@ -271,6 +271,7 @@ def _convert_to_pdf(data: bytes, job_id: Optional[str]) -> bytes:
                 capture_output=True,
                 text=True,
                 timeout=_LO_TIMEOUT,
+                **get_subprocess_kwargs(),
             )
         except subprocess.TimeoutExpired as exc:
             raise RuntimeError(f"LibreOffice timed out after {_LO_TIMEOUT} s.") from exc

@@ -48,6 +48,9 @@ if sys.platform == "win32":
     except Exception:
         pass
 
+from platform_tools import ensure_silent_subprocess
+ensure_silent_subprocess()
+
 from main import app
 import uvicorn
 

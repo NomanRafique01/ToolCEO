@@ -31,6 +31,9 @@ if sys.platform == "win32":
     except Exception:
         pass
 
+from platform_tools import ensure_silent_subprocess
+ensure_silent_subprocess()
+
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
