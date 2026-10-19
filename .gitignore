@@ -46,6 +46,7 @@ scratch/
 bin/
 backend/main_backend.spec
 *.spec
+!backend/main_backend.spec
 
 # -- Bob AI internal ---------------------------------------
 .bob/

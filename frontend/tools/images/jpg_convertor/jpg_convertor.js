@@ -57,7 +57,7 @@ const _EXT = {
 let _queue   = [];
 let _toolId  = '';
 /** 'single' | 'individual' — only relevant for jpg-pdf with multiple images */
-let _pdfMode = 'individual';
+let _pdfMode = 'single';
 
 // ─── UTILITIES ───────────────────────────────────────────────────────────────
 
@@ -72,7 +72,19 @@ function _isJpg(file) {
   return n.endsWith('.jpg') || n.endsWith('.jpeg');
 }
 
-function _readDataUri(file) {
+async function _readDataUri(file) {
+  if (typeof createImageBitmap === 'function') {
+    try {
+      const bmp = await createImageBitmap(file, { resizeWidth: 160, resizeHeight: 160, resizeQuality: 'low' });
+      const canvas = document.createElement('canvas');
+      canvas.width = bmp.width;
+      canvas.height = bmp.height;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(bmp, 0, 0);
+      bmp.close();
+      return canvas.toDataURL('image/jpeg', 0.65);
+    } catch (_) {}
+  }
   return new Promise((resolve, reject) => {
     const r = new FileReader();
     r.onload  = () => resolve(r.result);
@@ -95,7 +107,7 @@ export function removeJpgPanel() {
 
   _queue   = [];
   _toolId  = '';
-  _pdfMode = 'individual';
+  _pdfMode = 'single';
 }
 
 // ─── THUMBNAIL STRIP ─────────────────────────────────────────────────────────
@@ -391,12 +403,12 @@ function _renderPanel() {
   let outHint;
   if (isPdf && isMulti) {
     outHint = _pdfMode === 'single'
-      ? `${total} images → <strong>1</strong> merged PDF`
-      : `${total} images → <strong>${total}</strong> PDFs packed in a .zip`;
+      ? `<strong>${total}</strong> images → <strong>1</strong> merged PDF`
+      : `<strong>${total}</strong> images → <strong>${total}</strong> PDFs packed in a .zip`;
   } else if (isMulti) {
-    outHint = `${total} images → <strong>${total}</strong> files packed in a .zip`;
+    outHint = `<strong>${total}</strong> images → <strong>${total}</strong> files packed in a .zip`;
   } else {
-    outHint = `1 image → converted <strong>.${ext}</strong> file`;
+    outHint = `<strong>1</strong> image → converted <strong>.${ext}</strong> file`;
   }
 
   // Extension shown next to filename input
@@ -470,7 +482,7 @@ function _renderPanel() {
             stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
         <span class="jpg-queue-badge-text" id="jpg-queue-hint">
-          <strong>${total}</strong> image${total !== 1 ? 's' : ''} &nbsp;·&nbsp; ${outHint}
+          ${outHint}
         </span>
       </span>
       <button class="jpg-queue-clear-btn" id="jpg-queue-clear" type="button">Clear all</button>
@@ -500,14 +512,14 @@ function _renderPanel() {
         panel.querySelectorAll('.jpg-pdf-mode-btn').forEach((b) =>
           b.classList.toggle('jpg-pdf-mode-btn--active', b.dataset.mode === _pdfMode)
         );
-        // Update hint text
+        // Update hint text cleanly without double label
         const hintEl = panel.querySelector('#jpg-queue-hint');
         const extEl  = panel.querySelector('#jpg-queue-ext');
         if (hintEl) {
           const newHint = _pdfMode === 'single'
-            ? `${total} images → <strong>1</strong> merged PDF`
-            : `${total} images → <strong>${total}</strong> PDFs packed in a .zip`;
-          hintEl.innerHTML = `<strong>${total}</strong> image${total !== 1 ? 's' : ''} &nbsp;·&nbsp; ${newHint}`;
+            ? `<strong>${total}</strong> images → <strong>1</strong> merged PDF`
+            : `<strong>${total}</strong> images → <strong>${total}</strong> PDFs packed in a .zip`;
+          hintEl.innerHTML = newHint;
         }
         if (extEl) extEl.textContent = `.${_pdfMode === 'single' ? 'pdf' : 'zip'}`;
 
@@ -598,6 +610,9 @@ async function _addFiles(fileArray) {
 
 export async function handleJpgFilesPicked(files, toolId) {
   _toolId = toolId;
+  if (toolId === 'jpg-pdf') {
+    _pdfMode = 'single';
+  }
   await _addFiles(Array.from(files));
 }
 
@@ -629,7 +644,7 @@ async function _submitConvert(outputFilename) {
   document.getElementById('jpg-queue-panel')?.remove();
   _queue   = [];
   _toolId  = '';
-  _pdfMode = 'individual';
+  _pdfMode = 'single';
 
   if (zone) resetZoneContent(zone);
 

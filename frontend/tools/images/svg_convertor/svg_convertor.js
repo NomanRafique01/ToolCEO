@@ -52,7 +52,7 @@ const _EXT = {
 let _queue   = [];
 let _toolId  = '';
 /** 'single' | 'individual' — only relevant for svg-pdf with multiple files */
-let _pdfMode = 'individual';
+let _pdfMode = 'single';
 
 // ─── UTILITIES ───────────────────────────────────────────────────────────────
 
@@ -90,7 +90,7 @@ export function removeSvgPanel() {
 
   _queue   = [];
   _toolId  = '';
-  _pdfMode = 'individual';
+  _pdfMode = 'single';
 }
 
 // ─── THUMBNAIL STRIP ─────────────────────────────────────────────────────────
@@ -384,10 +384,10 @@ function _renderPanel() {
   let outHint;
   if (isPdf && isMulti) {
     outHint = _pdfMode === 'single'
-      ? `${total} files → <strong>1</strong> merged PDF`
-      : `${total} files → <strong>${total}</strong> PDFs packed in a .zip`;
+      ? `<strong>${total}</strong> files → <strong>1</strong> merged PDF`
+      : `<strong>${total}</strong> files → <strong>${total}</strong> PDFs packed in a .zip`;
   } else if (isMulti) {
-    outHint = `${total} files → <strong>${total}</strong> files packed in a .zip`;
+    outHint = `<strong>${total}</strong> files → <strong>${total}</strong> files packed in a .zip`;
   } else {
     outHint = `1 file → converted <strong>.${ext}</strong> file`;
   }
@@ -436,7 +436,7 @@ function _renderPanel() {
             stroke-linecap="round" stroke-linejoin="round"/>
         </svg>
         <span class="jpg-queue-badge-text" id="svg-queue-hint">
-          <strong>${total}</strong> file${total !== 1 ? 's' : ''} &nbsp;·&nbsp; ${outHint}
+          ${outHint}
         </span>
       </span>
       <button class="jpg-queue-clear-btn" id="svg-queue-clear" type="button">Clear all</button>
@@ -467,9 +467,9 @@ function _renderPanel() {
         const extEl  = panel.querySelector('#svg-queue-ext');
         if (hintEl) {
           const newHint = _pdfMode === 'single'
-            ? `${total} files → <strong>1</strong> merged PDF`
-            : `${total} files → <strong>${total}</strong> PDFs packed in a .zip`;
-          hintEl.innerHTML = `<strong>${total}</strong> file${total !== 1 ? 's' : ''} &nbsp;·&nbsp; ${newHint}`;
+            ? `<strong>${total}</strong> files → <strong>1</strong> merged PDF`
+            : `<strong>${total}</strong> files → <strong>${total}</strong> PDFs packed in a .zip`;
+          hintEl.innerHTML = newHint;
         }
         if (extEl) extEl.textContent = `.${_pdfMode === 'single' ? 'pdf' : 'zip'}`;
 
@@ -560,6 +560,9 @@ async function _addFiles(fileArray) {
 
 export async function handleSvgFilesPicked(files, toolId) {
   _toolId = toolId;
+  if (toolId === 'svg-pdf') {
+    _pdfMode = 'single';
+  }
   await _addFiles(Array.from(files));
 }
 
@@ -589,7 +592,7 @@ async function _submitConvert(outputFilename) {
   document.getElementById('svg-queue-panel')?.remove();
   _queue   = [];
   _toolId  = '';
-  _pdfMode = 'individual';
+  _pdfMode = 'single';
 
   if (zone) resetZoneContent(zone);
 

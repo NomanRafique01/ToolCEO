@@ -62,6 +62,13 @@ const FEATURES = [
     detail: 'Privacy is foundational to ToolCEO. File operations occur exclusively on your hardware. There are no tracking scripts, telemetry collectors, user accounts, or external network requests during conversions. Your data belongs solely to you.',
   },
   {
+    icon: svgIcon('<path d="M7 3h10a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2Z"/><path d="M8 7h8M8 17h8"/><circle cx="12" cy="12" r="2.5"/>'),
+    color: '#38BDF8', bg: 'rgba(56,189,248,0.12)',
+    name: 'Phone Transfer',
+    desc: 'Pair your phone with a QR code and send files directly to the selected tool.',
+    detail: 'Connect your phone to the same local Wi-Fi network, scan the QR code, and choose files from a mobile-friendly transfer page. Files arrive in the active ToolCEO workspace with live progress and format-aware validation. The transfer session ends when the app is closed.',
+  },
+  {
     icon: svgIcon('<path d="M13 2 6 13h5l-1 9 7-11h-5l1-9Z"/>'),
     color: '#FBBF24', bg: 'rgba(251,191,36,0.12)',
     name: 'High Performance',

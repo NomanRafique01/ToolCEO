@@ -1,77 +1,94 @@
 /**
- * scripts/build_backend.js
- * Compiles backend/main_backend.py into engines/python/main_backend.exe using PyInstaller.
+ * Build the standalone Python backend used by the Electron application.
+ * Runs from source so packaged builds always contain the current API/routes.
  */
+'use strict';
 
-const { spawnSync } = require('child_process');
-const path = require('path');
 const fs = require('fs');
+const path = require('path');
+const { spawnSync } = require('child_process');
 
 const rootDir = path.join(__dirname, '..');
 const backendDir = path.join(rootDir, 'backend');
+const pythonVenv = process.platform === 'win32'
+  ? path.join(backendDir, 'venv', 'Scripts', 'python.exe')
+  : path.join(backendDir, 'venv', 'bin', 'python');
+const bootstrapPython = process.env.TOOLCEO_PYTHON || (process.platform === 'win32' ? 'py' : 'python3');
+const bootstrapArgs = process.platform === 'win32' && !process.env.TOOLCEO_PYTHON ? ['-3'] : [];
+let python = process.env.TOOLCEO_PYTHON || (fs.existsSync(pythonVenv) ? pythonVenv : bootstrapPython);
+let pythonArgs = python === bootstrapPython ? bootstrapArgs : [];
 const distDir = path.join(rootDir, 'engines', 'python');
-const pythonPath = path.join(backendDir, 'venv', 'Scripts', 'python.exe');
 
-if (!fs.existsSync(pythonPath)) {
-  console.error('[build_backend] Error: Python venv not found at:', pythonPath);
+function runPython(args, options = {}) {
+  return spawnSync(python, [...pythonArgs, ...args], {
+    cwd: backendDir,
+    stdio: 'inherit',
+    shell: false,
+    ...options,
+  });
+}
+
+function installBuildDependencies() {
+  if (!fs.existsSync(pythonVenv) && !process.env.TOOLCEO_PYTHON) {
+    console.log('[backend-build] Creating backend Python environment');
+    const created = runPython(['-m', 'venv', path.join(backendDir, 'venv')]);
+    if (created.error || created.status !== 0) {
+      console.error('[backend-build] Could not create a Python environment. Install Python 3 and retry.');
+      process.exit(created.status || 1);
+    }
+    python = pythonVenv;
+    pythonArgs = [];
+  }
+
+  console.log('[backend-build] Installing backend and PyInstaller dependencies');
+  const installed = runPython([
+    '-m', 'pip', 'install', '-r', path.join(backendDir, 'requirements.txt'), 'pyinstaller==6.22.2',
+  ]);
+  if (installed.error || installed.status !== 0) {
+    console.error('[backend-build] Python dependency installation failed.');
+    process.exit(installed.status || 1);
+  }
+}
+
+if (!fs.existsSync(path.join(backendDir, 'main_backend.spec'))) {
+  console.error('[backend-build] Missing backend/main_backend.spec.');
   process.exit(1);
 }
 
-if (!fs.existsSync(distDir)) {
-  fs.mkdirSync(distDir, { recursive: true });
+console.log(`[backend-build] Building backend with ${python}`);
+let pyinstallerCheck = runPython(['-m', 'PyInstaller', '--version'], { stdio: 'ignore' });
+if (pyinstallerCheck.error || pyinstallerCheck.status !== 0) {
+  installBuildDependencies();
+  pyinstallerCheck = runPython(['-m', 'PyInstaller', '--version'], { stdio: 'ignore' });
+}
+if (pyinstallerCheck.error || pyinstallerCheck.status !== 0) {
+  console.error('[backend-build] PyInstaller is unavailable in the selected Python environment.');
+  process.exit(1);
 }
 
-console.log('[build_backend] Building updated main_backend.exe with PyInstaller...');
-
-const args = [
+const result = runPython([
   '-m', 'PyInstaller',
   '--clean',
   '--noconfirm',
-  '--onefile',
-  '--noconsole',
-  '--name', 'main_backend',
   '--distpath', distDir,
   '--workpath', path.join(backendDir, 'build'),
-  '--specpath', backendDir,
-  '--paths', backendDir,
-  '--collect-all', 'uvicorn',
-  '--collect-all', 'fastapi',
-  '--collect-all', 'starlette',
-  '--collect-all', 'pydantic',
-  '--collect-all', 'pikepdf',
-  '--collect-all', 'fitz',
-  '--collect-all', 'pymupdf',
-  '--collect-all', 'pdfplumber',
-  '--collect-all', 'pdfminer',
-  '--collect-all', 'PIL',
-  '--collect-all', 'openpyxl',
-  '--collect-all', 'pandas',
-  '--collect-all', 'docx',
-  '--collect-all', 'pptx',
-  '--collect-all', 'pycdlib',
-  '--hidden-import', 'main',
-  '--hidden-import', 'routers',
-  '--hidden-import', 'tools',
-  '--hidden-import', 'asyncio.proactor_events',
-  'main_backend.py',
-];
+    'main_backend.spec',
+]);
 
-const result = spawnSync(pythonPath, args, {
-  cwd: backendDir,
-  stdio: 'inherit',
-  shell: false,
-});
-
+if (result.error) {
+  console.error(`[backend-build] Could not start Python: ${result.error.message}`);
+  process.exit(1);
+}
 if (result.status !== 0) {
-  console.error('[build_backend] PyInstaller build failed with code:', result.status);
+  console.error('[backend-build] PyInstaller failed. Install backend/requirements.txt and PyInstaller in the selected Python environment.');
   process.exit(result.status || 1);
 }
 
-const targetExe = path.join(distDir, 'main_backend.exe');
-if (fs.existsSync(targetExe)) {
-  const stat = fs.statSync(targetExe);
-  console.log(`[build_backend] ✓ Successfully created ${targetExe} (${(stat.size / (1024 * 1024)).toFixed(2)} MB)`);
-} else {
-  console.error('[build_backend] Output executable not found at:', targetExe);
+const executableName = process.platform === 'win32' ? 'main_backend.exe' : 'main_backend';
+const executablePath = path.join(distDir, executableName);
+if (!fs.existsSync(executablePath) || fs.statSync(executablePath).size === 0) {
+  console.error(`[backend-build] Expected backend executable was not created: ${executablePath}`);
   process.exit(1);
 }
+
+console.log(`[backend-build] Backend ready: ${executablePath}`);

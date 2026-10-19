@@ -48,6 +48,58 @@ def _report(job_id: Optional[str], pct: int) -> None:
 # Main conversion
 # ---------------------------------------------------------------------------
 
+def _normalize_image(img_bytes: bytes, idx: int) -> tuple[str, bytes, float, float]:
+    """
+    Safely normalizes image bytes and retrieves page dimensions.
+    Returns (kind, data_bytes, width, height) where kind is 'image' or 'pdf'.
+    """
+    import fitz
+
+    # Check for SVG
+    head = img_bytes[:1024].lstrip().lower()
+    if head.startswith(b"<?xml") or b"<svg" in head:
+        try:
+            svg_doc = fitz.open(stream=img_bytes, filetype="svg")
+            pdf_bytes = svg_doc.convert_to_pdf()
+            svg_doc.close()
+            return ("pdf", pdf_bytes, 0.0, 0.0)
+        except Exception:
+            pass
+
+    # Try PyMuPDF native image decode
+    try:
+        img_doc = fitz.open(stream=img_bytes, filetype="image")
+        img_page = img_doc[0]
+        w = float(img_page.rect.width)
+        h = float(img_page.rect.height)
+        img_doc.close()
+        return ("image", img_bytes, w, h)
+    except Exception:
+        pass
+
+    # Fallback to Pillow for formats fitz cannot decode directly (e.g. ICO, exotic TIFFs, CMYK)
+    try:
+        from PIL import Image, ImageOps
+        im = Image.open(io.BytesIO(img_bytes))
+        im.load()
+        try:
+            im = ImageOps.exif_transpose(im)
+        except Exception:
+            pass
+        w_px, h_px = im.size
+        buf = io.BytesIO()
+        if im.mode in ("RGBA", "LA", "P"):
+            im.convert("RGBA").save(buf, format="PNG")
+        else:
+            if im.mode != "RGB":
+                im = im.convert("RGB")
+            im.save(buf, format="JPEG", quality=95)
+        norm_bytes = buf.getvalue()
+        return ("image", norm_bytes, float(w_px), float(h_px))
+    except Exception as exc:
+        raise ValueError(f"Image {idx + 1}: could not decode — {exc}") from exc
+
+
 def convert_images_to_pdf(
     images: list[bytes],
     job_id: Optional[str] = None,
@@ -73,28 +125,22 @@ def convert_images_to_pdf(
     total  = len(images)
     doc    = fitz.open()          # blank PDF
 
-    for idx, img_bytes in enumerate(images):
+    for idx, raw_bytes in enumerate(images):
         pct = 10 + int(80 * (idx / total))
         _report(job_id, pct)
 
-        # Open image as a fitz document to get its dimensions
-        try:
-            img_doc = fitz.open(stream=img_bytes, filetype="image")
-        except Exception as exc:
-            raise ValueError(f"Image {idx + 1}: could not decode — {exc}") from exc
+        kind, data_bytes, w, h = _normalize_image(raw_bytes, idx)
 
-        # Use the natural pixel size as the page size (72 DPI reference)
-        img_page = img_doc[0]
-        w        = img_page.rect.width
-        h        = img_page.rect.height
-        img_doc.close()
-
-        # Insert a new page of exactly that size
-        page  = doc.new_page(width=w, height=h)
-        rect  = fitz.Rect(0, 0, w, h)
-
-        # Insert image onto page
-        page.insert_image(rect, stream=img_bytes)
+        if kind == "pdf":
+            # Direct PDF page insert for converted SVGs
+            svg_pdf = fitz.open("pdf", data_bytes)
+            doc.insert_pdf(svg_pdf)
+            svg_pdf.close()
+        else:
+            # Insert a new page of exactly the image's dimensions
+            page = doc.new_page(width=w, height=h)
+            rect = fitz.Rect(0, 0, w, h)
+            page.insert_image(rect, stream=data_bytes)
 
     _report(job_id, 95)
 

@@ -8,6 +8,7 @@ const { spawn } = require('child_process');
 const path = require('path');
 const os = require('os');
 const fs = require('fs');
+const rootDir = path.join(__dirname, '..');
 
 if (process.platform === 'win32') {
   const userTemp = process.env.LOCALAPPDATA
@@ -22,9 +23,17 @@ if (process.platform === 'win32') {
 const args = process.argv.slice(2);
 const builderArgs = args.length > 0 ? args : ['--win', '--x64'];
 
+// Never reuse a previous appOutDir: Windows cannot remove its files while a
+// ToolCEO instance launched from that directory is still running.
+const outputOverride = builderArgs.some((arg) => arg.startsWith('--config.directories.output'));
+if (!outputOverride) {
+  const buildOutput = path.join(rootDir, 'dist', `build-${Date.now()}-${process.pid}`);
+  builderArgs.push(`--config.directories.output=${buildOutput}`);
+  console.log(`[build] Writing artifacts to ${buildOutput}`);
+}
+
 const electronBuilderCli = path.join(
-  __dirname,
-  '..',
+  rootDir,
   'node_modules',
   'electron-builder',
   'cli.js'

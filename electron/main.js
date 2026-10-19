@@ -126,6 +126,8 @@ const LINUX_MIME_ICON_DEST = path.join(LINUX_MIME_ICON_DIR, 'application-x-tceo.
 
 let mainWindow     = null;
 let backendProcess = null;
+let _allowWindowClose = false;
+let _closeHandshakePending = false;
 
 /** .tceo path queued before the window was ready (cold-start or second-instance). */
 let _pendingVaultFile = null;
@@ -719,6 +721,44 @@ async function registerFileAssociation() {
 const BACKEND_PORT = process.env.TOOLCEO_PORT ? parseInt(process.env.TOOLCEO_PORT, 10) : 8765;
 const BACKEND_URL = `http://127.0.0.1:${BACKEND_PORT}`;
 
+function stopIncompatibleWindowsBackend() {
+  if (!IS_WIN) return false;
+
+  try {
+    const netstat = execFileSync('netstat', ['-ano', '-p', 'tcp'], {
+      encoding: 'utf8',
+      windowsHide: true,
+    });
+    const listeningPids = new Set();
+
+    for (const line of netstat.split(/\r?\n/)) {
+      const match = line.trim().match(/^TCP\s+(\S+)\s+\S+\s+LISTENING\s+(\d+)$/i);
+      if (!match) continue;
+      const localAddress = match[1];
+      if (localAddress.endsWith(`:${BACKEND_PORT}`)) listeningPids.add(match[2]);
+    }
+
+    for (const pid of listeningPids) {
+      const task = execFileSync('tasklist', ['/fi', `PID eq ${pid}`, '/fo', 'csv', '/nh'], {
+        encoding: 'utf8',
+        windowsHide: true,
+      });
+      if (!/"main_backend\.exe"/i.test(task)) continue;
+
+      console.warn(`[backend] Replacing incompatible ToolCEO backend on port ${BACKEND_PORT} (pid ${pid}).`);
+      execFileSync('taskkill', ['/pid', pid, '/f', '/t'], {
+        stdio: 'ignore',
+        windowsHide: true,
+      });
+      return true;
+    }
+  } catch (err) {
+    console.warn('[backend] Could not inspect an incompatible backend:', err.message);
+  }
+
+  return false;
+}
+
 function startBackend() {
   // ── Manual backend override ───────────────────────────────────────────────
   // Set TOOLCEO_MANUAL_BACKEND=1 to skip auto-spawn (e.g. you started uvicorn manually).
@@ -742,7 +782,7 @@ function startBackend() {
       res.on('end', () => {
         try {
           const json = JSON.parse(body);
-          resolve(Boolean(json && json.status === 'ok'));
+          resolve(Boolean(json && json.status === 'ok' && json.mobile_transfer_api === true));
         } catch (_) {
           resolve(false);
         }
@@ -757,7 +797,14 @@ function startBackend() {
       console.log(`[backend] Backend already running on port ${BACKEND_PORT} — skipping spawn.`);
       return;
     }
-    _spawnBackend();
+    const replaced = stopIncompatibleWindowsBackend();
+    if (replaced) {
+      // Give Windows a moment to release the old listener before binding the
+      // same port with the current packaged backend.
+      setTimeout(_spawnBackend, 150);
+    } else {
+      _spawnBackend();
+    }
   });
 }
 
@@ -798,7 +845,7 @@ function _spawnBackend() {
       } catch (_) {}
     }
 
-    backendProcess = spawn(backendExePath, [], {
+    backendProcess = spawn(backendExePath, ['--port', String(BACKEND_PORT)], {
       detached: false,
       stdio: 'ignore',
       windowsHide: true,
@@ -823,7 +870,7 @@ function _spawnBackend() {
     console.log('[backend] User engines dir:', userEnginesDir);
     backendProcess = spawn(
       pythonCmd,
-      ['-m', 'uvicorn', 'main:app', '--host', '127.0.0.1', '--port', String(BACKEND_PORT)],
+      ['-m', 'uvicorn', 'main:app', '--host', '0.0.0.0', '--port', String(BACKEND_PORT)],
       { cwd: backendDir, stdio: ['ignore', 'pipe', 'pipe'], windowsHide: true, env }
     );
 
@@ -946,6 +993,35 @@ function createWindow() {
       // Small delay to let the renderer finish its DOMContentLoaded bootstrap
       setTimeout(() => sendVaultFileOpen(_pendingVaultFile), 600);
     }
+  });
+
+  // A real close must end any active phone transfer before Electron exits.
+  // Minimize does not emit this event, so it leaves the session untouched.
+  mainWindow.on('close', (event) => {
+    if (_allowWindowClose) return;
+
+    event.preventDefault();
+    if (_closeHandshakePending) return;
+    _closeHandshakePending = true;
+
+    const finishClose = () => {
+      if (_allowWindowClose) return;
+      _allowWindowClose = true;
+      _closeHandshakePending = false;
+      if (mainWindow && !mainWindow.isDestroyed()) mainWindow.close();
+    };
+
+    ipcMain.once('app-close-session-complete', finishClose);
+    if (mainWindow.webContents && !mainWindow.webContents.isDestroyed()) {
+      mainWindow.webContents.send('app-closing');
+    }
+
+    // Never keep the native close button blocked if the renderer is already
+    // shutting down or the session endpoint cannot be reached.
+    setTimeout(() => {
+      ipcMain.removeListener('app-close-session-complete', finishClose);
+      finishClose();
+    }, 900);
   });
 
   mainWindow.on('closed', () => { mainWindow = null; });
@@ -2139,6 +2215,39 @@ app.whenReady().then(async () => {
     } catch (err) {
       return { ok: false, error: err.message };
     }
+  });
+
+  // ── IPC: Generate QR code data URL for mobile transfer ──────────────────────
+  ipcMain.handle('generate-qr-code', async (_event, text, options = {}) => {
+    try {
+      const QRCode = require('qrcode');
+      const dataUrl = await QRCode.toDataURL(text, {
+        width: options.width || 256,
+        margin: options.margin !== undefined ? options.margin : 2,
+        color: {
+          dark: options.dark || '#000000',
+          light: options.light || '#ffffff',
+        },
+      });
+      return { ok: true, dataUrl };
+    } catch (err) {
+      return { ok: false, error: err.message };
+    }
+  });
+
+  // ── IPC: Get local LAN IP address ───────────────────────────────────────────
+  ipcMain.handle('get-network-ip', () => {
+    try {
+      const interfaces = os.networkInterfaces();
+      for (const name of Object.keys(interfaces)) {
+        for (const iface of interfaces[name]) {
+          if (iface.family === 'IPv4' && !iface.internal && !iface.address.startsWith('169.254.')) {
+            return iface.address;
+          }
+        }
+      }
+    } catch (_) {}
+    return '127.0.0.1';
   });
 
   // ── IPC: Read modules.json — returns dynamic status for all modules ───────

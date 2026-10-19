@@ -19,6 +19,7 @@ import { handleArchiveDuplicateFilePicked, removeArchiveDuplicatePanel } from '.
  */
 
 import { getActiveTool, setActiveTool, onToolChange, setBgJob, getBgJob, getBgJobForTool, syncBgJobBar, clearBgJob } from './toolstate.js';
+import { unlinkMirrorJob } from './mobileJobMirror.js';
 import { applyToolDropZoneSnapshot, captureToolDropZoneSnapshot, clearToolFileState, getToolFileState, isRestoringToolFiles, saveToolFiles, setRestoringToolFiles, shouldSuppressRestoreScan } from './fileState.js';
 import { pushNotification } from './notificationStore.js';
 import { getToolFamily } from './toolFamily.js';
@@ -300,6 +301,28 @@ export function showInvalidPdfWarning() {
     message: 'Invalid File Format. Please select a valid PDF file.'
   });
 }
+
+function _isPhonePairedZone(zone = document.getElementById('drop-zone')) {
+  return Boolean(zone?.classList.contains('dz-phone-paired'));
+}
+
+function _blockDesktopUploadWhilePhonePaired(zone) {
+  if (!_isPhonePairedZone(zone)) return false;
+  import('./mobileTransferModal.js').then(({ notifyPhoneSelectRequired }) => {
+    notifyPhoneSelectRequired();
+  }).catch(() => {});
+  return true;
+}
+
+const _PHONE_ADD_FILE_SELECTOR = [
+  '.dz-queue-add-btn',
+  '.dz-merge-add-btn',
+  '.dz-imgpdf-add-btn',
+  '.dz-jpg-add-btn',
+  '.dz-imgcmp-add-btn',
+  '.dz-archive-add-btn',
+  '.dz-arc-merge-add-card',
+].join(', ');
 
 function _isPdfFile(file) {
   if (!file) return false;
@@ -745,7 +768,12 @@ function _updateDropZone(tool) {
     }
   }
 
-  _restoreToolFiles(tool);
+  // Only auto-restore remembered files when re-rendering the SAME tool
+  // (in-place resets after save/clear). Clicking a different tool always
+  // loads a clean drop zone — nothing is carried over or re-submitted.
+  if (_renderedToolId === tool.id) {
+    _restoreToolFiles(tool);
+  }
   _renderedToolId = tool.id;
 }
 
@@ -836,6 +864,7 @@ function _dlPanelActivate(tool) {
   // Wire Close button
   panel.querySelector('.dl-panel-close')?.addEventListener('click', (e) => {
     e.stopPropagation();
+    unlinkMirrorJob(getActiveTool()?.id || null);
     _dlPanelReset(panel);
   });
 
@@ -923,6 +952,7 @@ function _dlPanelReady(filename, jobId, color) {
   // Wire Close button
   panel.querySelector('.dl-panel-close')?.addEventListener('click', (e) => {
     e.stopPropagation();
+    unlinkMirrorJob(getActiveTool()?.id || null);
     _dlPanelReset(panel);
   });
 
@@ -954,6 +984,26 @@ function _dlPanelReset(panel) {
   _dlPanelJob = null;
 }
 
+// The phone can dismiss the mirrored result after downloading or closing it.
+document.addEventListener('mobile-job-dismissed', () => {
+  _dlPanelReset();
+
+  // The mobile result may mirror either the top download panel or the
+  // in-dropzone result card. Close both surfaces when one side dismisses it.
+  const zone = document.getElementById('drop-zone');
+  if (!zone) return;
+
+  const tool = getActiveTool();
+  const job = tool ? getBgJobForTool(tool.id) : null;
+  if (job) clearBgJob(job.jobId || job.clientId, true);
+
+  // Rebuild the active tool's idle drop zone instead of leaving the cleared
+  // result overlay's empty container behind.
+  _resetZoneContent(zone);
+  _removeAllPanels();
+  if (tool) _updateDropZone(tool);
+});
+
 /** Trigger the actual file save from the panel's Save button. */
 async function _dlPanelSave(jobId, filename, color, panel) {
   const btn = panel && panel.querySelector('.dl-save-btn');
@@ -977,8 +1027,8 @@ async function _dlPanelSave(jobId, filename, color, panel) {
       const meta = buildConversionMeta({ outputFilename: filename });
       const savedPath = await window.toolceo.saveFileAs(filename, base64, meta);
       if (savedPath) {
-        if (btn) { btn.disabled = false; btn.style.display = 'none'; }
-        panel.classList.add('dl-panel--saved');
+        unlinkMirrorJob(getActiveTool()?.id || null);
+        _dlPanelReset(panel);
       } else {
         // User cancelled
         if (btn) { btn.disabled = false; btn.textContent = 'Save As…'; }
@@ -988,8 +1038,8 @@ async function _dlPanelSave(jobId, filename, color, panel) {
       const a = document.createElement('a');
       a.href = url; a.download = filename; a.click();
       URL.revokeObjectURL(url);
-      if (btn) { btn.disabled = false; btn.style.display = 'none'; }
-      panel.classList.add('dl-panel--saved');
+      unlinkMirrorJob(getActiveTool()?.id || null);
+      _dlPanelReset(panel);
     }
   } catch (err) {
     if (btn) { btn.disabled = false; btn.textContent = 'Save As…'; }
@@ -1000,6 +1050,9 @@ async function _dlPanelSave(jobId, filename, color, panel) {
 
 /** Remove any progress / download / error overlay from inside the zone. */
 function _resetZoneContent(zone) {
+  zone.querySelectorAll('.dz-processing-hidden').forEach((el) => {
+    el.classList.remove('dz-processing-hidden');
+  });
   zone.querySelectorAll(
     '.dz-progress-wrap, .dz-download-wrap, .dz-error-wrap, .dz-pdf-thumb-wrap, ' +
     '.dz-compress-thumb-wrap, .dz-encrypt-thumb-wrap, .dz-merge-thumb-strip, .dz-queue-toolbar, ' +
@@ -1084,11 +1137,47 @@ function _showProgress(zone, pct, color, label, toolId) {
 
   captureToolDropZoneSnapshot(toolId || activeTool.id, zone);
   _resetZoneContent(zone);
+  zone.querySelectorAll(
+    '.drop-icon, .drop-main-text, .drop-browse, .drop-private, .dz-actions-wrap'
+  ).forEach((el) => el.classList.add('dz-processing-hidden'));
   zone.classList.add('dz-state-processing');
   const owner = toolId || activeTool?.id;
   const wrap = _buildRingWrap(color, pct, label || 'Processing', false, owner);
   zone.appendChild(wrap);
   _wireDzCancelBtn(wrap, zone);
+}
+
+/** Show the same ring used by conversions while the paired phone uploads. */
+export function showPhoneReceiveProgress(progress = 0, formatLabel = 'files') {
+  const zone = document.getElementById('drop-zone');
+  const tool = getActiveTool();
+  if (!zone || !tool) return;
+  const pct = Math.max(0, Math.min(100, Number(progress) || 0));
+
+  // Polling happens once per second. Keep the same overlay alive so the
+  // progress ring does not restart its animation or visually vibrate.
+  const existing = zone.querySelector('.dz-progress-wrap.dz-phone-receiving');
+  if (existing && existing.dataset.toolId === tool.id) {
+    _updateProgress(zone, pct, tool.color || '#00E5C0', tool.id);
+    const label = existing.querySelector('.dz-progress-label');
+    if (label) label.textContent = `Receiving ${formatLabel}…`;
+    return;
+  }
+
+  _showProgress(zone, pct, tool.color || '#00E5C0', `Receiving ${formatLabel}…`, tool.id);
+  const wrap = zone.querySelector('.dz-progress-wrap');
+  if (wrap) {
+    wrap.classList.add('dz-phone-receiving');
+    wrap.querySelector('.dz-progress-cancel')?.remove();
+  }
+}
+
+/** Remove only the phone receive overlay after its files are in the queue. */
+export function clearPhoneReceiveProgress() {
+  const zone = document.getElementById('drop-zone');
+  if (!zone) return;
+  zone.querySelector('.dz-progress-wrap.dz-phone-receiving')?.remove();
+  zone.classList.remove('dz-state-processing');
 }
 
 /** Show an indeterminate scanning ring — spinning arc. */
@@ -1117,6 +1206,9 @@ function _wireDzCancelBtn(wrap, zone) {
     e.stopPropagation();
     const tool = getActiveTool();
     const ownerToolId = wrap.dataset.toolId || tool?.id;
+    // Clear the mirrored phone job immediately so its progress/download view
+    // returns to a fresh drop zone at the same moment as the desktop.
+    unlinkMirrorJob(ownerToolId || null);
     clearBgJob();
     if (ownerToolId) clearToolFileState(ownerToolId);
     _resetZoneContent(zone);
@@ -1224,6 +1316,11 @@ function _removeAllPanels() {
   }
   if (typeof removeSvgPngPanel === 'function') {
     removeSvgPngPanel(); removeSvgJpgPanel(); removeSvgWebpPanel(); removeSvgPdfPanel();
+  }
+  const dz = document.getElementById('drop-zone');
+  if (dz) {
+    dz.querySelector('.dz-phone-panel')?.remove();
+    dz.classList.remove('dz-has-phone-transfer');
   }
 }
 
@@ -1349,9 +1446,14 @@ async function _downloadFile(jobId, filename, color, wrap) {
 
 // ─── GENERIC SUBMIT FILE ──────────────────────────────────────────────────────
 
-async function _submitFile(files) {
+export function handleExternalFiles(files) {
+  return _submitFile(files, { fromPhone: true });
+}
+
+async function _submitFile(files, { fromPhone = false } = {}) {
   const tool = getActiveTool();
   if (!tool) { showNoToolWarning(); return; }
+  if (!fromPhone && _blockDesktopUploadWhilePhonePaired()) return;
 
   const fileArray = Array.from(files);
   if (fileArray.length === 0) return;
@@ -1375,8 +1477,7 @@ async function _submitFile(files) {
 
   // Merge tool has its own multi-file queue flow — delegated to the merger module
   if (tool.id === 'merge') {
-    handleMergeFilesPicked(files);
-    return;
+    return await handleMergeFilesPicked(files);
   }
 
   // Compress tool has its own settings-panel flow — delegated to the compressor module
@@ -1452,14 +1553,12 @@ async function _submitFile(files) {
 
   // Images → PDF converter has its own multi-image queue flow
   if (tool.id === 'images-pdf') {
-    handleImagesPdfFilesPicked(files);
-    return;
+    return await handleImagesPdfFilesPicked(files);
   }
 
   // Archive create tools share the local multi-file queue flow.
   if (isArchiveCreateTool(tool.id)) {
-    handleArchiveFilesPicked(files);
-    return;
+    return await handleArchiveFilesPicked(files);
   }
 
   // Archive extract tools share the local extraction flow.
@@ -1482,8 +1581,7 @@ async function _submitFile(files) {
 
   // Archive Merger — multi-part merge queue
   if (tool.id === 'archive-merge') {
-    handleArchiveMergerFilesPicked(files);
-    return;
+    return await handleArchiveMergerFilesPicked(files);
   }
 
   // Archive Protect — password-protect archive with AES-256
@@ -1562,42 +1660,41 @@ async function _submitFile(files) {
   if (tool.id === 'csv-sql') { handleCsvSqlFilePicked(files[0]); return; }
 
   // JPG conversion tools — pass ALL files (multi-select supported; base handles dedup)
-  if (tool.id === 'jpg-png') { handleJpgPngFilePicked(files); return; }
-  if (tool.id === 'jpg-webp') { handleJpgWebpFilePicked(files); return; }
-  if (tool.id === 'jpg-pdf') { handleJpgPdfFilePicked(files); return; }
-  if (tool.id === 'jpg-bmp') { handleJpgBmpFilePicked(files); return; }
-  if (tool.id === 'jpg-tiff') { handleJpgTiffFilePicked(files); return; }
-  if (tool.id === 'jpg-ico') { handleJpgIcoFilePicked(files); return; }
-  if (tool.id === 'jpg-txt') { handleJpgTxtFilePicked(files); return; }
+  if (tool.id === 'jpg-png') return await handleJpgPngFilePicked(files);
+  if (tool.id === 'jpg-webp') return await handleJpgWebpFilePicked(files);
+  if (tool.id === 'jpg-pdf') return await handleJpgPdfFilePicked(files);
+  if (tool.id === 'jpg-bmp') return await handleJpgBmpFilePicked(files);
+  if (tool.id === 'jpg-tiff') return await handleJpgTiffFilePicked(files);
+  if (tool.id === 'jpg-ico') return await handleJpgIcoFilePicked(files);
+  if (tool.id === 'jpg-txt') return await handleJpgTxtFilePicked(files);
 
   // PNG conversion tools — dispatch by tool id
-  if (tool.id === 'png-jpg') { handlePngJpgFilePicked(files); return; }
-  if (tool.id === 'png-webp') { handlePngWebpFilePicked(files); return; }
-  if (tool.id === 'png-pdf') { handlePngPdfFilePicked(files); return; }
-  if (tool.id === 'png-bmp') { handlePngBmpFilePicked(files); return; }
-  if (tool.id === 'png-tiff') { handlePngTiffFilePicked(files); return; }
-  if (tool.id === 'png-ico') { handlePngIcoFilePicked(files); return; }
-  if (tool.id === 'png-txt') { handlePngTxtFilePicked(files); return; }
+  if (tool.id === 'png-jpg') return await handlePngJpgFilePicked(files);
+  if (tool.id === 'png-webp') return await handlePngWebpFilePicked(files);
+  if (tool.id === 'png-pdf') return await handlePngPdfFilePicked(files);
+  if (tool.id === 'png-bmp') return await handlePngBmpFilePicked(files);
+  if (tool.id === 'png-tiff') return await handlePngTiffFilePicked(files);
+  if (tool.id === 'png-ico') return await handlePngIcoFilePicked(files);
+  if (tool.id === 'png-txt') return await handlePngTxtFilePicked(files);
 
   // WEBP conversion tools — dispatch by tool id
-  if (tool.id === 'webp-jpg') { handleWebpJpgFilePicked(files); return; }
-  if (tool.id === 'webp-png') { handleWebpPngFilePicked(files); return; }
-  if (tool.id === 'webp-pdf') { handleWebpPdfFilePicked(files); return; }
-  if (tool.id === 'webp-bmp') { handleWebpBmpFilePicked(files); return; }
-  if (tool.id === 'webp-tiff') { handleWebpTiffFilePicked(files); return; }
-  if (tool.id === 'webp-ico') { handleWebpIcoFilePicked(files); return; }
-  if (tool.id === 'webp-txt') { handleWebpTxtFilePicked(files); return; }
+  if (tool.id === 'webp-jpg') return await handleWebpJpgFilePicked(files);
+  if (tool.id === 'webp-png') return await handleWebpPngFilePicked(files);
+  if (tool.id === 'webp-pdf') return await handleWebpPdfFilePicked(files);
+  if (tool.id === 'webp-bmp') return await handleWebpBmpFilePicked(files);
+  if (tool.id === 'webp-tiff') return await handleWebpTiffFilePicked(files);
+  if (tool.id === 'webp-ico') return await handleWebpIcoFilePicked(files);
+  if (tool.id === 'webp-txt') return await handleWebpTxtFilePicked(files);
 
   // SVG conversion tools — dispatch by tool id
-  if (tool.id === 'svg-png') { handleSvgPngFilePicked(files); return; }
-  if (tool.id === 'svg-jpg') { handleSvgJpgFilePicked(files); return; }
-  if (tool.id === 'svg-webp') { handleSvgWebpFilePicked(files); return; }
-  if (tool.id === 'svg-pdf') { handleSvgPdfFilePicked(files); return; }
+  if (tool.id === 'svg-png') return await handleSvgPngFilePicked(files);
+  if (tool.id === 'svg-jpg') return await handleSvgJpgFilePicked(files);
+  if (tool.id === 'svg-webp') return await handleSvgWebpFilePicked(files);
+  if (tool.id === 'svg-pdf') return await handleSvgPdfFilePicked(files);
 
   // Image Compressor — dispatch before generic preview fallback
   if (tool.id === 'image_compressor') {
-    handleImageCompressorFilesPicked(files);
-    return;
+    return await handleImageCompressorFilesPicked(files);
   }
 
   // Images category tools — dispatch to HD preview handler
@@ -1746,6 +1843,7 @@ async function _handlePasteFromClipboard() {
   }
 
   const dropZone = document.getElementById('drop-zone');
+  if (_blockDesktopUploadWhilePhonePaired(dropZone)) return;
   if (dropZone) {
     if (
       dropZone.classList.contains('dz-state-processing') ||
@@ -1965,6 +2063,22 @@ export function initDropZone() {
     });
   }
 
+  // ── From Phone Button Click ───────────────────────────────────────────────
+  const phoneBtn = document.getElementById('dz-phone-btn');
+  if (phoneBtn) {
+    phoneBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const tool = getActiveTool();
+      if (!tool) {
+        showNoToolWarning();
+        return;
+      }
+      import('./mobileTransferModal.js').then(({ openMobileTransferModal }) => {
+        openMobileTransferModal();
+      }).catch(err => console.error('[dropzone] Failed to open mobile transfer modal:', err));
+    });
+  }
+
   // ── Global Keyboard Paste Event (Ctrl+V / Cmd+V) ──────────────────────────
   window.addEventListener('paste', async (e) => {
     const activeEl = document.activeElement;
@@ -1974,6 +2088,7 @@ export function initDropZone() {
 
     const tool = getActiveTool();
     if (!tool) return;
+    if (_blockDesktopUploadWhilePhonePaired()) return;
 
     if (e.clipboardData && e.clipboardData.files && e.clipboardData.files.length > 0) {
       e.preventDefault();
@@ -2028,19 +2143,30 @@ export function initDropZone() {
 
   // ── Click ──────────────────────────────────────────────────────────────────
   dropZone.addEventListener('click', (e) => {
+    if (!_isPhonePairedZone(dropZone)) return;
+    const addEl = e.target.closest(_PHONE_ADD_FILE_SELECTOR);
+    if (!addEl) return;
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    _blockDesktopUploadWhilePhonePaired(dropZone);
+  }, true);
+
+  dropZone.addEventListener('click', (e) => {
     if (e.target === fileInput) return;
     // Don't open file picker when clicking interactive elements from any tool panel
     if (e.target.closest(
-      '.dz-download-wrap, .dz-error-wrap, .dz-pdf-thumb-remove, ' +
+      '.dz-phone-panel, .dz-phone-live-badge, .dz-download-wrap, .dz-error-wrap, .dz-pdf-thumb-remove, ' +
       '.dz-merge-card-remove, .dz-merge-add-btn, .merge-queue-panel, .split-info-panel, ' +
       '.compress-settings-panel, .dz-compress-thumb-remove, .cmp-panel, ' +
-      '.encrypt-settings-panel, .dz-encrypt-thumb-remove, .enc-panel, .extractor-info-panel, .dz-editor-thumb-remove, .dz-paste-btn, ' +
+      '.encrypt-settings-panel, .dz-encrypt-thumb-remove, .enc-panel, .extractor-info-panel, .dz-editor-thumb-remove, .dz-paste-btn, .dz-phone-btn, .dz-actions-wrap, ' +
       '.dz-pdf-word-thumb-wrap, .dz-pdf-excel-thumb-wrap, .dz-pdf-html-thumb-wrap, .dz-pdf-txt-thumb-wrap, ' +
       '.imgcmp-panel, .dz-imgcmp-add-btn, .dz-imgcmp-card-remove, ' +
       '.dz-arc-conv-thumb-wrap, .dz-extract-thumb-wrap'
     )) return;
     if (!getActiveTool()) { showNoToolWarning(); return; }
-    // If already processing, scanning, done, or a file thumbnail is currently loaded, do not open file window
+    // If already processing, scanning, done, or phone transfer active, do not open file window
+    if (dropZone.classList.contains('dz-has-phone-transfer')) return;
+    if (_blockDesktopUploadWhilePhonePaired(dropZone)) return;
     if (dropZone.classList.contains('dz-state-processing')) return;
     if (dropZone.classList.contains('dz-state-scanning')) return;
     if (dropZone.classList.contains('dz-state-done')) return;
@@ -2212,6 +2338,7 @@ export function initDropZone() {
     // adding drag-active class and reflowing/expanding during PDF reordering.
     if (dropZone.dataset.cardDragging) { e.preventDefault(); return; }
     e.preventDefault();
+    if (_isPhonePairedZone(dropZone)) return;
     dropZone.classList.add('drag-active');
   });
 
@@ -2226,6 +2353,7 @@ export function initDropZone() {
     e.preventDefault();
     dropZone.classList.remove('drag-active');
     if (!getActiveTool()) { showNoToolWarning(); return; }
+    if (_blockDesktopUploadWhilePhonePaired(dropZone)) return;
     if (dropZone.classList.contains('dz-state-processing')) return;
     if (dropZone.classList.contains('dz-state-scanning')) return;
     if (dropZone.classList.contains('dz-state-done')) return;

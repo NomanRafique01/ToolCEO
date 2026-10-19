@@ -39,6 +39,13 @@ contextBridge.exposeInMainWorld('toolceo', {
   readClipboardFile: () =>
     ipcRenderer.invoke('read-clipboard-file'),
 
+  // ── Mobile QR file transfer ──────────────────────────────────────────────────
+  generateQrCode: (text, options) =>
+    ipcRenderer.invoke('generate-qr-code', text, options),
+
+  getNetworkIp: () =>
+    ipcRenderer.invoke('get-network-ip'),
+
   // ── Vault file: subscribe to vault-file-open events from main process ────────
   // callback: (filePath: string) => void
   // Returns an unsubscribe function.
@@ -47,7 +54,18 @@ contextBridge.exposeInMainWorld('toolceo', {
     ipcRenderer.on('vault-file-open', handler);
     return () => ipcRenderer.removeListener('vault-file-open', handler);
   },
+
+  // The main process waits for the renderer to end the active phone session
+  // before completing an actual app close. Minimize never uses this path.
+  onAppClosing: (callback) => {
+    const handler = () => callback();
+    ipcRenderer.on('app-closing', handler);
+    return () => ipcRenderer.removeListener('app-closing', handler);
+  },
+
+  acknowledgeAppClose: () => ipcRenderer.send('app-close-session-complete'),
 });
+
 
 // ─── Module management API ────────────────────────────────────────────────────
 contextBridge.exposeInMainWorld('electronAPI', {

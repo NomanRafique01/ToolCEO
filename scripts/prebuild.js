@@ -16,6 +16,26 @@ const buildInfoFrontendPath = path.join(rootDir, 'frontend', 'build-info.json');
 
 console.log('[prebuild] Preparing clean build environment...');
 
+// Rebuild the frozen backend if missing or explicitly requested
+const backendExePath = path.join(rootDir, 'engines', 'python', 'main_backend.exe');
+if (!fs.existsSync(backendExePath) || process.env.REBUILD_BACKEND === '1') {
+  try {
+    const backendBuildScript = path.join(rootDir, 'scripts', 'build_backend.js');
+    const result = spawnSync(process.execPath, [backendBuildScript], {
+      cwd: rootDir,
+      stdio: 'inherit',
+      shell: false,
+    });
+
+    if (result.status !== 0) {
+      process.exit(result.status || 1);
+    }
+  } catch (err) {
+    console.error('[prebuild] Error rebuilding Python backend:', err.message);
+    process.exit(1);
+  }
+}
+
 // 0. Regenerate all application icons, multi-res ICOs, and Microsoft Store / MSIX tile assets.
 try {
   const iconScript = path.join(rootDir, 'scripts', 'generate_app_icons.js');
@@ -169,15 +189,6 @@ try {
     }
   }
 
-  // Also sync clean reset modules.json to dist/ if previous unpacked build exists
-  const distModulesPath = path.join(rootDir, 'dist', 'win-unpacked', 'modules.json');
-  if (fs.existsSync(distModulesPath)) {
-    try {
-      const raw = fs.readFileSync(modulesJsonPath, 'utf8');
-      fs.writeFileSync(distModulesPath, raw, 'utf8');
-      console.log('[prebuild] ✓ Synced reset modules.json to dist/win-unpacked/modules.json');
-    } catch (_) {}
-  }
 } catch (modErr) {
   console.error('[prebuild] ⚠ Error cleaning modules:', modErr.message);
 }
