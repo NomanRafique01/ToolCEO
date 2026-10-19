@@ -190,8 +190,59 @@ async function generateIco(sourceImg, outPath) {
   for (const size of ICO_SIZES) {
     const clone = sourceImg.clone();
     clone.resize({ w: size, h: size });
-    const data = await clone.getBuffer('image/png');
-    images.push({ size, data });
+
+    if (size === 256) {
+      // 256x256 is officially supported by Windows Vista+ as PNG inside ICO
+      const pngData = await clone.getBuffer('image/png');
+      images.push({ size, data: pngData });
+    } else {
+      // Sizes < 256 MUST be standard uncompressed Windows DIB (BITMAPINFOHEADER + 32-bit BGRA + AND mask).
+      // Windows 10 Taskbar, shell, and user32 fail to parse PNG-compressed sub-256 icons.
+      const xorSize = size * size * 4;
+      const andRowBytes = Math.ceil(size / 32) * 4;
+      const andSize = andRowBytes * size;
+      const dib = Buffer.alloc(40 + xorSize + andSize);
+
+      // BITMAPINFOHEADER (40 bytes)
+      dib.writeUInt32LE(40, 0);                 // biSize
+      dib.writeInt32LE(size, 4);                // biWidth
+      dib.writeInt32LE(size * 2, 8);            // biHeight (doubled: XOR + AND)
+      dib.writeUInt16LE(1, 12);                 // biPlanes
+      dib.writeUInt16LE(32, 14);                // biBitCount (32-bit BGRA)
+      dib.writeUInt32LE(0, 16);                 // biCompression (BI_RGB)
+      dib.writeUInt32LE(xorSize + andSize, 20); // biSizeImage
+      dib.writeInt32LE(0, 24);                  // biXPelsPerMeter
+      dib.writeInt32LE(0, 28);                  // biYPelsPerMeter
+      dib.writeUInt32LE(0, 32);                 // biClrUsed
+      dib.writeUInt32LE(0, 36);                 // biClrImportant
+
+      // XOR mask: 32-bit BGRA stored bottom-to-top
+      let xorOffset = 40;
+      for (let y = size - 1; y >= 0; y--) {
+        for (let x = 0; x < size; x++) {
+          const p = clone.getPixelColor(x, y);
+          dib[xorOffset++] = (p >> 8) & 0xff;   // Blue
+          dib[xorOffset++] = (p >> 16) & 0xff;  // Green
+          dib[xorOffset++] = (p >> 24) & 0xff;  // Red
+          dib[xorOffset++] = p & 0xff;          // Alpha
+        }
+      }
+
+      // AND mask: 1 bit per pixel stored bottom-to-top (1 = transparent, 0 = opaque)
+      const andOffset = 40 + xorSize;
+      for (let y = 0; y < size; y++) {
+        const rowIdx = size - 1 - y;
+        for (let x = 0; x < size; x++) {
+          const p = clone.getPixelColor(x, y);
+          if ((p & 0xff) === 0) {
+            const byteIdx = andOffset + rowIdx * andRowBytes + Math.floor(x / 8);
+            dib[byteIdx] |= (1 << (7 - (x % 8)));
+          }
+        }
+      }
+
+      images.push({ size, data: dib });
+    }
   }
 
   const headerSize = 6 + images.length * 16;
