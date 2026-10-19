@@ -16,10 +16,46 @@ const buildInfoFrontendPath = path.join(rootDir, 'frontend', 'build-info.json');
 
 console.log('[prebuild] Preparing clean build environment...');
 
-// Rebuild the frozen backend if missing or explicitly requested
+// Rebuild the frozen backend if missing, explicitly requested, or if backend sources are newer than the executable
 const backendExePath = path.join(rootDir, 'engines', 'python', 'main_backend.exe');
-if (!fs.existsSync(backendExePath) || process.env.REBUILD_BACKEND === '1') {
+
+function shouldRebuildBackend() {
+  if (!fs.existsSync(backendExePath)) return true;
+  if (process.env.REBUILD_BACKEND === '1') return true;
+
   try {
+    const exeMtime = fs.statSync(backendExePath).mtimeMs;
+    const sourcesToCheck = [
+      path.join(rootDir, 'backend', 'main.py'),
+      path.join(rootDir, 'backend', 'main_backend.py'),
+      path.join(rootDir, 'backend', 'main_backend.spec'),
+      path.join(rootDir, 'backend', 'routers'),
+      path.join(rootDir, 'backend', 'tools'),
+      path.join(rootDir, 'frontend', 'mobile'),
+    ];
+
+    function isAnyNewer(p) {
+      if (!fs.existsSync(p)) return false;
+      const s = fs.statSync(p);
+      if (s.mtimeMs > exeMtime) return true;
+      if (s.isDirectory()) {
+        const files = fs.readdirSync(p);
+        for (const file of files) {
+          if (isAnyNewer(path.join(p, file))) return true;
+        }
+      }
+      return false;
+    }
+
+    return sourcesToCheck.some(isAnyNewer);
+  } catch (_) {
+    return false;
+  }
+}
+
+if (shouldRebuildBackend()) {
+  try {
+    console.log('[prebuild] Backend sources changed or executable missing — compiling fresh backend binary...');
     const backendBuildScript = path.join(rootDir, 'scripts', 'build_backend.js');
     const result = spawnSync(process.execPath, [backendBuildScript], {
       cwd: rootDir,
