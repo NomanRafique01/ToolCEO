@@ -1,0 +1,44 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 264 74" width="264" height="74">
+  <defs>
+    <linearGradient id="beta-border" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#F59E0B" />
+      <stop offset="50%" stop-color="#F97316" />
+      <stop offset="100%" stop-color="#A855F7" />
+    </linearGradient>
+    <linearGradient id="beta-bg" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#1A1524" />
+      <stop offset="100%" stop-color="#0E0B16" />
+    </linearGradient>
+    <linearGradient id="beta-tag-bg" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#F59E0B" stop-opacity="0.25"/>
+      <stop offset="100%" stop-color="#F97316" stop-opacity="0.15"/>
+    </linearGradient>
+  </defs>
+
+  <!-- Button Background Card -->
+  <rect x="2" y="2" width="260" height="70" rx="14" fill="url(#beta-bg)" stroke="url(#beta-border)" stroke-width="2"/>
+
+  <!-- Windows 11 Modern Logo -->
+  <g transform="translate(18, 22)">
+    <rect x="0" y="0" width="13" height="13" rx="1.5" fill="#FBBF24" />
+    <rect x="15" y="0" width="13" height="13" rx="1.5" fill="#F59E0B" />
+    <rect x="0" y="15" width="13" height="13" rx="1.5" fill="#F97316" />
+    <rect x="15" y="15" width="13" height="13" rx="1.5" fill="#A855F7" />
+  </g>
+
+  <!-- Tag Chip -->
+  <rect x="60" y="12" width="82" height="16" rx="8" fill="url(#beta-tag-bg)" stroke="#F59E0B" stroke-width="0.8" stroke-opacity="0.6"/>
+  <text x="101" y="23" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="8.5" font-weight="700" letter-spacing="0.8" fill="#F59E0B" text-anchor="middle">PRE-RELEASE</text>
+
+  <!-- Main Version Text -->
+  <text x="60" y="45" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="16" font-weight="800" fill="#FFFFFF" letter-spacing="0.3">ToolCEO v1.0.0-beta</text>
+
+  <!-- Subtitle Meta -->
+  <text x="60" y="60" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif" font-size="10.5" font-weight="500" fill="#94A3B8">Windows x64 • 196 MB</text>
+
+  <!-- Download Arrow Action Pill -->
+  <g transform="translate(220, 23)">
+    <circle cx="14" cy="14" r="14" fill="#F59E0B" fill-opacity="0.15" stroke="#F59E0B" stroke-width="1.2"/>
+    <path d="M14 7v10M9.5 12.5L14 17l4.5-4.5M8 20h12" fill="none" stroke="#F59E0B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+  </g>
+</svg>
