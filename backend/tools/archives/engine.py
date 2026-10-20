@@ -12,7 +12,7 @@ import threading
 from pathlib import Path
 from typing import Callable, Iterable
 
-from platform_tools import find_rar, find_7zip
+from platform_tools import find_rar, find_7zip, get_subprocess_kwargs
 
 _IS_WIN   = sys.platform == "win32"
 _IS_MAC   = sys.platform == "darwin"
@@ -72,7 +72,7 @@ def _run_7zip(command: list[str], progress: Callable[[int], None], cancel_event,
         errors="replace",
         shell=False,
         cwd=cwd,
-        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        **get_subprocess_kwargs(),
     )
     captured_lines: list[str] = []
 
@@ -151,7 +151,7 @@ def _run_rar(
         errors="replace",
         shell=False,
         cwd=cwd,
-        creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+        **get_subprocess_kwargs(),
     )
     captured_lines: list[str] = []
 
@@ -223,7 +223,7 @@ def inspect_archive(archive_bytes: bytes, filename: str, password: str | None = 
             errors="replace",
             shell=False,
             cwd=str(temp_dir),
-            creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+            **get_subprocess_kwargs(),
         )
         stdout, _ = process.communicate()
         return_code = process.returncode
@@ -1611,7 +1611,7 @@ def rebind_archive_deduped(
                 cmd_rar,
                 cwd=str(extract_dir),
                 check=True,
-                creationflags=getattr(subprocess, "CREATE_NO_WINDOW", 0),
+                **get_subprocess_kwargs(),
             )
         else:
             cmd_a = [executable, "a", type_switch, "-bsp1", "-y", str(out_path), "."]

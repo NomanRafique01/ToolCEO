@@ -43,6 +43,7 @@ scratch/calibre_debug/
 scratch/
 
 # -- Build artifacts ---------------------------------------
+bin/
 backend/main_backend.spec
 *.spec
 

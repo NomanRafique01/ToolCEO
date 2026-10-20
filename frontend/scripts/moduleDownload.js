@@ -21,6 +21,11 @@ let _cancelRequested = false;
 let _maxInstallPercent = 0;   // strictly monotonic tracker to prevent installation progress from moving backward
 let _dragApi = null;          // { resetPosition, restorePosition } from shared drag utility
 let _installFailsafeTimer = null; // prevents installation panel from ever staying stuck on 100%
+let _displayInstallPercent = 0;
+let _targetInstallPercent = 0;
+let _installAnimTimer = null;
+let _installCompletedModule = null;
+let _isCompleting = false;
 
 const MODULE_NAMES = {
   office: 'Office Module',
@@ -183,6 +188,11 @@ export function startModuleInstall(mod) {
   _currentPhase = 'installing';
   _currentModuleId = mod.id;
   _currentModuleName = mod.name || mod.id;
+  _displayInstallPercent = 0;
+  _targetInstallPercent = 0;
+  _maxInstallPercent = 0;
+  _isCompleting = false;
+  _stopInstallProgressAnimation();
 
   _showPanel(_currentModuleName, '', 'installing');
   notifyModuleState(mod.id, 'installing', 0);
@@ -256,6 +266,128 @@ export function cancelActiveOperation(moduleId = null) {
     notifyModuleState(targetId, 'not_downloaded');
     pushNotification({ type: 'info', message: 'Download cancelled.', autoDismiss: true });
   }
+}
+
+// ─── INSTALL PROGRESS & COMPLETION CONTROLLER ─────────────────────────────────
+
+function _stopInstallProgressAnimation() {
+  if (_installAnimTimer) {
+    clearInterval(_installAnimTimer);
+    _installAnimTimer = null;
+  }
+}
+
+function _startInstallProgressAnimation() {
+  if (_installAnimTimer) return;
+  _installAnimTimer = setInterval(() => {
+    if (!_active || _currentPhase !== 'installing') {
+      _stopInstallProgressAnimation();
+      return;
+    }
+
+    const instBar = _el('mod-dl-bar-install');
+    const pctEl = _el('mod-dl-percent');
+    if (!instBar || !pctEl) return;
+
+    if (_displayInstallPercent < _targetInstallPercent) {
+      // Smoothly advance toward target with proportional ease
+      const diff = _targetInstallPercent - _displayInstallPercent;
+      const step = Math.max(0.2, Math.min(2.0, diff * 0.14));
+      _displayInstallPercent = Math.min(_targetInstallPercent, _displayInstallPercent + step);
+    } else if (_targetInstallPercent > 0 && _targetInstallPercent < 95) {
+      // Micro-crawl during quiet periods between backend chunks so progress never looks frozen
+      _displayInstallPercent = Math.min(95, _displayInstallPercent + 0.04);
+    }
+
+    const rounded = Math.round(_displayInstallPercent);
+    if (rounded > _maxInstallPercent) {
+      _maxInstallPercent = rounded;
+    }
+    const clean = _maxInstallPercent;
+
+    pctEl.textContent = `${clean}%`;
+    instBar.style.opacity = '1';
+    instBar.style.width = `${clean}%`;
+
+    const dlBar = _el('mod-dl-bar-download');
+    if (dlBar) dlBar.style.opacity = '0';
+
+    if (_currentModuleId) {
+      notifyModuleState(_currentModuleId, 'installing', clean);
+    }
+
+    if (clean >= 100) {
+      _stopInstallProgressAnimation();
+    }
+  }, 50);
+}
+
+async function _handleInstallComplete(payload = {}) {
+  if (_isCompleting) return;
+  _isCompleting = true;
+
+  if (_installFailsafeTimer) {
+    clearTimeout(_installFailsafeTimer);
+    _installFailsafeTimer = null;
+  }
+  _stopInstallProgressAnimation();
+
+  const completedModuleId = payload?.moduleId || _currentModuleId;
+  const completedModuleName = payload?.name || _currentModuleName || (completedModuleId ? (MODULE_NAMES[completedModuleId] || completedModuleId.toUpperCase() + ' Module') : 'Module');
+
+  if (!completedModuleId) {
+    _isCompleting = false;
+    return;
+  }
+  if (_installCompletedModule === completedModuleId && !_active) {
+    _isCompleting = false;
+    return;
+  }
+  _installCompletedModule = completedModuleId;
+
+  // Finalize UI visually to 100%
+  _targetInstallPercent = 100;
+  _displayInstallPercent = 100;
+  _maxInstallPercent = 100;
+  const instBar = _el('mod-dl-bar-install');
+  if (instBar) {
+    instBar.style.opacity = '1';
+    instBar.style.width = '100%';
+  }
+  const pctEl = _el('mod-dl-percent');
+  if (pctEl) pctEl.textContent = '100%';
+  const sizeEl = _el('mod-dl-size');
+  if (sizeEl) sizeEl.textContent = 'Installation complete';
+  notifyModuleState(completedModuleId, 'installing', 100);
+
+  setTimeout(() => {
+    _hidePanel();
+    _isCompleting = false;
+  }, 500);
+
+  _active = false;
+  _paused = false;
+  _currentModuleId = null;
+  _currentModuleName = null;
+
+  // Invalidate lock cache and refresh
+  invalidateModuleCache();
+  await loadModuleStatuses();
+
+  pushNotification({
+    type: 'success',
+    message: `All tools related to the ${completedModuleName} are now unlocked and ready to use.`,
+  });
+
+  notifyModuleState(completedModuleId, 'installed');
+
+  // Real-time tool unlock in the dashboard
+  document.querySelectorAll(`[data-locked-module="${completedModuleId}"]`).forEach((card) => {
+    card.classList.remove('fmt-card--locked');
+    card.removeAttribute('data-locked-module');
+    const lockIcon = card.querySelector('.fmt-lock-badge, .lock-icon');
+    if (lockIcon) lockIcon.remove();
+  });
 }
 
 // ─── PANEL INIT ───────────────────────────────────────────────────────────────
@@ -404,48 +536,6 @@ export function initModuleDownloadPanel() {
         message: payload.message || 'Installing module files…',
       });
       notifyModuleState(payload.moduleId, 'installing', payload.percent);
-    });
-  }
-
-  let _installCompletedModule = null;
-
-  async function _handleInstallComplete(payload = {}) {
-    if (_installFailsafeTimer) {
-      clearTimeout(_installFailsafeTimer);
-      _installFailsafeTimer = null;
-    }
-
-    const completedModuleId = payload?.moduleId || _currentModuleId;
-    const completedModuleName = payload?.name || _currentModuleName || (completedModuleId ? (MODULE_NAMES[completedModuleId] || completedModuleId.toUpperCase() + ' Module') : 'Module');
-
-    if (!completedModuleId) return;
-    if (_installCompletedModule === completedModuleId && !_active) return;
-    _installCompletedModule = completedModuleId;
-
-    _updateProgress({ percent: 100, phase: 'installing', message: 'Installation complete' });
-    setTimeout(() => _hidePanel(), 400);
-    _active = false;
-    _paused = false;
-    _currentModuleId = null;
-    _currentModuleName = null;
-
-    // Invalidate lock cache and refresh
-    invalidateModuleCache();
-    await loadModuleStatuses();
-
-    pushNotification({
-      type: 'success',
-      message: `All tools related to the ${completedModuleName} are now unlocked and ready to use.`,
-    });
-
-    notifyModuleState(completedModuleId, 'installed');
-
-    // Real-time tool unlock in the dashboard
-    document.querySelectorAll(`[data-locked-module="${completedModuleId}"]`).forEach((card) => {
-      card.classList.remove('fmt-card--locked');
-      card.removeAttribute('data-locked-module');
-      const lockIcon = card.querySelector('.fmt-lock-badge, .lock-icon');
-      if (lockIcon) lockIcon.remove();
     });
   }
 
@@ -637,7 +727,11 @@ function _hidePanel() {
     clearTimeout(_installFailsafeTimer);
     _installFailsafeTimer = null;
   }
+  _stopInstallProgressAnimation();
+  _displayInstallPercent = 0;
+  _targetInstallPercent = 0;
   _maxInstallPercent = 0;
+  _isCompleting = false;
   const panel = document.getElementById('mod-dl-panel');
   if (panel) panel.classList.remove('mod-dl-panel--visible');
   syncFloatingPanelsStack();
@@ -660,48 +754,45 @@ function _updateProgress({ percent = 0, receivedBytes = 0, totalBytes = 0, phase
   const rawPercent = Math.max(0, Math.min(100, Math.round(percent)));
 
   if (isExtracting) {
-    // Strictly monotonic: installation progress must NEVER decrease or move back and forth
-    if (rawPercent > _maxInstallPercent) {
-      _maxInstallPercent = rawPercent;
-    } else if (rawPercent === 100) {
-      _maxInstallPercent = 100;
-    }
-    const cleanPercent = _maxInstallPercent;
-
-    _el('mod-dl-percent').textContent = `${cleanPercent}%`;
-
-    const instBar = _el('mod-dl-bar-install');
-    if (instBar) {
-      instBar.style.opacity = '1';
-      instBar.style.width = `${cleanPercent}%`;
-    }
-    const dlBar = _el('mod-dl-bar-download');
-    if (dlBar) {
-      dlBar.style.opacity = '0';
-    }
+    _targetInstallPercent = Math.max(_targetInstallPercent, rawPercent);
 
     const titleEl = _el('mod-dl-title');
     if (titleEl) {
       titleEl.innerHTML = `Installing <strong>${_currentModuleName || 'Module'}</strong>`;
     }
     const sizeEl = _el('mod-dl-size');
-    if (sizeEl) {
-      sizeEl.textContent = message || 'Installing module files — this may take a few minutes…';
+    if (sizeEl && message) {
+      sizeEl.textContent = message;
     }
 
-    // FAILSAFE: If 100% is reached during installation, auto-finalize so the UI is NEVER stuck on 100
-    if (cleanPercent >= 100) {
+    if (_targetInstallPercent >= 100) {
+      _displayInstallPercent = 100;
+      _maxInstallPercent = 100;
+      _stopInstallProgressAnimation();
+
+      const instBar = _el('mod-dl-bar-install');
+      if (instBar) {
+        instBar.style.opacity = '1';
+        instBar.style.width = '100%';
+      }
+      const pctEl = _el('mod-dl-percent');
+      if (pctEl) pctEl.textContent = '100%';
+      const dlBar = _el('mod-dl-bar-download');
+      if (dlBar) dlBar.style.opacity = '0';
+
       if (!_installFailsafeTimer) {
         _installFailsafeTimer = setTimeout(() => {
           _installFailsafeTimer = null;
           const panel = document.getElementById('mod-dl-panel');
           if (_active || (panel && panel.classList.contains('mod-dl-panel--visible'))) {
-            console.log('[moduleDownload] Failsafe: 100% reached, auto-finalizing install panel...');
             _handleInstallComplete({ moduleId: _currentModuleId, name: _currentModuleName });
           }
-        }, 1200);
+        }, 500);
       }
+      return;
     }
+
+    _startInstallProgressAnimation();
     return;
   }
 

@@ -142,7 +142,7 @@ export async function renderAbout(container) {
             <div class="about-hero-badges">
               <span class="about-badge about-badge--version">
                 ${svgIcon('<circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>', 11)}
-                v1.0.0
+                v2.0.0
               </span>
               <span class="about-badge about-badge--offline">
                 ${svgIcon('<path d="M10 2L4 5v5c0 4 2.67 7.4 6 8.5 3.33-1.1 6-4.5 6-8.5V5L10 2Z" stroke-width="1.7"/><polyline points="9 12 11 14 16 9"/>', 11)}
@@ -267,6 +267,7 @@ export async function renderAbout(container) {
             </div><!-- /about-section-body -->
           </div><!-- /about-section -->
 
+
           <!-- Privacy Guarantee (Bottom Full Width) -->
           <div class="about-privacy-card">
             <div class="about-privacy-header">
@@ -337,6 +338,28 @@ export async function renderAbout(container) {
           card.classList.add('about-feature--open');
           detail.style.maxHeight = detail.scrollHeight + 'px';
           if (chevron) chevron.style.transform = 'rotate(180deg)';
+        }
+      });
+    });
+  });
+
+  // --- External Hot Links: open directly in system default browser ----------
+  requestAnimationFrame(() => {
+    const hotlinks = document.querySelectorAll('.about-hotlink-card');
+    hotlinks.forEach((link) => {
+      link.addEventListener('click', (e) => {
+        e.preventDefault();
+        const url = link.getAttribute('data-url') || link.href;
+        if (!url) return;
+
+        if (window.electronAPI && typeof window.electronAPI.openExternal === 'function') {
+          window.electronAPI.openExternal(url);
+        } else if (window.toolceo && typeof window.toolceo.openExternal === 'function') {
+          window.toolceo.openExternal(url);
+        } else if (window.toolceo && typeof window.toolceo.invoke === 'function') {
+          window.toolceo.invoke('shell:openExternal', url);
+        } else {
+          window.open(url, '_blank', 'noopener,noreferrer');
         }
       });
     });

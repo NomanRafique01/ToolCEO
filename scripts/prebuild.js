@@ -197,5 +197,25 @@ try {
   console.warn('[prebuild] ⚠ Could not build backend:', bErr.message);
 }
 
+// 6. Ensure standalone micro-extractor (bin/7z.exe, bin/7z.dll) is present
+try {
+  const binDir = path.join(rootDir, 'bin');
+  fs.mkdirSync(binDir, { recursive: true });
+  const vendor7z = path.join(rootDir, 'node_modules', 'electron-winstaller', 'vendor');
+  const target7zExe = path.join(binDir, '7z.exe');
+  const target7zDll = path.join(binDir, '7z.dll');
+  if (!fs.existsSync(target7zExe) && fs.existsSync(path.join(vendor7z, '7z.exe'))) {
+    fs.copyFileSync(path.join(vendor7z, '7z.exe'), target7zExe);
+    console.log('[prebuild] ✓ Copied standalone 7z.exe to bin/');
+  }
+  if (!fs.existsSync(target7zDll) && fs.existsSync(path.join(vendor7z, '7z.dll'))) {
+    fs.copyFileSync(path.join(vendor7z, '7z.dll'), target7zDll);
+    console.log('[prebuild] ✓ Copied standalone 7z.dll to bin/');
+  }
+} catch (zErr) {
+  console.warn('[prebuild] ⚠ Could not sync standalone 7z binaries:', zErr.message);
+}
+
 console.log('[prebuild] Ready for packaging.');
+
 

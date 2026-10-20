@@ -23,6 +23,7 @@ from platform_tools import (
     find_pandoc,
     install_message,
     require_binary,
+    get_subprocess_kwargs,
 )
 
 
@@ -54,6 +55,7 @@ def _run(args: list[str], cwd: str | None = None) -> None:
         cwd=cwd,
         capture_output=True,
         text=True,
+        **get_subprocess_kwargs(),
     )
     if result.returncode != 0:
         raise RuntimeError(

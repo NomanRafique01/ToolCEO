@@ -11,6 +11,7 @@ from __future__ import annotations
 import glob
 import os
 import shutil
+import subprocess
 import sys
 from pathlib import Path
 from typing import Iterable
@@ -19,6 +20,112 @@ from typing import Iterable
 IS_WIN = sys.platform == "win32"
 IS_MAC = sys.platform == "darwin"
 IS_LINUX = sys.platform.startswith("linux")
+
+
+def _build_startupinfo() -> "subprocess.STARTUPINFO":
+    """Create a fully configured STARTUPINFO that hides the child window."""
+    si = subprocess.STARTUPINFO()
+    # STARTF_USESHOWWINDOW tells CreateProcess to honour wShowWindow
+    si.dwFlags |= getattr(subprocess, "STARTF_USESHOWWINDOW", 0x00000001)
+    # SW_HIDE = 0 → window is hidden
+    si.wShowWindow = getattr(subprocess, "SW_HIDE", 0)
+    return si
+
+
+# Win32 creation-flag constants (fallback values for older Python builds)
+_CREATE_NO_WINDOW   = getattr(subprocess, "CREATE_NO_WINDOW",   0x08000000)
+_DETACHED_PROCESS   = 0x00000008  # sever parent console inheritance
+_CREATE_NEW_CONSOLE = 0x00000010  # must be stripped if present
+
+
+def get_subprocess_kwargs() -> dict:
+    """
+    Return creationflags and startupinfo to guarantee no console/cmd window
+    pops up when spawning external processes on Windows.
+
+    Use as:  subprocess.run(cmd, ..., **get_subprocess_kwargs())
+    """
+    kwargs: dict = {}
+    if IS_WIN:
+        kwargs["creationflags"] = _CREATE_NO_WINDOW | _DETACHED_PROCESS
+        kwargs["startupinfo"] = _build_startupinfo()
+    return kwargs
+
+
+def _apply_silent_flags(kwargs: dict) -> None:
+    """
+    Mutate *kwargs* in-place so creationflags / startupinfo guarantee
+    no console window is shown, regardless of what the caller passed.
+    """
+    # --- creationflags ---------------------------------------------------
+    flags = kwargs.get("creationflags", 0)
+    flags &= ~_CREATE_NEW_CONSOLE        # strip conflicting flag
+    flags |= _CREATE_NO_WINDOW | _DETACHED_PROCESS
+    kwargs["creationflags"] = flags
+
+    # --- startupinfo -----------------------------------------------------
+    si = kwargs.get("startupinfo")
+    if si is None:
+        si = _build_startupinfo()
+    else:
+        si.dwFlags |= getattr(subprocess, "STARTF_USESHOWWINDOW", 0x00000001)
+        si.wShowWindow = getattr(subprocess, "SW_HIDE", 0)
+    kwargs["startupinfo"] = si
+
+
+def ensure_silent_subprocess() -> None:
+    """
+    Globally monkey-patch subprocess.Popen on Windows so that **every**
+    process spawned by any code path (our engines, 3rd-party libraries,
+    etc.) NEVER creates or flashes a console / cmd-prompt window.
+
+    The patch handles creationflags and startupinfo whether they are
+    passed as keyword arguments or positional arguments.
+    """
+    if not IS_WIN:
+        return
+    if getattr(subprocess, "_toolceo_silent_patched", False):
+        return
+
+    _orig_init = subprocess.Popen.__init__
+
+    # Positional index of startupinfo / creationflags in Popen.__init__
+    # (0-based, after `self`):
+    # args(0), bufsize(1), executable(2), stdin(3), stdout(4), stderr(5),
+    # preexec_fn(6), close_fds(7), shell(8), cwd(9), env(10),
+    # universal_newlines(11), startupinfo(12), creationflags(13)
+    _IDX_STARTUPINFO   = 12
+    _IDX_CREATIONFLAGS = 13
+
+    def _silent_init(self, *args, **kwargs):
+        # ── Promote positional startupinfo/creationflags to kwargs ─────
+        # so _apply_silent_flags always works on the dict.  This handles
+        # the rare case of callers passing them positionally.
+        args_list = None
+        if len(args) > _IDX_STARTUPINFO and "startupinfo" not in kwargs:
+            args_list = list(args)
+            kwargs["startupinfo"] = args_list[_IDX_STARTUPINFO]
+            args_list[_IDX_STARTUPINFO] = None          # will be in kwargs
+        if len(args) > _IDX_CREATIONFLAGS and "creationflags" not in kwargs:
+            if args_list is None:
+                args_list = list(args)
+            kwargs["creationflags"] = args_list[_IDX_CREATIONFLAGS]
+            args_list[_IDX_CREATIONFLAGS] = 0            # will be in kwargs
+        if args_list is not None:
+            args = tuple(args_list)
+
+        # ── Force silent flags on every spawn ─────────────────────────
+        _apply_silent_flags(kwargs)
+
+        _orig_init(self, *args, **kwargs)
+
+    subprocess.Popen.__init__ = _silent_init
+    subprocess._toolceo_silent_patched = True
+
+
+# Automatically ensure silent subprocess execution whenever platform_tools is imported
+ensure_silent_subprocess()
+
 
 
 INSTALL_HINTS = {

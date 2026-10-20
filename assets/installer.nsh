@@ -1,4 +1,4 @@
-﻿!macro customHeader
+!macro customHeader
   BrandingText "ToolCEO Desktop Toolkit"
   ShowInstDetails nevershow
   ShowUninstDetails nevershow
@@ -17,6 +17,17 @@
 !macro customInit
   SetDetailsPrint none
   SetDetailsView hide
+
+  # Terminate any running background backend or app instances before setup starts.
+  # This prevents locked files (.exe/.dll) from triggering retry loops during installation.
+  nsExec::Exec 'taskkill /F /IM "main_backend.exe" /T'
+  nsExec::Exec 'taskkill /F /IM "ToolCEO.exe" /T'
+!macroend
+
+!macro customCheckAppRunning
+  # Ensure all ToolCEO and backend processes are stopped so extraction never retries or loops
+  nsExec::Exec 'taskkill /F /IM "main_backend.exe" /T'
+  nsExec::Exec 'taskkill /F /IM "ToolCEO.exe" /T'
 !macroend
 
 !macro customInstall
@@ -41,6 +52,10 @@
 !macro customUnInit
   SetDetailsPrint none
   SetDetailsView hide
+
+  # Stop backend and app before uninstalling so files are cleanly removed
+  nsExec::Exec 'taskkill /F /IM "main_backend.exe" /T'
+  nsExec::Exec 'taskkill /F /IM "ToolCEO.exe" /T'
 !macroend
 
 !macro customUnInstall

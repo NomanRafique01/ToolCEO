@@ -35,6 +35,8 @@ import subprocess
 import tempfile
 from typing import Optional
 
+from platform_tools import get_subprocess_kwargs
+
 _log = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
@@ -205,6 +207,7 @@ def _to_ico_magick(data: bytes, job_id: Optional[str], magick: str) -> bytes:
             ],
             capture_output=True,
             timeout=60,
+            **get_subprocess_kwargs(),
         )
 
         if result.returncode != 0:

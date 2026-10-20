@@ -36,7 +36,7 @@ import zipfile
 from pathlib import Path
 from typing import Optional, Tuple
 
-from platform_tools import find_libreoffice, install_message
+from platform_tools import find_libreoffice, install_message, get_subprocess_kwargs
 
 _log = logging.getLogger(__name__)
 
@@ -117,6 +117,7 @@ def _run_libreoffice(soffice: str, input_path: Path, out_dir: Path, fmt: str) ->
             capture_output=True,
             text=True,
             timeout=_LO_TIMEOUT,
+            **get_subprocess_kwargs(),
         )
     except subprocess.TimeoutExpired as exc:
         raise RuntimeError(

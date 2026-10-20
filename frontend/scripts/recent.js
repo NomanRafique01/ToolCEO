@@ -794,24 +794,52 @@ export async function renderRecent(container, activateNav) {
         }
 
         // 3. If it's an image file, load direct preview
-        if (['.png', '.jpg', '.jpeg', '.webp', '.svg', '.bmp', '.gif'].some(ext => lowerPath.endsWith(ext))) {
+        // Covers all image output formats: standard web + ICO, TIFF, AVIF
+        const IMAGE_EXTS = ['.png', '.jpg', '.jpeg', '.webp', '.svg', '.bmp', '.gif', '.ico', '.tiff', '.tif', '.avif'];
+        if (IMAGE_EXTS.some(ext => lowerPath.endsWith(ext))) {
           try {
             if (window.toolceo && window.toolceo.readLocalFile) {
               const res = await window.toolceo.readLocalFile(filePath);
               if (res && res.ok && res.buffer) {
-                const blob = new Blob([res.buffer]);
+                // Determine correct MIME type for proper blob rendering
+                const MIME_MAP = {
+                  '.png': 'image/png', '.jpg': 'image/jpeg', '.jpeg': 'image/jpeg',
+                  '.webp': 'image/webp', '.svg': 'image/svg+xml', '.bmp': 'image/bmp',
+                  '.gif': 'image/gif', '.ico': 'image/x-icon', '.tiff': 'image/tiff',
+                  '.tif': 'image/tiff', '.avif': 'image/avif',
+                };
+                const ext = '.' + lowerPath.split('.').pop();
+                const mimeType = MIME_MAP[ext] || 'image/png';
+                const blob = new Blob([res.buffer], { type: mimeType });
                 const blobUrl = URL.createObjectURL(blob);
+
+                // For TIFF (not natively rendered by Chromium), try loading
+                // and fall through to the fallback tile if the img fails
                 const imgHtml = `
                   <div class="win-img-preview-sheet">
                     <img src="${blobUrl}" class="win-real-img" alt="Image preview" />
                   </div>
                 `;
+
+                // Verify the image actually loads before committing the thumbnail
+                const testImg = new Image();
+                testImg.src = blobUrl;
+                await new Promise((resolve, reject) => {
+                  testImg.onload = resolve;
+                  testImg.onerror = reject;
+                  // Timeout after 3s to avoid hanging
+                  setTimeout(reject, 3000);
+                });
+
                 THUMB_CACHE.set(filePath, imgHtml);
                 tileContainer.innerHTML = imgHtml;
                 return;
               }
             }
-          } catch (_) {}
+          } catch (_) {
+            // Image load failed (e.g. TIFF not supported by browser),
+            // keep the SVG fallback tile
+          }
         }
 
         // 4. For all other files (and non-rendered PDF/images), drop zone style thumbnails

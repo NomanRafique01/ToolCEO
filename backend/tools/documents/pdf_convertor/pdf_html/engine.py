@@ -68,7 +68,14 @@ from typing import Optional
 
 import fitz  # PyMuPDF
 
-from platform_tools import find_libreoffice, find_tesseract, install_message
+from platform_tools import find_libreoffice, find_tesseract, install_message, get_subprocess_kwargs
+
+try:
+    from bs4 import BeautifulSoup, NavigableString, Tag
+except ImportError:
+    BeautifulSoup = None  # type: ignore[assignment,misc]
+    NavigableString = None  # type: ignore[assignment,misc]
+    Tag = None  # type: ignore[assignment,misc]
 
 _log = logging.getLogger(__name__)
 
@@ -211,6 +218,7 @@ def _run_libreoffice_html(soffice: str, input_path: Path, out_dir: Path) -> None
             capture_output=True,
             text=True,
             timeout=_LO_TIMEOUT,
+            **get_subprocess_kwargs(),
         )
     except subprocess.TimeoutExpired as exc:
         raise RuntimeError(
@@ -322,9 +330,7 @@ def html_postprocess(html: str) -> str:
       3. Short-fragment merge    — inline flow split across short <p> tags → one <p>
       4. Paragraph join          — continuation lines in a paragraph → one <p>
     """
-    try:
-        from bs4 import BeautifulSoup, NavigableString, Tag
-    except ImportError:
+    if BeautifulSoup is None:
         _log.warning("beautifulsoup4 not installed — skipping HTML post-processing")
         return html
 

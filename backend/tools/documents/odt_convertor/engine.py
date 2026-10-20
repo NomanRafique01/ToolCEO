@@ -30,7 +30,7 @@ import tempfile
 from pathlib import Path
 from typing import Optional
 
-from platform_tools import find_libreoffice, find_pandoc, install_message
+from platform_tools import find_libreoffice, find_pandoc, install_message, get_subprocess_kwargs
 
 _log = logging.getLogger(__name__)
 
@@ -120,6 +120,7 @@ def _run_libreoffice(soffice: str, input_path: Path, out_dir: Path, fmt: str) ->
             capture_output=True,
             text=True,
             timeout=_LO_TIMEOUT,
+            **get_subprocess_kwargs(),
         )
     except subprocess.TimeoutExpired as exc:
         raise RuntimeError(
@@ -191,6 +192,7 @@ def _run_pandoc(pandoc: str, input_path: Path, output_path: Path, fmt: str) -> N
             capture_output=True,
             text=True,
             timeout=_PANDOC_TIMEOUT,
+            **get_subprocess_kwargs(),
         )
     except subprocess.TimeoutExpired as exc:
         raise RuntimeError(f"Pandoc timed out after {_PANDOC_TIMEOUT} s.") from exc
