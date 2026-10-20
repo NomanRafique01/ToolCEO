@@ -142,7 +142,7 @@ export async function renderAbout(container) {
             <div class="about-hero-badges">
               <span class="about-badge about-badge--version">
                 ${svgIcon('<circle cx="12" cy="12" r="9"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/>', 11)}
-                v1.0.0
+                v2.0.0
               </span>
               <span class="about-badge about-badge--offline">
                 ${svgIcon('<path d="M10 2L4 5v5c0 4 2.67 7.4 6 8.5 3.33-1.1 6-4.5 6-8.5V5L10 2Z" stroke-width="1.7"/><polyline points="9 12 11 14 16 9"/>', 11)}
