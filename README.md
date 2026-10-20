@@ -74,15 +74,15 @@ Choose the version that fits your needs. Every release runs 100% offline, operat
 
 <p align="center">
   <a href="https://github.com/NomanRafique01/ToolCEO/releases">
-    <img src="https://img.shields.io/badge/All%20Releases%20&%20Changelogs-GitHub-1e293b?style=flat-square&logo=github&logoColor=white" alt="All Releases & Changelogs on GitHub"/>
+    <img src="https://img.shields.io/badge/All%20Releases-GitHub-1e293b?style=flat-square&logo=github&logoColor=white" alt="All Releases on GitHub"/>
   </a>
 </p>
 
-| Version | Release Type | Target OS | Installer Size | Direct Download | Release Notes |
-|:---|:---:|:---:|:---:|:---:|:---|
-| **ToolCEO v2.0.0** | 🟢 **Latest Stable** (Recommended) | Windows 10 / 11 (x64) | ~206 MB | [📥 **ToolCEO.Setup.2.0.0.exe**](https://github.com/NomanRafique01/ToolCEO/releases/download/v_2.0.0/ToolCEO.Setup.2.0.0.exe) | [Changelog & Details](https://github.com/NomanRafique01/ToolCEO/releases/tag/v_2.0.0) |
-| **ToolCEO v1.0.0** | 🔵 **Version 1.0** (Stable) | Windows 10 / 11 (x64) | ~196.5 MB | [📥 **ToolCEO.Setup.1.0.0.exe**](https://github.com/NomanRafique01/ToolCEO/releases/download/v_1.0.0/ToolCEO.Setup.1.0.0.exe) | [Changelog & Details](https://github.com/NomanRafique01/ToolCEO/releases/tag/v_1.0.0) |
-| **ToolCEO Beta** | 🟡 **v1.0.0-beta.1** (Pre-release) | Windows 10 / 11 (x64) | ~196.0 MB | [📥 **ToolCEO.Setup.1.0.0.exe**](https://github.com/NomanRafique01/ToolCEO/releases/download/v1.0.0-beta.1/ToolCEO.Setup.1.0.0.exe) | [Changelog & Details](https://github.com/NomanRafique01/ToolCEO/releases/tag/v1.0.0-beta.1) |
+| Version | Release Type | Target OS | Installer Size | Direct Download |
+|:---|:---:|:---:|:---:|:---:|
+| **ToolCEO v2.0.0** | 🟢 **Latest Stable** (Recommended) | Windows 10 / 11 (x64) | ~206 MB | [**ToolCEO.Setup.2.0.0.exe**](https://github.com/NomanRafique01/ToolCEO/releases/download/v_2.0.0/ToolCEO.Setup.2.0.0.exe) |
+| **ToolCEO v1.0.0** | 🔵 **Version 1.0** (Stable) | Windows 10 / 11 (x64) | ~196.5 MB | [**ToolCEO.Setup.1.0.0.exe**](https://github.com/NomanRafique01/ToolCEO/releases/download/v_1.0.0/ToolCEO.Setup.1.0.0.exe) |
+| **ToolCEO Beta** | 🟡 **v1.0.0-beta.1** (Pre-release) | Windows 10 / 11 (x64) | ~196.0 MB | [**ToolCEO.Setup.1.0.0.exe**](https://github.com/NomanRafique01/ToolCEO/releases/download/v1.0.0-beta.1/ToolCEO.Setup.1.0.0.exe) |
 
 > [!TIP]
 > **Recommended:** ToolCEO **v2.0.0** is the latest, most performant build featuring improved engine management, responsive auto-scaling, and expanded file conversion support. Optional heavy modules (Office, OCR, Calibre eBook, Pandoc) download on demand directly within the app.
