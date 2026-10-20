@@ -754,7 +754,7 @@ function _ensureConnectedBadge(mode = 'connected') {
   const label = badge.querySelector('.dz-phone-live-label');
   if (mode === 'uploading' || mode === 'receiving') {
     badge.classList.add('is-uploading');
-    if (label) label.textContent = 'Sending Files to PC';
+    if (label) label.textContent = 'Receiving Files from Phone';
   } else if (mode === 'waiting') {
     badge.classList.add('is-waiting');
     if (label) label.textContent = 'Waiting for Phone';
