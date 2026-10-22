@@ -45,7 +45,7 @@ _PANDOC_TARGETS = {"txt", "epub", "md"}
 
 # LibreOffice --convert-to format strings
 _LO_FORMAT_MAP = {
-    "pdf":  "pdf",
+    "pdf":  "pdf:writer_pdf_Export",
     "html": "html",
     "odt":  "odt:writer8",
 }
@@ -142,7 +142,8 @@ def _convert_with_libreoffice(data: bytes, fmt: str, job_id: Optional[str]) -> b
 
     with tempfile.TemporaryDirectory() as tmp:
         tmp_path  = Path(tmp)
-        input_doc = tmp_path / "input.docx"
+        ext = ".doc" if data.startswith(b"\xd0\xcf\x11\xe0") else ".docx"
+        input_doc = tmp_path / f"input{ext}"
         input_doc.write_bytes(data)
 
         _report(job_id, 40)
@@ -163,6 +164,91 @@ def _convert_with_libreoffice(data: bytes, fmt: str, job_id: Optional[str]) -> b
 
         _report(job_id, 90)
         return output_file.read_bytes()
+
+
+def _convert_with_word_com(data: bytes, job_id: Optional[str] = None) -> Optional[bytes]:
+    """
+    Convert Word document (.docx or legacy .doc) to PDF using native Microsoft Word
+    via COM automation on Windows.
+
+    This preserves 100% of the document's original font families, weights (regular,
+    bold, italic), kerning, margins, styles, and layouts without any font substitution
+    or italic-to-bold skewing.
+    Returns PDF bytes, or None if Word/COM is unavailable or fails.
+    """
+    import sys
+    if sys.platform != "win32":
+        return None
+
+    try:
+        import pythoncom
+        import win32com.client
+    except ImportError:
+        _log.debug("win32com or pythoncom is not available; skipping Word COM engine.")
+        return None
+
+    _report(job_id, 25)
+
+    pythoncom.CoInitialize()
+    try:
+        ext = ".doc" if data.startswith(b"\xd0\xcf\x11\xe0") else ".docx"
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            in_file = tmp_path / f"input{ext}"
+            out_file = tmp_path / "output.pdf"
+            in_file.write_bytes(data)
+
+            _report(job_id, 45)
+            word = win32com.client.DispatchEx("Word.Application")
+            word.Visible = False
+            word.DisplayAlerts = 0
+            try:
+                doc = word.Documents.Open(
+                    str(in_file.resolve()),
+                    ReadOnly=True,
+                    ConfirmConversions=False,
+                    AddToRecentFiles=False,
+                )
+                try:
+                    _report(job_id, 70)
+                    # 17 = wdExportFormatPDF, 0 = wdExportOptimizeForPrint
+                    doc.ExportAsFixedFormat(
+                        OutputFileName=str(out_file.resolve()),
+                        ExportFormat=17,
+                        OpenAfterExport=False,
+                        OptimizeFor=0,
+                        BitmapMissingFonts=True,
+                    )
+                finally:
+                    doc.Close(False)
+            finally:
+                word.Quit()
+
+            _report(job_id, 90)
+            if out_file.exists():
+                return out_file.read_bytes()
+    except Exception as exc:
+        _log.warning("Native Word COM export failed: %s; falling back to LibreOffice", exc)
+        return None
+    finally:
+        try:
+            pythoncom.CoUninitialize()
+        except Exception:
+            pass
+
+    return None
+
+
+def _convert_to_pdf(data: bytes, job_id: Optional[str] = None) -> bytes:
+    """
+    Convert Word (.docx / .doc) to PDF.
+    First tries native Microsoft Word via COM to maintain complete fidelity of font
+    families, italics, and boldness. Falls back to LibreOffice headless if Word is not installed.
+    """
+    res = _convert_with_word_com(data, job_id)
+    if res is not None:
+        return res
+    return _convert_with_libreoffice(data, "pdf", job_id)
 
 
 # ---------------------------------------------------------------------------
@@ -264,7 +350,9 @@ def convert_docx(
 
     _report(job_id, 10)
 
-    if fmt in _LO_TARGETS:
+    if fmt == "pdf":
+        return _convert_to_pdf(data, job_id)
+    elif fmt in _LO_TARGETS:
         return _convert_with_libreoffice(data, fmt, job_id)
     else:
         return _convert_with_pandoc(data, fmt, job_id)

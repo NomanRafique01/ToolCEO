@@ -1057,26 +1057,30 @@ function _resetZoneContent(zone) {
     '.dz-progress-wrap, .dz-download-wrap, .dz-error-wrap, .dz-pdf-thumb-wrap, ' +
     '.dz-compress-thumb-wrap, .dz-encrypt-thumb-wrap, .dz-merge-thumb-strip, .dz-queue-toolbar, ' +
     '.dz-pdf-word-thumb-wrap, .dz-pdf-excel-thumb-wrap, .dz-pdf-html-thumb-wrap, .dz-pdf-txt-thumb-wrap, ' +
+    '.dz-pdf-ppt-thumb-wrap, .dz-pdf-images-thumb-wrap, ' +
     '.dz-ebook-thumb-wrap, .dz-docx-thumb-wrap, .dz-pptx-thumb-wrap, .dz-xlsx-thumb-wrap, ' +
     '.dz-txt-thumb-wrap, .dz-odt-thumb-wrap, .dz-csv-thumb-wrap, .dz-img-preview-wrap, ' +
     '.dz-jpg-thumb-strip, .dz-png-thumb-strip, .dz-webp-thumb-strip, .dz-svg-thumb-strip, ' +
     '.dz-archive-thumb-strip, .dz-arc-conv-thumb-wrap, ' +
     '.dz-extract-thumb-wrap, .archive-extract-done-wrap, ' +
     '.dz-inspect-thumb-wrap, .dz-split-thumb-wrap, .dz-merge-arc-strip, ' +
-    '.dz-arc-protect-thumb-wrap, .dz-arc-duplicate-thumb-wrap, .dz-imgcmp-thumb-strip'
+    '.dz-arc-protect-thumb-wrap, .dz-arc-duplicate-thumb-wrap, .dz-imgcmp-thumb-strip, ' +
+    '.dz-imgpdf-thumb-strip, .dz-imgpdf-reorder-banner, .dz-jpg-reorder-banner, .dz-png-reorder-banner, .dz-svg-reorder-banner, .dz-webp-reorder-banner'
   ).forEach((el) => el.remove());
   zone.classList.remove(
     'dz-state-processing', 'dz-state-done', 'dz-state-error',
     'dz-state-scanning', 'dz-has-thumb', 'dz-has-compress-thumb',
     'dz-has-encrypt-thumb', 'dz-has-merge-thumbs', 'dz-has-pdf-word-thumb',
     'dz-has-pdf-excel-thumb', 'dz-has-pdf-html-thumb', 'dz-has-pdf-txt-thumb',
+    'dz-has-pdf-ppt-thumb', 'dz-has-pdf-images-thumb',
     'dz-has-ebook-thumb', 'dz-has-docx-thumb', 'dz-has-pptx-thumb', 'dz-has-xlsx-thumb',
     'dz-has-txt-thumb', 'dz-has-odt-thumb', 'dz-has-csv-thumb', 'dz-has-img-preview',
     'dz-has-jpg-thumbs', 'dz-has-png-thumbs', 'dz-has-webp-thumbs', 'dz-has-svg-thumbs',
     'dz-has-archive-thumbs', 'dz-has-arc-conv-thumb',
     'dz-has-extract-thumb', 'dz-has-extract-done',
     'dz-has-inspect-thumb', 'dz-has-split-thumb', 'dz-has-merge-arc-thumbs',
-    'dz-has-arc-protect-thumb', 'dz-has-arc-duplicate-thumb', 'dz-has-imgcmp-thumbs'
+    'dz-has-arc-protect-thumb', 'dz-has-arc-duplicate-thumb', 'dz-has-imgcmp-thumbs',
+    'dz-has-imgpdf-thumbs'
   );
 }
 
@@ -1138,7 +1142,7 @@ function _showProgress(zone, pct, color, label, toolId) {
   captureToolDropZoneSnapshot(toolId || activeTool.id, zone);
   _resetZoneContent(zone);
   zone.querySelectorAll(
-    '.drop-icon, .drop-main-text, .drop-browse, .drop-private, .dz-actions-wrap'
+    '.drop-icon, .drop-main-text, .drop-browse, .drop-private, .dz-actions-wrap, .dz-phone-btn, .dz-paste-btn'
   ).forEach((el) => el.classList.add('dz-processing-hidden'));
   zone.classList.add('dz-state-processing');
   const owner = toolId || activeTool?.id;

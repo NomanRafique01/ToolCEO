@@ -153,21 +153,28 @@ def pdf_to_images(data: bytes, dpi: int = 150) -> bytes:
 # ---------------------------------------------------------------------------
 
 def docx_to_pdf(data: bytes) -> bytes:
-    """Convert DOCX to PDF using LibreOffice headless."""
+    """Convert DOCX / DOC to PDF preserving exact font families, styles, and weights."""
+    try:
+        from tools.documents.docx_convertor.engine import _convert_to_pdf
+        return _convert_to_pdf(data)
+    except Exception:
+        pass
+
     soffice = _soffice()
 
     def _convert(src: Path) -> bytes:
         _run([
             soffice,
             "--headless",
-            "--convert-to", "pdf",
+            "--convert-to", "pdf:writer_pdf_Export",
             "--outdir", str(src.parent),
             str(src),
         ])
         out = src.with_suffix(".pdf")
         return out.read_bytes()
 
-    return _with_tmp(".docx", data, _convert)
+    ext = ".doc" if data.startswith(b"\xd0\xcf\x11\xe0") else ".docx"
+    return _with_tmp(ext, data, _convert)
 
 
 # ---------------------------------------------------------------------------

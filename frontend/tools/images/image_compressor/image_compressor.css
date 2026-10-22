@@ -40,6 +40,8 @@
 .drop-zone.dz-has-imgcmp-thumbs .drop-main-text,
 .drop-zone.dz-has-imgcmp-thumbs .drop-browse,
 .drop-zone.dz-has-imgcmp-thumbs .dz-paste-btn,
+.drop-zone.dz-has-imgcmp-thumbs .dz-phone-btn,
+.drop-zone.dz-has-imgcmp-thumbs .dz-actions-wrap,
 .drop-zone.dz-has-imgcmp-thumbs .drop-private {
   display: none !important;
 }
