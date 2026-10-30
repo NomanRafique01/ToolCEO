@@ -82,21 +82,8 @@
   height: 7px;
   border-radius: 50%;
   flex-shrink: 0;
-  animation: heroDotPulse 1.8s ease-in-out infinite;
-}
-
-@keyframes heroDotPulse {
-
-  0%,
-  100% {
-    opacity: 1;
-    transform: scale(1);
-  }
-
-  50% {
-    opacity: 0.5;
-    transform: scale(0.75);
-  }
+  background: var(--accent);
+  box-shadow: none;
 }
 
 .hero-tool-badge {
@@ -115,27 +102,34 @@
 /* ─── DROP ZONE ──────────────────────────────────────────── */
 
 .drop-zone {
-  --dz-color: #00E5C0;
-  --dz-bg: rgba(0, 229, 192, 0.06);
+  --dz-color: var(--accent);
+  --dz-bg: var(--accent-subtle);
 
   width: 100%;
   height: 200px;
-  border: 1.5px dashed rgba(0, 229, 192, 0.4);
+  border: 1.5px dashed var(--border);
   border-radius: 12px;
-  background: radial-gradient(ellipse at center, rgba(0, 229, 192, 0.04) 0%, transparent 70%);
+  background: var(--bg-surface);
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: border-color 240ms ease, background 240ms ease;
+  transition: border-color var(--duration-fast) var(--ease-out),
+              background-color var(--duration-fast) var(--ease-out);
   position: relative;
+  outline: none;
 }
 
 .drop-zone:hover,
 .drop-zone.drag-active {
-  border-color: rgba(0, 229, 192, 1);
-  background: radial-gradient(ellipse at center, rgba(0, 229, 192, 0.09) 0%, transparent 70%);
+  border-color: var(--border-hover);
+  background: var(--bg-card);
+}
+
+.drop-zone:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 /* ── Tool-active state: border + bg driven by the selected tool's colour ── */
@@ -251,27 +245,39 @@
   padding: 6px 14px;
   font-size: 12px;
   font-weight: 600;
+  font-family: var(--font-sans);
   cursor: pointer;
-  transition: all 180ms ease;
+  transition: transform var(--duration-micro) var(--ease-micro),
+              background-color var(--duration-micro) ease-out,
+              border-color var(--duration-micro) ease-out,
+              color var(--duration-micro) ease-out,
+              box-shadow var(--duration-micro) ease-out;
   margin-top: 6px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   z-index: 2;
+  outline: none;
 }
 
 .dz-paste-btn:hover {
   background: rgba(255, 255, 255, 0.10);
-  border: 1px solid rgba(255, 255, 255, 0.20);
-  color: rgba(255, 255, 255, 0.95);
+  border: 1px solid var(--border-hover);
+  color: var(--text-primary);
   transform: translateY(-1px);
   box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .dz-paste-btn:active {
-  transform: translateY(0);
+  transform: translateY(0) scale(0.98);
+}
+
+.dz-paste-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .dz-paste-kbd {
-  font-family: inherit;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
   font-size: 11px;
   font-weight: 700;
   padding: 1px 6px;
@@ -321,19 +327,24 @@
 }
 
 .dz-progress-cancel:hover {
-  background: color-mix(in srgb, var(--dz-ring-color, #00E5C0) 22%, transparent);
-  border-color: var(--dz-ring-color, #00E5C0);
-  color: var(--dz-ring-color, #00E5C0);
-  transform: scale(1.12);
-  box-shadow: 0 0 10px color-mix(in srgb, var(--dz-ring-color, #00E5C0) 35%, transparent);
+  background: color-mix(in srgb, var(--dz-ring-color, var(--accent)) 22%, transparent);
+  border-color: var(--dz-ring-color, var(--accent));
+  color: var(--dz-ring-color, var(--accent));
+  transform: scale(1.08);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
 }
 
 .dz-progress-cancel:active {
   transform: scale(0.92);
 }
 
+.dz-progress-cancel:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+
 @keyframes dzCancelFadeIn {
-  from { opacity: 0; transform: scale(0.5); }
+  from { opacity: 0; transform: scale(0.92); }
   to   { opacity: 1; transform: scale(1); }
 }
 
@@ -375,25 +386,10 @@
 }
 
 /* Subtle inner pulse glow circle */
+/* Subtle inner pulse glow circle */
 .dz-ring-glow {
-  fill: var(--dz-ring-color, #00E5C0);
+  fill: var(--dz-ring-color, var(--accent));
   opacity: 0.07;
-  transform-origin: 55px 55px;
-  animation: dzGlowPulse 1.6s ease-in-out infinite;
-}
-
-@keyframes dzGlowPulse {
-
-  0%,
-  100% {
-    opacity: 0.07;
-    transform: scale(1);
-  }
-
-  50% {
-    opacity: 0.15;
-    transform: scale(1.12);
-  }
 }
 
 /* Orbiting dot */
@@ -412,6 +408,7 @@
 }
 
 .dz-pct {
+  font-family: var(--font-mono);
   font-size: 28px;
   font-weight: 700;
   color: var(--text-primary);
@@ -1009,7 +1006,8 @@
 }
 
 .dz-queue-add-btn,
-.dz-queue-clear-btn {
+.dz-queue-clear-btn,
+.feature-card {
   display: inline-flex;
   align-items: center;
   gap: 5px;
@@ -1018,9 +1016,19 @@
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 140ms ease;
-  font-family: inherit;
+  transition: background-color var(--duration-micro) var(--ease-micro),
+              border-color var(--duration-micro) var(--ease-micro),
+              color var(--duration-micro) var(--ease-micro);
+  font-family: var(--font-sans);
   white-space: nowrap;
+  outline: none;
+}
+
+.dz-queue-add-btn:focus-visible,
+.dz-queue-clear-btn:focus-visible,
+.feature-card:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .dz-queue-add-btn {
@@ -1601,6 +1609,8 @@
 }
 
 .dl-file-ext {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
   font-size: 11px;
   color: var(--dl-color);
   font-weight: 500;
@@ -1850,7 +1860,7 @@
   padding: 4px;
   scrollbar-width: none;
   touch-action: none;
-  transition: bottom 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.2s ease, opacity 0.2s ease;
+  transition: bottom var(--duration-normal) var(--ease-out), box-shadow var(--duration-fast) ease-out, opacity var(--duration-fast) ease-out;
 }
 
 .bg-job-bar::-webkit-scrollbar {
@@ -1858,16 +1868,16 @@
 }
 
 .bg-job-card {
-  background: var(--bg-card, #0f172a);
-  border: 1px solid color-mix(in srgb, var(--bg-job-color) 35%, var(--border, rgba(255, 255, 255, 0.12)));
+  background: var(--bg-card);
+  border: 1px solid var(--border);
   border-radius: 12px;
   padding: 13px 16px 12px;
   display: flex;
   flex-direction: column;
   gap: 8px;
-  box-shadow: 0 0 20px color-mix(in srgb, var(--bg-job-color) 12%, transparent);
+  box-shadow: var(--specular-top), 0 8px 24px rgba(0, 0, 0, 0.45);
   animation: bgJobCardFadeIn 0.22s cubic-bezier(0.16, 1, 0.3, 1) forwards;
-  transition: border-color 0.2s ease, box-shadow 0.2s ease, transform 0.15s ease;
+  transition: border-color var(--duration-fast) ease-out, box-shadow var(--duration-fast) ease-out, transform var(--duration-micro) ease-out;
   backdrop-filter: blur(12px);
   cursor: grab;
   user-select: none;
@@ -1879,8 +1889,8 @@
 }
 
 .bg-job-card:hover {
-  border-color: color-mix(in srgb, var(--bg-job-color) 60%, var(--border, rgba(255, 255, 255, 0.2)));
-  box-shadow: 0 0 24px color-mix(in srgb, var(--bg-job-color) 20%, transparent);
+  border-color: var(--border-hover);
+  box-shadow: var(--specular-top), 0 10px 28px rgba(0, 0, 0, 0.5);
 }
 
 /* While dragging */
@@ -1893,7 +1903,7 @@
 
 .bg-job-bar.panel-dragging .bg-job-card {
   cursor: grabbing !important;
-  box-shadow: 0 0 28px color-mix(in srgb, var(--bg-job-color) 25%, transparent);
+  box-shadow: var(--specular-top), 0 14px 32px rgba(0, 0, 0, 0.6);
   transform: scale(1.01);
 }
 
@@ -2011,6 +2021,7 @@
 }
 
 .bg-job-pct {
+  font-family: var(--font-mono);
   font-size: 13px;
   font-weight: 700;
   color: var(--bg-job-color);
@@ -2051,7 +2062,7 @@
   background: var(--bg-job-color);
   color: #08110e;
   font-weight: 700;
-  box-shadow: 0 2px 10px color-mix(in srgb, var(--bg-job-color) 40%, transparent);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 
 .bg-job-btn--save:hover {
@@ -2062,6 +2073,11 @@
 .bg-job-btn--dismiss {
   background: rgba(255, 255, 255, 0.08);
   color: #94a3b8;
+}
+
+.bg-job-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 .bg-job-file {
@@ -2085,7 +2101,7 @@
   height: 100%;
   border-radius: 8px;
   transition: width 240ms cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 0 0 8px var(--bg-job-color);
+  box-shadow: none;
 }
 
 /* ✕ Close button */
