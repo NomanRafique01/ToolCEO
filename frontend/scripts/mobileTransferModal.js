@@ -186,7 +186,9 @@ export async function openMobileTransferModal() {
         </div>
       </div>
 
-      <!-- Center: QR Box -->
+      <!-- Main content — two-column layout -->
+      <div class="dz-phone-body">
+      <!-- Left: QR -->
       <div class="dz-phone-qr-box">
         <div class="dz-phone-qr-card">
           <div class="dz-phone-qr-loader" id="dz-phone-qr-loader">
@@ -199,7 +201,7 @@ export async function openMobileTransferModal() {
         </div>
       </div>
 
-      <!-- Details & Status -->
+      <!-- Right: Status + Steps + Actions -->
       <div class="dz-phone-details">
         <div class="dz-phone-status-pill" id="dz-phone-status-pill">
           <span class="dz-phone-status-dot"></span>
@@ -225,9 +227,12 @@ export async function openMobileTransferModal() {
           <button type="button" class="dz-phone-cancel-btn" id="dz-phone-cancel-btn">← Back to Dropzone</button>
           <button type="button" class="dz-phone-copy-btn" id="dz-phone-copy-btn">Copy Link</button>
         </div>
-        <div class="dz-phone-troubleshoot" style="margin-top: 10px; text-align: center;">
-          <button type="button" id="dz-phone-firewall-btn" style="background: none; border: none; font-size: 11px; color: var(--text-muted, #8faaa6); text-decoration: underline; cursor: pointer; padding: 2px 6px;">Can't open page on phone? Allow in Windows Firewall</button>
-        </div>
+      </div>
+      </div>
+
+      <!-- Troubleshoot -->
+      <div class="dz-phone-troubleshoot">
+        <button type="button" id="dz-phone-firewall-btn">Can't open page on phone? Allow in Windows Firewall</button>
       </div>
     </div>
   `;

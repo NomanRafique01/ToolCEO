@@ -17,36 +17,36 @@
   margin-top: 0;
 }
 
-/* ── "From Phone" Button in Drop Zone — Perfectly Matches Paste Button ── */
+/* ── "From Phone" Button — Premium Refinement ── */
 .dz-phone-btn {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
-  color: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border, rgba(45, 85, 78, 0.35));
+  color: var(--text-muted, #7E9E99);
   border-radius: 8px;
-  padding: 6px 14px;
+  padding: 7px 14px;
   font-size: 12px;
-  font-weight: 600;
+  font-weight: 500;
   cursor: pointer;
-  transition: all 180ms ease;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+  transition: color var(--duration-fast, 160ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)),
+              border-color var(--duration-fast, 160ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)),
+              background var(--duration-fast, 160ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)),
+              box-shadow var(--duration-fast, 160ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)),
+              transform var(--duration-micro, 120ms) var(--ease-micro, cubic-bezier(0, 0, 0.2, 1));
   z-index: 2;
 }
 
 .dz-phone-btn:hover {
-  background: rgba(255, 255, 255, 0.10);
-  border: 1px solid rgba(255, 255, 255, 0.20);
-  color: rgba(255, 255, 255, 0.95);
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--border-hover, rgba(0, 196, 167, 0.40));
+  color: var(--text-primary, #EDECE8);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .dz-phone-btn:active {
-  transform: translateY(0);
+  transform: translateY(0) scale(0.98);
 }
 
 /* ── Tool-Active State — buttons follow the selected tool colour ── */
@@ -173,20 +173,18 @@
 .drop-zone.dz-has-phone-transfer {
   height: auto !important;
   min-height: 290px !important;
-  padding: 20px 24px !important;
+  padding: 24px !important;
   display: flex !important;
-  flex-direction: row !important;
-  align-items: center !important;
+  flex-direction: column !important;
+  align-items: stretch !important;
   justify-content: center !important;
   cursor: default !important;
-  background: transparent !important;
-  border: 2px solid rgba(255, 255, 255, 0.14) !important;
-  border: 2px solid color-mix(in srgb, var(--tool-accent, #00E5C0) 50%, #05070D) !important;
-  border-radius: 16px !important;
+  background: var(--bg-surface, #0e2220) !important;
+  border: 1px solid var(--border, rgba(45, 85, 78, 0.35)) !important;
+  border-radius: 14px !important;
   box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.4),
-    0 0 30px var(--tool-accent-glow, rgba(0, 229, 192, 0.12)),
-    inset 0 0 40px var(--tool-accent-soft, rgba(0, 229, 192, 0.03)) !important;
+    var(--specular-top, inset 0 1px 0 rgba(255, 255, 255, 0.05)),
+    0 4px 24px rgba(0, 0, 0, 0.3) !important;
   position: relative !important;
 }
 
@@ -211,26 +209,29 @@
   display: none !important;
 }
 
+/* ═══════════════════════════════════════════════════════════════════════════
+   CONNECTED BADGE (Hero Header)
+   ═══════════════════════════════════════════════════════════════════════════ */
+
 .dz-phone-live-badge {
   position: relative;
   display: inline-flex;
   align-items: center;
-  gap: 10px;
-  width: 260px;
-  min-width: 260px;
-  height: 38px;
-  background: transparent;
-  border: 1px solid color-mix(in srgb, var(--tool-accent, var(--dz-color, #00E5C0)) 36%, transparent);
-  color: var(--tool-accent, var(--dz-color, #00E5C0));
-  padding: 0 12px 0 14px;
-  border-radius: 10px;
-  font-size: 12px;
-  font-weight: 500;
-  letter-spacing: 0.01em;
+  gap: 8px;
+  width: auto;
+  min-width: auto;
+  height: 34px;
+  background: var(--bg-card, #122a27);
+  border: 1px solid var(--border, rgba(45, 85, 78, 0.35));
+  color: var(--text-primary, #EDECE8);
+  padding: 0 12px;
+  border-radius: 8px;
+  font-size: var(--fs-caption, 11px);
+  font-weight: var(--fw-medium, 500);
   z-index: 8;
   pointer-events: auto;
-  box-shadow: none;
-  transition: border-color 0.2s ease, color 0.2s ease, width 0.2s ease;
+  transition: border-color var(--duration-fast, 160ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)),
+              color var(--duration-fast, 160ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
 }
 
 .dz-phone-live-label {
@@ -245,42 +246,43 @@
   margin: 0;
   padding: 0;
   border: none;
-  border-radius: 6px;
+  border-radius: 5px;
   background: transparent;
   color: inherit;
-  opacity: 0.72;
+  opacity: 0.6;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+  transition: background var(--duration-fast, 160ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)),
+              color var(--duration-fast, 160ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)),
+              opacity var(--duration-fast, 160ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
 }
 
 .dz-phone-live-disconnect:hover {
-  background: rgba(239, 68, 68, 0.2);
-  color: #EF4444;
+  background: rgba(239, 68, 68, 0.15);
+  color: var(--status-danger, #EF4444);
   opacity: 1;
 }
 
 .dz-phone-live-badge .dz-phone-status-dot {
-  width: 8px;
-  height: 8px;
-  flex: 0 0 8px;
+  width: 6px;
+  height: 6px;
+  flex: 0 0 6px;
   border-radius: 50%;
-  background: var(--tool-accent, var(--dz-color, #00E5C0));
-  box-shadow: 0 0 8px var(--tool-accent, var(--dz-color, #00E5C0));
-  animation: dzPhonePulse 1.8s infinite;
+  background: var(--status-success, #10B981);
+  box-shadow: 0 0 6px var(--status-success, #10B981);
+  animation: dzPhonePulse 2s infinite;
 }
 
 .dz-phone-live-badge.is-uploading {
-  background: transparent;
-  border-color: color-mix(in srgb, var(--tool-accent, var(--dz-color, #00E5C0)) 50%, transparent);
-  color: var(--tool-accent, var(--dz-color, #00E5C0));
+  border-color: color-mix(in srgb, var(--tool-accent, var(--dz-color, #00C4A7)) 40%, var(--border, rgba(45, 85, 78, 0.35)));
+  color: var(--tool-accent, var(--dz-color, #00C4A7));
 }
 
 .dz-phone-live-badge.is-uploading .dz-phone-status-dot {
-  background: var(--tool-accent, var(--dz-color, #00E5C0));
-  box-shadow: 0 0 8px var(--tool-accent, var(--dz-color, #00E5C0));
+  background: var(--tool-accent, var(--dz-color, #00C4A7));
+  box-shadow: 0 0 6px var(--tool-accent, var(--dz-color, #00C4A7));
 }
 
 /* Receiving progress is informational; the phone controls the transfer. */
@@ -294,14 +296,13 @@
 }
 
 .dz-phone-live-badge.is-waiting {
-  background: transparent;
-  border-color: color-mix(in srgb, var(--tool-accent, var(--dz-color, #00E5C0)) 30%, transparent);
-  color: var(--tool-accent, var(--dz-color, #00E5C0));
+  border-color: color-mix(in srgb, var(--tool-accent, var(--dz-color, #00C4A7)) 25%, var(--border, rgba(45, 85, 78, 0.35)));
+  color: var(--text-muted, #7E9E99);
 }
 
 .dz-phone-live-badge.is-waiting .dz-phone-status-dot {
-  background: var(--tool-accent, var(--dz-color, #00E5C0));
-  box-shadow: 0 0 8px var(--tool-accent, var(--dz-color, #00E5C0));
+  background: var(--tool-accent, var(--dz-color, #00C4A7));
+  box-shadow: 0 0 6px var(--tool-accent, var(--dz-color, #00C4A7));
 }
 
 /* Hide default dropzone contents while phone transfer is active */
@@ -313,74 +314,146 @@
   display: none !important;
 }
 
-/* Main In-Zone Panel Wrapper — vertically centered stack */
+/* ═══════════════════════════════════════════════════════════════════════════
+   PANEL INTERNALS — Premium Pairing Terminal
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Main Panel Wrapper */
 .dz-phone-panel {
   width: 100%;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  align-items: stretch;
   gap: 16px;
-  animation: dzPhoneFadeIn 0.25s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  animation: dzPhoneFadeIn var(--duration-normal, 220ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)) forwards;
   position: relative;
   z-index: 5;
 }
 
+/* Staggered entrance for panel children */
+.dz-phone-panel > * {
+  opacity: 0;
+  animation: dzPhoneChildIn var(--duration-normal, 220ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)) forwards;
+}
+.dz-phone-panel > *:nth-child(1) { animation-delay: 0ms; }
+.dz-phone-panel > *:nth-child(2) { animation-delay: 60ms; }
+.dz-phone-panel > *:nth-child(3) { animation-delay: 120ms; }
+
 @keyframes dzPhoneFadeIn {
-  from {
-    opacity: 0;
-    transform: scale(0.96);
-  }
-  to {
-    opacity: 1;
-    transform: scale(1);
-  }
+  from { opacity: 0; transform: scale(0.97); }
+  to   { opacity: 1; transform: scale(1); }
 }
 
-/* Close button — embedded in the header bar, right side */
+@keyframes dzPhoneChildIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+/* ── Two-Column Body Layout ── */
+.dz-phone-body {
+  display: flex;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 24px;
+  width: 100%;
+}
+
+/* ── Header ── */
+.dz-phone-header {
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 14px;
+  background: var(--bg-card, #122a27);
+  border: 1px solid var(--border, rgba(45, 85, 78, 0.35));
+  border-radius: 10px;
+}
+
+.dz-phone-header-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.dz-phone-header-text h3 {
+  font-size: var(--fs-card-title, 14px);
+  font-weight: var(--fw-semibold, 600);
+  color: var(--text-primary, #EDECE8);
+  letter-spacing: var(--ls-snug, -0.01em);
+  line-height: var(--lh-card-title, 1.3);
+}
+
+.dz-phone-header-text p {
+  font-size: var(--fs-caption, 11px);
+  color: var(--text-muted, #7E9E99);
+  margin-top: 2px;
+  line-height: var(--lh-caption, 1.4);
+}
+
+/* ── Close Button ── */
 .dz-phone-close-btn {
   flex-shrink: 0;
-  width: 24px;
-  height: 24px;
+  width: 26px;
+  height: 26px;
   border-radius: 6px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  color: #94A3B8;
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid var(--border, rgba(45, 85, 78, 0.35));
+  color: var(--text-muted, #7E9E99);
   display: flex;
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.18s ease;
+  transition: background var(--duration-fast, 160ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)),
+              border-color var(--duration-fast, 160ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)),
+              color var(--duration-fast, 160ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
 }
 
 .dz-phone-close-btn:hover {
-  background: rgba(239, 68, 68, 0.15);
-  border-color: rgba(239, 68, 68, 0.35);
-  color: #EF4444;
-  transform: scale(1.08);
+  background: rgba(239, 68, 68, 0.12);
+  border-color: rgba(239, 68, 68, 0.30);
+  color: var(--status-danger, #EF4444);
 }
 
-/* Center: QR Code Box */
+/* ── Tool Context Badge ── */
+.dz-phone-tool-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: color-mix(in srgb, var(--tool-accent, #00C4A7) 12%, transparent);
+  color: var(--tool-accent, #00C4A7);
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: var(--fs-caption, 11px);
+  font-weight: var(--fw-semibold, 600);
+  line-height: var(--lh-caption, 1.4);
+}
+
+/* ── QR Code Area ── */
 .dz-phone-qr-box {
   flex-shrink: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 10px;
+  justify-content: center;
+  background: var(--bg-card, #122a27);
+  border: 1px solid var(--border, rgba(45, 85, 78, 0.35));
+  border-radius: 12px;
+  padding: 20px;
 }
 
 .dz-phone-qr-card {
-  width: 190px;
-  height: 190px;
+  width: 180px;
+  height: 180px;
   background: #FFFFFF;
-  border-radius: 14px;
+  border-radius: 10px;
   padding: 10px;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow:
-    0 10px 25px rgba(0, 0, 0, 0.35),
-    0 0 20px var(--tool-accent-glow, rgba(0, 229, 192, 0.2));
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.2);
   position: relative;
 }
 
@@ -397,12 +470,12 @@
   align-items: center;
   gap: 8px;
   color: #0F172A;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--fs-caption, 11px);
+  font-weight: var(--fw-semibold, 600);
 }
 
 .dz-phone-qr-loader svg {
-  stroke: var(--tool-accent, #00E5C0);
+  stroke: var(--tool-accent, #00C4A7);
   transform-origin: 50% 50%;
   animation: dzPhoneQrSpin 0.9s linear infinite;
 }
@@ -412,183 +485,153 @@
 }
 
 .dz-phone-qr-loader.is-error {
-  color: #EF6B73;
+  color: var(--status-danger, #EF4444);
 }
 
 @keyframes dzPhoneQrSpin {
   to { transform: rotate(360deg); }
 }
 
-/* Status, Steps & Actions — centered under the QR */
+/* ── Details Section (right column) ── */
 .dz-phone-details {
-  width: 100%;
-  max-width: 400px;
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 12px;
-  text-align: center;
+  gap: 14px;
 }
 
-.dz-phone-header {
-  align-self: stretch;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 10px;
-  padding: 9px 12px;
-  background: linear-gradient(90deg, var(--tool-accent-soft, rgba(0, 229, 192, 0.10)), rgba(255, 255, 255, 0.02) 60%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-left: 3px solid var(--tool-accent, #00E5C0);
-  border-radius: 8px;
-}
-
-.dz-phone-header-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex-shrink: 0;
-}
-
-.dz-phone-header-text h3 {
-  font-size: 12.5px;
-  font-weight: 700;
-  color: #FFF;
-  letter-spacing: 0.8px;
-  text-transform: uppercase;
-}
-
-.dz-phone-header-text p {
-  font-size: 11px;
-  color: #94A3B8;
-  margin-top: 2px;
-}
-
-/* Tool Context Badge */
-.dz-phone-tool-badge {
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  background: var(--tool-accent-soft, rgba(0, 229, 192, 0.08));
-  border: 1px solid var(--tool-accent-border, rgba(0, 229, 192, 0.2));
-  color: var(--tool-accent, #00E5C0);
-  padding: 3px 10px;
-  border-radius: 20px;
-  font-size: 11px;
-  font-weight: 600;
-}
-
-/* Status Pill */
+/* ── Status Pill ── */
 .dz-phone-status-pill {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.1);
-  padding: 5px 12px;
-  border-radius: 20px;
-  font-size: 11px;
-  font-weight: 600;
-  color: #E2E8F0;
-  transition: all 0.2s ease;
+  align-self: flex-start;
+  gap: 10px;
+  background: var(--bg-card, #122a27);
+  border: 1px solid var(--border, rgba(45, 85, 78, 0.35));
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: var(--fs-subtitle, 12px);
+  font-weight: var(--fw-medium, 500);
+  color: var(--text-primary, #EDECE8);
+  transition: border-color var(--duration-fast, 160ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
 }
 
 .dz-phone-status-dot {
   width: 7px;
   height: 7px;
+  flex: 0 0 7px;
   border-radius: 50%;
-  background: var(--tool-accent, #00E5C0);
-  box-shadow: 0 0 7px var(--tool-accent, #00E5C0);
-  animation: dzPhonePulse 1.8s infinite;
+  background: var(--tool-accent, #00C4A7);
+  box-shadow: 0 0 6px var(--tool-accent, #00C4A7);
+  animation: dzPhonePulse 2s infinite;
 }
 
 .dz-phone-status-pill.is-connected .dz-phone-status-dot {
-  background: #10B981;
-  box-shadow: 0 0 7px #10B981;
+  background: var(--status-success, #10B981);
+  box-shadow: 0 0 6px var(--status-success, #10B981);
 }
 
 .dz-phone-status-pill.is-uploading .dz-phone-status-dot {
-  background: var(--tool-accent, #00E5C0);
-  box-shadow: 0 0 7px var(--tool-accent, #00E5C0);
+  background: var(--tool-accent, #00C4A7);
+  box-shadow: 0 0 6px var(--tool-accent, #00C4A7);
 }
 
 @keyframes dzPhonePulse {
-  0% { transform: scale(0.9); opacity: 0.7; }
-  50% { transform: scale(1.3); opacity: 1; }
-  100% { transform: scale(0.9); opacity: 0.7; }
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.15); opacity: 1; }
 }
 
-/* Steps */
+/* ── Steps ── */
 .dz-phone-steps {
   display: flex;
   flex-direction: column;
-  gap: 5px;
-  width: 190px;
+  gap: 8px;
 }
 
 .dz-phone-step {
   display: flex;
   align-items: flex-start;
-  justify-content: flex-start;
-  gap: 8px;
-  font-size: 11px;
-  color: #94A3B8;
+  gap: 10px;
+  font-size: var(--fs-subtitle, 12px);
+  color: var(--text-muted, #7E9E99);
   text-align: left;
   line-height: 1.5;
 }
 
 .dz-phone-step-num {
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  background: var(--tool-accent-soft, rgba(0, 229, 192, 0.12));
-  color: var(--tool-accent, #00E5C0);
-  font-size: 10px;
-  font-weight: 700;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: var(--bg-card, #122a27);
+  border: 1px solid var(--border, rgba(45, 85, 78, 0.35));
+  color: var(--text-muted, #7E9E99);
+  font-size: var(--fs-caption, 11px);
+  font-weight: var(--fw-semibold, 600);
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  margin-top: 1px;
 }
 
-/* Actions Row (Cancel + Copy Link) */
+/* ── Footer Actions ── */
 .dz-phone-footer {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-top: 2px;
+  margin-top: 4px;
 }
 
 .dz-phone-cancel-btn {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  color: #CBD5E1;
-  border-radius: 6px;
-  padding: 5px 12px;
-  font-size: 11px;
-  font-weight: 600;
+  background: var(--bg-card, #122a27);
+  border: 1px solid var(--border, rgba(45, 85, 78, 0.35));
+  color: var(--text-primary, #EDECE8);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: var(--fs-subtitle, 12px);
+  font-weight: var(--fw-medium, 500);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background var(--duration-fast, 160ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)),
+              border-color var(--duration-fast, 160ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
 }
 
 .dz-phone-cancel-btn:hover {
-  background: rgba(255, 255, 255, 0.12);
-  color: #FFF;
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.18);
 }
 
 .dz-phone-copy-btn {
-  background: var(--tool-accent-soft, rgba(0, 229, 192, 0.08));
-  border: 1px solid var(--tool-accent-border, rgba(0, 229, 192, 0.22));
-  color: var(--tool-accent, #00E5C0);
-  border-radius: 6px;
-  padding: 5px 12px;
-  font-size: 11px;
-  font-weight: 600;
+  background: color-mix(in srgb, var(--tool-accent, #00C4A7) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--tool-accent, #00C4A7) 25%, transparent);
+  color: var(--tool-accent, #00C4A7);
+  border-radius: 8px;
+  padding: 8px 14px;
+  font-size: var(--fs-subtitle, 12px);
+  font-weight: var(--fw-semibold, 600);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background var(--duration-fast, 160ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
 }
 
 .dz-phone-copy-btn:hover {
-  background: var(--tool-accent-mid, rgba(0, 229, 192, 0.18));
+  background: color-mix(in srgb, var(--tool-accent, #00C4A7) 20%, transparent);
+}
+
+/* ── Troubleshoot Section ── */
+.dz-phone-troubleshoot {
+  text-align: center;
+  padding-top: 2px;
+}
+
+.dz-phone-troubleshoot #dz-phone-firewall-btn {
+  background: none;
+  border: none;
+  font-size: var(--fs-caption, 11px);
+  color: var(--text-subtle, #4D6E69);
+  cursor: pointer;
+  padding: 2px 6px;
+  transition: color var(--duration-micro, 120ms) var(--ease-micro, cubic-bezier(0, 0, 0.2, 1));
+}
+
+.dz-phone-troubleshoot #dz-phone-firewall-btn:hover {
+  color: var(--text-muted, #7E9E99);
 }
