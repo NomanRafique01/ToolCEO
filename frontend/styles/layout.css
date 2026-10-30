@@ -20,8 +20,8 @@
   right: 0;
   height: var(--header-height);
   background: var(--bg-sidebar);
-  border-bottom: 1px solid rgba(0, 245, 212, 0.45);
-  box-shadow: 0 1px 12px rgba(0, 0, 0, 0.3), 0 2px 8px rgba(0, 245, 212, 0.55);
+  border-bottom: 1px solid var(--border);
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -51,8 +51,8 @@
   background: var(--bg-sidebar);
   display: flex;
   flex-direction: column;
-  border-right: 1px solid rgba(0, 229, 192, 0.12);
-  box-shadow: 2px 0 16px rgba(0, 229, 192, 0.04);
+  border-right: 1px solid var(--border);
+  box-shadow: 1px 0 4px rgba(0, 0, 0, 0.2);
   overflow: hidden;
 }
 
@@ -60,21 +60,28 @@
   height: 36px;
   padding: 0 16px;
   background: var(--accent);
-  color: var(--text-primary);
+  color: var(--bg-primary);
   border: none;
   border-radius: 12px;
   font-size: 13px;
-  font-weight: 500;
-  font-family: inherit;
+  font-weight: 600;
+  font-family: var(--font-sans);
   cursor: pointer;
   white-space: nowrap;
-  box-shadow: 0 4px 14px rgba(0, 229, 192, 0.22);
-  transition: background 120ms ease, box-shadow 120ms ease;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.25);
+  transition: background-color var(--duration-micro) var(--ease-micro),
+              box-shadow var(--duration-micro) var(--ease-micro);
+  outline: none;
 }
 
 .btn-add-files:hover {
   background: var(--accent-hover);
-  box-shadow: 0 4px 18px rgba(0, 229, 192, 0.32);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.35);
+}
+
+.btn-add-files:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 /* ─── MAIN SCROLL AREA ───────────────────────────────────── */
