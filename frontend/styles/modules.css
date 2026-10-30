@@ -53,8 +53,8 @@
 }
 
 .mod-card:hover {
-  border-color: var(--mod-color, #00E5C0);
-  background: var(--mod-bg, rgba(0,229,192,0.08));
+  border-color: var(--mod-color, var(--accent));
+  background: var(--mod-bg, var(--accent-subtle));
   transform: translateY(-1px);
 }
 
@@ -71,8 +71,8 @@
   width: 40px;
   height: 40px;
   border-radius: 10px;
-  background: var(--mod-bg, rgba(0,229,192,0.12));
-  color: var(--mod-color, #00E5C0);
+  background: var(--mod-bg, var(--accent-subtle));
+  color: var(--mod-color, var(--accent));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -96,8 +96,10 @@
 
 .mod-card-size {
   font-size: 12px;
-  color: var(--mod-color, #00E5C0);
+  color: var(--mod-color, var(--accent));
   font-weight: 600;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 
 /* ─── UNLOCKS LIST ────────────────────────────────────────── */
@@ -126,13 +128,13 @@
   content: '·';
   position: absolute;
   left: 2px;
-  color: var(--mod-color, #00E5C0);
+  color: var(--mod-color, var(--accent));
   font-weight: 700;
 }
 
 .mod-card-unlocks-more {
   font-size: 11px;
-  color: var(--mod-color, #00E5C0) !important;
+  color: var(--mod-color, var(--accent)) !important;
   font-style: italic;
 }
 
@@ -161,7 +163,7 @@
   font-weight: 600;
   cursor: pointer;
   border: 1.5px solid transparent;
-  transition: all 120ms ease;
+  transition: background-color var(--duration-micro) ease-out, border-color var(--duration-micro) ease-out, color var(--duration-micro) ease-out, opacity var(--duration-micro) ease-out;
   line-height: 1;
   box-sizing: border-box;
 }
@@ -169,42 +171,38 @@
 /* Download Module button */
 .mod-card-btn--download,
 .mod-card-btn--install {
-  background: color-mix(in srgb, var(--mod-color, #00E5C0) 15%, transparent);
-  color: var(--mod-color, #00E5C0);
-  border-color: color-mix(in srgb, var(--mod-color, #00E5C0) 35%, transparent);
+  background: color-mix(in srgb, var(--mod-color, var(--accent)) 15%, transparent);
+  color: var(--mod-color, var(--accent));
+  border-color: color-mix(in srgb, var(--mod-color, var(--accent)) 35%, transparent);
 }
 
 .mod-card-btn--download:hover,
 .mod-card-btn--install:hover {
-  background: color-mix(in srgb, var(--mod-color, #00E5C0) 25%, transparent);
-  border-color: var(--mod-color, #00E5C0);
+  background: color-mix(in srgb, var(--mod-color, var(--accent)) 25%, transparent);
+  border-color: var(--mod-color, var(--accent));
 }
 
 /* Install Now button — themed to module */
 .mod-card-btn--install-now {
-  background: color-mix(in srgb, var(--mod-color, #00E5C0) 15%, transparent);
-  color: var(--mod-color, #00E5C0);
-  border-color: color-mix(in srgb, var(--mod-color, #00E5C0) 35%, transparent);
+  background: color-mix(in srgb, var(--mod-color, var(--accent)) 15%, transparent);
+  color: var(--mod-color, var(--accent));
+  border-color: color-mix(in srgb, var(--mod-color, var(--accent)) 35%, transparent);
 }
 
 .mod-card-btn--install-now:hover {
-  background: color-mix(in srgb, var(--mod-color, #00E5C0) 25%, transparent);
-  border-color: var(--mod-color, #00E5C0);
+  background: color-mix(in srgb, var(--mod-color, var(--accent)) 25%, transparent);
+  border-color: var(--mod-color, var(--accent));
 }
 
 /* Downloading and Installing labels on card — themed to module */
 .mod-card-btn--downloading,
 .mod-card-btn--installing {
-  background: linear-gradient(110deg,
-    color-mix(in srgb, var(--mod-color, #00E5C0) 12%, transparent) 25%,
-    color-mix(in srgb, var(--mod-color, #00E5C0) 28%, transparent) 50%,
-    color-mix(in srgb, var(--mod-color, #00E5C0) 12%, transparent) 75%);
-  background-size: 220% 100%;
-  color: var(--mod-color, #00E5C0);
-  border-color: color-mix(in srgb, var(--mod-color, #00E5C0) 35%, transparent);
+  background: color-mix(in srgb, var(--mod-color, var(--accent)) 15%, transparent);
+  color: var(--mod-color, var(--accent));
+  border-color: color-mix(in srgb, var(--mod-color, var(--accent)) 35%, transparent);
   cursor: default;
   opacity: 0.95;
-  animation: mod-button-shimmer 1.8s ease-in-out infinite;
+  animation: mod-active-pulse 1.8s var(--ease-out) infinite;
 }
 
 /* Cancel button — styled dark secondary button */
@@ -221,9 +219,9 @@
 
 /* Installed button — themed to respective module */
 .mod-card-btn--installed {
-  background: color-mix(in srgb, var(--mod-color, #00E5C0) 12%, transparent);
-  color: var(--mod-color, #00E5C0);
-  border-color: color-mix(in srgb, var(--mod-color, #00E5C0) 30%, transparent);
+  background: color-mix(in srgb, var(--mod-color, var(--accent)) 12%, transparent);
+  color: var(--mod-color, var(--accent));
+  border-color: color-mix(in srgb, var(--mod-color, var(--accent)) 30%, transparent);
   cursor: default;
   opacity: 0.95;
 }
@@ -240,9 +238,9 @@
   flex-shrink: 0;
 }
 
-@keyframes mod-button-shimmer {
-  0%, 100% { background-position: 100% 0; }
-  50% { background-position: 0 0; }
+@keyframes mod-active-pulse {
+  0%, 100% { opacity: 0.95; }
+  50% { opacity: 0.65; }
 }
 
 @keyframes mod-spin {
@@ -266,8 +264,8 @@
 /* ─── MODAL CARD ──────────────────────────────────────────── */
 
 .mod-modal {
-  background: var(--bg-card);
-  border: 1.5px solid var(--border);
+  background: var(--bg-surface-pop);
+  border: 1px solid var(--border);
   border-radius: 16px;
   width: 100%;
   max-width: 500px;
@@ -400,26 +398,26 @@
 
 .mod-modal-btn--download,
 .mod-modal-btn--install {
-  background: color-mix(in srgb, var(--mod-color, #00E5C0) 18%, transparent);
-  color: var(--mod-color, #00E5C0);
-  border-color: color-mix(in srgb, var(--mod-color, #00E5C0) 40%, transparent);
+  background: color-mix(in srgb, var(--mod-color, var(--accent)) 18%, transparent);
+  color: var(--mod-color, var(--accent));
+  border-color: color-mix(in srgb, var(--mod-color, var(--accent)) 40%, transparent);
 }
 
 .mod-modal-btn--download:hover:not(:disabled),
 .mod-modal-btn--install:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--mod-color, #00E5C0) 28%, transparent);
-  border-color: var(--mod-color, #00E5C0);
+  background: color-mix(in srgb, var(--mod-color, var(--accent)) 28%, transparent);
+  border-color: var(--mod-color, var(--accent));
 }
 
 .mod-modal-btn--install-now {
-  background: color-mix(in srgb, var(--mod-color, #00E5C0) 18%, transparent);
-  color: var(--mod-color, #00E5C0);
-  border-color: color-mix(in srgb, var(--mod-color, #00E5C0) 40%, transparent);
+  background: color-mix(in srgb, var(--mod-color, var(--accent)) 18%, transparent);
+  color: var(--mod-color, var(--accent));
+  border-color: color-mix(in srgb, var(--mod-color, var(--accent)) 40%, transparent);
 }
 
 .mod-modal-btn--install-now:hover:not(:disabled) {
-  background: color-mix(in srgb, var(--mod-color, #00E5C0) 28%, transparent);
-  border-color: var(--mod-color, #00E5C0);
+  background: color-mix(in srgb, var(--mod-color, var(--accent)) 28%, transparent);
+  border-color: var(--mod-color, var(--accent));
 }
 
 .mod-modal-btn--cancel {
@@ -434,16 +432,16 @@
 }
 
 .mod-modal-btn--installed {
-  background: color-mix(in srgb, var(--mod-color, #00E5C0) 14%, transparent);
-  color: var(--mod-color, #00E5C0);
-  border-color: color-mix(in srgb, var(--mod-color, #00E5C0) 35%, transparent);
+  background: color-mix(in srgb, var(--mod-color, var(--accent)) 14%, transparent);
+  color: var(--mod-color, var(--accent));
+  border-color: color-mix(in srgb, var(--mod-color, var(--accent)) 35%, transparent);
   cursor: default;
 }
 
 .mod-modal-btn--busy {
-  background: color-mix(in srgb, var(--mod-color, #00E5C0) 20%, transparent);
-  color: var(--mod-color, #00E5C0);
-  border-color: color-mix(in srgb, var(--mod-color, #00E5C0) 45%, transparent);
+  background: color-mix(in srgb, var(--mod-color, var(--accent)) 20%, transparent);
+  color: var(--mod-color, var(--accent));
+  border-color: color-mix(in srgb, var(--mod-color, var(--accent)) 45%, transparent);
   cursor: wait;
 }
 
@@ -493,7 +491,7 @@
   width: 14px;
   height: 14px;
   opacity: 1;
-  background-color: var(--fmt-color, #00E5C0);
+  background-color: var(--fmt-color, var(--accent));
   /* Download arrow SVG as a mask */
   -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M12 3v13M7 11l5 5 5-5' stroke='%23000' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M5 20h14' stroke='%23000' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E");
           mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none'%3E%3Cpath d='M12 3v13M7 11l5 5 5-5' stroke='%23000' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M5 20h14' stroke='%23000' stroke-width='2.2' stroke-linecap='round'/%3E%3C/svg%3E");
@@ -515,15 +513,15 @@
  * target module card is highlighted with a pulsing outline.
  */
 .mod-card--highlighted {
-  border-color: var(--mod-color, #00E5C0) !important;
-  background: var(--mod-bg, rgba(0,229,192,0.08)) !important;
+  border-color: var(--mod-color, var(--accent)) !important;
+  background: var(--mod-bg, var(--accent-subtle)) !important;
   animation: mod-highlight-pulse 1.8s ease-in-out 2;
 }
 
 @keyframes mod-highlight-pulse {
-  0%   { box-shadow: 0 0 0 0   color-mix(in srgb, var(--mod-color, #00E5C0) 40%, transparent); }
-  50%  { box-shadow: 0 0 0 6px color-mix(in srgb, var(--mod-color, #00E5C0) 0%,  transparent); }
-  100% { box-shadow: 0 0 0 0   color-mix(in srgb, var(--mod-color, #00E5C0) 0%,  transparent); }
+  0%   { box-shadow: 0 0 0 0   color-mix(in srgb, var(--mod-color, var(--accent)) 40%, transparent); }
+  50%  { box-shadow: 0 0 0 6px color-mix(in srgb, var(--mod-color, var(--accent)) 0%,  transparent); }
+  100% { box-shadow: 0 0 0 0   color-mix(in srgb, var(--mod-color, var(--accent)) 0%,  transparent); }
 }
 
 /* Dynamic description label shown below a highlighted module card */
@@ -538,4 +536,14 @@
   color: var(--text-muted);
   line-height: 1.6;
   font-style: italic;
+}
+
+/* ─── ACCESSIBILITY / FOCUS VISIBLE ───────────────────────── */
+
+.mod-card:focus-visible,
+.mod-card-btn:focus-visible,
+.mod-modal-close:focus-visible,
+.mod-modal-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }

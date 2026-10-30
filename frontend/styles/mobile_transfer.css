@@ -32,7 +32,7 @@
   font-size: 12px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 180ms ease;
+  transition: background-color var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out), transform var(--duration-micro) var(--ease-micro), box-shadow var(--duration-fast) var(--ease-out);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   z-index: 2;
 }
@@ -52,19 +52,19 @@
 /* ── Tool-Active State — buttons follow the selected tool colour ── */
 .drop-zone--tool-active .dz-paste-btn,
 .drop-zone--tool-active .dz-phone-btn {
-  background: color-mix(in srgb, var(--dz-color, #00E5C0) 12%, transparent);
-  border: 1px solid color-mix(in srgb, var(--dz-color, #00E5C0) 34%, transparent);
-  color: var(--dz-color, #00E5C0);
-  box-shadow: 0 2px 10px color-mix(in srgb, var(--dz-color, #00E5C0) 14%, transparent);
+  background: color-mix(in srgb, var(--dz-color, var(--accent)) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--dz-color, var(--accent)) 34%, transparent);
+  color: var(--dz-color, var(--accent));
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
 }
 
 .drop-zone--tool-active .dz-paste-btn:hover,
 .drop-zone--tool-active .dz-phone-btn:hover {
-  background: color-mix(in srgb, var(--dz-color, #00E5C0) 20%, transparent);
-  border-color: color-mix(in srgb, var(--dz-color, #00E5C0) 52%, transparent);
-  color: var(--dz-color, #00E5C0);
+  background: color-mix(in srgb, var(--dz-color, var(--accent)) 20%, transparent);
+  border-color: color-mix(in srgb, var(--dz-color, var(--accent)) 52%, transparent);
+  color: var(--dz-color, var(--accent));
   transform: translateY(-1px);
-  box-shadow: 0 4px 14px color-mix(in srgb, var(--dz-color, #00E5C0) 22%, transparent);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 /* Hide action buttons when files or processing are active */
@@ -127,14 +127,10 @@
   align-items: center !important;
   justify-content: center !important;
   cursor: default !important;
-  background: transparent !important;
-  border: 2px solid rgba(255, 255, 255, 0.14) !important;
-  border: 2px solid color-mix(in srgb, var(--tool-accent, #00E5C0) 50%, #05070D) !important;
+  background: var(--bg-surface-pop) !important;
+  border: 1px solid var(--border) !important;
   border-radius: 16px !important;
-  box-shadow:
-    0 0 0 1px rgba(0, 0, 0, 0.4),
-    0 0 30px var(--tool-accent-glow, rgba(0, 229, 192, 0.12)),
-    inset 0 0 40px var(--tool-accent-soft, rgba(0, 229, 192, 0.03)) !important;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.4) !important;
   position: relative !important;
 }
 
@@ -168,8 +164,8 @@
   min-width: 260px;
   height: 38px;
   background: transparent;
-  border: 1px solid color-mix(in srgb, var(--tool-accent, var(--dz-color, #00E5C0)) 36%, transparent);
-  color: var(--tool-accent, var(--dz-color, #00E5C0));
+  border: 1px solid color-mix(in srgb, var(--tool-accent, var(--dz-color, var(--accent))) 36%, transparent);
+  color: var(--tool-accent, var(--dz-color, var(--accent)));
   padding: 0 12px 0 14px;
   border-radius: 10px;
   font-size: 12px;
@@ -201,7 +197,7 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: background 0.15s ease, color 0.15s ease, opacity 0.15s ease;
+  transition: background-color 0.15s ease, color 0.15s ease, opacity 0.15s ease;
 }
 
 .dz-phone-live-disconnect:hover {
@@ -215,20 +211,20 @@
   height: 8px;
   flex: 0 0 8px;
   border-radius: 50%;
-  background: var(--tool-accent, var(--dz-color, #00E5C0));
-  box-shadow: 0 0 8px var(--tool-accent, var(--dz-color, #00E5C0));
+  background: var(--tool-accent, var(--dz-color, var(--accent)));
+  box-shadow: none;
   animation: dzPhonePulse 1.8s infinite;
 }
 
 .dz-phone-live-badge.is-uploading {
   background: transparent;
-  border-color: color-mix(in srgb, var(--tool-accent, var(--dz-color, #00E5C0)) 50%, transparent);
-  color: var(--tool-accent, var(--dz-color, #00E5C0));
+  border-color: color-mix(in srgb, var(--tool-accent, var(--dz-color, var(--accent))) 50%, transparent);
+  color: var(--tool-accent, var(--dz-color, var(--accent)));
 }
 
 .dz-phone-live-badge.is-uploading .dz-phone-status-dot {
-  background: var(--tool-accent, var(--dz-color, #00E5C0));
-  box-shadow: 0 0 8px var(--tool-accent, var(--dz-color, #00E5C0));
+  background: var(--tool-accent, var(--dz-color, var(--accent)));
+  box-shadow: none;
 }
 
 /* Receiving progress is informational; the phone controls the transfer. */
@@ -243,13 +239,13 @@
 
 .dz-phone-live-badge.is-waiting {
   background: transparent;
-  border-color: color-mix(in srgb, var(--tool-accent, var(--dz-color, #00E5C0)) 30%, transparent);
-  color: var(--tool-accent, var(--dz-color, #00E5C0));
+  border-color: color-mix(in srgb, var(--tool-accent, var(--dz-color, var(--accent))) 30%, transparent);
+  color: var(--tool-accent, var(--dz-color, var(--accent)));
 }
 
 .dz-phone-live-badge.is-waiting .dz-phone-status-dot {
-  background: var(--tool-accent, var(--dz-color, #00E5C0));
-  box-shadow: 0 0 8px var(--tool-accent, var(--dz-color, #00E5C0));
+  background: var(--tool-accent, var(--dz-color, var(--accent)));
+  box-shadow: none;
 }
 
 /* Hide default dropzone contents while phone transfer is active */
@@ -298,7 +294,7 @@
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  transition: all 0.18s ease;
+  transition: background-color var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out), transform var(--duration-micro) var(--ease-micro);
 }
 
 .dz-phone-close-btn:hover {
@@ -326,9 +322,8 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow:
-    0 10px 25px rgba(0, 0, 0, 0.35),
-    0 0 20px var(--tool-accent-glow, rgba(0, 229, 192, 0.2));
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.25);
+  border: 1px solid rgba(0, 0, 0, 0.08);
   position: relative;
 }
 
@@ -350,7 +345,7 @@
 }
 
 .dz-phone-qr-loader svg {
-  stroke: var(--tool-accent, #00E5C0);
+  stroke: var(--tool-accent, var(--accent));
   transform-origin: 50% 50%;
   animation: dzPhoneQrSpin 0.9s linear infinite;
 }
@@ -385,9 +380,9 @@
   justify-content: space-between;
   gap: 10px;
   padding: 9px 12px;
-  background: linear-gradient(90deg, var(--tool-accent-soft, rgba(0, 229, 192, 0.10)), rgba(255, 255, 255, 0.02) 60%);
-  border: 1px solid rgba(255, 255, 255, 0.08);
-  border-left: 3px solid var(--tool-accent, #00E5C0);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--tool-accent, var(--accent));
   border-radius: 8px;
 }
 
@@ -417,9 +412,9 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: var(--tool-accent-soft, rgba(0, 229, 192, 0.08));
-  border: 1px solid var(--tool-accent-border, rgba(0, 229, 192, 0.2));
-  color: var(--tool-accent, #00E5C0);
+  background: var(--accent-subtle);
+  border: 1px solid var(--border);
+  color: var(--tool-accent, var(--accent));
   padding: 3px 10px;
   border-radius: 20px;
   font-size: 11px;
@@ -438,26 +433,26 @@
   font-size: 11px;
   font-weight: 600;
   color: #E2E8F0;
-  transition: all 0.2s ease;
+  transition: background-color var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out);
 }
 
 .dz-phone-status-dot {
   width: 7px;
   height: 7px;
   border-radius: 50%;
-  background: var(--tool-accent, #00E5C0);
-  box-shadow: 0 0 7px var(--tool-accent, #00E5C0);
+  background: var(--tool-accent, var(--accent));
+  box-shadow: none;
   animation: dzPhonePulse 1.8s infinite;
 }
 
 .dz-phone-status-pill.is-connected .dz-phone-status-dot {
   background: #10B981;
-  box-shadow: 0 0 7px #10B981;
+  box-shadow: none;
 }
 
 .dz-phone-status-pill.is-uploading .dz-phone-status-dot {
-  background: var(--tool-accent, #00E5C0);
-  box-shadow: 0 0 7px var(--tool-accent, #00E5C0);
+  background: var(--tool-accent, var(--accent));
+  box-shadow: none;
 }
 
 @keyframes dzPhonePulse {
@@ -489,8 +484,8 @@
   width: 16px;
   height: 16px;
   border-radius: 50%;
-  background: var(--tool-accent-soft, rgba(0, 229, 192, 0.12));
-  color: var(--tool-accent, #00E5C0);
+  background: var(--accent-subtle);
+  color: var(--tool-accent, var(--accent));
   font-size: 10px;
   font-weight: 700;
   display: flex;
@@ -498,6 +493,8 @@
   justify-content: center;
   flex-shrink: 0;
   margin-top: 1px;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
 }
 
 /* Actions Row (Cancel + Copy Link) */
@@ -509,34 +506,48 @@
 }
 
 .dz-phone-cancel-btn {
-  background: rgba(255, 255, 255, 0.06);
-  border: 1px solid rgba(255, 255, 255, 0.12);
+  background: var(--bg-surface);
+  border: 1px solid var(--border);
   color: #CBD5E1;
   border-radius: 6px;
   padding: 5px 12px;
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out);
 }
 
 .dz-phone-cancel-btn:hover {
-  background: rgba(255, 255, 255, 0.12);
+  background: var(--bg-surface-pop);
+  border-color: var(--border-hover);
   color: #FFF;
 }
 
 .dz-phone-copy-btn {
-  background: var(--tool-accent-soft, rgba(0, 229, 192, 0.08));
-  border: 1px solid var(--tool-accent-border, rgba(0, 229, 192, 0.22));
-  color: var(--tool-accent, #00E5C0);
+  background: var(--accent-subtle);
+  border: 1px solid var(--border);
+  color: var(--tool-accent, var(--accent));
   border-radius: 6px;
   padding: 5px 12px;
   font-size: 11px;
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: background-color var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out);
 }
 
 .dz-phone-copy-btn:hover {
-  background: var(--tool-accent-mid, rgba(0, 229, 192, 0.18));
+  background: color-mix(in srgb, var(--tool-accent, var(--accent)) 20%, transparent);
+  border-color: var(--tool-accent, var(--accent));
+}
+
+/* ─── ACCESSIBILITY / FOCUS VISIBLE ───────────────────────── */
+
+.dz-phone-btn:focus-visible,
+.dz-phone-close-btn:focus-visible,
+.dz-phone-cancel-btn:focus-visible,
+.dz-phone-copy-btn:focus-visible,
+.dz-phone-live-disconnect:focus-visible,
+#dz-phone-firewall-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
