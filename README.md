@@ -66,7 +66,7 @@ Web converters force you to upload private documents to someone else's server, q
 ## Download
 
 <p align="center">
-  <a href="https://github.com/NomanRafique01/ToolCEO/releases/latest/download/ToolCEO.Setup.1.0.0.exe">
+  <a href="https://github.com/NomanRafique01/ToolCEO/releases/latest/download/ToolCEO.Setup.2.0.0.exe">
     <img src="https://img.shields.io/badge/Download-Windows%20x64%20Installer-00f5d4?style=for-the-badge&logo=windows&logoColor=white&labelColor=1a1a24" alt="Download Windows installer"/>
   </a>
   <a href="https://github.com/NomanRafique01/ToolCEO/releases/latest">
@@ -105,7 +105,7 @@ Pre-built packages are available for 64-bit Windows.
 
 | Package | Description | Download |
 |---|---|---|
-| **Installer** (`.exe`) | Setup wizard with Start Menu entry, desktop shortcut, and uninstaller | [Download](https://github.com/NomanRafique01/ToolCEO/releases/latest/download/ToolCEO.Setup.1.0.0.exe) |
+| **Installer** (`.exe`) | Setup wizard with Start Menu entry, desktop shortcut, and uninstaller | [Download](https://github.com/NomanRafique01/ToolCEO/releases/latest/download/ToolCEO.Setup.2.0.0.exe) |
 
 ### System Requirements
 

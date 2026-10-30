@@ -1,4 +1,4 @@
-/* ─────────────────────────────────────────────────────────────
+﻿/* ─────────────────────────────────────────────────────────────
    tools/documents/pdf_convertor/images_pdf/images_pdf.css
    Styles for the Images → PDF Converter tool.
    Fully redesigned to mirror the PNG / JPG convertor UI.
@@ -52,7 +52,7 @@
   display: inline-flex;
   align-items: center;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   padding: 3px 9px;
   border-radius: 20px;
   white-space: nowrap;
@@ -184,7 +184,7 @@
   background: var(--imgpdf-color, #F472B6);
   color: #fff;
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1;
   padding: 2px 7px;
   border-radius: 20px;

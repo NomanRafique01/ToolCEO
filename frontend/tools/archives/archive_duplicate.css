@@ -1,4 +1,4 @@
-/**
+﻿/**
  * frontend/tools/archives/archive_duplicate.css
  *
  * Archive Duplicate Finder — compact, theme-matched redesign.
@@ -90,7 +90,7 @@
   border: 1.5px solid color-mix(in srgb, var(--ad-color, #00E5C0) 60%, var(--border));
   color: var(--ad-color, #00E5C0);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1;
   display: flex;
   align-items: center;
@@ -188,7 +188,7 @@
 
 .ad-metric-chip strong {
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text, #e6edf3);
 }
 
@@ -295,7 +295,7 @@
 
 .ad-selection-counter strong {
   color: var(--ad-color);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 /* ─── SCROLLABLE GROUPS CONTAINER ─────────────────────────────────────────── */
@@ -356,7 +356,7 @@
 
 .ad-group-badge {
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 600;
   padding: 2px 6px;
   border-radius: 4px;
   background: rgba(var(--ad-color-rgb), 0.1);
@@ -372,7 +372,8 @@
 
 .ad-group-hash-tag {
   font-size: 10px;
-  font-family: 'JetBrains Mono', Consolas, monospace;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
   color: var(--text-muted, #8b949e);
   background: rgba(0, 0, 0, 0.25);
   padding: 1px 5px;
@@ -386,7 +387,7 @@
 
 .ad-group-status-pill strong {
   color: var(--ad-danger);
-  font-weight: 700;
+  font-weight: 600;
 }
 
 /* ─── FILE ROWS ────────────────────────────────────────────────────────────── */
@@ -489,7 +490,7 @@
 
 .ad-file-path {
   font-size: 10.5px;
-  font-family: 'JetBrains Mono', Consolas, monospace;
+  font-family: var(--font-mono);
   color: var(--text-muted, #8b949e);
   white-space: nowrap;
   overflow: hidden;
@@ -602,7 +603,7 @@
 
 .ad-clean-title {
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text, #f0f6fc);
 }
 
@@ -683,7 +684,7 @@
 .ad-bind-submit-btn {
   background: linear-gradient(135deg, var(--ad-color) 0%, #00B894 100%);
   color: #081918;
-  font-weight: 700;
+  font-weight: 600;
   font-size: 13px;
   padding: 8px 18px;
   border-radius: 7px;

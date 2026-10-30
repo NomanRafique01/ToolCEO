@@ -1,4 +1,4 @@
-/* ─────────────────────────────────────────────────────────────────────────
+﻿/* ─────────────────────────────────────────────────────────────────────────
    tools/archives/archive_create.css
    Styles for the Compress / Create (Files to ZIP, TAR, 7Z …) tools.
    ───────────────────────────────────────────────────────────────────────── */
@@ -104,7 +104,7 @@
   background: var(--archive-color, #84CC16);
   color: #081918;
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1;
   padding: 3px 8px;
   border-radius: 20px;
@@ -207,7 +207,7 @@
   overflow: hidden;
   color: var(--archive-color, #84CC16);
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   text-align: center;
   text-overflow: ellipsis;
 }
