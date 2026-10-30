@@ -372,10 +372,17 @@ function syncWindowsStartMenuShortcut() {
   if (!IS_WIN) return;
   try {
     const iconPath = resolveAppIconPath();
-    const startMenuLnk = path.join(
+    const programsDir = path.join(
       app.getPath('appData'),
-      'Microsoft', 'Windows', 'Start Menu', 'Programs', 'ToolCEO.lnk'
+      'Microsoft', 'Windows', 'Start Menu', 'Programs'
     );
+
+    // Remove stale Electron.lnk that Windows auto-creates when
+    // running the dev electron.exe (its internal name is "Electron").
+    const staleElectronLnk = path.join(programsDir, 'Electron.lnk');
+    try { if (fs.existsSync(staleElectronLnk)) fs.unlinkSync(staleElectronLnk); } catch (_) {}
+
+    const startMenuLnk = path.join(programsDir, 'ToolCEO.lnk');
     shell.writeShortcutLink(startMenuLnk, 'create', {
       target: process.execPath,
       args: app.isPackaged ? '' : `"${path.join(__dirname, '..')}"`,
