@@ -312,11 +312,11 @@ function _isPdfFile(file) {
 const DEFAULT_ICON_SVG = `
   <svg class="drop-icon" viewBox="0 0 48 48" width="48" height="48" fill="none"
        xmlns="http://www.w3.org/2000/svg">
-    <rect x="8" y="4" width="26" height="34" rx="3" stroke="#00E5C0" stroke-width="1.5"/>
-    <path d="M34 4l6 6H34V4Z" stroke="#00E5C0" stroke-width="1.5" stroke-linejoin="round"/>
-    <line x1="24" y1="46" x2="24" y2="34" stroke="#00E5C0" stroke-width="1.5" stroke-linecap="round"/>
-    <line x1="18" y1="40" x2="24" y2="34" stroke="#00E5C0" stroke-width="1.5" stroke-linecap="round"/>
-    <line x1="30" y1="40" x2="24" y2="34" stroke="#00E5C0" stroke-width="1.5" stroke-linecap="round"/>
+    <rect x="8" y="4" width="26" height="34" rx="3" stroke="#00C4A7" stroke-width="1.5"/>
+    <path d="M34 4l6 6H34V4Z" stroke="#00C4A7" stroke-width="1.5" stroke-linejoin="round"/>
+    <line x1="24" y1="46" x2="24" y2="34" stroke="#00C4A7" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="18" y1="40" x2="24" y2="34" stroke="#00C4A7" stroke-width="1.5" stroke-linecap="round"/>
+    <line x1="30" y1="40" x2="24" y2="34" stroke="#00C4A7" stroke-width="1.5" stroke-linecap="round"/>
   </svg>`;
 
 const DEFAULT_MAIN = 'Select or drop a file to begin';
