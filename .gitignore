@@ -66,3 +66,5 @@ backend/_test_e2e_ico.py
 backend/_verify_pillow_ico.py
 .codenav/
 .navcode/
+.agent/
+.agents/

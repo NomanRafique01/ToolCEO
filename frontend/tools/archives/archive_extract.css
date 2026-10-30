@@ -1,4 +1,4 @@
-/**
+﻿/**
  * frontend/tools/archives/archive_extract.css
  * Styles for Archive Extract tool dropzone preview and configuration panel.
  */
@@ -234,7 +234,8 @@
   justify-content: space-between;
   padding: 5px 12px;
   font-size: 11px;
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
   color: var(--text, #c9d1d9);
   transition: background 0.1s ease;
 }
@@ -327,7 +328,7 @@
   background: var(--ext-color, #00E5C0);
   color: #081918;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -484,7 +485,7 @@
 
 .archive-extract-done-title {
   font-size: 15px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--text, #f0f6fc);
   margin: 0;
   letter-spacing: -0.01em;
@@ -524,7 +525,7 @@
   border: 1px solid color-mix(in srgb, var(--ext-color, #00E5C0) 22%, rgba(255, 255, 255, 0.08));
   border-radius: 8px;
   padding: 9px 12px;
-  font-family: 'SFMono-Regular', Consolas, 'Liberation Mono', Menlo, monospace;
+  font-family: var(--font-mono);
   font-size: 11.5px;
   color: var(--text, #c9d1d9);
   overflow: hidden;
@@ -554,7 +555,7 @@
   background: var(--ext-color, #00E5C0);
   color: #081918;
   font-size: 12.5px;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
   display: inline-flex;
   align-items: center;

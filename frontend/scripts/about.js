@@ -342,26 +342,4 @@ export async function renderAbout(container) {
       });
     });
   });
-
-  // --- External Hot Links: open directly in system default browser ----------
-  requestAnimationFrame(() => {
-    const hotlinks = document.querySelectorAll('.about-hotlink-card');
-    hotlinks.forEach((link) => {
-      link.addEventListener('click', (e) => {
-        e.preventDefault();
-        const url = link.getAttribute('data-url') || link.href;
-        if (!url) return;
-
-        if (window.electronAPI && typeof window.electronAPI.openExternal === 'function') {
-          window.electronAPI.openExternal(url);
-        } else if (window.toolceo && typeof window.toolceo.openExternal === 'function') {
-          window.toolceo.openExternal(url);
-        } else if (window.toolceo && typeof window.toolceo.invoke === 'function') {
-          window.toolceo.invoke('shell:openExternal', url);
-        } else {
-          window.open(url, '_blank', 'noopener,noreferrer');
-        }
-      });
-    });
-  });
 }

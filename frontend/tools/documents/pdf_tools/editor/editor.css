@@ -1,4 +1,4 @@
-/* Edit PDF uses a comfortable dark neutral workspace with #00E5C0 accents matching the Edit PDF tool theme. */
+﻿/* Edit PDF uses a comfortable dark neutral workspace with #00E5C0 accents matching the Edit PDF tool theme. */
 
 body.has-editor-viewer #main-content {
   padding-top: 0 !important;
@@ -122,7 +122,7 @@ body.has-editor-viewer .features-strip {
   background: rgba(0, 229, 192, 0.92);
   color: #041B18;
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0;
   box-shadow: 0 8px 18px rgba(0, 229, 192, 0.2);
 }
@@ -170,7 +170,7 @@ body.has-editor-viewer .features-strip {
   margin-bottom: 3px;
   color: var(--ed-color);
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0;
   text-transform: uppercase;
 }

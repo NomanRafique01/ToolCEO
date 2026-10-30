@@ -16,7 +16,7 @@
   --wm-border-soft: rgba(56, 189, 248, 0.16);
   --wm-text:        #E8F6FE;
   --wm-text-dim:    rgba(186, 230, 253, 0.72);
-  font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+  font-family: var(--font-sans);
   letter-spacing: 0;
 }
 
@@ -791,7 +791,7 @@ body.has-wm-viewer .features-strip {
   border-radius: 14px;
   box-shadow: 0 24px 90px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255,255,255,0.08);
   overflow: hidden;
-  font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+  font-family: var(--font-sans);
   letter-spacing: 0;
 }
 
