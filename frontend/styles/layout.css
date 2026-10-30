@@ -63,8 +63,8 @@
   color: var(--bg-primary);
   border: none;
   border-radius: 12px;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--fs-control);
+  font-weight: var(--fw-semibold);
   font-family: var(--font-sans);
   cursor: pointer;
   white-space: nowrap;

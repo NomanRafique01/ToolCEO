@@ -1,4 +1,4 @@
-/* Extract Images PDF tool - pink theme, rotate-style page picker */
+﻿/* Extract Images PDF tool - pink theme, rotate-style page picker */
 
 .pdf-tools-card-view.extractor-hidden {
   display: none;
@@ -155,7 +155,7 @@ body.has-extractor-viewer .features-strip {
   color: #0A1F1C !important;
   background: var(--extractor-color, #F472B6) !important;
   border: 1px solid var(--extractor-color, #F472B6) !important;
-  font-weight: 700;
+  font-weight: 600;
   box-shadow: 0 2px 10px rgba(244, 114, 182, 0.35);
 }
 
@@ -363,7 +363,7 @@ body.has-extractor-viewer .features-strip {
   background: var(--extractor-color, #F472B6) !important;
   color: #0A1F1C !important;
   border-color: var(--extractor-color, #F472B6) !important;
-  font-weight: 700;
+  font-weight: 600;
   box-shadow: 0 2px 8px rgba(244, 114, 182, 0.35);
 }
 
@@ -416,7 +416,7 @@ body.has-extractor-viewer .features-strip {
   gap: 7px;
   color: var(--extractor-color);
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   white-space: nowrap;
 }
 
@@ -438,7 +438,7 @@ body.has-extractor-viewer .features-strip {
   border: 1px solid color-mix(in srgb, var(--extractor-color) 34%, transparent);
   font-family: inherit;
   font-size: 12px;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
 }
 
@@ -451,7 +451,7 @@ body.has-extractor-viewer .features-strip {
   color: #0A1F1C !important;
   background: var(--extractor-color) !important;
   border-color: var(--extractor-color) !important;
-  font-weight: 700;
+  font-weight: 600;
   box-shadow: 0 2px 8px rgba(244, 114, 182, 0.35);
 }
 

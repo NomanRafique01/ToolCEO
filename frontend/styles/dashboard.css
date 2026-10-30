@@ -46,22 +46,22 @@
 }
 
 .hero-title {
-  font-size: 20px;
-  font-weight: 500;
+  font-size: var(--fs-page-title);
+  font-weight: var(--fw-medium);
   color: var(--text-primary);
-  line-height: 1.2;
+  line-height: var(--lh-page-title);
   transition: color 240ms ease;
 }
 
 .hero-subtitle {
-  font-size: 12px;
+  font-size: var(--fs-subtitle);
   color: var(--text-muted);
   margin-top: 4px;
   transition: color 240ms ease;
 }
 
 .hero-hint {
-  font-size: 11px;
+  font-size: var(--fs-caption);
   color: var(--text-muted);
   white-space: nowrap;
   margin-top: 4px;
@@ -91,9 +91,9 @@
   align-items: center;
   padding: 2px 9px;
   border-radius: 20px;
-  font-size: 10px;
-  font-weight: 600;
-  letter-spacing: 0.05em;
+  font-size: var(--fs-badge);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--ls-wide);
   border: 1px solid transparent;
   text-transform: uppercase;
   line-height: 1.6;
@@ -180,21 +180,21 @@
 }
 
 .drop-main-text {
-  font-size: 15px;
-  font-weight: 500;
+  font-size: var(--fs-section-title);
+  font-weight: var(--fw-medium);
   color: var(--text-primary);
   margin-top: 12px;
 }
 
 .drop-browse {
-  font-size: 13px;
+  font-size: var(--fs-control);
   color: var(--accent);
   cursor: pointer;
   margin-top: 4px;
 }
 
 .drop-private {
-  font-size: 11px;
+  font-size: var(--fs-caption);
   color: var(--text-muted);
   margin-top: 8px;
 }
@@ -243,8 +243,8 @@
   color: rgba(255, 255, 255, 0.75);
   border-radius: 8px;
   padding: 6px 14px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--fs-subtitle);
+  font-weight: var(--fw-semibold);
   font-family: var(--font-sans);
   cursor: pointer;
   transition: transform var(--duration-micro) var(--ease-micro),
@@ -278,8 +278,8 @@
 .dz-paste-kbd {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;
-  font-size: 11px;
-  font-weight: 700;
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-medium);
   padding: 1px 6px;
   border-radius: 4px;
   background: rgba(255, 255, 255, 0.08);
@@ -409,18 +409,18 @@
 
 .dz-pct {
   font-family: var(--font-mono);
-  font-size: 28px;
-  font-weight: 700;
+  font-size: var(--fs-display);
+  font-weight: var(--fw-medium);
   color: var(--text-primary);
   letter-spacing: -0.02em;
   font-variant-numeric: tabular-nums;
 }
 
 .dz-progress-label {
-  font-size: 10px;
-  font-weight: 600;
+  font-size: var(--fs-badge);
+  font-weight: var(--fw-semibold);
   color: var(--text-muted);
-  letter-spacing: 0.1em;
+  letter-spacing: var(--ls-wide);
   text-transform: uppercase;
   white-space: nowrap;
 }
@@ -568,8 +568,8 @@
 }
 
 .dz-save-name {
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--fs-control);
+  font-weight: var(--fw-medium);
   color: var(--text-primary);
   white-space: nowrap;
   overflow: hidden;
@@ -577,9 +577,11 @@
 }
 
 .dz-save-ext {
-  font-size: 11px;
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
+  font-size: var(--fs-caption);
   color: var(--save-color);
-  font-weight: 500;
+  font-weight: var(--fw-medium);
 }
 
 .dz-save-btn {
@@ -589,8 +591,8 @@
   color: #0A1F1C;
   border: none;
   border-radius: 7px;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--fs-control);
+  font-weight: var(--fw-semibold);
   font-family: inherit;
   letter-spacing: 0.02em;
   cursor: pointer;
@@ -621,8 +623,8 @@
   color: var(--save-color);
   border: 1.5px solid var(--save-color);
   border-radius: 7px;
-  font-size: 13px;
-  font-weight: 600;
+  font-size: var(--fs-control);
+  font-weight: var(--fw-semibold);
   font-family: inherit;
   letter-spacing: 0.02em;
   cursor: pointer;
@@ -648,7 +650,7 @@
 /* ── Hint text below Extract ZIP button ─────────────────────────────────── */
 .dz-extract-hint {
   margin: 0;
-  font-size: 10.5px;
+  font-size: var(--fs-caption);
   line-height: 1.4;
   text-align: center;
   color: color-mix(in srgb, var(--save-color) 70%, transparent);
@@ -660,8 +662,8 @@
   align-items: center;
   justify-content: center;
   gap: 6px;
-  font-size: 12px;
-  font-weight: 500;
+  font-size: var(--fs-subtitle);
+  font-weight: var(--fw-medium);
   color: var(--save-color);
 }
 
@@ -679,7 +681,7 @@
   background: rgba(248, 113, 113, 0.12);
   border: 1px solid rgba(248, 113, 113, 0.35);
   color: #f87171;
-  font-size: 11.5px;
+  font-size: var(--fs-caption);
   line-height: 1.45;
   text-align: center;
   word-break: break-word;
@@ -703,7 +705,7 @@
 }
 
 .dz-error-msg {
-  font-size: 12px;
+  font-size: var(--fs-subtitle);
   color: #F87171;
   line-height: 1.45;
   word-break: break-word;
@@ -841,16 +843,16 @@
 }
 
 .sip-sep {
-  font-size: 14px;
-  font-weight: 600;
+  font-size: var(--fs-card-title);
+  font-weight: var(--fw-semibold);
   color: var(--text-muted);
 }
 
 .sip-split-btn {
   margin-left: auto;
   padding: 6px 18px;
-  font-size: 13px;
-  font-weight: 500;
+  font-size: var(--fs-control);
+  font-weight: var(--fw-medium);
   font-family: inherit;
   color: #fff;
   background: var(--split-color);
@@ -982,7 +984,7 @@
   padding: 3px 10px;
   border-radius: 20px;
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.02em;
   background: var(--dz-color, #00E5C0);
   color: #0A1F1C;
@@ -1190,7 +1192,7 @@
   background: #0e1a26;
   color: var(--thumb-color, #E8924A);
   font-size: 11px;
-  font-weight: 700;
+  font-weight: 600;
   line-height: 1;
   display: flex;
   align-items: center;
@@ -1350,8 +1352,8 @@
   border-radius: 8px;
   background: var(--icon-bg);
   color: var(--icon-color);
-  font-size: 8px;
-  font-weight: 700;
+  font-size: var(--fs-badge);
+  font-weight: var(--fw-semibold);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1416,6 +1418,8 @@
 }
 
 .file-time {
+  font-family: var(--font-mono);
+  font-variant-numeric: tabular-nums;
   font-size: 11px;
   color: var(--text-muted);
   white-space: nowrap;
@@ -2023,7 +2027,7 @@
 .bg-job-pct {
   font-family: var(--font-mono);
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 500;
   color: var(--bg-job-color);
   min-width: 34px;
   text-align: right;
@@ -2061,7 +2065,7 @@
 .bg-job-btn--save {
   background: var(--bg-job-color);
   color: #08110e;
-  font-weight: 700;
+  font-weight: 600;
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
 }
 

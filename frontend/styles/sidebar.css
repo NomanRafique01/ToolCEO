@@ -25,12 +25,12 @@
 
 .logo-name {
   font-family: var(--font-sans);
-  font-size: 22px;
-  font-weight: 700;
-  letter-spacing: 0.14em;
+  font-size: var(--fs-page-title);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--ls-wide);
   text-transform: uppercase;
   color: var(--accent);
-  line-height: 1;
+  line-height: var(--lh-display);
   -webkit-app-region: no-drag;
 }
 
@@ -52,9 +52,9 @@
 
 .nav-section-label {
   display: block;
-  font-size: 9px;
+  font-size: var(--fs-badge);
   text-transform: uppercase;
-  letter-spacing: 0.16em;
+  letter-spacing: var(--ls-wide);
   color: var(--text-muted);
   padding-left: 16px;
   margin-bottom: 8px;
@@ -72,7 +72,7 @@
   height: 36px;
   padding: 0 12px;
   border-radius: 6px;
-  font-size: 13px;
+  font-size: var(--fs-control);
   color: var(--text-primary);
   cursor: pointer;
   border-left: 2px solid transparent;
@@ -141,14 +141,14 @@
 }
 
 .status-title {
-  font-size: 11px;
-  font-weight: 500;
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-medium);
   color: var(--text-primary);
   line-height: 1;
 }
 
 .status-subtitle {
-  font-size: 10px;
+  font-size: var(--fs-badge);
   color: var(--text-muted);
-  line-height: 1.4;
+  line-height: var(--lh-badge);
 }

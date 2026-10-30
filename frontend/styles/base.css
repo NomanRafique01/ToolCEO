@@ -80,12 +80,47 @@
   --duration-micro:  120ms;
   --duration-fast:   160ms;
   --duration-normal: 220ms;
+
+  /* ── Type Scale ── */
+  --fs-display:       28px;
+  --fs-page-title:    20px;
+  --fs-section-title: 16px;
+  --fs-card-title:    14px;
+  --fs-control:       13px;
+  --fs-body:          13px;
+  --fs-subtitle:      12px;
+  --fs-caption:       11px;
+  --fs-badge:         10px;
+
+  --lh-display:       1.1;
+  --lh-page-title:    1.2;
+  --lh-section-title: 1.3;
+  --lh-card-title:    1.3;
+  --lh-control:       1.3;
+  --lh-body:          1.5;
+  --lh-subtitle:      1.4;
+  --lh-caption:       1.4;
+  --lh-badge:         1.2;
+
+  --fw-regular:       400;
+  --fw-medium:        500;
+  --fw-semibold:      600;
+
+  --ls-tight:        -0.02em;
+  --ls-snug:         -0.01em;
+  --ls-normal:        0;
+  --ls-wide:          0.04em;
 }
 
 *, *::before, *::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
+}
+
+button, input, select, textarea {
+  font-family: inherit;
+  font-size: inherit;
 }
 
 @media (prefers-reduced-motion: reduce) {

@@ -29,8 +29,8 @@
   color: rgba(255, 255, 255, 0.75);
   border-radius: 8px;
   padding: 6px 14px;
-  font-size: 12px;
-  font-weight: 600;
+  font-size: var(--fs-subtitle);
+  font-weight: var(--fw-semibold);
   cursor: pointer;
   transition: background-color var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out), transform var(--duration-micro) var(--ease-micro), box-shadow var(--duration-fast) var(--ease-out);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
@@ -168,8 +168,8 @@
   color: var(--tool-accent, var(--dz-color, var(--accent)));
   padding: 0 12px 0 14px;
   border-radius: 10px;
-  font-size: 12px;
-  font-weight: 500;
+  font-size: var(--fs-subtitle);
+  font-weight: var(--fw-medium);
   letter-spacing: 0.01em;
   z-index: 8;
   pointer-events: auto;
@@ -394,15 +394,15 @@
 }
 
 .dz-phone-header-text h3 {
-  font-size: 12.5px;
-  font-weight: 700;
+  font-size: var(--fs-subtitle);
+  font-weight: var(--fw-semibold);
   color: #FFF;
-  letter-spacing: 0.8px;
+  letter-spacing: var(--ls-wide);
   text-transform: uppercase;
 }
 
 .dz-phone-header-text p {
-  font-size: 11px;
+  font-size: var(--fs-caption);
   color: #94A3B8;
   margin-top: 2px;
 }
@@ -417,8 +417,8 @@
   color: var(--tool-accent, var(--accent));
   padding: 3px 10px;
   border-radius: 20px;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-semibold);
 }
 
 /* Status Pill */
@@ -430,8 +430,8 @@
   border: 1px solid rgba(255, 255, 255, 0.1);
   padding: 5px 12px;
   border-radius: 20px;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-semibold);
   color: #E2E8F0;
   transition: background-color var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out);
 }
@@ -474,10 +474,10 @@
   align-items: flex-start;
   justify-content: flex-start;
   gap: 8px;
-  font-size: 11px;
+  font-size: var(--fs-caption);
   color: #94A3B8;
   text-align: left;
-  line-height: 1.5;
+  line-height: var(--lh-caption);
 }
 
 .dz-phone-step-num {
@@ -486,8 +486,8 @@
   border-radius: 50%;
   background: var(--accent-subtle);
   color: var(--tool-accent, var(--accent));
-  font-size: 10px;
-  font-weight: 700;
+  font-size: var(--fs-badge);
+  font-weight: 500;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -511,8 +511,8 @@
   color: #CBD5E1;
   border-radius: 6px;
   padding: 5px 12px;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-semibold);
   cursor: pointer;
   transition: background-color var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out);
 }
@@ -529,8 +529,8 @@
   color: var(--tool-accent, var(--accent));
   border-radius: 6px;
   padding: 5px 12px;
-  font-size: 11px;
-  font-weight: 600;
+  font-size: var(--fs-caption);
+  font-weight: var(--fw-semibold);
   cursor: pointer;
   transition: background-color var(--duration-fast) var(--ease-out), border-color var(--duration-fast) var(--ease-out), color var(--duration-fast) var(--ease-out);
 }

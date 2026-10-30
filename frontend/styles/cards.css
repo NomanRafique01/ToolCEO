@@ -109,7 +109,7 @@
 
 .tool-arrow,
 .fmt-arrow {
-  font-size: 18px !important;
+  font-size: var(--fs-section-title) !important;
   color: var(--text-muted) !important;
   line-height: 1 !important;
 }
@@ -118,11 +118,11 @@
 .tool-name,
 .fmt-label {
   font-family: var(--font-sans) !important;
-  font-size: 14px !important;
-  font-weight: 600 !important;
+  font-size: var(--fs-card-title) !important;
+  font-weight: var(--fw-semibold) !important;
   color: var(--text-primary) !important;
   margin-top: 8px !important;
-  line-height: 1.2 !important;
+  line-height: var(--lh-card-title) !important;
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
@@ -130,10 +130,10 @@
 
 .tool-formats,
 .fmt-desc {
-  font-size: 12px !important;
+  font-size: var(--fs-subtitle) !important;
   color: var(--text-muted) !important;
   margin-top: 2px !important;
-  line-height: 1.3 !important;
+  line-height: var(--lh-subtitle) !important;
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
@@ -144,10 +144,10 @@
 .fmt-tag {
   font-family: var(--font-mono) !important;
   font-variant-numeric: tabular-nums !important;
-  font-size: 12px !important;
+  font-size: var(--fs-subtitle) !important;
   color: var(--fmt-color, var(--accent)) !important;
   margin-top: 6px !important;
-  font-weight: 600 !important;
+  font-weight: var(--fw-medium) !important;
   white-space: nowrap !important;
   overflow: hidden !important;
   text-overflow: ellipsis !important;
@@ -170,7 +170,7 @@
   cursor: pointer !important;
   color: var(--fmt-color, currentColor) !important;
   opacity: 0.4 !important;
-  font-size: 16px !important;
+  font-size: var(--fs-section-title) !important;
   line-height: 1 !important;
   transition: transform var(--duration-micro) var(--ease-micro),
               opacity var(--duration-micro) var(--ease-out) !important;
@@ -233,10 +233,10 @@
 }
 
 .fav-empty-text {
-  font-size: 14px !important;
-  font-weight: 500 !important;
+  font-size: var(--fs-card-title) !important;
+  font-weight: var(--fw-medium) !important;
   color: var(--text-muted) !important;
   max-width: 320px !important;
-  line-height: 1.5 !important;
+  line-height: var(--lh-body) !important;
 }
 

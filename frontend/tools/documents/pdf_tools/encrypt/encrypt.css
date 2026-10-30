@@ -1,4 +1,4 @@
-/* ─────────────────────────────────────────────────────────────
+﻿/* ─────────────────────────────────────────────────────────────
    tools/documents/pdf_tools/encrypt/encrypt.css
    Styles for the PDF Encrypt / Decrypt tool:
      - PDF Thumbnail inside drop zone
@@ -183,7 +183,7 @@
   padding: 2px 8px;
   border-radius: 12px;
   font-size: 10px;
-  font-weight: 700;
+  font-weight: 600;
   letter-spacing: 0.05em;
   text-transform: uppercase;
 }
@@ -572,7 +572,7 @@
   border-radius: 8px;
   padding: 8px 20px;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   cursor: pointer;
   transition: filter 150ms ease, opacity 150ms ease;
   white-space: nowrap;
@@ -683,7 +683,7 @@
 .enc-vault-about-text h4 {
   margin: 0 0 8px;
   font-size: 13px;
-  font-weight: 700;
+  font-weight: 600;
   color: var(--enc-color, #FBBF24);
   letter-spacing: 0.01em;
 }
@@ -722,7 +722,7 @@
 }
 
 .enc-vault-about-tip code {
-  font-family: monospace;
+  font-family: var(--font-mono);
   background: color-mix(in srgb, var(--enc-color, #FBBF24) 15%, transparent);
   padding: 1px 4px;
   border-radius: 3px;
@@ -775,7 +775,7 @@
 
 .enc-tab-btn--single {
   justify-content: center;
-  font-weight: 700;
+  font-weight: 600;
   cursor: default !important;
 }
 
