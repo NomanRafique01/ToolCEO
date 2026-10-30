@@ -4,18 +4,82 @@
    root html/body rules. Every other stylesheet depends on this.
    ───────────────────────────────────────────────────────────── */
 
-:root {
-  --bg-primary:    #0A1F1C;
-  --bg-surface:    #0F2D29;
-  --bg-sidebar:    #081918;
-  --bg-card:       #112C28;
-  --accent:        #00E5C0;
-  --accent-hover:  #00CCA8;
-  --text-primary:  #F0EDE4;
-  --text-muted:    #8FAAA6;
-  --border:        #1A3D38;
+/* Offline Typography Definitions */
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../assets/fonts/PlusJakartaSans-Regular.woff2') format('woff2');
+}
 
-  --sidebar-width: 220px;
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('../assets/fonts/PlusJakartaSans-Medium.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'Plus Jakarta Sans';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('../assets/fonts/PlusJakartaSans-SemiBold.woff2') format('woff2');
+}
+
+@font-face {
+  font-family: 'JetBrains Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('../assets/fonts/JetBrainsMono-Medium.woff2') format('woff2');
+}
+
+:root {
+  /* 4-Tier Surface Elevation */
+  --bg-primary:      #071413;  /* Surface 0: Deepest canvas void */
+  --bg-sidebar:      #0a1a18;  /* Surface 1: Anchored structural chrome */
+  --bg-surface:      #0e2220;  /* Surface 2: Default card & panel body */
+  --bg-card:         #122a27;  /* Surface 3: Raised format cards */
+  --bg-surface-pop:  #16322f;  /* Surface 4: Modals, tooltips, popovers */
+
+  /* Desaturated Jewel Teal Accent */
+  --accent:          #00C4A7;  /* Focused jewel teal */
+  --accent-hover:    #00B398;  /* Controlled hover step */
+  --accent-subtle:   rgba(0, 196, 167, 0.10);
+  --accent-glow:     none;     /* Purged radioactive glow */
+
+  /* Semantic Status */
+  --status-success:  #10B981;
+  --status-warning:  #F59E0B;
+  --status-danger:   #EF4444;
+
+  /* High-Contrast Typography */
+  --text-primary:    #EDECE8;  /* 96% contrast soft-cream */
+  --text-muted:      #7E9E99;  /* 70% contrast labels */
+  --text-subtle:     #4D6E69;  /* 45% contrast metadata */
+
+  /* Hairline Borders & Specular Edge */
+  --border:          rgba(45, 85, 78, 0.35);
+  --border-hover:    rgba(0, 196, 167, 0.40);
+  --specular-top:    inset 0 1px 0 rgba(255, 255, 255, 0.05);
+
+  /* Typography Stacks */
+  --font-sans: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', Consolas, monospace;
+
+  /* Dimensions */
+  --sidebar-width:   220px;
+  --header-height:   80px;
+
+  /* Kowalski Motion Tokens */
+  --ease-out:        cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-micro:      cubic-bezier(0, 0, 0.2, 1);
+  --duration-micro:  120ms;
+  --duration-fast:   160ms;
+  --duration-normal: 220ms;
 }
 
 *, *::before, *::after {
@@ -24,10 +88,19 @@
   padding: 0;
 }
 
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
 html, body {
   height: 100%;
   overflow: hidden;
-  font-family: -apple-system, "Segoe UI", system-ui, sans-serif;
+  font-family: var(--font-sans);
   background: var(--bg-primary);
   color: var(--text-primary);
 }
