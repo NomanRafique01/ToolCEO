@@ -123,22 +123,43 @@
   height: 200px;
   border: 1.5px dashed var(--border);
   border-radius: 12px;
-  background: var(--bg-surface);
+  background: linear-gradient(
+    168deg,
+    var(--bg-surface) 0%,
+    color-mix(in srgb, var(--bg-card) 50%, var(--bg-surface)) 100%
+  );
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
   cursor: pointer;
   transition: border-color var(--duration-fast) var(--ease-out),
-              background-color var(--duration-fast) var(--ease-out);
+              background var(--duration-normal) var(--ease-out),
+              box-shadow var(--duration-normal) var(--ease-out);
   position: relative;
   outline: none;
 }
 
-.drop-zone:hover,
-.drop-zone.drag-active {
+.drop-zone:hover {
   border-color: var(--border-hover);
-  background: var(--bg-card);
+  background: linear-gradient(
+    168deg,
+    var(--bg-card) 0%,
+    color-mix(in srgb, var(--bg-card) 70%, var(--bg-surface)) 100%
+  );
+  box-shadow: 0 0 24px rgba(0, 196, 167, 0.05);
+}
+
+.drop-zone.drag-active {
+  border-color: var(--accent);
+  border-style: solid;
+  background: linear-gradient(
+    168deg,
+    var(--bg-card) 0%,
+    color-mix(in srgb, var(--accent) 5%, var(--bg-surface)) 100%
+  );
+  box-shadow: 0 0 30px rgba(0, 196, 167, 0.08),
+              0 0 0 1px color-mix(in srgb, var(--accent) 20%, transparent);
 }
 
 .drop-zone:focus-visible {
@@ -146,25 +167,47 @@
   outline-offset: 2px;
 }
 
-/* ── Tool-active state: border + bg driven by the selected tool's colour ── */
+/* ── Tool-active state: layered glow + dot-grid ── */
 .drop-zone--tool-active {
-  border-color: var(--dz-color);
-  border-style: solid;
-  background: radial-gradient(ellipse at center, var(--dz-bg) 0%, transparent 70%);
-  box-shadow: 0 0 0 1px color-mix(in srgb, var(--dz-color) 15%, transparent),
-    inset 0 0 40px color-mix(in srgb, var(--dz-color) 4%, transparent);
+  border: 1.5px solid color-mix(in srgb, var(--dz-color) 45%, transparent);
+  background:
+    radial-gradient(
+      ellipse at 50% 35%,
+      color-mix(in srgb, var(--dz-color) 7%, transparent) 0%,
+      transparent 55%
+    ),
+    radial-gradient(
+      circle,
+      color-mix(in srgb, var(--dz-color) 4%, transparent) 1px,
+      transparent 1px
+    );
+  background-size: 100% 100%, 24px 24px;
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--dz-color) 12%, transparent),
+    0 0 30px color-mix(in srgb, var(--dz-color) 8%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--dz-color) 6%, transparent);
 }
 
-.drop-zone--tool-active:hover,
+.drop-zone--tool-active:hover {
+  border-color: color-mix(in srgb, var(--dz-color) 60%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--dz-color) 18%, transparent),
+    0 0 40px color-mix(in srgb, var(--dz-color) 10%, transparent),
+    inset 0 1px 0 color-mix(in srgb, var(--dz-color) 8%, transparent);
+}
+
+/* Drag-active turbo — intensified glow */
 .drop-zone--tool-active.drag-active {
-  border-color: var(--dz-color);
-  background: radial-gradient(ellipse at center, var(--dz-bg) 0%, transparent 60%);
-  filter: brightness(1.08);
+  border-color: color-mix(in srgb, var(--dz-color) 80%, transparent);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, var(--dz-color) 25%, transparent),
+    0 0 50px color-mix(in srgb, var(--dz-color) 14%, transparent),
+    inset 0 0 60px color-mix(in srgb, var(--dz-color) 5%, transparent);
 }
 
 .drop-zone--tool-active .drop-main-text {
   color: var(--dz-color);
-  font-weight: 600;
+  font-weight: var(--fw-semibold);
 }
 
 .drop-zone--tool-active .drop-browse {
@@ -193,11 +236,17 @@
   }
 }
 
+/* ─── DROP ZONE TEXT ─────────────────────────────────────── */
+
 .drop-main-text {
-  font-size: var(--fs-section-title);
-  font-weight: var(--fw-medium);
+  font-size: 17px;
+  font-weight: var(--fw-semibold);
   color: var(--text-primary);
-  margin-top: 12px;
+  margin-top: 14px;
+  letter-spacing: var(--ls-snug);
+  position: relative;
+  z-index: 1;
+  transition: color var(--duration-fast) var(--ease-out);
 }
 
 .drop-browse {
@@ -205,12 +254,17 @@
   color: var(--accent);
   cursor: pointer;
   margin-top: 4px;
+  position: relative;
+  z-index: 1;
+  transition: color var(--duration-fast) var(--ease-out);
 }
 
 .drop-private {
   font-size: var(--fs-caption);
-  color: var(--text-muted);
+  color: var(--text-subtle);
   margin-top: 8px;
+  position: relative;
+  z-index: 1;
 }
 
 /* ─── DROP ZONE OVERLAYS (progress / download / error) ───── */
@@ -224,7 +278,7 @@
   cursor: default;
 }
 
-/* Hide default drop-zone text/icon while processing or result is displayed */
+/* Hide default drop-zone content while processing or result is displayed */
 .dz-state-processing .drop-icon,
 .dz-state-processing .drop-main-text,
 .dz-state-processing .drop-browse,
