@@ -111,6 +111,31 @@
   color: var(--accent);
 }
 
+/* Update is intentionally a normal sidebar destination, not a status card. */
+.nav-item--update .nav-icon { color: #A78BFA; }
+.nav-item.nav-item--update.active {
+  color: #A78BFA;
+  background: rgba(167, 139, 250, 0.10);
+  border-left-color: #A78BFA;
+}
+.nav-item.nav-item--update.active .nav-icon { color: #A78BFA; }
+
+.nav-update-badge {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #A78BFA;
+  box-shadow: 0 0 8px rgba(167, 139, 250, 0.85);
+  margin-left: auto;
+  flex-shrink: 0;
+  animation: pulse-update-dot 2s infinite ease-in-out;
+}
+
+@keyframes pulse-update-dot {
+  0%, 100% { transform: scale(1); opacity: 0.8; }
+  50% { transform: scale(1.35); opacity: 1; }
+}
+
 /* ─── OFFLINE STATUS CARD ────────────────────────────────── */
 
 .sidebar-status {

@@ -182,6 +182,7 @@ function _renderBannerWithActiveItem() {
     <span class="nb-pill ${isProgress ? 'nb-pill--progress' : ''}" style="--pill-color:${m.color}" data-id="${_escHtml(n.id)}" data-auto-dismiss="${isAutoDismiss ? 'true' : 'false'}" title="${_escHtml(n.message)}">
       <span class="nb-pill-icon" style="color:${m.color}">${m.icon}</span>
       <span class="nb-pill-msg">${_escHtml(n.message)}</span>
+      ${n.actionLabel ? `<button class="nb-pill-action" type="button">${_escHtml(n.actionLabel)}</button>` : ''}
       ${!isProgress ? `<span class="nb-pill-time">${relTime(n.timestamp)}</span>` : ''}
       <button class="nb-pill-x" data-pill-x="${_escHtml(n.id)}" title="Dismiss">&times;</button>
     </span>`;
@@ -222,6 +223,14 @@ function _renderBannerWithActiveItem() {
     dismissBtn.addEventListener('click', (e) => {
       e.stopPropagation();
       _transitionToNext(false);
+    });
+  }
+
+  const actionBtn = _bannerEl.querySelector('.nb-pill-action');
+  if (actionBtn && typeof n.onAction === 'function') {
+    actionBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      n.onAction();
     });
   }
 }

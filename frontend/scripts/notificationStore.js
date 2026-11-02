@@ -5,7 +5,7 @@
  * Unified notification state with deduplication and auto-dismiss.
  *
  * API:
- *   pushNotification({ type, message, detail?, autoDismiss? }) -> id (string)
+ *   pushNotification({ type, message, detail?, actionLabel?, onAction?, autoDismiss? }) -> id (string)
  *   updateNotification(id, patch)                              - mutate entry
  *   dismissAll()                                               - clear all
  *   dismissOne(id)                                             - remove single entry
@@ -45,7 +45,7 @@ function _clearTimer(id) {
   }
 }
 
-export function pushNotification({ type = 'success', message = '', detail = '', autoDismiss, allowDuringRestore = false } = {}) {
+export function pushNotification({ type = 'success', message = '', detail = '', actionLabel = '', onAction = null, autoDismiss, allowDuringRestore = false } = {}) {
   if (!allowDuringRestore && isRestoringToolFiles() && (type === 'warning' || type === 'info')) {
     return null;
   }
@@ -62,11 +62,17 @@ export function pushNotification({ type = 'success', message = '', detail = '', 
     item.read = false;
     item.autoDismiss = autoDismiss === true;
     if (detail) item.detail = detail;
+    item.actionLabel = actionLabel;
+    item.onAction = typeof onAction === 'function' ? onAction : null;
     _store.unshift(item);
   } else {
     // Create new notification item
     const id = `notif-${++_counter}-${Date.now()}`;
-    item = { id, type, message, detail, timestamp: Date.now(), read: false, autoDismiss: autoDismiss === true };
+    item = {
+      id, type, message, detail, actionLabel,
+      onAction: typeof onAction === 'function' ? onAction : null,
+      timestamp: Date.now(), read: false, autoDismiss: autoDismiss === true,
+    };
     _store.unshift(item);
   }
 

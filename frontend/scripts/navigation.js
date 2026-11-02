@@ -24,10 +24,12 @@ import { renderRecent } from './recent.js';
 import { renderArchives, renderArchiveToolView, setNavigateToModule as setArchiveNav, setActivateNavForArchives, routeZipToExtractor } from './archives.js';
 import { renderAllTools, setNavigateToModule as setAllToolsNav } from './allTools.js';
 import { renderAbout }           from './about.js';
+import { renderUpdatePage, refreshUpdatePage } from './updates.js';
 import { setActiveTool }         from './toolstate.js';
 import { loadModuleStatuses }    from './modulelock.js';
 import { setZipExtractRouter }   from '../tools/shared/progress.js';
 import { getToolById }           from './searchEngine.js';
+import { pushNotification }      from './notificationStore.js';
 
 // ── Category → renderer map ──────────────────────────────────────────────────
 // Add future categories here.  Value is a function(container) that fills it.
@@ -79,6 +81,68 @@ export function initNavigation() {
   const navItems    = document.querySelectorAll('.nav-item');
   const pageTitle   = document.getElementById('page-title');
   const exploreSection = document.getElementById('explore-section');
+  const updateItem = document.getElementById('nav-item-update');
+  let updaterStatus = null;
+
+  function renderUpdaterStatus(nextStatus) {
+    if (!nextStatus) return;
+    updaterStatus = { ...updaterStatus, ...nextStatus };
+    const { state, version, progress } = updaterStatus;
+        if (updateItem) {
+      updateItem.dataset.updateState = state || 'up-to-date';
+      const badge = document.getElementById('nav-update-badge');
+      if (badge) {
+        badge.style.display = (state === 'available' || state === 'ready_to_install') ? 'inline-block' : 'none';
+      }
+      const ariaLabel = state === 'available'
+        ? `ToolCEO update ${version || ''} is available.`
+        : state === 'ready_to_install'
+          ? 'ToolCEO update is ready to install.'
+          : state === 'downloading'
+            ? `Downloading ToolCEO update: ${Math.round(Number(progress && progress.percent) || 0)}%.`
+            : 'Open application updates.';
+      updateItem.setAttribute('aria-label', ariaLabel);
+    }
+    refreshUpdatePage(updaterStatus);
+  }
+
+  async function requestUpdateAction() {
+    const state = updaterStatus && updaterStatus.state;
+    if (state === 'available') {
+      renderUpdaterStatus({ state: 'downloading', progress: { percent: 0 } });
+      document.dispatchEvent(new CustomEvent('toolceo:app-update-request', {
+        detail: { state, version: updaterStatus.version || null },
+      }));
+      return;
+    }
+
+    if (state === 'ready_to_install') {
+      document.dispatchEvent(new CustomEvent('toolceo:app-update-request', {
+        detail: { state, version: updaterStatus.version || null },
+      }));
+      return;
+    }
+
+    if (state === 'downloading') return;
+
+    if (window.electronAPI?.updater?.checkForUpdates) {
+      renderUpdaterStatus({ state: 'checking' });
+      const nextStatus = await window.electronAPI.updater.checkForUpdates();
+      renderUpdaterStatus(nextStatus);
+    }
+  }
+
+  function announceAvailableUpdate(update) {
+    const version = update && update.version ? `v${update.version}` : 'a new version';
+    pushNotification({
+      type: 'info',
+      message: `New version available (${version})`,
+      detail: 'Download the update when you are ready.',
+      actionLabel: 'Download Update',
+      onAction: requestUpdateAction,
+      allowDuringRestore: true,
+    });
+  }
 
   // Capture the default grid HTML on boot
   if (exploreSection && originalExploreHTML === null) {
@@ -135,6 +199,12 @@ export function initNavigation() {
         dashPanel.classList.remove('modules-active');
       }
 
+      if (label === 'Update') {
+        dashPanel.classList.add('updates-active');
+      } else {
+        dashPanel.classList.remove('updates-active');
+      }
+
       if (label === 'Recent') {
         dashPanel.classList.add('recent-active');
         setActiveTool(null);
@@ -178,7 +248,9 @@ export function initNavigation() {
     // ── Explore-section swap ─────────────────────────────────────────────
     if (!exploreSection) return;
 
-    if (CATEGORY_RENDERERS[label]) {
+    if (label === 'Update') {
+      renderUpdatePage(exploreSection, updaterStatus || { state: 'up-to-date' }, requestUpdateAction, () => activateNav('Dashboard'));
+    } else if (CATEGORY_RENDERERS[label]) {
       // Inject category format grid
       CATEGORY_RENDERERS[label](exploreSection, activateNav);
     } else {
@@ -210,10 +282,61 @@ export function initNavigation() {
 
   navItems.forEach((item) => {
     item.addEventListener('click', () => {
+      if (item.dataset.label === 'Update') {
+        activateNav('Update');
+        return;
+      }
       setActiveTool(null);
       activateNav(item.dataset.label);
     });
   });
+
+  if (updateItem) {
+    updateItem.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        activateNav('Update');
+      }
+    });
+  }
+
+    window.addEventListener('online', () => {
+    if (window.electronAPI?.updater?.checkForUpdates) {
+      void window.electronAPI.updater.checkForUpdates().then((status) => {
+        if (status) renderUpdaterStatus(status);
+      }).catch(() => {});
+    }
+    document.dispatchEvent(new CustomEvent('toolceo:system-online'));
+  });
+  const updater = window.electronAPI && window.electronAPI.updater;
+  if (updater) {
+    updater.getStatus().then(renderUpdaterStatus).catch(() => {});
+    updater.onUpdateAvailable((update) => {
+      renderUpdaterStatus({ state: 'available', ...update });
+      announceAvailableUpdate(update);
+    });
+    updater.onUpdateNotAvailable((update) => {
+      renderUpdaterStatus({ state: 'up-to-date', ...update });
+    });
+    updater.onDownloadProgress((progress) => {
+      renderUpdaterStatus({ state: 'downloading', progress });
+    });
+    updater.onUpdateDownloaded((update) => {
+      renderUpdaterStatus({ state: 'ready_to_install', ...update });
+      pushNotification({
+        type: 'success',
+        message: 'Update ready to install',
+        detail: 'Restart ToolCEO whenever you are ready to apply it.',
+        actionLabel: 'Restart ToolCEO',
+        onAction: requestUpdateAction,
+        allowDuringRestore: true,
+      });
+    });
+    updater.onError(({ message }) => {
+      renderUpdaterStatus({ state: 'error' });
+      pushNotification({ type: 'error', message: 'Update check failed', detail: message || 'Please try again later.', allowDuringRestore: true });
+    });
+  }
 
   // Bind View All link on dashboard recent panel
   const viewAllBtn = document.querySelector('.recent-view-all');

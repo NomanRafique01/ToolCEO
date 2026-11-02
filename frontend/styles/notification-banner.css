@@ -270,6 +270,27 @@
   font-weight: var(--fw-medium);
 }
 
+.nb-pill-action {
+  flex: 0 0 auto;
+  min-height: 28px;
+  border: 1px solid color-mix(in srgb, var(--pill-color) 55%, transparent);
+  border-radius: 3px;
+  padding: 3px 7px;
+  color: var(--pill-color);
+  background: color-mix(in srgb, var(--pill-color) 10%, transparent);
+  font: inherit;
+  font-size: var(--fs-badge);
+  font-weight: var(--fw-semibold);
+  cursor: pointer;
+}
+
+@media (hover: hover) {
+  .nb-pill-action:hover { background: color-mix(in srgb, var(--pill-color) 18%, transparent); }
+}
+
+.nb-pill-action:active { transform: translateY(1px); }
+.nb-pill-action:focus-visible { outline: 2px solid var(--pill-color); outline-offset: 2px; }
+
 .nb-pill-time {
   font-family: var(--font-mono);
   font-variant-numeric: tabular-nums;

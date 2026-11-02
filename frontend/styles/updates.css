@@ -1,0 +1,428 @@
+/* ─────────────────────────────────────────────────────────────
+   updates.css
+   ToolCEO Application Update Page — Senior-Engineering Taste & Anti-Slop
+   Clean typographic hierarchy, concise release cards, zero duplicate text.
+   ───────────────────────────────────────────────────────────── */
+
+/* ─── HIDE HERO + RECENT COLUMNS WHEN UPDATES IS ACTIVE ────── */
+
+#dashboard-panel.updates-active .dash-columns,
+#dashboard-panel.updates-active .features-strip {
+  display: none !important;
+}
+
+#dashboard-panel.updates-active .explore-section {
+  padding-top: 0;
+}
+
+/* ─── MAIN PAGE ROOT ────────────────────────────────────────── */
+
+.updates-page {
+  --updates-accent: #A78BFA;
+  --updates-accent-subtle: rgba(167, 139, 250, 0.12);
+  --updates-accent-border: rgba(167, 139, 250, 0.28);
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+  animation: updates-page-in 220ms cubic-bezier(0.16, 1, 0.3, 1) both;
+  font-family: var(--font-sans);
+}
+
+@keyframes updates-page-in {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes updates-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
+}
+
+/* ─── FOCAL CARD 1: UP-TO-DATE HERO ─────────────────────────── */
+
+.updates-hero {
+  border-radius: 12px;
+  background: var(--bg-card);
+  border: 1.5px solid var(--border);
+  padding: 20px 22px;
+  margin-bottom: 24px;
+  box-shadow: var(--specular-top), 0 2px 10px rgba(0, 0, 0, 0.18);
+  transition: border-color 150ms ease;
+}
+
+.updates-hero:hover {
+  border-color: var(--updates-accent-border);
+}
+
+.updates-hero__inner {
+  display: flex;
+  align-items: center;
+  gap: 18px;
+}
+
+.updates-hero__icon-box {
+  width: 48px;
+  height: 48px;
+  border-radius: 11px;
+  background: var(--updates-accent-subtle);
+  color: var(--updates-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.updates-hero-spin {
+  animation: updates-spin 1s linear infinite;
+}
+
+.updates-hero__meta {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.updates-hero__header-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.updates-hero__heading {
+  font-size: 17px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.25;
+}
+
+.updates-status-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  font-weight: 500;
+  padding: 2px 8px;
+  border-radius: 10px;
+  background: rgba(0, 229, 192, 0.12);
+  color: #00E5C0;
+  border: 1px solid rgba(0, 229, 192, 0.28);
+  line-height: 1;
+}
+
+.updates-status-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+.updates-hero__desc {
+  font-size: 13px;
+  color: var(--text-muted);
+  margin: 0;
+  line-height: 1.4;
+}
+
+.updates-hero__timestamp {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 2px;
+  font-size: 11.5px;
+  color: var(--text-muted);
+  opacity: 0.8;
+}
+
+.updates-hero__actions {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  flex-shrink: 0;
+}
+
+.updates-action-btn {
+  height: 36px;
+  padding: 0 16px;
+  border-radius: 8px;
+  background: var(--updates-accent);
+  color: #141026;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  transition: background-color 140ms ease, transform 120ms ease;
+}
+
+.updates-action-btn:hover:not(:disabled) {
+  background: #BFA5FD;
+  transform: translateY(-1px);
+}
+
+.updates-action-btn:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.updates-action-btn:disabled {
+  opacity: 0.65;
+  cursor: wait;
+}
+
+/* ─── FOCAL CARD 2: SIMPLE DOWNLOAD RELEASE CARD ─────────────── */
+
+.update-release-card {
+  border-radius: 12px;
+  background: var(--bg-card);
+  border: 1.5px solid var(--updates-accent-border);
+  padding: 20px 22px 18px;
+  margin-bottom: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.22);
+  transition: border-color 150ms ease;
+}
+
+.update-release-card:hover {
+  border-color: var(--updates-accent);
+}
+
+.update-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.update-card-identity {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.update-card-title-row {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+}
+
+.update-card-headline {
+  font-size: 18px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.25;
+}
+
+.update-badge {
+  font-size: 10px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  padding: 2px 7px;
+  border-radius: 5px;
+  line-height: 1;
+}
+
+.update-badge--ready {
+  background: rgba(167, 139, 250, 0.2);
+  color: #DDD6FE;
+  border: 1px solid rgba(167, 139, 250, 0.35);
+}
+
+.update-card-size {
+  font-size: 12.5px;
+  font-family: var(--font-mono);
+  color: var(--updates-accent);
+  font-weight: 500;
+}
+
+.update-card-meta {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  margin: 3px 0 0;
+}
+
+.update-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 2px;
+}
+
+.mod-card-btn--install-now {
+  background: rgba(52, 211, 153, 0.16) !important;
+  color: #34D399 !important;
+  border: 1px solid rgba(52, 211, 153, 0.35) !important;
+}
+
+.mod-card-btn--install-now:hover {
+  background: rgba(52, 211, 153, 0.25) !important;
+}
+
+/* ─── SYSTEM OVERVIEW SECTION (CARDS ATTACHED DIRECTLY WITH ICONS) ─── */
+
+.updates-overview-section {
+  margin-bottom: 24px;
+}
+
+.updates-overview-label {
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--text-muted);
+  margin-bottom: 12px;
+}
+
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 16px;
+}
+
+.overview-card {
+  background: var(--bg-card);
+  border: 1.5px solid var(--border);
+  border-radius: 12px;
+  padding: 18px 18px 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  transition: border-color 150ms ease, background-color 150ms ease, transform 120ms ease;
+  position: relative;
+}
+
+.overview-card:hover {
+  border-color: var(--card-accent);
+  background: var(--card-bg);
+  transform: translateY(-1px);
+}
+
+/* Card Header — Icon attached directly with the Card Name */
+.overview-card-header {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.overview-card-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: var(--card-bg);
+  color: var(--card-accent);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  line-height: 0;
+}
+
+.overview-card-icon svg {
+  width: 22px;
+  height: 22px;
+  display: block;
+}
+
+.overview-card-title-wrap {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.overview-card-name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+}
+
+.overview-card-sub {
+  font-size: 12.5px;
+  color: var(--card-accent);
+  font-weight: 500;
+  font-family: var(--font-mono);
+}
+
+.overview-card-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.overview-card-list li {
+  font-size: 12.5px;
+  color: var(--text-muted);
+  padding-left: 14px;
+  position: relative;
+  line-height: 1.4;
+}
+
+.overview-card-list li::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 7px;
+  width: 4px;
+  height: 4px;
+  border-radius: 50%;
+  background: var(--card-accent);
+  opacity: 0.8;
+}
+
+/* ─── FOOTER NOTE ───────────────────────────────────────────── */
+
+.updates-footer-note {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  color: var(--text-muted);
+  font-size: 12px;
+  text-align: center;
+  max-width: 640px;
+  margin: 8px auto 16px;
+  line-height: 1.45;
+}
+
+.updates-footer-note svg {
+  flex-shrink: 0;
+}
+
+/* ─── RESPONSIVE RULES ──────────────────────────────────────── */
+
+@media (max-width: 860px) {
+  .overview-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 768px) {
+  .updates-hero__inner {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 14px;
+  }
+
+  .updates-hero__actions {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .update-card-top {
+    flex-direction: column;
+    gap: 10px;
+  }
+}
