@@ -9,6 +9,7 @@
 import { pushNotification } from './notificationStore.js';
 import { invalidateModuleCache, loadModuleStatuses } from './modulelock.js';
 import { makeDraggable, syncFloatingPanelsStack } from './panelDrag.js';
+import { isAppUpdateDownloading } from './appUpdateDownload.js';
 
 // ─── STATE ────────────────────────────────────────────────────────────────────
 
@@ -103,6 +104,15 @@ export function syncActiveDownload(activeDl) {
  * mod — a module definition object from the MODULES array (id, name, downloadUrl).
  */
 export function startModuleDownload(mod) {
+  if (isAppUpdateDownloading && isAppUpdateDownloading()) {
+    pushNotification({
+      type: 'warning',
+      message: 'System update in progress',
+      detail: 'Module downloads are disabled while ToolCEO is updating.',
+      allowDuringRestore: true,
+    });
+    return;
+  }
   if (_active) {
     pushNotification({ type: 'warning', message: 'A module operation is already in progress.' });
     return;
@@ -176,6 +186,15 @@ export function startModuleDownload(mod) {
  * mod — a module definition object from the MODULES array (id, name).
  */
 export function startModuleInstall(mod) {
+  if (isAppUpdateDownloading && isAppUpdateDownloading()) {
+    pushNotification({
+      type: 'warning',
+      message: 'System update in progress',
+      detail: 'Module operations are disabled while ToolCEO is updating.',
+      allowDuringRestore: true,
+    });
+    return;
+  }
   if (_active) {
     pushNotification({ type: 'warning', message: 'A module operation is already in progress.' });
     return;

@@ -16,7 +16,7 @@
 
 export function isPanelHidden(panel) {
   if (!panel) return true;
-  if (panel.id === 'mod-dl-panel') {
+  if (panel.id === 'mod-dl-panel' || panel.id === 'app-update-dl-panel') {
     return !panel.classList.contains('mod-dl-panel--visible');
   }
   if (panel.id === 'bg-job-bar') {

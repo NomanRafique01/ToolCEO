@@ -10,6 +10,7 @@ import { initQuickConvert }         from './quickconvert.js';
 import { initNotificationBanner }   from './notificationBanner.js';
 import { initVaultFileHandler }     from './vaultFileHandler.js';
 import { initModuleDownloadPanel }  from './moduleDownload.js';
+import { initAppUpdateDownload }    from './appUpdateDownload.js';
 import { initFavourites }           from './favourites.js';
 import { initHistoryTracker }       from './historyTracker.js';
 import { initRecentWidget }         from './recentWidget.js';
@@ -28,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initQuickConvert();
   initNotificationBanner();
   initModuleDownloadPanel();
+  initAppUpdateDownload();
   initFavourites({ activateNav });
   initHistoryTracker();
   initRecentWidget();

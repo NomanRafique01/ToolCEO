@@ -6,7 +6,8 @@
 
 /* ── Panel container ──────────────────────────────────────────────────────── */
 
-#mod-dl-panel {
+#mod-dl-panel,
+#app-update-dl-panel {
   position: fixed;
   bottom: 28px;
   right: 28px;
@@ -26,23 +27,29 @@
   touch-action: none;
 }
 
-#mod-dl-panel:active {
+#mod-dl-panel:active,
+#app-update-dl-panel:active {
   cursor: grabbing;
 }
 
 #mod-dl-panel button,
-#mod-dl-panel a {
+#mod-dl-panel a,
+#app-update-dl-panel button,
+#app-update-dl-panel a {
   cursor: pointer;
 }
 
-#mod-dl-panel.mod-dl-panel--visible {
+#mod-dl-panel.mod-dl-panel--visible,
+#app-update-dl-panel.mod-dl-panel--visible {
   display: block;
   animation: mod-dl-fade-in 0.25s ease forwards;
 }
 
 /* While being dragged — elevated shadow, no transitions that fight repositioning */
 #mod-dl-panel.panel-dragging,
-#mod-dl-panel.mod-dl-panel--dragging {
+#mod-dl-panel.mod-dl-panel--dragging,
+#app-update-dl-panel.panel-dragging,
+#app-update-dl-panel.mod-dl-panel--dragging {
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.7), 0 4px 16px rgba(0, 0, 0, 0.4);
   opacity: 0.95;
   user-select: none;
@@ -75,7 +82,9 @@
 
 .mod-dl-header:active,
 #mod-dl-panel.panel-dragging .mod-dl-header,
-#mod-dl-panel.mod-dl-panel--dragging .mod-dl-header {
+#mod-dl-panel.mod-dl-panel--dragging .mod-dl-header,
+#app-update-dl-panel.panel-dragging .mod-dl-header,
+#app-update-dl-panel.mod-dl-panel--dragging .mod-dl-header {
   cursor: grabbing;
 }
 
@@ -261,4 +270,119 @@
 @keyframes mod-dl-pulse {
   0%, 100% { opacity: 0.6; }
   50% { opacity: 1; }
+}
+
+/* ── Application update restart dialog ───────────────────────────────────── */
+
+.app-update-restart-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 16px;
+  background: rgba(0, 0, 0, 0.62);
+}
+
+.app-update-restart-modal.is-visible { display: flex; }
+
+.app-update-restart-card {
+  position: relative;
+  width: min(440px, calc(100vw - 32px));
+  border: 1px solid var(--border-hover);
+  border-radius: 12px;
+  padding: 28px;
+  background: var(--bg-surface-pop);
+  box-shadow: var(--specular-top), 0 20px 60px rgba(0, 0, 0, 0.55);
+  animation: notifModalIn var(--duration-normal) var(--ease-out) both;
+}
+
+.app-update-restart-icon {
+  display: flex;
+  width: 40px;
+  height: 40px;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 16px;
+  color: var(--status-success);
+  border: 1px solid color-mix(in srgb, var(--status-success) 45%, transparent);
+  border-radius: 6px;
+  background: color-mix(in srgb, var(--status-success) 10%, transparent);
+}
+
+.app-update-restart-title {
+  max-width: 28ch;
+  color: var(--text-primary);
+  font-size: var(--fs-section-title);
+  font-weight: var(--fw-semibold);
+  letter-spacing: var(--ls-tight);
+  line-height: var(--lh-section-title);
+}
+
+.app-update-restart-copy {
+  margin-top: 8px;
+  color: var(--text-muted);
+  font-size: var(--fs-body);
+  line-height: var(--lh-body);
+}
+
+.app-update-restart-close {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 6px;
+  color: var(--text-muted);
+  background: transparent;
+  cursor: pointer;
+}
+
+.app-update-restart-close:hover { color: var(--text-primary); background: var(--bg-card); }
+
+.app-update-restart-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+  margin-top: 24px;
+}
+
+.app-update-restart-later,
+.app-update-restart-now {
+  min-height: 44px;
+  border-radius: 6px;
+  padding: 0 14px;
+  font-size: var(--fs-control);
+  font-weight: var(--fw-semibold);
+  cursor: pointer;
+}
+
+.app-update-restart-later {
+  border: 1px solid var(--border);
+  color: var(--text-primary);
+  background: transparent;
+}
+
+.app-update-restart-now {
+  border: 1px solid var(--accent);
+  color: var(--bg-primary);
+  background: var(--accent);
+}
+
+.app-update-restart-later:hover { background: var(--bg-card); }
+.app-update-restart-now:hover { background: var(--accent-hover); border-color: var(--accent-hover); }
+.app-update-restart-later:active,
+.app-update-restart-now:active { transform: translateY(1px); }
+.app-update-restart-later:focus-visible,
+.app-update-restart-now:focus-visible,
+.app-update-restart-close:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.app-update-restart-now:disabled { cursor: wait; opacity: 0.6; }
+
+@media (max-width: 480px) {
+  .app-update-restart-card { padding: 24px; }
+  .app-update-restart-actions { flex-direction: column-reverse; }
+  .app-update-restart-later,
+  .app-update-restart-now { width: 100%; }
 }

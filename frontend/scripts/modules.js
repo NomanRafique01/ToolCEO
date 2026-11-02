@@ -6,6 +6,7 @@
  */
 
 import { pushNotification } from './notificationStore.js';
+import { isAppUpdateDownloading } from './appUpdateDownload.js';
 import {
   startModuleDownload,
   startModuleInstall,
