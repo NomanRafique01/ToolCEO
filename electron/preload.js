@@ -51,6 +51,39 @@ contextBridge.exposeInMainWorld('toolceo', {
 
 // ─── Module management API ────────────────────────────────────────────────────
 contextBridge.exposeInMainWorld('electronAPI', {
+  // ── Application updates ───────────────────────────────────────────────────
+  updater: {
+    checkForUpdates: () => ipcRenderer.invoke('updater:check-for-updates'),
+    startDownload: () => ipcRenderer.invoke('updater:start-download'),
+    quitAndInstall: () => ipcRenderer.invoke('updater:quit-and-install'),
+    getStatus: () => ipcRenderer.invoke('updater:get-status'),
+    onUpdateAvailable: (cb) => {
+      const handler = (_e, payload) => cb(payload);
+      ipcRenderer.on('updater:update-available', handler);
+      return () => ipcRenderer.removeListener('updater:update-available', handler);
+    },
+    onUpdateNotAvailable: (cb) => {
+      const handler = (_e, payload) => cb(payload);
+      ipcRenderer.on('updater:update-not-available', handler);
+      return () => ipcRenderer.removeListener('updater:update-not-available', handler);
+    },
+    onDownloadProgress: (cb) => {
+      const handler = (_e, payload) => cb(payload);
+      ipcRenderer.on('updater:download-progress', handler);
+      return () => ipcRenderer.removeListener('updater:download-progress', handler);
+    },
+    onUpdateDownloaded: (cb) => {
+      const handler = (_e, payload) => cb(payload);
+      ipcRenderer.on('updater:update-downloaded', handler);
+      return () => ipcRenderer.removeListener('updater:update-downloaded', handler);
+    },
+    onError: (cb) => {
+      const handler = (_e, payload) => cb(payload);
+      ipcRenderer.on('updater:error', handler);
+      return () => ipcRenderer.removeListener('updater:error', handler);
+    },
+  },
+
   // Status read/write
   readModulesJson:  ()                    => ipcRenderer.invoke('read-modules-json'),
   writeModulesJson: (moduleId, status)    => ipcRenderer.invoke('write-modules-json', moduleId, status),

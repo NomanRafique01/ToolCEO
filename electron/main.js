@@ -24,6 +24,7 @@ const os        = require('os');
 const https     = require('https');
 const AdmZip    = require('adm-zip');
 const historyDb = require('./database');
+const appUpdater = require('./autoUpdater');
 const { spawn, execFile, execFileSync } = require('child_process');
 
 // ─── SQUIRREL WINDOWS INSTALL/UPDATE EVENTS ────────────────────────────────────
@@ -1791,6 +1792,12 @@ app.whenReady().then(async () => {
     console.error('[database] Failed to initialize history DB:', err);
   }
 
+  // ── IPC: Application update lifecycle ─────────────────────────────────────
+  ipcMain.handle('updater:check-for-updates', () => appUpdater.checkForUpdates());
+  ipcMain.handle('updater:start-download', () => appUpdater.startDownload());
+  ipcMain.handle('updater:quit-and-install', () => appUpdater.quitAndInstall());
+  ipcMain.handle('updater:get-status', () => appUpdater.getStatus());
+
   // ── IPC: History Database handlers ─────────────────────────────────────────
   ipcMain.handle('db:add-conversion', (_event, data) => {
     const res = historyDb.addConversion(data);
@@ -2742,6 +2749,8 @@ app.whenReady().then(async () => {
 
   // ── Load the single renderer window + backend in parallel ──
   createWindow();
+  appUpdater.initialize(mainWindow);
+  appUpdater.scheduleInitialCheck(6000);
   startBackend();
   ensureVaultIcons();           // fire-and-forget — no await
   registerFileAssociation();    // fire-and-forget

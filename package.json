@@ -20,6 +20,14 @@
   "build": {
     "appId": "com.nythris.toolceo",
     "productName": "ToolCEO",
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "NomanRafique01",
+        "repo": "ToolCEO",
+        "releaseType": "release"
+      }
+    ],
     "npmRebuild": false,
     "compression": "normal",
     "asarUnpack": [
@@ -97,6 +105,7 @@
   "dependencies": {
     "adm-zip": "^0.6.0",
     "better-sqlite3": "^13.0.3",
+    "electron-updater": "^6.8.11",
     "fuse.js": "^7.5.0"
   },
   "devDependencies": {
