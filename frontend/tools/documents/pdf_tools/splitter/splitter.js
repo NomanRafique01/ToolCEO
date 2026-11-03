@@ -222,6 +222,11 @@ function _showPdfThumbnail(zone, file, color, dataUri) {
   wrap.querySelector('.dz-pdf-thumb-remove').addEventListener('click', (e) => {
     e.stopPropagation();
     removeSplitPanel();
+    resetZoneContent(zone);
+    import('../../../../scripts/dropzone.js').then(({ _updateDropZoneForTool }) => {
+      const t = getActiveTool();
+      if (t && _updateDropZoneForTool) _updateDropZoneForTool(t);
+    }).catch(() => {});
   });
 }
 

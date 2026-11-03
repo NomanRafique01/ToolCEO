@@ -81,6 +81,11 @@ function _showRotateDropzoneThumbnail(file, color, dataUri = null) {
     e.stopPropagation();
     if (_activeContainer) _closeViewer(_activeContainer);
     removeRotatePanel();
+    resetZoneContent(zone);
+    import('../../../../scripts/dropzone.js').then(({ _updateDropZoneForTool }) => {
+      const t = getActiveTool();
+      if (t && _updateDropZoneForTool) _updateDropZoneForTool(t);
+    }).catch(() => {});
   });
 }
 

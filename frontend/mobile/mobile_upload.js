@@ -441,6 +441,11 @@
     });
   }
 
+  /** Basename comparison key shared with the desktop remove mirror. */
+  function _baseName(name) {
+    return String(name || '').replace(/\\/g, '/').split('/').pop().trim().toLowerCase();
+  }
+
   // ── Ensure dropzone overlays match desktop exact DOM ──────────────────────
   function ensureDropzoneOverlays() {
     const dz = document.getElementById('mobile-dropzone');
@@ -753,6 +758,31 @@
       if (data.status === 'cancelled') {
         showDisconnectedScreen('cancelled');
         return;
+      }
+
+      // ── Desktop per-file removal mirror ───────────────────────────────
+      // The desktop queues filenames it dropped. Remove the matching items
+      // from the phone selection and acknowledge so they aren't re-sent.
+      const desktopRemoves = Array.isArray(data.desktop_removes) ? data.desktop_removes : [];
+      if (desktopRemoves.length) {
+        const wanted = new Set(desktopRemoves.map(_baseName).filter(Boolean));
+        const before = selectedItems.length;
+        selectedItems = selectedItems.filter((item) => {
+          const names = [item.serverName, item.file?.name].filter(Boolean).map(_baseName);
+          return !names.some((n) => wanted.has(n));
+        });
+        fetch(`/api/mobile/session/${sessionId}/desktop_remove_ack`, {
+          method: 'POST',
+          keepalive: true,
+        }).catch(() => {});
+        if (selectedItems.length !== before) {
+          if (selectedItems.length === 0) {
+            resetToEmptyDropzone();
+            _switchToView('form-view');
+          } else {
+            renderDropzoneStrip();
+          }
+        }
       }
 
       // ── Desktop "Clear All" mirror ────────────────────────────────────

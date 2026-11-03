@@ -19,7 +19,7 @@ import { handleArchiveDuplicateFilePicked, removeArchiveDuplicatePanel } from '.
  */
 
 import { getActiveTool, setActiveTool, onToolChange, setBgJob, getBgJob, getBgJobForTool, syncBgJobBar, clearBgJob } from './toolstate.js';
-import { unlinkMirrorJob, notifyDesktopClear } from './mobileJobMirror.js';
+import { unlinkMirrorJob, notifyDesktopClear, notifyDesktopFileRemove } from './mobileJobMirror.js';
 import { applyToolDropZoneSnapshot, captureToolDropZoneSnapshot, clearToolFileState, getToolFileState, isRestoringToolFiles, saveToolFiles, setRestoringToolFiles, shouldSuppressRestoreScan } from './fileState.js';
 import { pushNotification } from './notificationStore.js';
 import { getToolFamily } from './toolFamily.js';
@@ -420,6 +420,34 @@ function _isClearAllClick(target) {
     '[data-clear-tool-files], [class*="queue-clear"], ' +
     '.dz-queue-clear-btn, .jpg-queue-clear-btn, .imgcmp-clear-btn'
   );
+}
+
+function _isFileRemoveClick(target) {
+  if (!(target instanceof Element)) return false;
+  return !!target.closest(
+    '[class*="thumb-remove"], [class*="card-remove"], .dz-img-preview-remove'
+  );
+}
+
+/** Resolve the filename shown by the thumb/card that owns a remove button. */
+function _removeControlFilename(control) {
+  let node = control.parentElement;
+  while (node && node !== document.body) {
+    const nameEl = node.querySelector(
+      '[data-filename], [class*="-thumb-name"], [class*="-preview-name"], ' +
+      '[class*="-card-name"], [class*="file-name"]'
+    );
+    if (nameEl) {
+      const raw = nameEl.getAttribute('data-filename')
+        || nameEl.getAttribute('title')
+        || nameEl.textContent
+        || '';
+      const base = String(raw).replace(/\\/g, '/').split('/').pop().trim();
+      if (base) return base;
+    }
+    node = node.parentElement;
+  }
+  return '';
 }
 
 function _restoreNounForFamily(family, count) {
@@ -1190,6 +1218,11 @@ export function clearPhoneReceiveProgress() {
   if (!zone) return;
   zone.querySelector('.dz-progress-wrap.dz-phone-receiving')?.remove();
   zone.classList.remove('dz-state-processing');
+  // Receiving hid the idle drop-zone content. Restore it so removing the
+  // received file reveals a working drop zone instead of empty space.
+  zone.querySelectorAll('.dz-processing-hidden').forEach((el) => {
+    el.classList.remove('dz-processing-hidden');
+  });
 }
 
 /** Show an indeterminate scanning ring — spinning arc. */
@@ -1981,6 +2014,8 @@ export function initDropZone() {
 
     if (_isClearAllClick(target)) {
       notifyDesktopClear(getActiveTool()?.id || null);
+    } else if (_isFileRemoveClick(target)) {
+      notifyDesktopFileRemove(_removeControlFilename(target), getActiveTool()?.id || null);
     }
 
     if (_isForgetFilesClick(target)) {

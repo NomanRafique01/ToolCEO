@@ -1204,7 +1204,13 @@ function _removeFileFromDesktopQueue(filename) {
         '.dz-jpg-card-remove, .dz-merge-card-remove, [class*="card-remove"]'
       );
       if (removeBtn) {
-        removeBtn.click();
+        // Phone already removed this file locally — don't mirror it back.
+        setDesktopClearNotifySuppressed(true);
+        try {
+          removeBtn.click();
+        } finally {
+          setDesktopClearNotifySuppressed(false);
+        }
         matched = true;
       }
     }

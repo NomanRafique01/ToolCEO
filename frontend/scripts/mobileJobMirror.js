@@ -75,3 +75,22 @@ export function notifyDesktopClear(toolId = null) {
 export function setDesktopClearNotifySuppressed(suppressed) {
   _suppressClearNotify = suppressed === true;
 }
+
+/**
+ * Desktop removed a single queued file. Ask the phone to drop the matching
+ * item; without a filename this degrades to a full queue clear.
+ */
+export function notifyDesktopFileRemove(filename, toolId = null) {
+  if (_suppressClearNotify || !_sessionId) return;
+  if (!_sameTool(toolId)) return;
+  if (!filename) {
+    notifyDesktopClear(toolId);
+    return;
+  }
+  fetch(`${_backend()}/api/mobile/session/${_sessionId}/desktop_remove`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ filename: String(filename) }),
+    keepalive: true,
+  }).catch(() => {});
+}

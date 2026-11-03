@@ -394,6 +394,7 @@ async def create_session(request: Request, tool: Optional[str] = "images-pdf", t
         "pending_execution": None,
         "pending_clear": False,
         "desktop_clear_epoch": 0,
+        "desktop_removes": [],
         "pending_job_clear": False,
         "job_clear_source": None,
         "transfer_progress": 0,
@@ -498,6 +499,7 @@ async def get_session_status(session_id: str):
         "pending_execution": sess.get("pending_execution"),
         "pending_clear": bool(sess.get("pending_clear")),
         "desktop_clear_epoch": int(sess.get("desktop_clear_epoch") or 0),
+        "desktop_removes": list(sess.get("desktop_removes") or []),
         "pending_job_clear": bool(sess.get("pending_job_clear")),
         "job_clear_source": sess.get("job_clear_source"),
         "transfer_progress": int(sess.get("transfer_progress") or 0),
@@ -573,6 +575,7 @@ async def desktop_clear_session_files(session_id: str):
     sess["pending_remove"] = []
     sess["pending_reorder"] = None
     sess["pending_execution"] = None
+    sess["desktop_removes"] = []
     # The cleared queue takes any linked result/progress card with it.
     sess["job_id"] = None
     sess["job_filename"] = ""
@@ -580,6 +583,59 @@ async def desktop_clear_session_files(session_id: str):
     sess["job_clear_source"] = "desktop"
     sess["desktop_clear_epoch"] = int(sess.get("desktop_clear_epoch") or 0) + 1
     return {"ok": True, "desktop_clear_epoch": sess["desktop_clear_epoch"]}
+
+
+@router.post("/api/mobile/session/{session_id}/desktop_remove")
+async def desktop_remove_session_file(request: Request, session_id: str):
+    """Desktop removed one queued file: mirror it on the paired phone."""
+    sess = SESSIONS.get(session_id)
+    if not sess:
+        raise HTTPException(status_code=404, detail="Session expired")
+
+    payload: Dict[str, Any] = {}
+    try:
+        raw = await request.body()
+        if raw:
+            parsed = json.loads(raw.decode("utf-8"))
+            if isinstance(parsed, dict):
+                payload = parsed
+    except Exception:
+        payload = {}
+
+    filename = _safe_text(payload.get("filename"), "", 220).strip()
+    if not filename:
+        return {"ok": True, "removed": False}
+
+    def _base(value: Any) -> str:
+        return str(value or "").replace("\\", "/").rsplit("/", 1)[-1].strip().lower()
+
+    target = _base(filename)
+    files = sess.get("files") or []
+    kept = []
+    acked = int(sess.get("acked_until") or 0)
+    for idx, item in enumerate(files):
+        if _base(item.get("name")) == target:
+            if idx < acked:
+                acked = max(0, acked - 1)
+            continue
+        kept.append(item)
+    sess["files"] = kept
+    sess["acked_until"] = acked
+
+    queue = sess.get("desktop_removes")
+    if not isinstance(queue, list):
+        queue = []
+    queue.append(filename)
+    sess["desktop_removes"] = queue[-20:]
+    return {"ok": True, "removed": True}
+
+
+@router.post("/api/mobile/session/{session_id}/desktop_remove_ack")
+async def ack_desktop_remove(session_id: str):
+    sess = SESSIONS.get(session_id)
+    if sess:
+        sess["desktop_removes"] = []
+    return {"ok": True}
 
 
 @router.post("/api/mobile/session/{session_id}/reorder")
