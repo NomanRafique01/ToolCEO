@@ -92,16 +92,10 @@ async function handleCheckForUpdates() {
       (currentUpdateStatus && currentUpdateStatus.state === 'available');
 
     if (isUpdateAvailable) {
-      const availableVersion = currentUpdateStatus.version || RELEASE_INFO.version;
+      const availableVersion = currentUpdateStatus.version || installedVersion();
       currentUpdateStatus = { ...currentUpdateStatus, state: 'available', version: availableVersion };
-      pushNotification({
-        type: 'info',
-        message: `New version available (v${availableVersion})`,
-        detail: `ToolCEO v${availableVersion} is ready to download.`,
-        actionLabel: 'Download Update',
-        onAction: triggerDownload,
-        allowDuringRestore: true,
-      });
+      // navigation.js surfaces the "available" toast from the updater event;
+      // re-notifying here would double it up.
     } else {
       currentUpdateStatus = { ...currentUpdateStatus, state: 'up-to-date', version: installedVersion() };
       pushNotification({
