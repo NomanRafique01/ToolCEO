@@ -14,6 +14,7 @@
 let _sessionId = null;
 let _sessionToolId = null;
 let _linkedJobId = null;
+let _suppressClearNotify = false;
 
 const _backend = () => window.TOOLCEO_BACKEND_URL || 'http://127.0.0.1:8765';
 
@@ -55,4 +56,22 @@ export function unlinkMirrorJob(toolId = null) {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ job_id: null }),
   }).catch(() => {});
+}
+
+/**
+ * Desktop cleared its file queue. Tell the paired phone to clear its
+ * dropzone too. Programmatic clears (mirroring a phone request or a
+ * reorder reload) set the suppression flag so they don't bounce back.
+ */
+export function notifyDesktopClear(toolId = null) {
+  if (_suppressClearNotify || !_sessionId) return;
+  if (!_sameTool(toolId)) return;
+  fetch(`${_backend()}/api/mobile/session/${_sessionId}/desktop_clear`, {
+    method: 'POST',
+    keepalive: true,
+  }).catch(() => {});
+}
+
+export function setDesktopClearNotifySuppressed(suppressed) {
+  _suppressClearNotify = suppressed === true;
 }

@@ -22,6 +22,7 @@
   let _wasShowingJob = false;  // were we showing a job view?
   let _jobDoneShown  = false;  // guard: don't re-trigger done view
   let _jobDownloadStarted = false;
+  let _desktopClearEpoch = null; // adopt on first poll; reset queue on change
 
   const DEFAULT_COLOR = '#00E5C0';
   const DEFAULT_BG    = 'rgba(0, 229, 192, 0.15)';
@@ -751,6 +752,24 @@
 
       if (data.status === 'cancelled') {
         showDisconnectedScreen('cancelled');
+        return;
+      }
+
+      // ── Desktop "Clear All" mirror ────────────────────────────────────
+      // The desktop bumps this epoch whenever its queue is cleared. Adopt
+      // the current value on the first poll (reload-safe), then reset the
+      // phone dropzone to match on every subsequent change.
+      const desktopClearEpoch = Number(data.desktop_clear_epoch) || 0;
+      if (_desktopClearEpoch === null) {
+        _desktopClearEpoch = desktopClearEpoch;
+      } else if (desktopClearEpoch !== _desktopClearEpoch) {
+        _desktopClearEpoch = desktopClearEpoch;
+        resetToEmptyDropzone();
+        _switchToView('form-view');
+        _pollInterval = 2000;
+        if (!sessionEnded) {
+          statusPollTimer = setTimeout(_pollSessionStatus, _pollInterval);
+        }
         return;
       }
 

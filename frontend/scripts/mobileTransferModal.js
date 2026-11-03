@@ -8,7 +8,7 @@
 import { getActiveTool, onToolChange, setToolSwitchGuard } from './toolstate.js';
 import { pushNotification } from './notificationStore.js';
 import { handleExternalFiles, showPhoneReceiveProgress, clearPhoneReceiveProgress } from './dropzone.js';
-import { bindMirrorSession, unbindMirrorSession } from './mobileJobMirror.js';
+import { bindMirrorSession, unbindMirrorSession, setDesktopClearNotifySuppressed } from './mobileJobMirror.js';
 
 let _activeSessionId = null;
 let _pollTimer = null;
@@ -905,7 +905,13 @@ function _startPolling(backendUrl, sessionId) {
           '#imgpdf-queue-clear, #dz-imgpdf-toolbar-clear, .jpg-queue-clear-btn, .dz-queue-clear-btn'
         );
         if (clearBtn) {
-          clearBtn.click();
+          // Phone-initiated clear: do not bounce it back to the phone.
+          setDesktopClearNotifySuppressed(true);
+          try {
+            clearBtn.click();
+          } finally {
+            setDesktopClearNotifySuppressed(false);
+          }
         } else {
           const zone = document.getElementById('drop-zone');
           if (zone) {
@@ -1097,7 +1103,14 @@ async function _processTransferredFiles(backendUrl, sessionId, fileList, replace
         '#dz-merge-toolbar-clear'
       );
       if (clearBtn) {
-        clearBtn.click();
+        // Reorder reload is driven by the phone — the phone must keep its
+        // files, so suppress the desktop->phone clear mirror here.
+        setDesktopClearNotifySuppressed(true);
+        try {
+          clearBtn.click();
+        } finally {
+          setDesktopClearNotifySuppressed(false);
+        }
         // Small delay for the clear to take effect before re-loading
         await new Promise((r) => setTimeout(r, 80));
       }

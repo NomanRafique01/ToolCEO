@@ -393,6 +393,7 @@ async def create_session(request: Request, tool: Optional[str] = "images-pdf", t
         "acked_until": 0,
         "pending_execution": None,
         "pending_clear": False,
+        "desktop_clear_epoch": 0,
         "pending_job_clear": False,
         "job_clear_source": None,
         "transfer_progress": 0,
@@ -496,6 +497,7 @@ async def get_session_status(session_id: str):
         "all_files": files,
         "pending_execution": sess.get("pending_execution"),
         "pending_clear": bool(sess.get("pending_clear")),
+        "desktop_clear_epoch": int(sess.get("desktop_clear_epoch") or 0),
         "pending_job_clear": bool(sess.get("pending_job_clear")),
         "job_clear_source": sess.get("job_clear_source"),
         "transfer_progress": int(sess.get("transfer_progress") or 0),
@@ -558,6 +560,26 @@ async def ack_session_clear(session_id: str):
     if sess:
         sess["pending_clear"] = False
     return {"ok": True}
+
+
+@router.post("/api/mobile/session/{session_id}/desktop_clear")
+async def desktop_clear_session_files(session_id: str):
+    """Desktop cleared its queue: make the paired phone clear its dropzone."""
+    sess = SESSIONS.get(session_id)
+    if not sess:
+        raise HTTPException(status_code=404, detail="Session expired")
+    sess["files"] = []
+    sess["acked_until"] = 0
+    sess["pending_remove"] = []
+    sess["pending_reorder"] = None
+    sess["pending_execution"] = None
+    # The cleared queue takes any linked result/progress card with it.
+    sess["job_id"] = None
+    sess["job_filename"] = ""
+    sess["pending_job_clear"] = True
+    sess["job_clear_source"] = "desktop"
+    sess["desktop_clear_epoch"] = int(sess.get("desktop_clear_epoch") or 0) + 1
+    return {"ok": True, "desktop_clear_epoch": sess["desktop_clear_epoch"]}
 
 
 @router.post("/api/mobile/session/{session_id}/reorder")

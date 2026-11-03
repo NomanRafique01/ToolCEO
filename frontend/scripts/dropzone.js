@@ -19,7 +19,7 @@ import { handleArchiveDuplicateFilePicked, removeArchiveDuplicatePanel } from '.
  */
 
 import { getActiveTool, setActiveTool, onToolChange, setBgJob, getBgJob, getBgJobForTool, syncBgJobBar, clearBgJob } from './toolstate.js';
-import { unlinkMirrorJob } from './mobileJobMirror.js';
+import { unlinkMirrorJob, notifyDesktopClear } from './mobileJobMirror.js';
 import { applyToolDropZoneSnapshot, captureToolDropZoneSnapshot, clearToolFileState, getToolFileState, isRestoringToolFiles, saveToolFiles, setRestoringToolFiles, shouldSuppressRestoreScan } from './fileState.js';
 import { pushNotification } from './notificationStore.js';
 import { getToolFamily } from './toolFamily.js';
@@ -410,6 +410,14 @@ function _isForgetFilesClick(target) {
     '.dz-img-preview-remove, .mqp-clear-btn, ' +
     '.sip-change-btn, .enc-change-btn, .pw-change-btn, .archive-change-btn, .ai-change-btn, ' +
     '.arc-protect-change-btn, .xip-secondary-btn, ' +
+    '.dz-queue-clear-btn, .jpg-queue-clear-btn, .imgcmp-clear-btn'
+  );
+}
+
+function _isClearAllClick(target) {
+  if (!(target instanceof Element)) return false;
+  return !!target.closest(
+    '[data-clear-tool-files], [class*="queue-clear"], ' +
     '.dz-queue-clear-btn, .jpg-queue-clear-btn, .imgcmp-clear-btn'
   );
 }
@@ -1970,6 +1978,10 @@ export function initDropZone() {
   document.addEventListener('click', (e) => {
     const target = e.target;
     if (!(target instanceof Element)) return;
+
+    if (_isClearAllClick(target)) {
+      notifyDesktopClear(getActiveTool()?.id || null);
+    }
 
     if (_isForgetFilesClick(target)) {
       _clearActiveToolFiles();
