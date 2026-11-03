@@ -22,9 +22,9 @@
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  background: rgba(255, 255, 255, 0.04);
-  border: 1px solid var(--border, rgba(45, 85, 78, 0.35));
-  color: var(--text-muted, #7E9E99);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: rgba(255, 255, 255, 0.75);
   border-radius: 8px;
   padding: 7px 14px;
   font-size: 12px;
@@ -35,18 +35,25 @@
               background var(--duration-fast, 160ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)),
               box-shadow var(--duration-fast, 160ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)),
               transform var(--duration-micro, 120ms) var(--ease-micro, cubic-bezier(0, 0, 0.2, 1));
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
   z-index: 2;
 }
 
 .dz-phone-btn:hover {
-  background: rgba(255, 255, 255, 0.06);
-  border-color: var(--border-hover, rgba(0, 196, 167, 0.40));
+  background: rgba(255, 255, 255, 0.10);
+  border-color: var(--border-hover);
   color: var(--text-primary, #EDECE8);
   transform: translateY(-1px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
 }
 
 .dz-phone-btn:active {
   transform: translateY(0) scale(0.98);
+}
+
+.dz-phone-btn:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
 }
 
 /* ── Tool-Active State — buttons follow the selected tool colour ── */
