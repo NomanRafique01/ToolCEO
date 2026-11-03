@@ -59,12 +59,8 @@ Web converters force you to upload private documents to someone else's server, q
 Choose the version that fits your needs. Every release runs 100% offline, operates with zero telemetry, and includes all 172 core tools out of the box.
 
 <p align="center">
-  <a href="https://github.com/NomanRafique01/ToolCEO/releases/download/v2.0.2/ToolCEO-Setup-2.0.2.exe" title="Download ToolCEO v2.0.2 (Latest Stable)">
-    <img src="assets/btn-download-v2.0.2.svg" alt="Download ToolCEO v2.0.2 (Latest)" height="66" />
-  </a>
-  &nbsp;&nbsp;
-  <a href="https://github.com/NomanRafique01/ToolCEO/releases/download/v2.0.1/ToolCEO-Setup-2.0.1.exe" title="Download ToolCEO v2.0.1 (Stable)">
-    <img src="assets/btn-download-v2.0.1.svg" alt="Download ToolCEO v2.0.1 (Stable)" height="66" />
+  <a href="https://github.com/NomanRafique01/ToolCEO/releases/download/v2.0.1/ToolCEO-Setup-2.0.1.exe" title="Download ToolCEO v2.0.1 (Latest Stable)">
+    <img src="assets/btn-download-v2.0.1.svg" alt="Download ToolCEO v2.0.1 (Latest)" height="66" />
   </a>
   &nbsp;&nbsp;
   <a href="https://github.com/NomanRafique01/ToolCEO/releases/download/v_2.0.0/ToolCEO.Setup.2.0.0.exe" title="Download ToolCEO v2.0.0 (Previous Stable)">
@@ -88,14 +84,13 @@ Choose the version that fits your needs. Every release runs 100% offline, operat
 
 | Version | Release Type | Target OS | Installer Size | Direct Download |
 |:---|:---:|:---:|:---:|:---:|
-| **ToolCEO v2.0.2** | 🟢 **Latest Stable** (Recommended) | Windows 10 / 11 (x64) | ~206 MB | [**ToolCEO-Setup-2.0.2.exe**](https://github.com/NomanRafique01/ToolCEO/releases/download/v2.0.2/ToolCEO-Setup-2.0.2.exe) |
-| **ToolCEO v2.0.1** | 🟢 **Version 2.0.1** (Stable) | Windows 10 / 11 (x64) | ~206 MB | [**ToolCEO-Setup-2.0.1.exe**](https://github.com/NomanRafique01/ToolCEO/releases/download/v2.0.1/ToolCEO-Setup-2.0.1.exe) |
+| **ToolCEO v2.0.1** | 🟢 **Latest Stable** (Recommended) | Windows 10 / 11 (x64) | ~206 MB | [**ToolCEO-Setup-2.0.1.exe**](https://github.com/NomanRafique01/ToolCEO/releases/download/v2.0.1/ToolCEO-Setup-2.0.1.exe) |
 | **ToolCEO v2.0.0** | 🔵 **Version 2.0.0** (Previous Stable) | Windows 10 / 11 (x64) | ~206 MB | [**ToolCEO.Setup.2.0.0.exe**](https://github.com/NomanRafique01/ToolCEO/releases/download/v_2.0.0/ToolCEO.Setup.2.0.0.exe) |
 | **ToolCEO v1.0.0** | 🔵 **Version 1.0** (Stable) | Windows 10 / 11 (x64) | ~196.5 MB | [**ToolCEO.Setup.1.0.0.exe**](https://github.com/NomanRafique01/ToolCEO/releases/download/v_1.0.0/ToolCEO.Setup.1.0.0.exe) |
 | **ToolCEO Beta** | 🟡 **v1.0.0-beta.1** (Pre-release) | Windows 10 / 11 (x64) | ~196.0 MB | [**ToolCEO.Setup.1.0.0.exe**](https://github.com/NomanRafique01/ToolCEO/releases/download/v1.0.0-beta.1/ToolCEO.Setup.1.0.0.exe) |
 
 > [!TIP]
-> **Recommended:** ToolCEO **v2.0.2** is the latest, most performant build featuring improved engine management, responsive auto-scaling, and expanded file conversion support, plus a self-contained updater that keeps the detected release visible across restarts, lets you cancel a download, and recovers automatically when the connection drops. Optional heavy modules (Office, OCR, Calibre eBook, Pandoc) download on demand directly within the app.
+> **Recommended:** ToolCEO **v2.0.1** is the latest stable release, with higher-fidelity Word-to-PDF conversion, a calmer desktop workspace, and stronger accessibility defaults.
 
 ## Features
 
@@ -126,7 +121,7 @@ Pre-built packages are available for 64-bit Windows.
 
 | Package | Description | Download |
 |---|---|---|
-| **Installer** (`.exe`) | Setup wizard with Start Menu entry, desktop shortcut, and uninstaller | [Download ToolCEO v2.0.2](https://github.com/NomanRafique01/ToolCEO/releases/download/v2.0.2/ToolCEO-Setup-2.0.2.exe) |
+| **Installer** (`.exe`) | Setup wizard with Start Menu entry, desktop shortcut, and uninstaller | [Download ToolCEO v2.0.1](https://github.com/NomanRafique01/ToolCEO/releases/download/v2.0.1/ToolCEO-Setup-2.0.1.exe) |
 
 ### System Requirements
 
