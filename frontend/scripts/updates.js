@@ -32,7 +32,6 @@ function formatTime(date) {
 // Release details
 const RELEASE_INFO = {
   channel: 'Stable Production Channel',
-  size: '48.2 MB',
 };
 
 function installedVersion() {
@@ -41,6 +40,15 @@ function installedVersion() {
 
 function releaseVersion() {
   return currentUpdateStatus.version || installedVersion();
+}
+
+function formatSize(bytes) {
+  if (!Number.isFinite(bytes) || bytes <= 0) return null;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function releaseSize() {
+  return formatSize(currentUpdateStatus.sizeBytes) || 'installer';
 }
 
 function formatReleaseMonth(releaseDate) {
@@ -64,7 +72,7 @@ function triggerDownload() {
   refreshUI();
 
   document.dispatchEvent(new CustomEvent('toolceo:app-update-request', {
-    detail: { state: 'available', version: releaseVersion() },
+    detail: { state: 'available', version: releaseVersion(), sizeBytes: currentUpdateStatus.sizeBytes || null },
   }));
 }
 
@@ -92,10 +100,9 @@ async function handleCheckForUpdates() {
       (currentUpdateStatus && currentUpdateStatus.state === 'available');
 
     if (isUpdateAvailable) {
-      const availableVersion = currentUpdateStatus.version || installedVersion();
-      currentUpdateStatus = { ...currentUpdateStatus, state: 'available', version: availableVersion };
       // navigation.js surfaces the "available" toast from the updater event;
       // re-notifying here would double it up.
+      currentUpdateStatus = { ...currentUpdateStatus, state: 'available' };
     } else {
       currentUpdateStatus = { ...currentUpdateStatus, state: 'up-to-date', version: installedVersion() };
       pushNotification({
@@ -118,6 +125,7 @@ function renderMainCardHTML() {
   const isReadyToInstall = currentUpdateStatus.state === 'ready_to_install';
   const isUpdateFound = currentUpdateStatus.state === 'available' || isDownloading || isReadyToInstall;
   const newVersion = releaseVersion();
+  const newSize = releaseSize();
   const releaseMonth = formatReleaseMonth(currentUpdateStatus.releaseDate);
 
   if (isUpdateFound) {
@@ -145,7 +153,7 @@ function renderMainCardHTML() {
             <path d="M12 3v13M7 11l5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             <path d="M5 20h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
           </svg>
-          Download Update (${RELEASE_INFO.size})
+          Download Update${newSize === 'installer' ? '' : ` (${newSize})`}
         </button>`;
     }
 
@@ -164,7 +172,7 @@ function renderMainCardHTML() {
               <div class="update-card-title-row">
                 <h2 class="update-card-headline">ToolCEO ${newVersion}</h2>
                 <span class="update-badge update-badge--ready">${isReadyToInstall ? 'Ready to Install' : 'New Release'}</span>
-                <span class="update-card-size">${RELEASE_INFO.size}</span>
+                <span class="update-card-size">${newSize}</span>
               </div>
               <p class="update-card-meta">${RELEASE_INFO.channel}${releaseMonth ? ` · ${releaseMonth} build` : ''}</p>
             </div>
@@ -390,15 +398,15 @@ document.addEventListener('toolceo:system-online', () => {
 // Sync download completion from floating download panel
 document.addEventListener('toolceo:app-update-downloaded', (event) => {
   const update = event.detail || {};
-  currentUpdateStatus = { ...currentUpdateStatus, ...update, state: 'ready_to_install' };
+  currentUpdateStatus = { ...currentUpdateStatus, ...update };
   refreshUI();
 });
 
-// Sync download state changes
-window.addEventListener('toolceo:app-update-state-changed', (event) => {
-  const downloading = event.detail?.downloading;
-  if (!downloading && currentUpdateStatus.state === 'downloading') {
-    currentUpdateStatus.state = 'ready_to_install';
-  }
-  refreshUI();
+// The download panel hides itself on both success and failure, so trust the
+// main-process state rather than assuming a completed download.
+window.addEventListener('toolceo:app-update-state-changed', () => {
+  window.electronAPI?.updater?.getStatus?.().then((status) => {
+    if (status) currentUpdateStatus = { ...currentUpdateStatus, ...status };
+    refreshUI();
+  }).catch(() => refreshUI());
 });

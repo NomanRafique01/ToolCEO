@@ -6,6 +6,7 @@
 
 const { app } = require('electron');
 const { autoUpdater } = require('electron-updater');
+const https = require('https');
 
 const DEV_UPDATER_FLAG = 'TOOLCEO_ENABLE_UPDATER';
 const MOCK_VERSION_FLAG = 'TOOLCEO_UPDATER_MOCK_VERSION';
@@ -45,6 +46,53 @@ function serializableReleaseNotes(releaseNotes) {
   return releaseNotes || null;
 }
 
+/**
+ * electron-updater only reports total bytes once a transfer is under way, and NSIS
+ * metadata carries no size field, so the installer length is taken from the release
+ * asset itself. Redirects are followed to stay correct on GitHub's signed CDN URLs.
+ */
+const assetLengthCache = new Map();
+
+function requestContentLength(url, redirectsLeft = 3) {
+  return new Promise((resolve) => {
+    let request;
+    try {
+      request = https.request(url, { method: 'HEAD' }, (response) => {
+        const length = Number(response.headers['content-length']);
+        if (response.statusCode >= 300 && response.statusCode < 400 && response.headers.location && redirectsLeft > 0) {
+          resolve(requestContentLength(new URL(response.headers.location, url).toString(), redirectsLeft - 1));
+          return;
+        }
+        response.resume();
+        resolve(Number.isFinite(length) && length > 0 ? length : null);
+      });
+    } catch (_) {
+      resolve(null);
+      return;
+    }
+    request.on('error', () => resolve(null));
+    request.end();
+  });
+}
+
+async function resolveUpdateSizeBytes(info) {
+  if (!info) return null;
+
+  const declared = (Array.isArray(info.files) ? info.files : []).find((file) => Number.isFinite(file?.size) && file.size > 0);
+  if (declared) return declared.size;
+
+  const windowsPackage = info.packages && Object.values(info.packages)[0];
+  if (Number.isFinite(windowsPackage?.size) && windowsPackage.size > 0) return windowsPackage.size;
+
+  const url = (Array.isArray(info.files) ? info.files : []).map((file) => file?.url).find(Boolean);
+  if (!url) return null;
+
+  if (assetLengthCache.has(url)) return assetLengthCache.get(url);
+  const length = await requestContentLength(url);
+  if (length) assetLengthCache.set(url, length);
+  return length;
+}
+
 function setStatus(next) {
   status = { ...status, ...next };
   return getStatus();
@@ -77,10 +125,17 @@ function initialize(window) {
       version: info.version || null,
       releaseDate: info.releaseDate || null,
       releaseNotes: serializableReleaseNotes(info.releaseNotes),
+      sizeBytes: null,
     };
     setStatus({ state: 'available', ...update, progress: null, error: null });
     send('updater:update-available', { ...update, announce: announceNextResult });
     announceNextResult = false;
+
+    void resolveUpdateSizeBytes(info).then((sizeBytes) => {
+      if (!sizeBytes || status.state !== 'available') return;
+      setStatus({ sizeBytes });
+      send('updater:update-available', { version: status.version, sizeBytes });
+    });
   });
 
   autoUpdater.on('update-not-available', (info) => {

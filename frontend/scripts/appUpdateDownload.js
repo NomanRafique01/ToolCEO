@@ -6,11 +6,13 @@
  */
 
 import { makeDraggable } from './panelDrag.js';
+import { pushNotification } from './notificationStore.js';
 
 let currentUpdate = null;
 let panelDrag = null;
 let previousFocus = null;
 let downloadRequested = false;
+let userInitiated = false;
 let _isDownloading = false;
 
 function element(id) {
@@ -24,6 +26,11 @@ export function isAppUpdateDownloading() {
 function formatBytes(bytes) {
   if (!Number.isFinite(bytes) || bytes <= 0) return '0.0 MB';
   return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+/** Release metadata usually knows the installer size before the transfer starts. */
+function totalBytes(update = currentUpdate) {
+  return Number.isFinite(update?.sizeBytes) && update.sizeBytes > 0 ? update.sizeBytes : 0;
 }
 
 function formatSpeed(bytesPerSecond) {
@@ -55,13 +62,17 @@ function hideDownloadPanel() {
 
 function updateProgress(progress = {}) {
   const percent = Math.max(0, Math.min(100, Math.round(Number(progress.percent) || 0)));
+  const total = Number.isFinite(progress.total) && progress.total > 0 ? progress.total : totalBytes();
   const bar = element('app-update-dl-bar');
   const percentLabel = element('app-update-dl-percent');
   const detail = element('app-update-dl-detail');
   if (bar) bar.style.width = `${percent}%`;
   if (percentLabel) percentLabel.textContent = `${percent}%`;
   if (detail) {
-    detail.textContent = `${formatBytes(progress.transferred)} / ${formatBytes(progress.total)} · ${formatSpeed(progress.bytesPerSecond)}`;
+    const transferred = formatBytes(progress.transferred);
+    detail.textContent = total > 0
+      ? `${transferred} / ${formatBytes(total)} · ${formatSpeed(progress.bytesPerSecond)}`
+      : `${transferred} · ${formatSpeed(progress.bytesPerSecond)}`;
   }
 }
 
@@ -89,9 +100,10 @@ function showRestartModal(update = currentUpdate || {}) {
 async function requestDownload(update) {
   if (downloadRequested) return;
   downloadRequested = true;
+  userInitiated = true;
   currentUpdate = { ...currentUpdate, ...update };
   showDownloadPanel(currentUpdate);
-  updateProgress({ percent: 0, transferred: 0, total: 48.2 * 1024 * 1024, bytesPerSecond: 0 });
+  updateProgress({ percent: 0, transferred: 0, total: totalBytes(currentUpdate), bytesPerSecond: 0 });
 
   let electronResult = null;
   try {
@@ -100,7 +112,7 @@ async function requestDownload(update) {
 
   // If in unpackaged dev environment where electron-updater does not emit progress
   if (!electronResult || electronResult.state === 'disabled' || !window.electronAPI?.updater) {
-    const total = 48.2 * 1024 * 1024;
+    const total = totalBytes(currentUpdate) || 48.2 * 1024 * 1024;
     let currentPct = 0;
     const interval = setInterval(() => {
       currentPct += Math.floor(Math.random() * 12) + 8;
@@ -173,7 +185,7 @@ function createUI() {
       <span class="mod-dl-drag-grip" aria-hidden="true"><svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor"><circle cx="2" cy="2" r="1.2"/><circle cx="8" cy="2" r="1.2"/><circle cx="2" cy="6" r="1.2"/><circle cx="8" cy="6" r="1.2"/><circle cx="2" cy="10" r="1.2"/><circle cx="8" cy="10" r="1.2"/><circle cx="2" cy="14" r="1.2"/><circle cx="8" cy="14" r="1.2"/></svg></span>
     </div>
     <div class="mod-dl-bar-row"><div class="mod-dl-bar-wrap"><div class="mod-dl-bar-fill mod-dl-bar-fill--download" id="app-update-dl-bar"></div></div><span class="mod-dl-percent" id="app-update-dl-percent">0%</span></div>
-    <div class="mod-dl-footer"><span class="mod-dl-size" id="app-update-dl-detail">0.0 MB / 48.2 MB · Calculating speed…</span></div>`;
+    <div class="mod-dl-footer"><span class="mod-dl-size" id="app-update-dl-detail">Preparing download…</span></div>`;
 
   const modal = document.createElement('div');
   modal.id = 'app-update-restart-modal';
@@ -221,9 +233,27 @@ export function initAppUpdateDownload() {
     updateProgress(progress);
   });
   updater.onUpdateDownloaded((update) => {
+    userInitiated = false;
     currentUpdate = { ...currentUpdate, ...update, state: 'ready_to_install' };
     hideDownloadPanel();
     showRestartModal(currentUpdate);
   });
-  updater.onError(() => hideDownloadPanel());
+  updater.onError((payload) => {
+    const wasPendingDownload = downloadRequested;
+    downloadRequested = false;
+    const shouldNotify = userInitiated && wasPendingDownload;
+    userInitiated = false;
+    hideDownloadPanel();
+    currentUpdate = { ...currentUpdate, state: 'available' };
+    document.dispatchEvent(new CustomEvent('toolceo:app-update-downloaded', { detail: { state: 'available' } }));
+    if (!shouldNotify) return;
+    pushNotification({
+      type: 'error',
+      message: 'Update download failed',
+      detail: payload?.message || 'Could not download the update. Please try again.',
+      actionLabel: 'Retry Download',
+      onAction: () => requestDownload(currentUpdate || { state: 'available' }),
+      allowDuringRestore: true,
+    });
+  });
 }
