@@ -31,16 +31,36 @@ function formatTime(date) {
 
 // Release details
 const RELEASE_INFO = {
-  version: '2.1.0',
-  title: 'ToolCEO 2.1.0',
   channel: 'Stable Production Channel',
-  size: '48.2 MB',
-  totalBytes: 48.2 * 1024 * 1024,
 };
+
+function installedVersion() {
+  return window.electronAPI?.appVersion || '2.0.1';
+}
+
+function releaseVersion() {
+  return currentUpdateStatus.version || installedVersion();
+}
+
+function formatSize(bytes) {
+  if (!Number.isFinite(bytes) || bytes <= 0) return null;
+  return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+}
+
+function releaseSize() {
+  return formatSize(currentUpdateStatus.sizeBytes) || 'installer';
+}
+
+function formatReleaseMonth(releaseDate) {
+  if (!releaseDate) return null;
+  const date = new Date(releaseDate);
+  if (Number.isNaN(date.getTime())) return null;
+  return `${date.toLocaleString('en-US', { month: 'long' })} ${date.getFullYear()}`;
+}
 
 let currentUpdateStatus = {
   state: 'up-to-date',
-  version: '2.0.1',
+  version: installedVersion(),
 };
 
 /**
@@ -48,11 +68,11 @@ let currentUpdateStatus = {
  * Delegates to appUpdateDownload which uses the floating download window bar (.mod-dl-panel)
  */
 function triggerDownload() {
-  currentUpdateStatus = { ...currentUpdateStatus, state: 'downloading', version: RELEASE_INFO.version };
+  currentUpdateStatus = { ...currentUpdateStatus, state: 'downloading', version: releaseVersion() };
   refreshUI();
 
   document.dispatchEvent(new CustomEvent('toolceo:app-update-request', {
-    detail: { state: 'available', version: RELEASE_INFO.version },
+    detail: { state: 'available', version: releaseVersion(), sizeBytes: currentUpdateStatus.sizeBytes || null },
   }));
 }
 
@@ -80,15 +100,15 @@ async function handleCheckForUpdates() {
       (currentUpdateStatus && currentUpdateStatus.state === 'available');
 
     if (isUpdateAvailable) {
-      currentUpdateStatus = { ...currentUpdateStatus, state: 'available', version: RELEASE_INFO.version };
       // navigation.js surfaces the "available" toast from the updater event;
       // re-notifying here would double it up.
+      currentUpdateStatus = { ...currentUpdateStatus, state: 'available' };
     } else {
-      currentUpdateStatus = { ...currentUpdateStatus, state: 'up-to-date', version: '2.0.1' };
+      currentUpdateStatus = { ...currentUpdateStatus, state: 'up-to-date', version: installedVersion() };
       pushNotification({
         type: 'success',
         message: 'No updates available',
-        detail: 'You are using the latest ToolCEO release (v2.0.1).',
+        detail: `You are using the latest ToolCEO release (v${installedVersion()}).`,
         allowDuringRestore: true,
       });
     }
@@ -104,6 +124,9 @@ function renderMainCardHTML() {
   const isDownloading = isAppUpdateDownloading() || currentUpdateStatus.state === 'downloading';
   const isReadyToInstall = currentUpdateStatus.state === 'ready_to_install';
   const isUpdateFound = currentUpdateStatus.state === 'available' || isDownloading || isReadyToInstall;
+  const newVersion = releaseVersion();
+  const newSize = releaseSize();
+  const releaseMonth = formatReleaseMonth(currentUpdateStatus.releaseDate);
 
   if (isUpdateFound) {
     let actionBtnHTML = '';
@@ -130,7 +153,7 @@ function renderMainCardHTML() {
             <path d="M12 3v13M7 11l5 5 5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
             <path d="M5 20h14" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
           </svg>
-          Download Update (${RELEASE_INFO.size})
+          Download Update${newSize === 'installer' ? '' : ` (${newSize})`}
         </button>`;
     }
 
@@ -147,11 +170,11 @@ function renderMainCardHTML() {
             </div>
             <div>
               <div class="update-card-title-row">
-                <h2 class="update-card-headline">ToolCEO ${RELEASE_INFO.version}</h2>
+                <h2 class="update-card-headline">ToolCEO ${newVersion}</h2>
                 <span class="update-badge update-badge--ready">${isReadyToInstall ? 'Ready to Install' : 'New Release'}</span>
-                <span class="update-card-size">${RELEASE_INFO.size}</span>
+                <span class="update-card-size">${newSize}</span>
               </div>
-              <p class="update-card-meta">${RELEASE_INFO.channel} · November 2026 build</p>
+              <p class="update-card-meta">${RELEASE_INFO.channel}${releaseMonth ? ` · ${releaseMonth} build` : ''}</p>
             </div>
           </div>
         </div>
@@ -182,7 +205,7 @@ function renderMainCardHTML() {
               Current Build
             </span>
           </div>
-          <p class="updates-hero__desc">You are running version 2.0.1 on the official production channel.</p>
+          <p class="updates-hero__desc">You are running version ${installedVersion()} on the official production channel.</p>
           <div class="updates-hero__timestamp">
             <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="6"/><path d="M8 5v3.5l2.5 1.5"/></svg>
             <span id="updates-last-checked-label">Last checked: ${lastCheckedFormatted}</span>
@@ -223,7 +246,7 @@ function renderSystemOverviewGridHTML() {
             </div>
             <div class="overview-card-title-wrap">
               <h3 class="overview-card-name">Installed Version</h3>
-              <span class="overview-card-sub">v2.0.1 · Windows x64</span>
+              <span class="overview-card-sub">v${installedVersion()} · Windows x64</span>
             </div>
           </div>
           <ul class="overview-card-list">
@@ -375,15 +398,15 @@ document.addEventListener('toolceo:system-online', () => {
 // Sync download completion from floating download panel
 document.addEventListener('toolceo:app-update-downloaded', (event) => {
   const update = event.detail || {};
-  currentUpdateStatus = { ...currentUpdateStatus, ...update, state: 'ready_to_install' };
+  currentUpdateStatus = { ...currentUpdateStatus, ...update };
   refreshUI();
 });
 
-// Sync download state changes
-window.addEventListener('toolceo:app-update-state-changed', (event) => {
-  const downloading = event.detail?.downloading;
-  if (!downloading && currentUpdateStatus.state === 'downloading') {
-    currentUpdateStatus.state = 'ready_to_install';
-  }
-  refreshUI();
+// The download panel hides itself on both success and failure, so trust the
+// main-process state rather than assuming a completed download.
+window.addEventListener('toolceo:app-update-state-changed', () => {
+  window.electronAPI?.updater?.getStatus?.().then((status) => {
+    if (status) currentUpdateStatus = { ...currentUpdateStatus, ...status };
+    refreshUI();
+  }).catch(() => refreshUI());
 });

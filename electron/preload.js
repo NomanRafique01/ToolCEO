@@ -51,6 +51,8 @@ contextBridge.exposeInMainWorld('toolceo', {
 
 // ─── Module management API ────────────────────────────────────────────────────
 contextBridge.exposeInMainWorld('electronAPI', {
+  appVersion: process.env.npm_package_version || require('../package.json').version,
+
   // ── Application updates ───────────────────────────────────────────────────
   updater: {
     checkForUpdates: (options) => ipcRenderer.invoke('updater:check-for-updates', options),
