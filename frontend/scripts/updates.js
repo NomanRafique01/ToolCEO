@@ -31,16 +31,28 @@ function formatTime(date) {
 
 // Release details
 const RELEASE_INFO = {
-  version: '2.1.0',
-  title: 'ToolCEO 2.1.0',
   channel: 'Stable Production Channel',
   size: '48.2 MB',
-  totalBytes: 48.2 * 1024 * 1024,
 };
+
+function installedVersion() {
+  return window.electronAPI?.appVersion || '2.0.2';
+}
+
+function releaseVersion() {
+  return currentUpdateStatus.version || installedVersion();
+}
+
+function formatReleaseMonth(releaseDate) {
+  if (!releaseDate) return null;
+  const date = new Date(releaseDate);
+  if (Number.isNaN(date.getTime())) return null;
+  return `${date.toLocaleString('en-US', { month: 'long' })} ${date.getFullYear()}`;
+}
 
 let currentUpdateStatus = {
   state: 'up-to-date',
-  version: '2.0.1',
+  version: installedVersion(),
 };
 
 /**
@@ -48,11 +60,11 @@ let currentUpdateStatus = {
  * Delegates to appUpdateDownload which uses the floating download window bar (.mod-dl-panel)
  */
 function triggerDownload() {
-  currentUpdateStatus = { ...currentUpdateStatus, state: 'downloading', version: RELEASE_INFO.version };
+  currentUpdateStatus = { ...currentUpdateStatus, state: 'downloading', version: releaseVersion() };
   refreshUI();
 
   document.dispatchEvent(new CustomEvent('toolceo:app-update-request', {
-    detail: { state: 'available', version: RELEASE_INFO.version },
+    detail: { state: 'available', version: releaseVersion() },
   }));
 }
 
@@ -80,21 +92,22 @@ async function handleCheckForUpdates() {
       (currentUpdateStatus && currentUpdateStatus.state === 'available');
 
     if (isUpdateAvailable) {
-      currentUpdateStatus = { ...currentUpdateStatus, state: 'available', version: RELEASE_INFO.version };
+      const availableVersion = currentUpdateStatus.version || RELEASE_INFO.version;
+      currentUpdateStatus = { ...currentUpdateStatus, state: 'available', version: availableVersion };
       pushNotification({
         type: 'info',
-        message: `New version available (v${RELEASE_INFO.version})`,
-        detail: `ToolCEO v${RELEASE_INFO.version} is ready to download.`,
+        message: `New version available (v${availableVersion})`,
+        detail: `ToolCEO v${availableVersion} is ready to download.`,
         actionLabel: 'Download Update',
         onAction: triggerDownload,
         allowDuringRestore: true,
       });
     } else {
-      currentUpdateStatus = { ...currentUpdateStatus, state: 'up-to-date', version: '2.0.1' };
+      currentUpdateStatus = { ...currentUpdateStatus, state: 'up-to-date', version: installedVersion() };
       pushNotification({
         type: 'success',
         message: 'No updates available',
-        detail: 'You are using the latest ToolCEO release (v2.0.1).',
+        detail: `You are using the latest ToolCEO release (v${installedVersion()}).`,
         allowDuringRestore: true,
       });
     }
@@ -110,6 +123,8 @@ function renderMainCardHTML() {
   const isDownloading = isAppUpdateDownloading() || currentUpdateStatus.state === 'downloading';
   const isReadyToInstall = currentUpdateStatus.state === 'ready_to_install';
   const isUpdateFound = currentUpdateStatus.state === 'available' || isDownloading || isReadyToInstall;
+  const newVersion = releaseVersion();
+  const releaseMonth = formatReleaseMonth(currentUpdateStatus.releaseDate);
 
   if (isUpdateFound) {
     let actionBtnHTML = '';
@@ -153,11 +168,11 @@ function renderMainCardHTML() {
             </div>
             <div>
               <div class="update-card-title-row">
-                <h2 class="update-card-headline">ToolCEO ${RELEASE_INFO.version}</h2>
+                <h2 class="update-card-headline">ToolCEO ${newVersion}</h2>
                 <span class="update-badge update-badge--ready">${isReadyToInstall ? 'Ready to Install' : 'New Release'}</span>
                 <span class="update-card-size">${RELEASE_INFO.size}</span>
               </div>
-              <p class="update-card-meta">${RELEASE_INFO.channel} · November 2026 build</p>
+              <p class="update-card-meta">${RELEASE_INFO.channel}${releaseMonth ? ` · ${releaseMonth} build` : ''}</p>
             </div>
           </div>
         </div>
@@ -188,7 +203,7 @@ function renderMainCardHTML() {
               Current Build
             </span>
           </div>
-          <p class="updates-hero__desc">You are running version 2.0.1 on the official production channel.</p>
+          <p class="updates-hero__desc">You are running version ${installedVersion()} on the official production channel.</p>
           <div class="updates-hero__timestamp">
             <svg width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4"><circle cx="8" cy="8" r="6"/><path d="M8 5v3.5l2.5 1.5"/></svg>
             <span id="updates-last-checked-label">Last checked: ${lastCheckedFormatted}</span>
@@ -229,7 +244,7 @@ function renderSystemOverviewGridHTML() {
             </div>
             <div class="overview-card-title-wrap">
               <h3 class="overview-card-name">Installed Version</h3>
-              <span class="overview-card-sub">v2.0.1 · Windows x64</span>
+              <span class="overview-card-sub">v${installedVersion()} · Windows x64</span>
             </div>
           </div>
           <ul class="overview-card-list">
