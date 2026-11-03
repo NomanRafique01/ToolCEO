@@ -81,14 +81,8 @@ async function handleCheckForUpdates() {
 
     if (isUpdateAvailable) {
       currentUpdateStatus = { ...currentUpdateStatus, state: 'available', version: RELEASE_INFO.version };
-      pushNotification({
-        type: 'info',
-        message: `New version available (v${RELEASE_INFO.version})`,
-        detail: `ToolCEO v${RELEASE_INFO.version} is ready to download.`,
-        actionLabel: 'Download Update',
-        onAction: triggerDownload,
-        allowDuringRestore: true,
-      });
+      // navigation.js surfaces the "available" toast from the updater event;
+      // re-notifying here would double it up.
     } else {
       currentUpdateStatus = { ...currentUpdateStatus, state: 'up-to-date', version: '2.0.1' };
       pushNotification({

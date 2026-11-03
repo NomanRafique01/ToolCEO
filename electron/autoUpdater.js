@@ -22,6 +22,9 @@ let status = {
   error: null,
 };
 
+/** True when the in-flight check was started by the user, so results may interrupt with a toast. */
+let announceNextResult = false;
+
 function canUseUpdater() {
   return Boolean(app.isPackaged || process.env[MOCK_VERSION_FLAG] || process.env[DEV_UPDATER_FLAG] === 'true');
 }
@@ -54,7 +57,7 @@ function getStatus() {
 function handleError(error) {
   const message = error && error.message ? error.message : String(error || 'Unknown update error');
   setStatus({ state: 'error', error: message });
-  send('updater:error', { message });
+  send('updater:error', { message, announce: announceNextResult });
 }
 
 function initialize(window) {
@@ -76,12 +79,14 @@ function initialize(window) {
       releaseNotes: serializableReleaseNotes(info.releaseNotes),
     };
     setStatus({ state: 'available', ...update, progress: null, error: null });
-    send('updater:update-available', update);
+    send('updater:update-available', { ...update, announce: announceNextResult });
+    announceNextResult = false;
   });
 
   autoUpdater.on('update-not-available', (info) => {
     setStatus({ state: 'up-to-date', version: info.version || null, progress: null, error: null });
-    send('updater:update-not-available', { version: info.version || null });
+    send('updater:update-not-available', { version: info.version || null, announce: announceNextResult });
+    announceNextResult = false;
   });
 
   autoUpdater.on('download-progress', (progress) => {
@@ -105,7 +110,9 @@ function initialize(window) {
   return getStatus();
 }
 
-async function checkForUpdates() {
+async function checkForUpdates({ announce = false } = {}) {
+  announceNextResult = Boolean(announce);
+
   if (!canUseUpdater()) {
     return setStatus({ state: 'disabled', error: null });
   }
@@ -114,7 +121,8 @@ async function checkForUpdates() {
   if (mockVersion) {
     const update = { version: mockVersion, releaseDate: null, releaseNotes: null };
     setStatus({ state: 'available', ...update, progress: null, error: null });
-    send('updater:update-available', update);
+    send('updater:update-available', { ...update, announce: announceNextResult });
+    announceNextResult = false;
     return getStatus();
   }
 
@@ -123,6 +131,7 @@ async function checkForUpdates() {
     await autoUpdater.checkForUpdates();
   } catch (error) {
     handleError(error);
+    announceNextResult = false;
   }
   return getStatus();
 }
@@ -168,7 +177,7 @@ function scheduleInitialCheck(delayMs = 6000) {
   if (checkTimer) clearTimeout(checkTimer);
   checkTimer = setTimeout(() => {
     checkTimer = null;
-    void checkForUpdates();
+    void checkForUpdates({ announce: false });
   }, delayMs);
 }
 

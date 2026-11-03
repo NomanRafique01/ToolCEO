@@ -1793,7 +1793,7 @@ app.whenReady().then(async () => {
   }
 
   // ── IPC: Application update lifecycle ─────────────────────────────────────
-  ipcMain.handle('updater:check-for-updates', () => appUpdater.checkForUpdates());
+  ipcMain.handle('updater:check-for-updates', (_event, options) => appUpdater.checkForUpdates(options));
   ipcMain.handle('updater:start-download', () => appUpdater.startDownload());
   ipcMain.handle('updater:quit-and-install', () => appUpdater.quitAndInstall());
   ipcMain.handle('updater:get-status', () => appUpdater.getStatus());

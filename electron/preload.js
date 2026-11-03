@@ -53,7 +53,7 @@ contextBridge.exposeInMainWorld('toolceo', {
 contextBridge.exposeInMainWorld('electronAPI', {
   // ── Application updates ───────────────────────────────────────────────────
   updater: {
-    checkForUpdates: () => ipcRenderer.invoke('updater:check-for-updates'),
+    checkForUpdates: (options) => ipcRenderer.invoke('updater:check-for-updates', options),
     startDownload: () => ipcRenderer.invoke('updater:start-download'),
     quitAndInstall: () => ipcRenderer.invoke('updater:quit-and-install'),
     getStatus: () => ipcRenderer.invoke('updater:get-status'),

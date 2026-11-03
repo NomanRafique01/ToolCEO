@@ -127,7 +127,7 @@ export function initNavigation() {
 
     if (window.electronAPI?.updater?.checkForUpdates) {
       renderUpdaterStatus({ state: 'checking' });
-      const nextStatus = await window.electronAPI.updater.checkForUpdates();
+      const nextStatus = await window.electronAPI.updater.checkForUpdates({ announce: true });
       renderUpdaterStatus(nextStatus);
     }
   }
@@ -313,7 +313,7 @@ export function initNavigation() {
     updater.getStatus().then(renderUpdaterStatus).catch(() => {});
     updater.onUpdateAvailable((update) => {
       renderUpdaterStatus({ state: 'available', ...update });
-      announceAvailableUpdate(update);
+      if (update.announce) announceAvailableUpdate(update);
     });
     updater.onUpdateNotAvailable((update) => {
       renderUpdaterStatus({ state: 'up-to-date', ...update });
@@ -332,8 +332,9 @@ export function initNavigation() {
         allowDuringRestore: true,
       });
     });
-    updater.onError(({ message }) => {
+    updater.onError(({ message, announce }) => {
       renderUpdaterStatus({ state: 'error' });
+      if (!announce) return;
       pushNotification({ type: 'error', message: 'Update check failed', detail: message || 'Please try again later.', allowDuringRestore: true });
     });
   }
