@@ -1219,6 +1219,31 @@ input[type="file"] {
   display: none !important;
 }
 
+/* Overlay states must win over the loaded-thumbs sizing, and the done
+   card defines the zone height so it can never be clipped. */
+.drop-zone.dz-has-thumbs.dz-state-processing,
+.drop-zone.dz-has-thumbs.dz-state-done {
+  min-height: 220px;
+  max-height: none;
+}
+
+.drop-zone.dz-has-thumbs.dz-state-done {
+  justify-content: center;
+  padding: 12px;
+}
+
+.drop-zone.dz-state-done .dz-download-wrap {
+  position: static;
+  inset: auto;
+  width: 100%;
+  padding: 0;
+  overflow: visible;
+}
+
+.drop-zone.dz-state-done .dz-save-card {
+  max-height: none;
+}
+
 .dz-jpg-reorder-banner {
   display: flex;
   align-items: center;
