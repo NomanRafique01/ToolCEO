@@ -286,13 +286,12 @@
       }
       if (text) text.textContent = 'Reconnecting…';
     } else {
-      const color = _themeData.color || DEFAULT_COLOR;
       badge.style.borderColor = '';
       badge.style.background = '';
-      badge.style.color = color;
+      badge.style.color = '';
       if (dot) {
-        dot.style.background = color;
-        dot.style.boxShadow = `0 0 8px ${color}`;
+        dot.style.background = '';
+        dot.style.boxShadow = '';
       }
       if (text) text.textContent = 'Connected';
     }
