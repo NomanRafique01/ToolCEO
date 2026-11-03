@@ -41,6 +41,7 @@
       "icon": "assets/icon.ico"
     },
     "nsis": {
+      "artifactName": "ToolCEO-Setup-${version}.exe",
       "oneClick": false,
       "perMachine": false,
       "allowToChangeInstallationDirectory": true,
