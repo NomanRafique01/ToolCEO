@@ -1217,12 +1217,26 @@ export function clearPhoneReceiveProgress() {
   const zone = document.getElementById('drop-zone');
   if (!zone) return;
   zone.querySelector('.dz-progress-wrap.dz-phone-receiving')?.remove();
-  zone.classList.remove('dz-state-processing');
-  // Receiving hid the idle drop-zone content. Restore it so removing the
-  // received file reveals a working drop zone instead of empty space.
-  zone.querySelectorAll('.dz-processing-hidden').forEach((el) => {
-    el.classList.remove('dz-processing-hidden');
-  });
+
+  // Only remove dz-state-processing if no other progress ring is active
+  const hasOtherProgress = Boolean(zone.querySelector('.dz-progress-wrap'));
+  if (!hasOtherProgress) {
+    zone.classList.remove('dz-state-processing');
+  }
+
+  // Only unhide idle drop-zone content if no progress, no thumbnail, and no viewer are active
+  const hasThumb = zone.classList.contains('dz-has-thumb') ||
+    Boolean(zone.querySelector('[class*="-thumb-wrap"], [class*="-thumb-card"], .dz-pdf-thumb-wrap'));
+  const hasViewer = document.body.classList.contains('has-extractor-viewer') ||
+    document.body.classList.contains('has-editor-viewer') ||
+    document.body.classList.contains('has-rotate-viewer') ||
+    document.body.classList.contains('has-wm-viewer');
+
+  if (!hasOtherProgress && !hasThumb && !hasViewer) {
+    zone.querySelectorAll('.dz-processing-hidden').forEach((el) => {
+      el.classList.remove('dz-processing-hidden');
+    });
+  }
 }
 
 /** Show an indeterminate scanning ring — spinning arc. */
@@ -1491,8 +1505,8 @@ async function _downloadFile(jobId, filename, color, wrap) {
 
 // ─── GENERIC SUBMIT FILE ──────────────────────────────────────────────────────
 
-export function handleExternalFiles(files) {
-  return _submitFile(files, { fromPhone: true });
+export async function handleExternalFiles(files) {
+  return await _submitFile(files, { fromPhone: true });
 }
 
 async function _submitFile(files, { fromPhone = false } = {}) {
@@ -1516,8 +1530,7 @@ async function _submitFile(files, { fromPhone = false } = {}) {
 
   // Split tool has its own two-step flow — delegated to the splitter module
   if (tool.id === 'split') {
-    handleSplitFilePicked(files[0]);
-    return;
+    return await handleSplitFilePicked(files[0]);
   }
 
   // Merge tool has its own multi-file queue flow — delegated to the merger module
@@ -1527,37 +1540,31 @@ async function _submitFile(files, { fromPhone = false } = {}) {
 
   // Compress tool has its own settings-panel flow — delegated to the compressor module
   if (tool.id === 'compress') {
-    handleCompressFilePicked(files[0]);
-    return;
+    return await handleCompressFilePicked(files[0]);
   }
 
   // Encrypt / Decrypt tool has its own settings-panel flow — delegated to the encrypt module
   if (tool.id === 'encrypt') {
-    handleEncryptFilePicked(files[0]);
-    return;
+    return await handleEncryptFilePicked(files[0]);
   }
 
   // Rotate tool has its own visual page grid flow — delegated to the rotate module
   if (tool.id === 'rotate') {
-    handleRotateFilePicked(files[0]);
-    return;
+    return await handleRotateFilePicked(files[0]);
   }
 
   if (tool.id === 'editor') {
-    handleEditorFilePicked(files[0]);
-    return;
+    return await handleEditorFilePicked(files[0]);
   }
 
   // Watermark tool has its own HD editor frame flow — delegated to the watermark module
   if (tool.id === 'watermark') {
-    handleWatermarkFilePicked(files[0]);
-    return;
+    return await handleWatermarkFilePicked(files[0]);
   }
 
   // Extract Images has its own visual page-selection flow
   if (tool.id === 'extractor') {
-    handleExtractorFilePicked(files[0]);
-    return;
+    return await handleExtractorFilePicked(files[0]);
   }
 
   // PDF → Word converter has its own settings-panel flow

@@ -17,6 +17,7 @@ let _connectedNotified = false;
 let _activeToolLabel = null;
 let _pairedToolId = null;
 let _suppressDisconnectNotice = false;
+const _ingestedFileKeys = new Set();
 let _ingestingFiles = false;
 let _executingFromPhone = false;
 let _phoneDisconnectCandidateAt = 0;
@@ -819,6 +820,7 @@ export function closeMobileTransferModal({ silent = false, notice, detail } = {}
   _pairedToolId = null;
   _suppressDisconnectNotice = false;
   _ingestingFiles = false;
+  _ingestedFileKeys.clear();
 
   // Unbind the phone mirror so stale sessions can't receive job links
   unbindMirrorSession();
@@ -999,6 +1001,12 @@ function _startPolling(backendUrl, sessionId) {
 
       if (data.status === 'completed' && data.files && data.files.length > 0) {
         if (_ingestingFiles) return;
+        const uningested = (data.files || []).filter(
+          (f) => !_ingestedFileKeys.has(`${sessionId}_${f.name}_${f.size}`)
+        );
+        if (uningested.length === 0) {
+          return;
+        }
         _ingestingFiles = true;
         _ensureConnectedBadge('receiving');
         showPhoneReceiveProgress(100, _mobileFormatLabel(getActiveTool()));
@@ -1127,9 +1135,10 @@ async function _processTransferredFiles(backendUrl, sessionId, fileList, replace
       });
     }
 
-    await handleExternalFiles(fileObjects);
-    clearPhoneReceiveProgress();
+    // Mark all received files as ingested to guard against race conditions
+    fileList.forEach((f) => _ingestedFileKeys.add(`${sessionId}_${f.name}_${f.size}`));
 
+    // Immediately acknowledge to the backend so status transitions to connected
     if (!replace) {
       try {
         await fetch(`${backendUrl}/api/mobile/session/${sessionId}/ack`, {
@@ -1142,10 +1151,34 @@ async function _processTransferredFiles(backendUrl, sessionId, fileList, replace
       }
     }
 
+    // Clean up the phone receive overlay before handing off to the active tool
+    clearPhoneReceiveProgress();
+
+    // Await full loading in the destination tool (PDF page grid, editor, viewer, etc.)
+    await handleExternalFiles(fileObjects);
+
     if (_activeSessionId === sessionId) {
       const zone = document.getElementById('drop-zone');
       zone?.classList.add('dz-phone-paired');
       _revealDropZoneWhilePaired('connected');
+    }
+
+    // Ensure Rotate Pages or Extractor viewer aligns perfectly with the ToolCEO header bottom line
+    const currentTool = getActiveTool();
+    if (currentTool?.id === 'rotate' || document.getElementById('rotate-viewer')?.classList.contains('rotate-viewer--visible')) {
+      import('../tools/documents/pdf_tools/rotate/rotate.js').then(({ ensureRotateViewerAligned }) => {
+        if (ensureRotateViewerAligned) ensureRotateViewerAligned({ smooth: true });
+      }).catch(() => {});
+    }
+    if (currentTool?.id === 'extractor' || document.getElementById('extractor-viewer')?.classList.contains('extractor-viewer--visible')) {
+      import('../tools/documents/pdf_tools/extractor/extractor.js').then(({ ensureExtractorViewerAligned }) => {
+        if (ensureExtractorViewerAligned) ensureExtractorViewerAligned({ smooth: true });
+      }).catch(() => {});
+    }
+    if (currentTool?.id === 'editor' || document.getElementById('editor-viewer')?.classList.contains('extractor-viewer--visible')) {
+      import('../tools/documents/pdf_tools/editor/editor.js').then(({ ensureEditorViewerAligned }) => {
+        if (ensureEditorViewerAligned) ensureEditorViewerAligned({ smooth: true });
+      }).catch(() => {});
     }
 
   } catch (err) {
@@ -1183,13 +1216,15 @@ function _removeFileFromDesktopQueue(filename) {
 
   // Try to find a card by its displayed name or title attribute across all strip types
   const allCards = document.querySelectorAll(
-    '.dz-jpg-card, .dz-merge-card, .dz-png-card, .dz-webp-card, .dz-svg-card, [class*="dz-"][class*="-card"]'
+    '.dz-jpg-card, .dz-merge-card, .dz-png-card, .dz-webp-card, .dz-svg-card, ' +
+    '[class*="dz-"][class*="-card"], .dz-pdf-thumb-wrap, [class*="-thumb-wrap"]'
   );
 
   let matched = false;
   allCards.forEach((card) => {
     const nameEl = card.querySelector(
-      '.dz-jpg-card-name, .dz-merge-card-name, .dz-png-card-name, [class*="card-name"]'
+      '.dz-jpg-card-name, .dz-merge-card-name, .dz-png-card-name, [class*="card-name"], ' +
+      '.dz-pdf-thumb-name, [class*="-thumb-name"]'
     );
     const titleAttr = nameEl?.getAttribute('title') || '';
     const displayText = nameEl?.textContent?.trim() || '';
@@ -1201,7 +1236,8 @@ function _removeFileFromDesktopQueue(filename) {
 
     if (matches) {
       const removeBtn = card.querySelector(
-        '.dz-jpg-card-remove, .dz-merge-card-remove, [class*="card-remove"]'
+        '.dz-jpg-card-remove, .dz-merge-card-remove, [class*="card-remove"], ' +
+        '.dz-pdf-thumb-remove, [class*="-thumb-remove"]'
       );
       if (removeBtn) {
         // Phone already removed this file locally — don't mirror it back.
