@@ -9,6 +9,80 @@
 let pdfJsPromise = null;
 
 /**
+ * Yields control back to the browser's main thread so it can paint frames
+ * and handle input events, preventing long-task jank during bulk rendering.
+ * Falls back to setTimeout(0) when scheduler API is unavailable.
+ */
+export function yieldToMain() {
+  if (typeof scheduler !== 'undefined' && typeof scheduler.yield === 'function') {
+    return scheduler.yield();
+  }
+  return new Promise((resolve) => setTimeout(resolve, 0));
+}
+
+/**
+ * Renders a single PDF page thumbnail to an <img> element and places it into
+ * the given card's stage element, replacing any skeleton placeholder.
+ * Uses an offscreen canvas that is immediately discarded after toBlob(),
+ * keeping GPU memory footprint minimal.
+ *
+ * @param {any}         pdfDoc    - PDF.js document
+ * @param {number}      pageNum   - 1-based page number
+ * @param {HTMLElement} stage     - The .thumb-stage container element
+ * @param {number}      scale     - Render scale (default 1.0 for thumbnails)
+ * @param {string}      skeletonSel - Selector for the skeleton placeholder
+ * @param {string}      overlayClass - CSS class of overlay to insert before
+ * @returns {Promise<void>}
+ */
+export async function renderPageIntoStage(pdfDoc, pageNum, stage, scale = 1.0, skeletonSel = null, overlayClass = null) {
+  if (!pdfDoc || !stage) return;
+
+  const page = await pdfDoc.getPage(pageNum);
+  const viewport = page.getViewport({ scale });
+  const canvas = document.createElement('canvas');
+  const ctx = canvas.getContext('2d', { alpha: false, willReadFrequently: false });
+  canvas.width = Math.ceil(viewport.width);
+  canvas.height = Math.ceil(viewport.height);
+
+  ctx.fillStyle = '#ffffff';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  await page.render({ canvasContext: ctx, viewport }).promise;
+
+  // Convert to a lightweight <img> immediately so the canvas (which holds
+  // GPU texture memory) can be garbage-collected.
+  const dataUri = canvas.toDataURL('image/jpeg', 0.82);
+
+  // Detach canvas from any potential reference so the GC can reclaim it.
+  canvas.width = 0;
+  canvas.height = 0;
+
+  if (skeletonSel) {
+    const skeleton = stage.querySelector(skeletonSel);
+    if (skeleton) skeleton.remove();
+  }
+
+  // Remove any stale canvas or img that was already there.
+  stage.querySelectorAll('canvas').forEach((c) => c.remove());
+  const prevImg = stage.querySelector('img.pdf-thumb-img');
+  if (prevImg) prevImg.remove();
+
+  const img = document.createElement('img');
+  img.className = 'pdf-thumb-img';
+  img.alt = `Page ${pageNum} preview`;
+  img.draggable = false;
+  img.src = dataUri;
+
+  if (overlayClass) {
+    const overlay = stage.querySelector(`.${overlayClass}`);
+    if (overlay) {
+      stage.insertBefore(img, overlay);
+      return;
+    }
+  }
+  stage.appendChild(img);
+}
+
+/**
  * Resolves the relative vendor URL reliably across file:// and http:// origins.
  */
 function resolveVendorUrl(relativePath) {
@@ -203,44 +277,47 @@ export async function getOfflinePdfInfo(fileOrBuffer, maxThumbScale = 0.5) {
 
 /**
  * Batch renders all pages of a PDF document with concurrency throttling and callback.
+ * Pages are rendered one-at-a-time (sequential) with a yieldToMain() between each
+ * so the browser can paint frames and handle input without jank.
+ *
  * @param {any} pdfDoc
  * @param {Function} onPageRendered - (pageNum, canvas, dataUri, viewport) => void
- * @param {object} [options] - { scale: 1.0, batchSize: 4, token: any, isCancelled: () => boolean }
+ * @param {object} [options] - { scale: 1.0, isCancelled: () => boolean }
  */
 export async function renderAllPageThumbnails(pdfDoc, onPageRendered, options = {}) {
   if (!pdfDoc) return;
   const numPages = pdfDoc.numPages;
   const scale = options.scale || 1.0;
-  const batchSize = options.batchSize || 3;
   const isCancelled = options.isCancelled || (() => false);
 
-  for (let i = 1; i <= numPages; i += batchSize) {
+  for (let pageNum = 1; pageNum <= numPages; pageNum++) {
     if (isCancelled()) break;
-    const batch = [];
-    for (let p = i; p < i + batchSize && p <= numPages; p += 1) {
-      batch.push(
-        (async (pageNum) => {
-          if (isCancelled()) return;
-          try {
-            const page = await pdfDoc.getPage(pageNum);
-            if (isCancelled()) return;
-            const canvas = document.createElement('canvas');
-            await renderPdfPageToCanvas(page, { scale }, canvas);
-            if (isCancelled()) return;
-            const dataUri = canvas.toDataURL('image/jpeg', 0.88);
-            if (isCancelled()) return;
-            if (typeof onPageRendered === 'function') {
-              onPageRendered(pageNum, canvas, dataUri, page.getViewport({ scale }));
-            }
-          } catch (err) {
-            console.warn(`Failed rendering thumbnail for page ${pageNum}:`, err);
-            if (typeof onPageRendered === 'function') {
-              onPageRendered(pageNum, null, null, null, err);
-            }
-          }
-        })(p)
-      );
+
+    try {
+      const page = await pdfDoc.getPage(pageNum);
+      if (isCancelled()) break;
+
+      const canvas = document.createElement('canvas');
+      await renderPdfPageToCanvas(page, { scale }, canvas);
+      if (isCancelled()) break;
+
+      const dataUri = canvas.toDataURL('image/jpeg', 0.82);
+      // Release GPU texture immediately after encoding.
+      canvas.width = 0;
+      canvas.height = 0;
+
+      if (typeof onPageRendered === 'function') {
+        onPageRendered(pageNum, null, dataUri, page.getViewport({ scale }));
+      }
+    } catch (err) {
+      console.warn(`Failed rendering thumbnail for page ${pageNum}:`, err);
+      if (typeof onPageRendered === 'function') {
+        onPageRendered(pageNum, null, null, null, err);
+      }
     }
-    await Promise.all(batch);
+
+    // Yield after every page so the browser can paint the new thumbnail
+    // and respond to user input before we start the next render.
+    await yieldToMain();
   }
 }
