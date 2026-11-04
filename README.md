@@ -28,6 +28,7 @@
 ## Table of Contents
 
 - [Why ToolCEO](#why-toolceo)
+- [Phone Transfer Edition (v3.0.0)](#-phone-transfer-edition-v300)
 - [Download](#download)
 - [Features](#features)
 - [Installation](#installation)
@@ -54,11 +55,41 @@ Web converters force you to upload private documents to someone else's server, q
 | Batch processing | Paid tiers | **Built in, free** |
 | Cost | Subscriptions | **Free and open source (MIT)** |
 
+## 📱 Phone Transfer Edition (v3.0.0)
+
+> [!IMPORTANT]
+> **New in ToolCEO v3.0.0**: Wirelessly beam files straight from your smartphone into any active desktop conversion tool over local Wi-Fi. 100% offline, zero cloud uploads, zero account setups, and instant QR pairing.
+
+<p align="center">
+  <a href="https://github.com/NomanRafique01/ToolCEO/releases/download/v3.0.0/ToolCEO.Setup.3.0.0.exe" title="Download ToolCEO v3.0.0 (Phone Transfer Edition)">
+    <img src="assets/btn-download-v3.svg" alt="Download ToolCEO v3.0.0 (Phone Transfer Edition)" height="72" />
+  </a>
+</p>
+
+<p align="center">
+  <a href="https://github.com/NomanRafique01/ToolCEO/releases/tag/v3.0.0">
+    <img src="https://img.shields.io/badge/Release%20Notes-v3.0.0%20(Phone%20Transfer)-8b5cf6?style=flat-square&amp;logo=github&amp;logoColor=white" alt="v3.0.0 Release Notes"/>
+  </a>
+  &nbsp;
+  <img src="https://img.shields.io/badge/Sync-Local%20Wi--Fi%20P2P-00F5D4?style=flat-square&amp;logoColor=black" alt="Local Wi-Fi P2P"/>
+  &nbsp;
+  <img src="https://img.shields.io/badge/Mobile-iOS%20%26%20Android-6366f1?style=flat-square" alt="iOS &amp; Android"/>
+</p>
+
+- **Instant QR Pairing**: Scan the pairing code with your phone camera to connect directly over local Wi-Fi.
+- **Direct-to-Queue Loading**: Uploaded images, documents, and archives land directly in the open tool's processing queue.
+- **Two-Way State Mirroring**: Removing items or clicking "Clear All" on your PC immediately syncs back to your phone.
+- **Complete Privacy**: Zero remote servers or telemetry. Data transfers exclusively through your local subnet (<code>127.0.0.1</code> / LAN).
+
 ## Download
 
 Choose the version that fits your needs. Every release runs 100% offline, operates with zero telemetry, and includes all 172 core tools out of the box.
 
 <p align="center">
+  <a href="https://github.com/NomanRafique01/ToolCEO/releases/download/v3.0.0/ToolCEO.Setup.3.0.0.exe" title="Download ToolCEO v3.0.0 (Phone Transfer Edition)">
+    <img src="assets/btn-download-v3.svg" alt="Download ToolCEO v3.0.0 (Phone Transfer Edition)" height="66" />
+  </a>
+  &nbsp;&nbsp;
   <a href="https://github.com/NomanRafique01/ToolCEO/releases/download/v2.0.1/ToolCEO-Setup-2.0.1.exe" title="Download ToolCEO v2.0.1 (Latest Stable)">
     <img src="assets/btn-download-v2.0.1.svg" alt="Download ToolCEO v2.0.1 (Latest)" height="66" />
   </a>
@@ -84,6 +115,7 @@ Choose the version that fits your needs. Every release runs 100% offline, operat
 
 | Version | Release Type | Target OS | Installer Size | Direct Download |
 |:---|:---:|:---:|:---:|:---:|
+| **ToolCEO v3.0.0** | 🚀 **Phone Transfer Edition** | Windows 10 / 11 (x64) | ~206 MB | [**ToolCEO.Setup.3.0.0.exe**](https://github.com/NomanRafique01/ToolCEO/releases/download/v3.0.0/ToolCEO.Setup.3.0.0.exe) |
 | **ToolCEO v2.0.1** | 🟢 **Latest Stable** (Recommended) | Windows 10 / 11 (x64) | ~206 MB | [**ToolCEO-Setup-2.0.1.exe**](https://github.com/NomanRafique01/ToolCEO/releases/download/v2.0.1/ToolCEO-Setup-2.0.1.exe) |
 | **ToolCEO v2.0.0** | 🔵 **Version 2.0.0** (Previous Stable) | Windows 10 / 11 (x64) | ~206 MB | [**ToolCEO.Setup.2.0.0.exe**](https://github.com/NomanRafique01/ToolCEO/releases/download/v_2.0.0/ToolCEO.Setup.2.0.0.exe) |
 | **ToolCEO v1.0.0** | 🔵 **Version 1.0** (Stable) | Windows 10 / 11 (x64) | ~196.5 MB | [**ToolCEO.Setup.1.0.0.exe**](https://github.com/NomanRafique01/ToolCEO/releases/download/v_1.0.0/ToolCEO.Setup.1.0.0.exe) |
@@ -102,6 +134,7 @@ Choose the version that fits your needs. Every release runs 100% offline, operat
 ### Power-user workflow
 - **Drag & drop anywhere** — drop files onto the window to instantly load them into the active tool
 - **Clipboard paste** — load files straight from the clipboard with one click
+- **Phone Transfer (QR Link)** — beam files wirelessly from your mobile phone straight into the active desktop tool via local Wi-Fi pairing
 - **Batch queues** — convert many files at once with live per-file progress, drag-to-reorder support for image-to-PDF tools, and graceful handling of large queues
 - **Background job engine** — conversions run in a worker pool with Server-Sent Events streaming frame-accurate progress from 0% to 100%, so the UI never freezes
 - **Persistent state** — your selected files survive navigation between tools
