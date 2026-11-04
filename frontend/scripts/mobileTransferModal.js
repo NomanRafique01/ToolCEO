@@ -728,30 +728,38 @@ function _ensureConnectedBadge(mode = 'connected') {
   if (!host) return;
 
   document.getElementById('drop-zone')?.querySelector('#dz-phone-live-badge')?.remove();
+  document.getElementById('drop-zone')?.querySelector('#dz-phone-disconnect-btn')?.remove();
 
   let badge = document.getElementById('dz-phone-live-badge');
-  if (!badge) {
+  let disconnectBtn = document.getElementById('dz-phone-disconnect-btn');
+  if (!badge || !disconnectBtn) {
+    badge?.remove();
+    disconnectBtn?.remove();
+
     host.insertAdjacentHTML('beforeend', `
       <div class="dz-phone-live-badge" id="dz-phone-live-badge" role="status" aria-live="polite">
         <span class="dz-phone-status-dot"></span>
         <span class="dz-phone-live-label">Connected with Phone</span>
-        <button type="button" class="dz-phone-live-disconnect" id="dz-phone-live-disconnect" title="Disconnect phone" aria-label="Disconnect phone">
-          <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.8" stroke-linecap="round" stroke-linejoin="round">
-            <line x1="18" y1="6" x2="6" y2="18"></line>
-            <line x1="6" y1="6" x2="18" y2="18"></line>
-          </svg>
-        </button>
       </div>
+      <button type="button" class="dz-phone-disconnect-btn dz-phone-live-disconnect" id="dz-phone-disconnect-btn" title="Disconnect phone" aria-label="Disconnect phone">
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="18" y1="6" x2="6" y2="18"></line>
+          <line x1="6" y1="6" x2="18" y2="18"></line>
+        </svg>
+        <span>Disconnect</span>
+      </button>
     `);
     badge = document.getElementById('dz-phone-live-badge');
+    disconnectBtn = document.getElementById('dz-phone-disconnect-btn');
     badge?.addEventListener('click', (e) => e.stopPropagation());
-    document.getElementById('dz-phone-live-disconnect')?.addEventListener('click', (e) => {
+    disconnectBtn?.addEventListener('click', (e) => {
       e.preventDefault();
       e.stopPropagation();
       closeMobileTransferModal();
     });
   }
   if (badge && badge.parentElement !== host) host.appendChild(badge);
+  if (disconnectBtn && disconnectBtn.parentElement !== host) host.appendChild(disconnectBtn);
 
   const tool = getActiveTool();
   if (tool?.color) _applyToolAccent(tool.color);
@@ -785,6 +793,7 @@ export function closeMobileTransferModal({ silent = false, notice, detail } = {}
     zone.classList.remove('dz-phone-paired');
   }
   document.getElementById('dz-phone-live-badge')?.remove();
+  document.getElementById('dz-phone-disconnect-btn')?.remove();
   _clearToolAccent();
 
   if (_pollTimer) {

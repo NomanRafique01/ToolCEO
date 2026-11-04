@@ -235,10 +235,15 @@
   border-radius: 8px;
   font-size: var(--fs-caption, 11px);
   font-weight: var(--fw-medium, 500);
+  line-height: 1;
+  letter-spacing: 0.01em;
   z-index: 8;
   pointer-events: auto;
+  user-select: none;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
   transition: border-color var(--duration-fast, 160ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)),
-              color var(--duration-fast, 160ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
+              color var(--duration-fast, 160ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)),
+              background var(--duration-fast, 160ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
 }
 
 .dz-phone-live-label {
@@ -246,7 +251,67 @@
   white-space: nowrap;
 }
 
-.dz-phone-live-disconnect {
+.dz-phone-disconnect-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  width: auto;
+  min-width: auto;
+  height: 34px;
+  padding: 0 12px;
+  border-radius: 8px;
+  background: rgba(239, 68, 68, 0.12);
+  background: color-mix(in srgb, var(--status-danger, #EF4444) 14%, var(--bg-card, #122a27));
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: #F87171;
+  font-family: inherit;
+  font-size: var(--fs-caption, 11px);
+  font-weight: var(--fw-medium, 500);
+  line-height: 1;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  z-index: 8;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  transition: border-color var(--duration-fast, 160ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)),
+              color var(--duration-fast, 160ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)),
+              background var(--duration-fast, 160ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)),
+              box-shadow var(--duration-fast, 160ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1)),
+              transform var(--duration-micro, 120ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+.dz-phone-disconnect-btn svg {
+  flex-shrink: 0;
+  stroke: currentColor;
+  transition: transform var(--duration-micro, 120ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
+}
+
+.dz-phone-disconnect-btn:hover {
+  background: color-mix(in srgb, var(--status-danger, #EF4444) 24%, var(--bg-card, #122a27));
+  border-color: rgba(239, 68, 68, 0.65);
+  color: #FFFFFF;
+  box-shadow: 0 2px 8px rgba(239, 68, 68, 0.25);
+}
+
+.dz-phone-disconnect-btn:hover svg {
+  transform: rotate(90deg);
+}
+
+.dz-phone-disconnect-btn:active {
+  transform: scale(0.97);
+  background: color-mix(in srgb, var(--status-danger, #EF4444) 30%, var(--bg-card, #122a27));
+}
+
+.dz-phone-disconnect-btn:focus-visible {
+  outline: 2px solid rgba(239, 68, 68, 0.6);
+  outline-offset: 2px;
+}
+
+/* Backward compatibility for any inline element using dz-phone-live-disconnect */
+.dz-phone-live-disconnect:not(.dz-phone-disconnect-btn) {
   flex-shrink: 0;
   width: 22px;
   height: 22px;
@@ -266,7 +331,7 @@
               opacity var(--duration-fast, 160ms) var(--ease-out, cubic-bezier(0.16, 1, 0.3, 1));
 }
 
-.dz-phone-live-disconnect:hover {
+.dz-phone-live-disconnect:not(.dz-phone-disconnect-btn):hover {
   background: rgba(239, 68, 68, 0.15);
   color: var(--status-danger, #EF4444);
   opacity: 1;
