@@ -1,4 +1,4 @@
-/**
+﻿/**
  * tools/documents/pdf_tools/editor/editor.js
  *
  * Owns the Edit PDF load flow: PDF scan, page grid, and in-browser page
@@ -152,13 +152,14 @@ function _showPdfThumbnail(zone, file, color, dataUri = null) {
 
   wrap.querySelector('.dz-editor-thumb-remove').addEventListener('click', (e) => {
     e.stopPropagation();
+    if (_activeContainer) _closeViewer(_activeContainer);
     removeEditorPanel();
     resetZoneContent(zone);
     const activeTool = getActiveTool();
     if (activeTool) {
       import('../../../../scripts/dropzone.js').then(({ _updateDropZoneForTool }) => {
         if (_updateDropZoneForTool) _updateDropZoneForTool(activeTool);
-      }).catch(() => {});
+      }).catch(() => { });
     }
   });
 }
@@ -387,6 +388,52 @@ function _getSwapParts(container) {
   return { swap, cardView, viewer };
 }
 
+/**
+ * Ensures the Edit PDF viewer is scrolled so its top header
+ * aligns right below the ToolCEO topbar bottom line, creating the perfect view each time.
+ */
+export function ensureEditorViewerAligned({ smooth = true, immediate = false } = {}) {
+  const mainContent = document.getElementById('main-content');
+  const viewer = document.getElementById('editor-viewer') || document.querySelector('.editor-viewer');
+  if (!mainContent || !viewer) return;
+
+  const performAlign = (useSmooth) => {
+    if (!viewer.classList.contains('extractor-viewer--visible')) return;
+
+    const mainRect = mainContent.getBoundingClientRect();
+    const viewerRect = viewer.getBoundingClientRect();
+    const paddingTop = parseFloat(window.getComputedStyle(mainContent).paddingTop) || 0;
+
+    // Distance between viewer's current top and where it should sit (at mainContent's top padding)
+    const currentDiff = viewerRect.top - mainRect.top;
+    const delta = currentDiff - paddingTop;
+
+    if (Math.abs(delta) > 1.5) {
+      const targetScroll = Math.max(0, mainContent.scrollTop + delta);
+      mainContent.scrollTo({
+        top: targetScroll,
+        behavior: useSmooth ? 'smooth' : 'auto',
+      });
+    }
+  };
+
+  performAlign(!immediate && smooth);
+
+  requestAnimationFrame(() => {
+    performAlign(smooth);
+    setTimeout(() => performAlign(smooth), 100);
+    setTimeout(() => performAlign(smooth), 300);
+  });
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('resize', () => {
+    if (document.body.classList.contains('has-editor-viewer')) {
+      ensureEditorViewerAligned({ immediate: true, smooth: false });
+    }
+  }, { passive: true });
+}
+
 function _showViewer(container, color) {
   const { cardView, viewer } = _getSwapParts(container);
   if (!cardView || !viewer) return;
@@ -401,7 +448,10 @@ function _showViewer(container, color) {
   setTimeout(() => {
     cardView.classList.add('extractor-hidden');
     viewer.classList.add('extractor-viewer--visible');
-  }, 300);
+
+    // Smoothly position viewer so its top header meets the ToolCEO header bottom line
+    ensureEditorViewerAligned({ smooth: true });
+  }, 240);
 }
 
 function _closeViewer(container) {
@@ -415,14 +465,15 @@ function _closeViewer(container) {
     cardView.style.opacity = '1';
     cardView.style.transform = 'translateY(0)';
   });
+
+  const mainContent = document.getElementById('main-content');
+  if (mainContent) {
+    mainContent.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 }
 
 function _scrollToViewer(viewer) {
-  const mainContent = document.getElementById('main-content');
-  if (mainContent && viewer) {
-    const top = viewer.getBoundingClientRect().top + mainContent.scrollTop - 70;
-    mainContent.scrollTo({ top: Math.max(0, top), behavior: 'smooth' });
-  }
+  ensureEditorViewerAligned({ smooth: true });
 }
 
 function _updateSelection(viewer, pageNumber) {
@@ -483,8 +534,8 @@ function _buildPageCards(viewer, pages) {
     card.innerHTML = `
       <div class="extractor-thumb-stage">
         ${dataUri
-          ? `<img src="${dataUri}" alt="Page ${pageNumber} preview" draggable="false" />`
-          : '<div class="extractor-thumb-skeleton" aria-hidden="true"></div>'}
+        ? `<img src="${dataUri}" alt="Page ${pageNumber} preview" draggable="false" />`
+        : '<div class="extractor-thumb-skeleton" aria-hidden="true"></div>'}
         <span class="ed-edited-badge"${page.editedDataUri ? '' : ' hidden'}>Edited</span>
         <div class="extractor-selected-overlay">
           <svg width="22" height="22" viewBox="0 0 16 16" fill="none">
@@ -652,6 +703,9 @@ async function _loadPdfIntoViewer(container, file) {
 
   removeEditorPanel();
   showProgress(zone, 10, color, 'Reading PDF offline…', tool?.id);
+  zone.querySelectorAll(
+    '.drop-icon, .drop-main-text, .drop-browse, .drop-private, .dz-actions-wrap, .dz-phone-btn, .dz-paste-btn'
+  ).forEach((el) => el.classList.add('dz-processing-hidden'));
   _renderToken += 1;
   const token = _renderToken;
 
@@ -691,26 +745,20 @@ async function _loadPdfIntoViewer(container, file) {
     `${_pageCount} page${_pageCount === 1 ? '' : 's'} ready to edit`;
   _buildPageCards(activeViewer, _pages);
 
-  // Wait for the viewer transition (300 ms) + two animation frames so the
-  // full page-card grid has been laid out before we scroll to it.
-  setTimeout(() => {
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        _scrollToViewer(activeViewer);
-      });
-    });
-  }, 320);
+  ensureEditorViewerAligned({ smooth: true });
 
   _pdfLoadPromise = (_pdfDoc ? Promise.resolve(_pdfDoc) : loadPdfDocument(file))
     .then((doc) => {
       if (token !== _renderToken) return;
       _pdfDoc = doc;
       _renderThumbnailsQueue(activeViewer, token);
+      ensureEditorViewerAligned({ smooth: true });
     })
-    .catch(() => {})
+    .catch(() => { })
     .finally(() => {
       if (token === _renderToken) _pdfLoadPromise = null;
     });
+  return true;
 }
 
 function _defaultEditorState(viewer) {
@@ -988,7 +1036,7 @@ function _resetAfterEditorSave() {
   if (activeTool) {
     import('../../../../scripts/dropzone.js').then(({ _updateDropZoneForTool }) => {
       if (_updateDropZoneForTool) _updateDropZoneForTool(activeTool);
-    }).catch(() => {});
+    }).catch(() => { });
   }
 }
 
@@ -2086,7 +2134,7 @@ export function removeEditorPanel() {
   }
 }
 
-export function handleEditorFilePicked(file) {
+export async function handleEditorFilePicked(file) {
   if (!_isPdfFile(file)) {
     pushNotification({
       type: 'warning',
@@ -2096,5 +2144,5 @@ export function handleEditorFilePicked(file) {
   }
 
   const container = document.getElementById('explore-section') || document.body;
-  _loadPdfIntoViewer(container, file);
+  return await _loadPdfIntoViewer(container, file);
 }

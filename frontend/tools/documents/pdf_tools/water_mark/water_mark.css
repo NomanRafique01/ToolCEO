@@ -1,4 +1,4 @@
-/* ─────────────────────────────────────────────────────────────
+﻿/* ─────────────────────────────────────────────────────────────
    tools/documents/pdf_tools/water_mark/water_mark.css
    Watermark Editor — sky-blue tool theme (#38BDF8)
    Semi-transparent glass · HD page drag preview + controls
@@ -71,9 +71,9 @@ body.has-wm-viewer .features-strip {
   position: sticky;
   top: 0;
   z-index: 10;
-  display: flex;
+  display: grid;
+  grid-template-columns: minmax(220px, 1fr) minmax(260px, auto) minmax(160px, 1fr);
   align-items: center;
-  justify-content: space-between;
   gap: 16px;
   padding: 14px 24px;
   background: rgba(56, 189, 248, 0.16);
@@ -84,10 +84,42 @@ body.has-wm-viewer .features-strip {
 }
 
 .wm-topbar-left {
+  justify-self: start;
   display: flex;
   align-items: center;
   gap: 14px;
   min-width: 0;
+}
+
+.wm-header-title {
+  min-width: 0;
+  justify-self: center;
+  text-align: center;
+}
+
+.wm-header-title h3 {
+  margin: 0;
+  color: var(--text-primary, #FFFFFF);
+  font-size: 24px;
+  line-height: 1.12;
+}
+
+.wm-select-kicker {
+  display: block;
+  margin-bottom: 3px;
+  color: var(--wm-color, #38BDF8);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0;
+  text-transform: uppercase;
+}
+
+.wm-select-note {
+  display: block;
+  margin-top: 3px;
+  color: var(--text-muted, #9DB8B2);
+  font-size: 12px;
+  font-weight: 600;
 }
 
 .wm-back-btn {
@@ -138,6 +170,7 @@ body.has-wm-viewer .features-strip {
 }
 
 .wm-topbar-actions {
+  justify-self: end;
   display: flex;
   align-items: center;
   gap: 10px;

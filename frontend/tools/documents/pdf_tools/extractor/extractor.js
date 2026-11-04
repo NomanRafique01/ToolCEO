@@ -15,10 +15,10 @@ import {
   showDownload,
   showError,
 } from '../../../shared/progress.js';
-import { ensurePdfJs, loadPdfDocument, getOfflinePdfInfo } from '../../../shared/pdfRenderer.js';
+import { ensurePdfJs, loadPdfDocument, getOfflinePdfInfo, yieldToMain, renderPageIntoStage } from '../../../shared/pdfRenderer.js';
 
 const BACKEND = 'http://127.0.0.1:8765';
-const THUMBNAIL_SCALE = 1.5;
+const THUMBNAIL_SCALE = 1.0;
 
 let _selectedFile = null;
 let _pageCount = 0;
@@ -86,13 +86,14 @@ function _showPdfThumbnail(zone, file, color, dataUri = null) {
 
   wrap.querySelector('.dz-extractor-thumb-remove').addEventListener('click', (e) => {
     e.stopPropagation();
+    if (_activeContainer) _closeViewer(_activeContainer);
     removeExtractorPanel();
     resetZoneContent(zone);
     const activeTool = getActiveTool();
     if (activeTool) {
       import('../../../../scripts/dropzone.js').then(({ _updateDropZoneForTool }) => {
         if (_updateDropZoneForTool) _updateDropZoneForTool(activeTool);
-      }).catch(() => {});
+      }).catch(() => { });
     }
   });
 }
@@ -147,6 +148,7 @@ function _getSwapParts(container) {
               <span class="extractor-page-count">0 pages</span>
             </div>
           </div>
+
           <div class="extractor-actions">
             <button class="extractor-action-btn" type="button" data-extractor-select="all">Select All</button>
             <button class="extractor-action-btn" type="button" data-extractor-select="clear">Clear</button>
@@ -231,6 +233,52 @@ function _getSwapParts(container) {
   return { swap, cardView, viewer };
 }
 
+/**
+ * Ensures the Extractor viewer is scrolled so its top header
+ * aligns right below the ToolCEO topbar bottom line, creating the perfect view each time.
+ */
+export function ensureExtractorViewerAligned({ smooth = true, immediate = false } = {}) {
+  const mainContent = document.getElementById('main-content');
+  const viewer = document.getElementById('extractor-viewer');
+  if (!mainContent || !viewer) return;
+
+  const performAlign = (useSmooth) => {
+    if (!viewer.classList.contains('extractor-viewer--visible')) return;
+
+    const mainRect = mainContent.getBoundingClientRect();
+    const viewerRect = viewer.getBoundingClientRect();
+    const paddingTop = parseFloat(window.getComputedStyle(mainContent).paddingTop) || 8;
+
+    // Distance between viewer's current top and where it should sit (at mainContent's top padding)
+    const currentDiff = viewerRect.top - mainRect.top;
+    const delta = currentDiff - paddingTop;
+
+    if (Math.abs(delta) > 1.5) {
+      const targetScroll = Math.max(0, mainContent.scrollTop + delta);
+      mainContent.scrollTo({
+        top: targetScroll,
+        behavior: useSmooth ? 'smooth' : 'auto',
+      });
+    }
+  };
+
+  performAlign(!immediate && smooth);
+
+  requestAnimationFrame(() => {
+    performAlign(smooth);
+    setTimeout(() => performAlign(smooth), 100);
+    setTimeout(() => performAlign(smooth), 300);
+  });
+}
+
+if (typeof window !== 'undefined') {
+  window.addEventListener('resize', () => {
+    if (document.body.classList.contains('has-extractor-viewer')) {
+      ensureExtractorViewerAligned({ immediate: true, smooth: false });
+    }
+  }, { passive: true });
+}
+
 function _showViewer(container, color) {
   const { cardView, viewer } = _getSwapParts(container);
   if (!cardView || !viewer) return;
@@ -247,15 +295,10 @@ function _showViewer(container, color) {
   setTimeout(() => {
     cardView.classList.add('extractor-hidden');
     viewer.classList.add('extractor-viewer--visible');
-  }, 300);
-}
 
-function _scrollToViewer(viewer) {
-  const mainContent = document.getElementById('main-content');
-  if (mainContent && viewer) {
-    const viewerTop = viewer.getBoundingClientRect().top + mainContent.scrollTop - 70;
-    mainContent.scrollTo({ top: Math.max(0, viewerTop), behavior: 'smooth' });
-  }
+    // Smoothly position viewer so its top header meets the ToolCEO header bottom line
+    ensureExtractorViewerAligned({ smooth: true });
+  }, 240);
 }
 
 function _closeViewer(container) {
@@ -270,6 +313,11 @@ function _closeViewer(container) {
     cardView.style.opacity = '1';
     cardView.style.transform = 'translateY(0)';
   });
+
+  const mainContent = document.getElementById('main-content');
+  if (mainContent) {
+    mainContent.scrollTo({ top: 0, behavior: 'smooth' });
+  }
 }
 
 function _updateSelectionMeta(viewer) {
@@ -344,9 +392,9 @@ function _buildPageCards(viewer, pageCount, firstThumbnail = null) {
     card.innerHTML = `
       <div class="extractor-thumb-stage">
         ${hasFirstThumb
-          ? `<img class="extractor-thumb-img" src="${firstThumbnail}" alt="Page ${pageNumber} preview" draggable="false" />`
-          : '<div class="extractor-thumb-skeleton" aria-hidden="true"></div>'
-        }
+        ? `<img class="extractor-thumb-img" src="${firstThumbnail}" alt="Page ${pageNumber} preview" draggable="false" />`
+        : '<div class="extractor-thumb-skeleton" aria-hidden="true"></div>'
+      }
         <div class="extractor-selected-overlay">
           <svg width="22" height="22" viewBox="0 0 16 16" fill="none">
             <circle cx="8" cy="8" r="6.2" stroke="currentColor" stroke-width="1.3"/>
@@ -382,6 +430,11 @@ async function _renderPage(pdfDoc, pageNumber, viewer, token) {
   await page.render({ canvasContext: context, viewport }).promise;
   if (token !== _renderToken) return;
 
+  // Convert to img immediately so the canvas GPU texture is freed.
+  const dataUri = canvas.toDataURL('image/jpeg', 0.82);
+  canvas.width = 0;
+  canvas.height = 0;
+
   const card = viewer.querySelector(`.extractor-page-card[data-page-index="${pageNumber - 1}"]`);
   const stage = card && card.querySelector('.extractor-thumb-stage');
   if (!stage) return;
@@ -389,39 +442,39 @@ async function _renderPage(pdfDoc, pageNumber, viewer, token) {
   const skeleton = stage.querySelector('.extractor-thumb-skeleton');
   if (skeleton) skeleton.remove();
 
-  const existingImg = stage.querySelector('img');
-  if (existingImg) existingImg.remove();
-  const existingCanvas = stage.querySelector('canvas');
-  if (existingCanvas) existingCanvas.remove();
+  stage.querySelectorAll('canvas').forEach((c) => c.remove());
+  const prevImg = stage.querySelector('img.pdf-thumb-img');
+  if (prevImg) prevImg.remove();
+
+  const img = document.createElement('img');
+  img.className = 'pdf-thumb-img';
+  img.alt = `Page ${pageNumber} preview`;
+  img.draggable = false;
+  img.src = dataUri;
 
   const overlay = stage.querySelector('.extractor-selected-overlay');
   if (overlay) {
-    stage.insertBefore(canvas, overlay);
+    stage.insertBefore(img, overlay);
   } else {
-    stage.appendChild(canvas);
+    stage.appendChild(img);
   }
 }
 
 async function _renderThumbnailsQueue(pdfDoc, viewer, token) {
   if (!pdfDoc) return;
   const numPages = pdfDoc.numPages;
-  const BATCH_SIZE = 4;
 
-  for (let i = 1; i <= numPages; i += BATCH_SIZE) {
+  for (let pageNum = 1; pageNum <= numPages; pageNum++) {
     if (token !== _renderToken) return;
-    const batch = [];
-    for (let p = i; p < i + BATCH_SIZE && p <= numPages; p += 1) {
-      batch.push(
-        _renderPage(pdfDoc, p, viewer, token).catch(() => {
-          const card = viewer.querySelector(`.extractor-page-card[data-page-index="${p - 1}"]`);
-          const stage = card && card.querySelector('.extractor-thumb-stage');
-          if (stage && !stage.querySelector('canvas, img')) {
-            stage.innerHTML = '<span class="extractor-empty-state">Preview failed</span>';
-          }
-        })
-      );
-    }
-    await Promise.all(batch);
+    await _renderPage(pdfDoc, pageNum, viewer, token).catch(() => {
+      const card = viewer.querySelector(`.extractor-page-card[data-page-index="${pageNum - 1}"]`);
+      const stage = card && card.querySelector('.extractor-thumb-stage');
+      if (stage && !stage.querySelector('canvas, img')) {
+        stage.innerHTML = '<span class="extractor-empty-state">Preview failed</span>';
+      }
+    });
+    // Yield after each page so the browser can paint and handle input.
+    await yieldToMain();
   }
 }
 
@@ -457,13 +510,14 @@ function _showExtractorPanel(color) {
   requestAnimationFrame(() => panel.classList.add('extractor-info-panel--visible'));
 
   panel.querySelector('.xip-secondary-btn').addEventListener('click', () => {
+    if (_activeContainer) _closeViewer(_activeContainer);
     removeExtractorPanel();
     resetZoneContent(document.getElementById('drop-zone'));
     const activeTool = getActiveTool();
     if (activeTool) {
       import('../../../../scripts/dropzone.js').then(({ _updateDropZoneForTool }) => {
         if (_updateDropZoneForTool) _updateDropZoneForTool(activeTool);
-      }).catch(() => {});
+      }).catch(() => { });
     }
   });
   panel.querySelector('.xip-primary-btn').addEventListener('click', () => _submitExtract());
@@ -493,6 +547,9 @@ async function _loadPdfIntoViewer(container, file) {
 
   removeExtractorPanel();
   showProgress(zone, 10, color, 'Reading PDF offline…', tool?.id);
+  zone.querySelectorAll(
+    '.drop-icon, .drop-main-text, .drop-browse, .drop-private, .dz-actions-wrap, .dz-phone-btn, .dz-paste-btn'
+  ).forEach((el) => el.classList.add('dz-processing-hidden'));
   _renderToken += 1;
   const token = _renderToken;
 
@@ -533,15 +590,7 @@ async function _loadPdfIntoViewer(container, file) {
   if (searchInput) searchInput.value = '';
   _buildPageCards(viewer, _pageCount, info.thumbnail);
 
-  // Wait for the viewer transition (300 ms) + two animation frames so the
-  // full page-card grid has been laid out before we scroll to it.
-  setTimeout(() => {
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => {
-        _scrollToViewer(viewer);
-      });
-    });
-  }, 320);
+  ensureExtractorViewerAligned({ smooth: true });
 
   const pdfLoadPromise = _pdfDoc ? Promise.resolve(_pdfDoc) : loadPdfDocument(file);
   pdfLoadPromise
@@ -549,14 +598,18 @@ async function _loadPdfIntoViewer(container, file) {
       if (token !== _renderToken) return;
       _pdfDoc = doc;
       _renderThumbnailsQueue(doc, viewer, token);
+      ensureExtractorViewerAligned({ smooth: true });
     })
     .catch((err) => {
       pushNotification({
         type: 'warning',
         message: 'Preview Limited',
         detail: err.message || 'Page thumbnails could not be rendered.',
+
+
       });
     });
+  return true;
 }
 
 async function _submitExtract() {
@@ -641,12 +694,13 @@ async function _submitExtract() {
       if (zone) updateProgress(zone, 100, color, tool.id);
       const dlName = data.filename || outputName;
       const onReset = () => {
+        if (_activeContainer) _closeViewer(_activeContainer);
         removeExtractorPanel();
         const activeTool = getActiveTool();
         if (activeTool) {
           import('../../../../scripts/dropzone.js').then(({ _updateDropZoneForTool }) => {
             if (_updateDropZoneForTool) _updateDropZoneForTool(activeTool);
-          }).catch(() => {});
+          }).catch(() => { });
         }
       };
       setTimeout(() => showDownload(zone, dlName, jobId, color, onReset, tool.id), 200);
@@ -668,6 +722,7 @@ async function _submitExtract() {
           message: 'No images were found in the selected file.',
         });
         // Close the extractor panel (Change file / Extract Images bar)
+        if (_activeContainer) _closeViewer(_activeContainer);
         removeExtractorPanel();
         // Reset zone fully to idle — no red error state, no stale panel
         if (zone) resetZoneContent(zone);
@@ -717,15 +772,15 @@ export function removeExtractorPanel() {
   _selectedPages.clear();
 }
 
-export function handleExtractorFilePicked(file) {
+export async function handleExtractorFilePicked(file) {
   if (!_isPdfFile(file)) {
     pushNotification({
       type: 'warning',
       message: 'Invalid File Format. Please select a valid PDF file.',
     });
-    return;
+    return false;
   }
 
   const container = document.getElementById('explore-section') || document.body;
-  _loadPdfIntoViewer(container, file);
+  return await _loadPdfIntoViewer(container, file);
 }

@@ -1,4 +1,4 @@
-﻿/* ─────────────────────────────────────────────────────────────
+/* ─────────────────────────────────────────────────────────────
    tools/documents/pdf_tools/rotate/rotate.css
    Full-area PDF page rotation viewer for the Documents PDF panel.
    Teal / Green Theme (#00E5C0).
@@ -10,6 +10,10 @@
   --rotate-color: #00E5C0;
   --rotate-bg: rgba(0, 229, 192, 0.12);
   --rotate-bg-strong: rgba(0, 229, 192, 0.22);
+}
+
+body.has-rotate-viewer .pdf-tools-swap {
+  min-height: calc(100vh - var(--header-height, 80px) - 16px);
 }
 
 .pdf-tools-card-view {
@@ -28,7 +32,7 @@
   display: none;
   flex-direction: column;
   width: 100%;
-  min-height: calc(100vh - 160px);
+  min-height: calc(100vh - var(--header-height, 80px) - 16px);
   max-height: none;
   background: linear-gradient(180deg, var(--bg-surface, #0F2D29) 0%, var(--bg-primary, #0A1F1C) 100%);
   border: 1px solid color-mix(in srgb, var(--rotate-color) 30%, var(--border, #1A3D38));
@@ -48,6 +52,10 @@
 
 body.has-rotate-viewer .features-strip {
   display: none !important;
+}
+
+body.has-rotate-viewer #dashboard-panel {
+  padding-bottom: 48px;
 }
 
 .rotate-topbar {
@@ -83,6 +91,7 @@ body.has-rotate-viewer .features-strip {
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  padding-right: 8px;
   width: 100%;
 }
 
@@ -147,7 +156,7 @@ body.has-rotate-viewer .features-strip {
   display: flex;
   align-items: center;
   width: 100%;
-  max-width: 360px;
+  max-width: 240px;
   gap: 6px;
 }
 

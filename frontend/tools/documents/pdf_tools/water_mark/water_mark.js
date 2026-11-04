@@ -1,4 +1,4 @@
-/**
+﻿/**
  * tools/documents/pdf_tools/water_mark/water_mark.js
  *
  * Interactive PDF Watermark Editor — ToolCEO
@@ -271,6 +271,11 @@ function _buildViewerHTML() {
         <div class="wm-file-meta">
           <span class="wm-file-name">No PDF selected</span>
         </div>
+      </div>
+      <div class="wm-header-title">
+        <span class="wm-select-kicker">Watermark PDF</span>
+        <h3>Apply a watermark</h3>
+        <span class="wm-select-note">Drag to position</span>
       </div>
       <div class="wm-topbar-actions">
         <div class="wm-filename-wrap" title="Output filename">
@@ -1013,6 +1018,9 @@ async function _loadPdfIntoViewer(container, file) {
     removeWatermarkPanel();
     resetZoneContent(zone);
     showProgress(zone, 10, color, 'Reading PDF offline…', tool?.id);
+    zone.querySelectorAll(
+      '.drop-icon, .drop-main-text, .drop-browse, .drop-private, .dz-actions-wrap, .dz-phone-btn, .dz-paste-btn'
+    ).forEach((el) => el.classList.add('dz-processing-hidden'));
   }
 
   try {
@@ -1044,7 +1052,7 @@ async function _loadPdfIntoViewer(container, file) {
       _showViewer(_activeContainer);
       _populateViewer(viewer);
     }
-
+    return true;
   } catch (err) {
     if (zone) showError(zone, `Could not read PDF: ${err.message}`, tool?.id);
     pushNotification({
@@ -1052,20 +1060,21 @@ async function _loadPdfIntoViewer(container, file) {
       message: 'PDF Load Failed',
       detail: err.message || 'Could not load PDF offline.',
     });
+    return false;
   }
 }
 
-export function handleWatermarkFilePicked(file) {
+export async function handleWatermarkFilePicked(file) {
   if (!file || !_isPdfFile(file)) {
     pushNotification({
       type: 'warning',
       message: 'Invalid File Format. Please select a valid PDF file.',
     });
-    return;
+    return false;
   }
 
   const container = document.getElementById('explore-section') || document.body;
-  _loadPdfIntoViewer(container, file);
+  return await _loadPdfIntoViewer(container, file);
 }
 
 // ─── SUBMIT ───────────────────────────────────────────────────────────────────
